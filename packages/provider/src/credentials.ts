@@ -1,0 +1,15 @@
+import { ProviderError } from './errors.js';
+import type { AdapterContext, Credential } from './types.js';
+import { isNonEmptyString } from './validation-helpers.js';
+
+export function resolveCredential(value: Credential, getEnv: AdapterContext['getEnv']): string | undefined {
+  if ('none' in value) return undefined;
+  let result: string | undefined;
+  try {
+    result = getEnv(value.env);
+  } catch {
+    throw new ProviderError('SECRET_MISSING', 'Unable to resolve provider credential.');
+  }
+  if (!isNonEmptyString(result)) throw new ProviderError('SECRET_MISSING', 'Provider credential is missing.');
+  return result;
+}

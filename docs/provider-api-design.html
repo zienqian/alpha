@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Provider API — Alpha 设计方案</title><style>
+:root{color-scheme:light;--bg:#f6f7f3;--ink:#18251e;--muted:#6c7a70;--line:#dfe8dd;--green:#276c4b;--code:#18261e}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 'Segoe UI','Microsoft YaHei',sans-serif}a{color:var(--green)}code,pre{font-family:Consolas,ui-monospace,monospace}code{background:#edf4e9;color:#286a49;padding:2px 5px;border-radius:4px;font-size:.87em}header{background:#fff;border-bottom:1px solid var(--line)}.nav{max-width:1150px;margin:auto;padding:16px 28px;display:flex;align-items:center;gap:20px}.brand{font-weight:800;letter-spacing:.15em;font-size:12px}.dot{width:9px;height:9px;background:#72aa7f;border-radius:50%;display:inline-block;margin-right:8px}.path{color:#8b998c;font-size:12px;padding-left:20px;border-left:1px solid var(--line)}.badge{margin-left:auto;padding:3px 10px;border:1px solid #d8e7d7;border-radius:20px;color:#60816a;font-size:11px}main{max-width:1150px;margin:auto;padding:64px 28px 90px}.hero{max-width:830px}.eyebrow{font:700 11px Consolas;letter-spacing:.15em;color:#608b6a}.hero h1{font-size:clamp(40px,6vw,66px);line-height:1.1;letter-spacing:-.05em;margin:20px 0}.hero h1 span{color:#659b73}.hero p{font-size:17px;color:var(--muted)}.notice{display:inline-block;background:#eaf3e7;color:#477b57;border-radius:8px;padding:7px 12px;font-size:12px}.section{margin-top:72px}.heading{display:flex;gap:15px;align-items:baseline}.heading span{font:12px Consolas;color:#8cac91}.heading h2{font-size:29px;letter-spacing:-.03em;margin:0}.intro{color:var(--muted);max-width:850px;margin:9px 0 22px}.shell{background:var(--code);border-radius:12px;color:#dcebdd;overflow:hidden}.shell-head{display:flex;justify-content:space-between;padding:13px 20px;border-bottom:1px solid #34463a;color:#a4b7a4;font:11px Consolas}.shell pre{margin:0;padding:21px 23px;overflow:auto;font:12.5px/1.85 Consolas,monospace}.shell pre code{font:inherit;color:inherit;background:none;padding:0}.kw{color:#b9dda9}.str{color:#e9ce9e}.comment{color:#91a795}.note{margin-top:14px;padding:15px 18px;border-left:3px solid #9dc99f;background:#edf5e9;color:#56705b;font-size:13px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{background:white;border:1px solid var(--line);border-radius:11px;padding:20px}.card h3{font-size:15px;margin:0 0 7px}.card p{font-size:13px;color:var(--muted);margin:0}.table{overflow:auto;border:1px solid var(--line);border-radius:11px;background:white}table{width:100%;min-width:680px;border-collapse:collapse;font-size:13px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #ebf0e9;padding:13px 15px}th{font-size:11px;color:#849187;background:#fafcf9}td:last-child{color:var(--muted)}tr:last-child td{border:0}.questions{display:grid;gap:10px}.q{background:white;border:1px solid var(--line);border-radius:10px;padding:16px 19px}.q b{display:block;font-size:14px}.q span{font-size:13px;color:var(--muted)}footer{border-top:1px solid var(--line);margin-top:70px;padding-top:22px;color:#89988a;font-size:12px}@media(max-width:700px){main{padding:48px 18px}.nav{padding:15px 18px}.path{display:none}.grid{grid-template-columns:1fr}.section{margin-top:52px}.shell pre{font-size:12px}}
+</style></head><body><header><div class="nav"><div class="brand"><span class="dot"></span>ALPHA</div><div class="path">Architecture / Provider API</div><div class="badge">自主实现 v0.7</div></div></header><main>
+<div class="hero"><div class="eyebrow">ONE CONFIG · MANY PROVIDERS · SIMPLE API</div><h1>定义一次。<br><span>选择模型，开始使用。</span></h1><p>一份静态配置描述多个 Provider，每个 Provider 管理自己的模型。使用时通过 <code>provider.use(providerName, modelAlias)</code> 获取模型，交给未来的 ADK。</p><span class="notice">Provider 首版已实现 · 示例中的模型 ID 和地址均为占位符</span></div>
+
+<section class="section"><div class="heading"><span>01</span><h2>完整示例</h2></div><p class="intro">连接配置、适配器和模型列表放在同一个 Provider 下。模型别名只在其所属 Provider 内生效。</p><div class="shell"><div class="shell-head"><span>provider.config.ts</span><span>静态配置</span></div><pre><code><span class="kw">import</span> { defineProviderConfig } <span class="kw">from</span> <span class="str">'@alpha/provider'</span>;
+
+<span class="kw">export const</span> config = defineProviderConfig({
+  providers: {
+    openai: {
+      adapter: <span class="str">'openai-responses'</span>,
+      options: { apiKey: { env: <span class="str">'OPENAI_API_KEY'</span> } },
+      models: {
+        chat: { id: <span class="str">'openai-chat-model-id'</span> },
+      },
+    },
+    anthropic: {
+      adapter: <span class="str">'anthropic-messages'</span>,
+      options: { apiKey: { env: <span class="str">'ANTHROPIC_API_KEY'</span> } },
+      models: {
+        chat: { id: <span class="str">'anthropic-chat-model-id'</span> },
+      },
+    },
+    deepseek: {
+      adapter: <span class="str">'openai-completions'</span>,
+      options: {
+        baseURL: <span class="str">'https://api.example.com/v1'</span>,
+        apiKey: { env: <span class="str">'DEEPSEEK_API_KEY'</span> },
+      },
+      models: {
+        chat: { id: <span class="str">'deepseek-chat-model-id'</span> },
+        reasoning: { id: <span class="str">'deepseek-reasoning-model-id'</span> },
+      },
+    },
+  },
+});</code></pre></div><div class="shell" style="margin-top:12px"><div class="shell-head"><span>app.ts</span><span>使用模型</span></div><pre><code><span class="kw">import</span> { createProvider } <span class="kw">from</span> <span class="str">'@alpha/provider'</span>;
+<span class="kw">import</span> { config } <span class="kw">from</span> <span class="str">'./provider.config.js'</span>;
+
+<span class="kw">const</span> provider = createProvider(config);
+
+<span class="kw">const</span> model = provider.use(<span class="str">'deepseek'</span>, <span class="str">'chat'</span>);
+<span class="kw">const</span> reasoning = provider.use(<span class="str">'deepseek'</span>, <span class="str">'reasoning'</span>);
+<span class="kw">const</span> another = provider.use(<span class="str">'anthropic'</span>, <span class="str">'chat'</span>);
+
+<span class="kw">const</span> result = <span class="kw">await</span> model.generate({
+  messages: [{ role: <span class="str">'user'</span>, content: <span class="str">'你好'</span> }],
+  maxOutputTokens: 256,
+});
+console.log(result.text);
+
+<span class="comment">// 注入未来的 ADK；defineAgent 为示意 API。</span>
+<span class="kw">const</span> agent = defineAgent({ model, instructions: <span class="str">'你是一个助手。'</span> });</code></pre></div><div class="note">所有模型 ID 和第三方 URL 都是占位符。示例中的 <code>defineProviderConfig</code> 提供类型提示；<code>createProvider</code> 负责运行时校验。Provider 使用 Alpha 自己的模型接口和 HTTP 适配器，运行时不依赖 AI SDK。</div></section>
+
+<section class="section"><div class="heading"><span>02</span><h2>配置概念与参数</h2></div><p class="intro">连接名称、适配器类型和上游模型 ID 各自独立。<code>adapter</code> 是 Alpha 的注册名，不会自动安装或执行同名 npm 包。</p><div class="table"><table><thead><tr><th>字段</th><th>含义</th><th>约定</th></tr></thead><tbody><tr><td><code>providers.deepseek</code></td><td>连接名称</td><td>用户自定义、全局唯一；同一家服务可配置多条连接。</td></tr><tr><td><code>adapter</code></td><td>选择具体适配器</td><td>内置 <code>anthropic-messages</code>、<code>openai-completions</code>、<code>openai-responses</code> 和 <code>openai-codex-responses</code>；自定义名称需显式注册。</td></tr><tr><td><code>options.accessToken</code></td><td>Codex OAuth token 引用</td><td>openai-codex-responses 必填，格式为 { env: 名称 }；应用负责获取和刷新。</td></tr><tr><td><code>options.baseURL</code></td><td>服务 API 根地址</td><td>可选；OpenAI 适配器默认 OpenAI 地址，第三方或本地端点需显式填写。地址不包含凭证。</td></tr><tr><td><code>options.apiKey</code></td><td>认证配置</td><td><code>{ env: 'NAME' }</code> 引用服务端环境变量；openai-completions / openai-responses 可用 <code>{ none: true }</code> 明确禁用认证。</td></tr><tr><td><code>options.headers</code></td><td>静态请求头</td><td>支持静态字符串或环境变量引用；generate 可提供单次请求头覆盖。认证及协议保留头不可覆盖。</td></tr><tr><td><code>options.queryParams</code></td><td>openai-completions / openai-responses 查询参数</td><td>可选的非敏感静态值；具体字段由适配器校验。</td></tr><tr><td><code>options.maxOutputTokens</code></td><td>Anthropic 输出限制</td><td>可选默认值；必须在配置或每次 generate 调用中提供。</td></tr><tr><td><code>models.chat.id</code></td><td>模型 ID</td><td><code>chat</code> 是当前 Provider 内别名；<code>id</code> 是上游识别的模型名称。</td></tr></tbody></table></div><div class="note">本版建议模型条目统一使用 <code>{ id }</code> 对象，暂不支持字符串简写。温度、输出 token 和工具定义通过 model.generate() 的请求参数传入。</div></section>
+
+<section class="section"><div class="heading"><span>03</span><h2>四种内置适配器</h2></div><div class="grid"><div class="card"><h3>openai-responses</h3><p>Responses 协议，发送到 /responses；服务需要支持该协议。</p></div><div class="card"><h3>openai-codex-responses</h3><p>使用应用取得的 OAuth access token 调用公开 Responses API；登录与刷新由应用负责。当前不实现 ChatGPT 内部 Codex backend。</p></div><div class="card"><h3>anthropic-messages</h3><p>Anthropic 原生适配器；保留厂商协议和参数差异。</p></div><div class="card"><h3>openai-completions</h3><p>Completions 协议，发送到 /chat/completions；可接入支持该协议的第三方。</p></div></div><div class="note">适配器名称区分实现而非模型厂商。比如第三方模型由兼容端点提供时，可以使用 <code>openai-completions</code> 或 <code>openai-responses</code>，具体取决于服务提供的协议；Anthropic 使用独立适配器。</div></section>
+
+<section class="section"><div class="heading"><span>04</span><h2>第三方自定义适配器</h2></div><p class="intro">兼容端点只需要静态配置；无法通过内置适配器连接的第三方服务，通过应用显式注册适配器。</p><div class="shell"><div class="shell-head"><span>custom-provider.ts</span><span>扩展 API</span></div><pre><code><span class="kw">import</span> { createProvider, defineProviderConfig } <span class="kw">from</span> <span class="str">'@alpha/provider'</span>;
+<span class="kw">import</span> { acmeAdapter } <span class="kw">from</span> <span class="str">'@example/acme-ai-adapter'</span>;
+
+<span class="kw">const</span> config = defineProviderConfig({
+  providers: {
+    acme: {
+      adapter: <span class="str">'acme'</span>,
+      options: { region: <span class="str">'region-1'</span>, apiKeyEnv: <span class="str">'ACME_API_KEY'</span> },
+      models: { chat: { id: <span class="str">'model-id'</span> } },
+    },
+  },
+});
+
+<span class="kw">const</span> provider = createProvider(config, {
+  adapters: { acme: acmeAdapter },
+});
+<span class="kw">const</span> model = provider.use(<span class="str">'acme'</span>, <span class="str">'chat'</span>);</code></pre></div><p class="intro" style="margin-top:16px">第三方包和字段是虚构示例。适配器负责校验其 options，并使用模型 ID 创建 Alpha 自己的 LanguageModel；其认证、配置与能力需单独定义。内置适配器使用类型约束；自定义 options 在运行时由适配器校验。</p></section>
+
+<section class="section"><div class="heading"><span>05</span><h2>use 的运行时契约</h2></div><div class="table"><table><thead><tr><th>接口 / 行为</th><th>设计</th><th>边界</th></tr></thead><tbody><tr><td><code>createProvider(config, options?)</code></td><td>同步校验配置、模型映射和 adapter 注册，保存配置快照。</td><td>不读取密钥，不发送网络请求；非法配置立即报错。</td></tr><tr><td><code>provider.use(providerName, modelAlias)</code></td><td>按名称与别名同步读取配置，在需要时读取环境变量并创建模型对象。</td><td>不发模型请求；不确认服务在线、模型存在或密钥有效。返回 Alpha 自己的 LanguageModel，支持 generate()。</td></tr><tr><td>缓存与轮换</td><td>首版不缓存模型对象；每次 use 都重新解析当前密钥并创建模型对象。</td><td>已返回的模型对象保持原凭证快照；轮换后重新调用 use。动态认证和异步密钥另行设计。</td></tr><tr><td><code>provider.list()</code></td><td>返回 Provider 名称、各模型别名和模型 ID。</td><td>不读取密钥或联网，不返回认证信息、headers 和敏感 URL。</td></tr><tr><td>错误</td><td><code>CONFIG_INVALID</code>、<code>PROVIDER_NOT_FOUND</code>、<code>MODEL_NOT_FOUND</code>、<code>SECRET_MISSING</code>、<code>ADAPTER_NOT_FOUND</code>。</td><td>错误包含安全的字段路径；模型调用的 HTTP 错误由 Provider 返回安全错误码和状态码，不隐式 fallback。</td></tr></tbody></table></div><div class="note">基于静态 TypeScript 配置，use 支持静态配置的 Provider 名称和对应模型别名补全；动态加载的配置依靠运行时校验。</div></section>
+
+<section class="section"><div class="heading"><span>06</span><h2>社区参考与取舍</h2></div><div class="table"><table><thead><tr><th>项目</th><th>设计方式</th><th>我们的取舍</th></tr></thead><tbody><tr><td><a href="https://docs.opencode.ai/docs/providers/">OpenCode</a></td><td>按 Provider 配置适配包、options 和 models。</td><td>借鉴按连接组织模型；Alpha 使用注册名选择 adapter，保持静态配置简洁。</td></tr><tr><td><a href="https://ai-sdk.dev/docs/ai-sdk-core/provider-management">Vercel AI SDK</a></td><td>通过厂商工厂及 registry 获取模型。</td><td>仅作为社区设计参考；Alpha 的模型接口和 HTTP 适配器由我们实现。</td></tr><tr><td><a href="https://docs.litellm.ai/docs/">LiteLLM</a></td><td>Gateway 配置以模型部署列表和路由为中心。</td><td>我们是开发库，首版按 Provider 组织；不提前引入网关路由、负载均衡。</td></tr></tbody></table></div><div class="note"><code>adapter</code> 是 Alpha 基于调研作出的命名选择，不是社区统一标准。<code>use</code> 是我们选择的应用层 API，也不是对上述项目现有 API 的描述。</div></section>
+
+<section class="section"><div class="heading"><span>07</span><h2>后续要验证的内容</h2></div><div class="questions"><div class="q"><b>适配器接口与版本</b><span>当前由 Alpha 自行定义模型接口并通过 HTTP 实现协议；还需使用真实目标服务验证兼容性。</span></div><div class="q"><b>配置和安全</b><span>验证未知字段、错误路径、缺失密钥、轮换以及日志脱敏；明确自定义 adapter 的安全边界。</span></div><div class="q"><b>真实服务契约</b><span>至少验证一个原生服务和一个第三方兼容服务的文本和工具调用的行为与能力差异；流式输出尚未实现。</span></div></div></section>
+<footer>ALPHA / PROVIDER API · Provider 首版已实现；真实服务的兼容性仍需验证。参考：<a href="https://docs.opencode.ai/docs/providers/">OpenCode</a> · <a href="https://ai-sdk.dev/docs/ai-sdk-core/provider-management">AI SDK</a> · <a href="https://ai-sdk.dev/providers/openai-compatible-providers">OpenAI Compatible Provider</a> · <a href="https://docs.litellm.ai/docs/">LiteLLM</a>。</footer></main></body></html>

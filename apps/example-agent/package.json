@@ -1,0 +1,9 @@
+{
+  "name": "@alpha/example-agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@alpha/adk": "workspace:*", "@alpha/provider": "workspace:*" },
+  "scripts": { "build": "tsrs -p tsconfig.json", "typecheck": "tsrs -p tsconfig.json --noEmit", "lint": "eslint src" },
+  "nx": { "tags": ["layer:app"] }
+}

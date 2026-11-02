@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Provider 使用示例 — Alpha</title>
+<style>
+:root{--ink:#172821;--muted:#697970;--accent:#296e4d;--line:#dce8dd;--bg:#f6f8f4;--code:#16271e}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 'Segoe UI','Microsoft YaHei',sans-serif}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}code,pre{font-family:Consolas,'SFMono-Regular',monospace}code{font-size:.88em;background:#eaf1e7;color:#286749;padding:2px 5px;border-radius:4px}header{position:sticky;top:0;z-index:2;background:#f6f8f4ee;backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}.top{max-width:1420px;margin:auto;padding:15px 35px;display:flex;align-items:center;gap:18px}.brand{font-weight:800;font-size:12px;letter-spacing:.15em}.brand i{display:inline-block;width:9px;height:9px;border-radius:50%;background:#74a880;margin-right:8px}.trail{border-left:1px solid var(--line);padding-left:18px;color:#819084;font-size:12px}.pill{margin-left:auto;border:1px solid #d7e6d5;border-radius:20px;padding:4px 10px;font-size:11px;color:#63836c}.layout{max-width:1420px;margin:auto;display:grid;grid-template-columns:190px minmax(0,1fr);gap:52px;padding:0 35px}.side{position:sticky;top:90px;height:calc(100vh - 110px);overflow:auto;padding-top:52px}.side small{font:10px Consolas;letter-spacing:.13em;color:#97a79a}.side a{display:block;font-size:12px;color:#74837a;padding:6px 0}.side a:hover{color:var(--accent)}main{min-width:0;padding:68px 0 85px}.eyebrow{font:700 11px Consolas;letter-spacing:.14em;color:#5d926b}.hero h1{font-size:clamp(42px,5vw,64px);line-height:1.1;letter-spacing:-.045em;margin:18px 0}.hero h1 span{color:#77a27a}.hero p{max-width:760px;font-size:16px;color:var(--muted)}.note{background:#edf5e9;border-left:3px solid #a4cba4;color:#56715d;padding:14px 17px;border-radius:0 8px 8px 0;font-size:13px;margin:17px 0}.section{border-top:1px solid var(--line);margin-top:64px;padding-top:50px;scroll-margin-top:70px}.head{display:flex;gap:17px;align-items:baseline}.head small{font:11px Consolas;color:#8ba894}.head h2{font-size:27px;letter-spacing:-.03em;margin:0}.intro{color:var(--muted);margin:8px 0 20px}.shell{background:var(--code);border-radius:12px;color:#dfecde;overflow:hidden;margin:13px 0}.bar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid #35483a;color:#9fb7a3;font:11px Consolas}.copy{background:#2c4233;border:1px solid #4c6452;color:#d9e8d9;border-radius:5px;padding:4px 9px;font:11px 'Segoe UI',sans-serif;cursor:pointer}.copy:hover{background:#405b45}pre{margin:0;padding:19px 21px;overflow:auto;font:12.5px/1.8 Consolas,monospace;white-space:pre}pre code{background:none;color:inherit;padding:0;font:inherit}.cardgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px}.card h3{margin:0 0 5px;font-size:14px}.card p{margin:0;color:var(--muted);font-size:12px}.table{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff}table{width:100%;min-width:680px;border-collapse:collapse;font-size:13px}th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid #edf1eb}th{font-size:11px;background:#fafcf9;color:#859489}tr:last-child td{border:0}td:last-child{color:var(--muted)}footer{border-top:1px solid var(--line);margin-top:65px;padding-top:20px;color:#8a998c;font-size:12px}@media(max-width:850px){.layout{display:block;padding:0 20px}.side{position:static;height:auto;overflow:auto;padding:20px 0 0}.side nav{display:flex;gap:17px;white-space:nowrap}.side small{display:none}main{padding-top:45px}.cardgrid{grid-template-columns:1fr}.trail{display:none}.top{padding:14px 20px}}@media print{header,.side,.copy{display:none}.layout{display:block;padding:0}main{padding:0}.section{break-inside:avoid}}
+</style></head><body><header><div class="top"><div class="brand"><i></i>ALPHA</div><div class="trail">Provider / Usage examples</div><div class="pill">当前实现 · Node.js</div></div></header>
+<div class="layout"><aside class="side"><small>EXAMPLES / 目录</small><nav aria-label="示例目录"><a href="#quickstart">01 快速开始</a><a href="#providers">02 四种适配器</a><a href="#generate">03 文本与多轮</a><a href="#metadata">模型元数据</a><a href="#tools">04 工具调用</a><a href="#options">05 参数与返回值</a><a href="#types">配置与协议类型</a><a href="#headers">HTTP 请求头注入</a><a href="#lifecycle">06 密钥与取消</a><a href="#errors">07 错误处理</a><a href="#custom">08 自定义适配器</a><a href="#testing">09 注入测试</a><a href="#limits">10 当前边界</a></nav></aside><main>
+<div class="hero"><div class="eyebrow">ALPHA / PROVIDER COOKBOOK</div><h1>Provider，<br><span>从配置到调用。</span></h1><p>基于当前代码整理：如何配置服务和模型、发起请求、处理工具调用，以及接入自定义适配器。</p><div class="note">所有 URL 和模型 ID 均为占位符。示例展示现有 API，不代表已通过真实厂商验证。不同代码块独立说明；明确标注“接上例”的代码使用前一段变量。</div></div>
+
+<section class="section" id="quickstart"><div class="head"><small>01 /</small><h2>快速开始</h2></div><p class="intro">一个完整配置可以管理多个 Provider，每个服务包含自己的模型别名。获取模型时不发送网络请求，<code>generate()</code> 才发起请求。</p><div class="shell"><div class="bar"><span>provider.config.ts</span><button class="copy" type="button">复制</button></div><pre><code>import { createProvider, defineProviderConfig } from '@alpha/provider';
+
+export const config = defineProviderConfig({
+  providers: {
+    openai: {
+      adapter: 'openai-responses',
+      options: { apiKey: { env: 'OPENAI_API_KEY' } },
+      models: { chat: { id: 'your-openai-model-id' } },
+    },
+    anthropic: {
+      adapter: 'anthropic-messages',
+      options: {
+        apiKey: { env: 'ANTHROPIC_API_KEY' },
+        maxOutputTokens: 1024,
+      },
+      models: { chat: { id: 'your-anthropic-model-id' } },
+    },
+    thirdParty: {
+      adapter: 'openai-completions',
+      options: {
+        baseURL: 'https://api.example.com/v1',
+        apiKey: { env: 'THIRD_PARTY_API_KEY' },
+      },
+      models: {
+        chat: { id: 'your-chat-model-id' },
+        reasoning: { id: 'your-reasoning-model-id' },
+      },
+    },
+  },
+});
+
+export const provider = createProvider(config);</code></pre></div><div class="shell"><div class="bar"><span>app.ts · 接上面的配置</span><button class="copy" type="button">复制</button></div><pre><code>import { provider } from './provider.config.js';
+
+const model = provider.use('thirdParty', 'chat');
+const result = await model.generate({
+  messages: [
+    { role: 'system', content: '你是一个简洁的助手。' },
+    { role: 'user', content: '解释什么是 monorepo。' },
+  ],
+  maxOutputTokens: 512,
+  temperature: 0.3,
+});
+
+console.log(result.text);
+console.log(result.usage); // 可能为 undefined，取决于服务响应</code></pre></div><div class="note">在 PowerShell 中可为当前终端设置密钥：<code>$env:THIRD_PARTY_API_KEY = '你的密钥'</code>。实际运行时须替换地址、模型 ID 并配置有效凭证；不要把密钥提交到仓库。</div></section>
+
+<section class="section" id="providers"><div class="head"><small>02 /</small><h2>四种内置适配器</h2></div><p class="intro">Codex 示例使用官方 Sign in with ChatGPT 授权得到的 access token 调用公开 Responses API；应用负责登录和刷新，不直接实现内部 Codex backend。以下对象可分别放在 <code>config.providers</code> 下，<code>models</code> 的键是自定义别名，<code>id</code> 是服务端真实模型名称。</p><div class="shell"><div class="bar"><span>Provider 配置项</span><button class="copy" type="button">复制</button></div><pre><code>// Responses 协议
+openai: {
+  adapter: 'openai-responses',
+  options: { apiKey: { env: 'OPENAI_API_KEY' } },
+  models: { chat: { id: 'your-model-id' } },
+},
+
+// Completions 协议：OpenAI 或兼容服务
+openaiCompletions: {
+  adapter: 'openai-completions',
+  options: {
+    apiKey: { env: 'OPENAI_API_KEY' },
+    baseURL: 'https://api.example.com/v1', // 可选覆盖
+  },
+  models: { chat: { id: 'your-model-id' } },
+},
+
+// Codex 授权的 Responses：token 由应用自行获取和刷新
+codex: {
+  adapter: 'openai-codex-responses',
+  options: { accessToken: { env: 'CODEX_ACCESS_TOKEN' } },
+  models: { main: { id: 'your-authorized-model-id' } },
+},
+
+// Anthropic Messages：maxOutputTokens 可放在配置或 generate() 中
+anthropic: {
+  adapter: 'anthropic-messages',
+  options: {
+    apiKey: { env: 'ANTHROPIC_API_KEY' },
+    maxOutputTokens: 1024,
+  },
+  models: { chat: { id: 'your-model-id' } },
+},
+
+// 第三方兼容端点：使用 Completions 协议
+thirdParty: {
+  adapter: 'openai-completions',
+  options: {
+    baseURL: 'https://api.example.com/v1',
+    apiKey: { env: 'THIRD_PARTY_API_KEY' },
+    headers: { 'x-client-name': 'alpha', 'x-gateway-key': { env: 'GATEWAY_KEY' } },
+    queryParams: { 'api-version': 'example-version' }, // 可选
+  },
+  models: { chat: { id: 'your-model-id' } },
+},
+
+// 本地服务没有认证时，必须显式声明
+local: {
+  adapter: 'openai-completions',
+  options: {
+    baseURL: 'http://127.0.0.1:11434/v1',
+    apiKey: { none: true },
+  },
+  models: { chat: { id: 'your-local-model-id' } },
+},</code></pre></div><div class="note">连接参数必须与目标服务实际接口匹配。<code>baseURL</code> 不接受内嵌凭证、查询参数或 fragment；<code>headers</code> 中的敏感值使用环境变量引用；<code>queryParams</code> 不存放密钥。不同服务的工具调用能力需要独立验证。</div></section>
+
+<section class="section" id="generate"><div class="head"><small>03 /</small><h2>文本、多轮与模型列表</h2></div><p class="intro">消息由调用方传入；Provider 不保存对话历史，也不自动切换模型。</p><div class="shell"><div class="bar"><span>text.ts · 使用第 01 节的 provider</span><button class="copy" type="button">复制</button></div><pre><code>import { provider } from './provider.config.js';
+import type { Message } from '@alpha/provider';
+
+console.log(provider.list()); // provider 名称、adapter、模型别名和配置的元数据
+
+const model = provider.use('thirdParty', 'chat');
+const history: Message[] = [
+  { role: 'system', content: '回答简洁。' },
+  { role: 'user', content: '我叫小明。' },
+  { role: 'assistant', content: '你好，小明。' },
+  { role: 'user', content: '我叫什么？' },
+];
+
+const result = await model.generate({ messages: history });
+console.log(result.outcome, result.text, result.finishReason, result.usage);
+
+// 切换模型需要显式选择另一条配置
+const reasoning = provider.use('thirdParty', 'reasoning');</code></pre></div></section>
+
+<section class="section" id="stream"><div class="head"><small>STREAM /</small><h2>流式输出</h2></div><p class="intro">立即接收文本增量，生成完成后再检查状态和工具调用。</p><div class="shell"><div class="bar"><span>stream.ts</span><button class="copy" type="button">复制</button></div><pre><code>const controller = new AbortController();
+try {
+  for await (const event of model.stream({
+    messages: [{ role: 'user', content: '你好' }],
+    signal: controller.signal,
+  })) {
+    if (event.type === 'text-delta') process.stdout.write(event.text);
+    if (event.type === 'tool-call') console.log(event.toolCall);
+    if (event.type === 'finish') console.log(event.result.outcome);
+  }
+} catch (error) {
+  console.error(error); // 取消或服务错误
+}</code></pre></div><div class="note">文本增量可能来自随后被截断或拒答的结果，最终状态以 finish 为准。工具调用已包含在 finish.result.toolCalls 中，避免重复执行。中途 break 会释放响应体；需要主动取消时调用 controller.abort()。</div></section>
+
+<section class="section" id="metadata"><div class="head"><small>MODEL /</small><h2>配置模型元数据</h2></div><p class="intro">在 Provider 的模型条目中设置描述信息；连接地址、协议和认证仍由 Provider 配置一次。</p><div class="shell"><div class="bar"><span>模型配置 · 放在 providers.ollama.models 中</span><button class="copy" type="button">复制</button></div><pre><code>reasoning: {
+  id: 'gpt-oss:20b',
+  name: 'GPT-OSS 20B (Ollama)',
+  reasoning: true,
+  input: ['text'],
+  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+  contextWindow: 131072,
+  maxTokens: 32000,
+  thinkingLevelMap: {
+    minimal: null, low: null, medium: null, high: 'high', xhigh: null,
+  },
+  compat: { supportsDeveloperRole: false, supportsReasoningEffort: false },
+}</code></pre></div><div class="shell"><div class="bar"><span>读取信息 · 假设已配置 ollama</span><button class="copy" type="button">复制</button></div><pre><code>const model = provider.use('ollama', 'reasoning');
+console.log(model.modelId);           // gpt-oss:20b
+console.log(model.metadata?.name);    // GPT-OSS 20B (Ollama)
+console.log(model.metadata?.compat);  // 已配置的兼容性信息
+console.log(provider.list());         // 各模型及其配置元数据</code></pre></div><div class="shell"><div class="bar"><span>显式启用思考等级 · 模型需支持该参数</span><button class="copy" type="button">复制</button></div><pre><code>// 前面的示例将 supportsReasoningEffort 设为 false，不能传 thinkingLevel。
+// 对支持 reasoning effort 的模型，可将其设为 true 并提供映射：
+// compat: { supportsReasoningEffort: true },
+// thinkingLevelMap: { low: null, medium: 'medium', high: 'high' },
+const result = await model.generate({
+  messages: [{ role: 'user', content: '分析问题' }],
+  maxOutputTokens: 2048,
+  thinkingLevel: 'high',
+});</code></pre></div><div class="note"><code>maxTokens</code> 限制请求的输出 token；<code>thinkingLevelMap</code>、<code>reasoning</code> 和 <code>compat</code> 参与请求校验和协议转换。<code>contextWindow</code>、<code>input</code> 和 <code>cost</code> 仍只用于描述，不自动开启多模态或计算费用。<code>cost</code> 约定为美元 / 百万 token；未知价格应省略，而不是填 0。示例数值来自示意，实际信息由使用者核实。</div></section>
+
+<section class="section" id="tools"><div class="head"><small>04 /</small><h2>工具调用：你负责执行</h2></div><p class="intro">模型可以请求调用工具；Provider 负责协议转换，应用负责校验参数、执行工具并传回结果。这里演示一轮，后续再次返回工具调用时需继续处理或设置上限。</p><div class="shell"><div class="bar"><span>tools.ts · 使用第 01 节的 provider</span><button class="copy" type="button">复制</button></div><pre><code>import { provider } from './provider.config.js';
+import type { Message, ToolDefinition } from '@alpha/provider';
+
+const model = provider.use('thirdParty', 'chat');
+const tools: ToolDefinition[] = [{
+  name: 'get_weather',
+  description: '查询城市天气',
+  inputSchema: {
+    type: 'object',
+    properties: { city: { type: 'string' } },
+    required: ['city'],
+    additionalProperties: false,
+  },
+}];
+const messages: Message[] = [{ role: 'user', content: '北京天气如何？' }];
+const first = await model.generate({ messages, tools });
+
+if (first.outcome === 'tool_calls') {
+  messages.push({ role: 'assistant', content: first.text, toolCalls: first.toolCalls, continuation: first.continuation });
+  for (const call of first.toolCalls) {
+    // 工具参数来自模型，执行前必须按应用规则校验。
+    if (call.name !== 'get_weather' || typeof call.arguments.city !== 'string') {
+      throw new Error('不支持的工具或参数');
+    }
+    const weather = `${call.arguments.city}：晴，22°C`; // 示例数据
+    messages.push({ role: 'tool', toolCallId: call.id, content: weather });
+  }
+  const next = await model.generate({ messages, tools });
+  console.log(next.outcome, next.text);
+  // next.toolCalls 非空表示还需要继续执行工具；此例只演示一轮。
+} else {
+  console.log(first.outcome, first.refusal ?? first.text, first.incompleteReason);
+}</code></pre></div><div class="note">实际服务可能拒绝某些工具 schema 或不支持工具调用。模型参数的校验、工具权限、副作用控制和多轮上限由应用或未来 ADK 负责。</div></section>
+
+<section class="section" id="continuation"><div class="head"><small>CONTEXT /</small><h2>推理模型的工具调用续接</h2></div><p class="intro">Responses 使用保存的响应 ID；Anthropic 使用原样保留的 thinking 和签名。</p><div class="shell"><div class="bar"><span>Responses：传入新增的工具结果</span><button class="copy" type="button">复制</button></div><pre><code>const first = await model.generate({ messages, tools });
+if (first.outcome === 'tool_calls' &amp;&amp; first.responseId) {
+  const toolMessages = await runTools(first.toolCalls); // 应用负责校验和执行
+  const next = await model.generate({
+    previousResponseId: first.responseId,
+    messages: toolMessages,
+    tools,
+  });
+}</code></pre></div><div class="shell"><div class="bar"><span>Anthropic：保留 assistant 协议数据</span><button class="copy" type="button">复制</button></div><pre><code>messages.push({
+  role: 'assistant', content: first.text, toolCalls: first.toolCalls,
+  continuation: first.continuation,
+});
+messages.push({ role: 'tool', toolCallId: first.toolCalls[0].id, content: '工具结果' });
+const next = await model.generate({ messages, tools });</code></pre></div><div class="note">Responses 续接依赖服务保存先前响应，系统指令需按需再次传入。Anthropic continuation 可能含敏感原始内容，请原样保存且不要跨模型使用。Completions 可通过 options.maxTokensField 选择 max_tokens 或 max_completion_tokens。</div></section>
+
+<section class="section" id="options"><div class="head"><small>05 /</small><h2>请求参数与返回值</h2></div><div class="table"><table><thead><tr><th>字段</th><th>作用</th><th>说明</th></tr></thead><tbody><tr><td><code>messages</code></td><td>消息数组，必填且非空</td><td>角色支持 system、developer、user、assistant、tool；developer 是否支持取决于协议及模型配置。content 为字符串。</td></tr><tr><td><code>tools</code></td><td>工具定义，可选</td><td>包含 name、可选 description 和 JSON inputSchema；Provider 不执行工具。</td></tr><tr><td><code>maxOutputTokens</code></td><td>输出 token 上限，可选</td><td>必须是正整数，不能超过模型 maxTokens；Anthropic 需要在配置或请求中提供，请求优先。</td></tr><tr><td><code>thinkingLevel</code></td><td>思考等级，可选</td><td>通过模型 thinkingLevelMap 映射至对应协议字段；不支持的等级在请求前报错。</td></tr><tr><td><code>temperature</code></td><td>采样参数，可选</td><td>要求有限数字；允许范围由目标服务决定。</td></tr><tr><td><code>signal</code></td><td>AbortSignal，可选</td><td>传递给 fetch，支持取消。</td></tr><tr><td><code>result.outcome</code></td><td>统一结果状态</td><td>completed、tool_calls、refused、incomplete 或 unknown；只有 tool_calls 可以执行工具。</td></tr><tr><td><code>result.refusal / incompleteReason</code></td><td>拒答内容或未完成原因</td><td>服务提供信息时返回；未完成时 text 可能包含部分输出。</td></tr><tr><td><code>result.text</code></td><td>文本内容</td><td>工具调用时可能为空字符串。</td></tr><tr><td><code>result.toolCalls</code></td><td>工具调用数组</td><td>每项包含 id、name 和 JSON 对象 arguments；没有调用时为空数组。</td></tr><tr><td><code>result.finishReason</code></td><td>完成原因</td><td>原始服务返回的字符串或 null；不同协议的值不同。</td></tr><tr><td><code>result.usage</code></td><td>输入和输出 token</td><td>可为 undefined；各 token 字段也可能缺失。</td></tr></tbody></table></div></section>
+
+<section class="section" id="types"><div class="head"><small>TYPE /</small><h2>配置类型与协议类型</h2></div><p class="intro">四种连接选项由 Alpha 定义；实际发给厂商的请求字段参考 OpenAI 和 Anthropic 官方 API，目前只覆盖已实现的子集。</p><div class="table"><table><thead><tr><th>adapter</th><th>连接配置类型</th><th>当前请求类型</th></tr></thead><tbody><tr><td><code>anthropic-messages</code></td><td><code>AnthropicOptions</code></td><td><code>AnthropicMessageRequest</code></td></tr><tr><td><code>openai-completions</code></td><td><code>OpenAICompletionsOptions</code></td><td><code>OpenAIChatCompletionRequest</code></td></tr><tr><td><code>openai-responses</code></td><td><code>OpenAIResponsesOptions</code></td><td><code>OpenAIResponseRequest</code></td></tr><tr><td><code>openai-codex-responses</code></td><td><code>OpenAICodexResponsesOptions</code></td><td>当前使用公开 Responses 请求子集。</td></tr></tbody></table></div><div class="note">请求类型依据官方接口定义自行整理，不是官方 SDK 的完整类型。Codex 连接由应用提供 OAuth token，并调用公开 Responses API；内部 Codex backend、登录和刷新尚未实现。</div><div class="shell"><div class="bar"><span>type-imports.ts</span><button class="copy" type="button">复制</button></div><pre><code>import type {
+  AnthropicOptions,
+  OpenAICompletionsOptions,
+  OpenAIResponsesOptions,
+  OpenAICodexResponsesOptions,
+  AnthropicMessageRequest,
+  OpenAIChatCompletionRequest,
+  OpenAIResponseRequest,
+} from '@alpha/provider';</code></pre></div></section>
+
+<section class="section" id="headers"><div class="head"><small>HTTP /</small><h2>注入 HTTP 请求头</h2></div><p class="intro">在 Provider 连接中设置默认 headers；单次 generate 可以提供额外 headers，且覆盖同名配置（名称不区分大小写）。</p><div class="shell"><div class="bar"><span>provider.config.ts · Provider 条目示例</span><button class="copy" type="button">复制</button></div><pre><code>gateway: {
+  adapter: 'openai-completions',
+  options: {
+    baseURL: 'https://gateway.example.com/v1',
+    apiKey: { env: 'MODEL_API_KEY' },
+    headers: {
+      'x-client-name': 'alpha',
+      'x-gateway-key': { env: 'GATEWAY_KEY' },
+    },
+  },
+  models: { chat: { id: 'your-model-id' } },
+}</code></pre></div><div class="shell"><div class="bar"><span>request.ts · 假设已配置 gateway</span><button class="copy" type="button">复制</button></div><pre><code>const model = provider.use('gateway', 'chat');
+const result = await model.generate({
+  messages: [{ role: 'user', content: '你好' }],
+  headers: {
+    'x-request-id': 'request-123',
+    'X-Client-Name': 'alpha-override', // 仅覆盖本次请求
+  },
+});</code></pre></div><div class="note">认证及协议头由内置适配器管理：authorization、proxy-authorization、cookie、set-cookie、anthropic-version、content-type 不能通过自定义 headers 覆盖；Anthropic 还保留 x-api-key。Completions / Responses 可以设置 x-api-key 或 api-key。环境变量在 use 时读取，轮换后重新 use；请求级 headers 每次直接传字符串。自定义 adapter 需自行实现 header 行为。</div></section>
+
+<section class="section" id="lifecycle"><div class="head"><small>06 /</small><h2>密钥轮换与取消</h2></div><p class="intro"><code>createProvider()</code> 不读取密钥；每次 <code>use()</code> 读取当前环境变量并创建新模型。之前创建的模型继续使用当时的密钥。</p><div class="shell"><div class="bar"><span>lifecycle.ts · 使用第 01 节的 provider</span><button class="copy" type="button">复制</button></div><pre><code>import { provider } from './provider.config.js';
+
+const previous = provider.use('thirdParty', 'chat');
+process.env.THIRD_PARTY_API_KEY = '新的服务端密钥';
+const current = provider.use('thirdParty', 'chat');
+// previous 仍持有旧凭证；current 使用新凭证。
+
+const controller = new AbortController();
+const timer = setTimeout(() => controller.abort(), 10_000);
+try {
+  const result = await current.generate({
+    messages: [{ role: 'user', content: '你好' }],
+    signal: controller.signal,
+  });
+  console.log(result.text);
+} finally {
+  clearTimeout(timer);
+}</code></pre></div><div class="note">上例仅演示进程内环境变量变化。真实部署应由服务端密钥管理和进程生命周期决定如何轮换；取消错误会透传 <code>AbortSignal.reason</code>。</div></section>
+
+<section class="section" id="errors"><div class="head"><small>07 /</small><h2>错误处理</h2></div><div class="shell"><div class="bar"><span>errors.ts · 使用第 01 节的 provider</span><button class="copy" type="button">复制</button></div><pre><code>import { ProviderError } from '@alpha/provider';
+import { provider } from './provider.config.js';
+
+try {
+  const model = provider.use('thirdParty', 'chat');
+  const result = await model.generate({ messages: [{ role: 'user', content: '你好' }] });
+  console.log(result.text);
+} catch (error) {
+  if (error instanceof ProviderError) {
+    console.error(error.code, error.path, error.status);
+    // 可按 code 分支；HTTP 状态码仅在可用时存在。
+  } else {
+    throw error; // 例如 AbortSignal 的取消原因
+  }
+}</code></pre></div><div class="table"><table><thead><tr><th>code</th><th>发生阶段</th><th>示例</th></tr></thead><tbody><tr><td>CONFIG_INVALID</td><td>createProvider</td><td>配置结构、连接参数或自定义 adapter 配置无效。</td></tr><tr><td>ADAPTER_NOT_FOUND</td><td>createProvider</td><td>指定的自定义 adapter 未注册。</td></tr><tr><td>PROVIDER_NOT_FOUND / MODEL_NOT_FOUND</td><td>use</td><td>传入不存在的 Provider 或模型别名；动态输入在运行时检查。</td></tr><tr><td>SECRET_MISSING / ADAPTER_INIT_FAILED</td><td>use</td><td>密钥不存在，或自定义 adapter 无法创建模型。</td></tr><tr><td>INVALID_INPUT / REQUEST_FAILED / RESPONSE_FAILED / INVALID_RESPONSE</td><td>generate</td><td>请求参数无效、HTTP 请求失败、服务报告生成失败，或响应格式无效。</td></tr></tbody></table></div><p class="intro">HTTP 错误不会包含响应正文。运行时错误可能没有 <code>path</code> 或 <code>status</code>，不要把上游请求内容和密钥记录到日志。</p></section>
+
+<section class="section" id="custom"><div class="head"><small>08 /</small><h2>实现自定义适配器</h2></div><p class="intro">自定义适配器提供 <code>validate</code> 和 <code>createModel</code>，返回 Alpha 自己的 <code>LanguageModel</code>。下面是无需网络的完整演示，不代表真实服务。</p><div class="shell"><div class="bar"><span>custom.ts · 可独立阅读</span><button class="copy" type="button">复制</button></div><pre><code>import { createProvider, defineProviderConfig } from '@alpha/provider';
+import type { ProviderAdapter } from '@alpha/provider';
+
+const echoAdapter: ProviderAdapter = {
+  validate(options) {
+    if (typeof options.prefix !== 'string') throw new Error('prefix is required');
+  },
+  createModel(options, modelId) {
+    const prefix = String(options.prefix);
+    return {
+      provider: 'echo',
+      modelId,
+      async *stream(input) {
+        yield { type: 'finish', result: await this.generate(input) };
+      },
+      async generate(input) {
+        const last = input.messages.at(-1);
+        return {
+          outcome: 'completed',
+          text: `${prefix}: ${last?.content ?? ''}`,
+          toolCalls: [],
+          finishReason: 'stop',
+        };
+      },
+    };
+  },
+};
+
+const config = defineProviderConfig({ providers: {
+  demo: {
+    adapter: 'echo',
+    options: { prefix: '收到' },
+    models: { chat: { id: 'echo-v1' } },
+  },
+} });
+const provider = createProvider(config, { adapters: { echo: echoAdapter } });
+const model = provider.use('demo', 'chat');
+const result = await model.generate({ messages: [{ role: 'user', content: '你好' }] });
+console.log(result.text); // 收到: 你好</code></pre></div><div class="note">真实适配器可使用第三个参数 <code>context.getEnv</code> 和 <code>context.fetch</code>。它负责自行处理认证、协议、错误与能力；验证及模型创建是同步的，内置 adapter 不允许覆盖。</div></section>
+
+<section class="section" id="testing"><div class="head"><small>09 /</small><h2>注入 fetch 做本地测试</h2></div><p class="intro">以下示例不连接真实服务，也不需要真实密钥。每个测试可以注入独立的网络和环境变量读取函数。</p><div class="shell"><div class="bar"><span>mock.ts · 可独立阅读</span><button class="copy" type="button">复制</button></div><pre><code>import { createProvider, defineProviderConfig } from '@alpha/provider';
+
+const config = defineProviderConfig({ providers: {
+  mock: {
+    adapter: 'openai-completions',
+    options: { baseURL: 'https://mock.invalid/v1', apiKey: { env: 'MOCK_KEY' } },
+    models: { chat: { id: 'mock-model' } },
+  },
+} });
+
+const fakeFetch: typeof fetch = async (_url, init) =&gt; {
+  const request = JSON.parse(String(init?.body));
+  console.log(request.model); // mock-model
+  return new Response(JSON.stringify({
+    choices: [{ message: { content: '模拟回复' }, finish_reason: 'stop' }],
+  }), { headers: { 'content-type': 'application/json' } });
+};
+const provider = createProvider(config, {
+  getEnv: (name) =&gt; name === 'MOCK_KEY' ? 'test-key' : undefined,
+  fetch: fakeFetch,
+});
+const result = await provider.use('mock', 'chat').generate({
+  messages: [{ role: 'user', content: '你好' }],
+});
+console.log(result.text); // 模拟回复</code></pre></div></section>
+
+<section class="section" id="limits"><div class="head"><small>10 /</small><h2>当前实现的边界</h2></div><div class="cardgrid"><div class="card"><h3>已支持</h3><p>静态配置、多 Provider 与模型、四种内置适配器、流式与非流式文本、工具调用数据映射、取消和自定义适配器。</p></div><div class="card"><h3>还没有</h3><p>多模态、自动执行工具、Agent 循环、自动重试或 fallback、异步密钥解析。</p></div><div class="card"><h3>验证状态</h3><p>已使用模拟 HTTP 测试流式、协议与工具往返；尚未使用真实厂商凭证做端到端验证。</p></div></div><div class="note">运行前先在仓库根目录执行 <code>pnpm install --frozen-lockfile</code> 和 <code>pnpm build</code>。包目前是 workspace 内部私有包；示例应放在声明了 <code>@alpha/provider</code> workspace 依赖的应用中。</div></section>
+<footer>ALPHA / PROVIDER COOKBOOK · 对照当前代码编写。实现细节见 packages/provider/README.md。</footer>
+</main></div><script>
+for (const button of document.querySelectorAll('.copy')) {
+  button.addEventListener('click', async () => {
+    const code = button.closest('.shell').querySelector('pre code').textContent;
+    try {
+      await navigator.clipboard.writeText(code);
+      button.textContent = '已复制';
+    } catch {
+      button.textContent = '请手动复制';
+    }
+    setTimeout(() => { button.textContent = '复制'; }, 2000);
+  });
+}
+</script></body></html>

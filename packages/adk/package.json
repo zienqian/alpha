@@ -1,0 +1,10 @@
+{
+  "name": "@alpha/adk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": { "build": "tsrs -p tsconfig.json", "typecheck": "tsrs -p tsconfig.json --noEmit", "lint": "eslint src" },
+  "nx": { "tags": ["layer:adk"] }
+}
