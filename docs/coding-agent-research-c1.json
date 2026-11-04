@@ -1,0 +1,349 @@
+{
+  "design": "Coding Agent C1",
+  "implementation": false,
+  "githubSnapshot": {
+    "fetchedAt": "2026-11-04T08:34:07.500Z",
+    "repositories": [
+      {
+        "repo": "anomalyco/opencode",
+        "stars": 224455,
+        "url": "https://github.com/anomalyco/opencode",
+        "defaultBranch": "dev",
+        "pushedAt": "2026-11-04T08:31:04Z",
+        "archived": false,
+        "license": "MIT",
+        "api": "https://api.github.com/repos/anomalyco/opencode",
+        "commit": "ffe6fed58334d921f64a86a8d86128bff5a4b566"
+      },
+      {
+        "repo": "cline/cline",
+        "stars": 71284,
+        "url": "https://github.com/cline/cline",
+        "defaultBranch": "main",
+        "pushedAt": "2026-11-04T05:52:06Z",
+        "archived": false,
+        "license": "Apache-2.0",
+        "api": "https://api.github.com/repos/cline/cline",
+        "commit": "7a7878cb52fc33967d8b464b3e3d899beac42d4d"
+      },
+      {
+        "repo": "Aider-AI/aider",
+        "stars": 49937,
+        "url": "https://github.com/Aider-AI/aider",
+        "defaultBranch": "main",
+        "pushedAt": "2026-05-22T14:02:20Z",
+        "archived": false,
+        "license": "Apache-2.0",
+        "api": "https://api.github.com/repos/Aider-AI/aider",
+        "commit": "5dc9490bb35f9729ef2c95d00a19ccd30c26339c"
+      },
+      {
+        "repo": "OpenHands/OpenHands",
+        "stars": 92610,
+        "url": "https://github.com/OpenHands/OpenHands",
+        "defaultBranch": "main",
+        "pushedAt": "2026-11-04T06:43:27Z",
+        "archived": false,
+        "license": "MIT",
+        "api": "https://api.github.com/repos/OpenHands/OpenHands",
+        "commit": "01d1970b8f96d576d8b42aad48fee5aa117f1cb8"
+      },
+      {
+        "repo": "openai/codex",
+        "stars": 133086,
+        "url": "https://github.com/openai/codex",
+        "defaultBranch": "main",
+        "pushedAt": "2026-11-04T08:13:58Z",
+        "archived": false,
+        "license": "Apache-2.0",
+        "api": "https://api.github.com/repos/openai/codex",
+        "commit": "71a4c070369fb761e51fd71009107f398d9f0f81"
+      },
+      {
+        "repo": "google-gemini/gemini-cli",
+        "stars": 108717,
+        "url": "https://github.com/google-gemini/gemini-cli",
+        "defaultBranch": "main",
+        "pushedAt": "2026-11-04T01:20:49Z",
+        "archived": false,
+        "license": "Apache-2.0",
+        "api": "https://api.github.com/repos/google-gemini/gemini-cli",
+        "commit": "89e9d25d67e7dc7cb0deb84ad2c3474b7a392d31"
+      },
+      {
+        "repo": "earendil-works/pi",
+        "stars": 119931,
+        "url": "https://github.com/earendil-works/pi",
+        "defaultBranch": "main",
+        "pushedAt": "2026-11-04T08:33:34Z",
+        "archived": false,
+        "license": "MIT",
+        "api": "https://api.github.com/repos/earendil-works/pi",
+        "commit": "37b38e9f650fe38cc59bb65e4258345556b115f8"
+      }
+    ],
+    "relatedRepositories": [
+      {
+        "repo": "OpenHands/software-agent-sdk",
+        "stars": 1351,
+        "url": "https://github.com/OpenHands/software-agent-sdk",
+        "pushedAt": "2026-11-04T08:39:45Z",
+        "defaultBranch": "main",
+        "api": "https://api.github.com/repos/OpenHands/software-agent-sdk"
+      }
+    ]
+  },
+  "methodology": "GitHub Stars snapshot, representative projects, not exhaustive ranking; architecture facts from official docs and pinned source files; Alpha choices are design inferences.",
+  "projects": [
+    {
+      "id": "pi",
+      "repo": "earendil-works/pi",
+      "name": "Pi",
+      "short": "可嵌入 / 工具扩展",
+      "label": "重点参照 · 轻装配",
+      "fact": "SDK 提供可嵌入会话与可替换资源；源码将 read、edit、write、shell 等工具作为工厂导出，AgentSession 单独管理会话资源。",
+      "note": "核对了 SDK 文档、工具入口与 AgentSession 源码。当前 Pi 已有较多扩展能力，不能简单概括为“只有四个工具”。",
+      "take": "保持模型、循环、工具和会话各有边界；通过标准插件增加能力，便捷工厂只做装配。",
+      "limit": "继续使用我们现有的 Session CAS 与保存协议；不再复刻 Pi 的 AgentSession、动态加载与分支存储。",
+      "sources": [
+        {
+          "label": "SDK 文档",
+          "url": "https://pi.dev/docs/latest/sdk"
+        },
+        {
+          "label": "工具工厂 · 固定 commit",
+          "url": "https://github.com/earendil-works/pi/blob/37b38e9f650fe38cc59bb65e4258345556b115f8/packages/coding-agent/src/core/tools/index.ts"
+        }
+      ],
+      "stars": 119931,
+      "repoUrl": "https://github.com/earendil-works/pi",
+      "commit": "37b38e9f650fe38cc59bb65e4258345556b115f8",
+      "apiUrl": "https://api.github.com/repos/earendil-works/pi"
+    },
+    {
+      "id": "opencode",
+      "repo": "anomalyco/opencode",
+      "name": "OpenCode",
+      "short": "权限 / 扩展入口",
+      "label": "参考 · 明确的操作策略",
+      "fact": "官方权限文档区分 allow / ask / deny，并支持按操作和输入配置规则；插件文档提供事件 hook 和工具扩展入口。",
+      "note": "本条参考公开 /docs 文档，不混用 /v2 文档的配置名称。权限匹配与插件加载机制不等于 OS 沙箱。",
+      "take": "把自动执行、请求宿主批准和拒绝作为明确决定；审批必须展示真实动作，并与实际执行绑定。",
+      "limit": "C1 使用静态 CodingPolicy 对象，不先引入层叠配置 DSL、插件自动安装或服务端控制平面。",
+      "sources": [
+        {
+          "label": "权限",
+          "url": "https://opencode.ai/docs/permissions/"
+        },
+        {
+          "label": "插件",
+          "url": "https://opencode.ai/docs/plugins/"
+        }
+      ],
+      "stars": 224455,
+      "repoUrl": "https://github.com/anomalyco/opencode",
+      "commit": "ffe6fed58334d921f64a86a8d86128bff5a4b566",
+      "apiUrl": "https://api.github.com/repos/anomalyco/opencode"
+    },
+    {
+      "id": "codex",
+      "repo": "openai/codex",
+      "name": "Codex",
+      "short": "宿主分层 / 执行隔离",
+      "label": "参考 · 执行边界",
+      "fact": "官方将 harness、宿主界面和应用上下文分开；app-server 提供运行与审批交互。文档分别描述 OS sandbox 和 approval policy 的职责。",
+      "note": "调研的是公开的 harness / 接入与权限设计；没有把模型本身、托管服务或本机 App 的私有实现当成开源代码。",
+      "take": "宿主管理 UI、授权和资源；执行环境明确报告是否存在系统隔离，模型和工具仍走统一网关。",
+      "limit": "C1 不新建 app-server / thread 协议；本地 Workspace 如实标记 none，容器和远程适配后续独立提供。",
+      "sources": [
+        {
+          "label": "Harness 与接入分层",
+          "url": "https://developers.openai.com/blog/codex-as-a-platform"
+        },
+        {
+          "label": "审批与 sandbox",
+          "url": "https://learn.chatgpt.com/docs/agent-approvals-security"
+        }
+      ],
+      "stars": 133086,
+      "repoUrl": "https://github.com/openai/codex",
+      "commit": "71a4c070369fb761e51fd71009107f398d9f0f81",
+      "apiUrl": "https://api.github.com/repos/openai/codex"
+    },
+    {
+      "id": "aider",
+      "repo": "Aider-AI/aider",
+      "name": "Aider",
+      "short": "编辑协议 / 代码上下文",
+      "label": "参考 · 精确编辑",
+      "fact": "官方说明了 whole、search/replace diff 等编辑格式；repo map 用符号与依赖关系筛选相关代码，控制提供给模型的上下文。",
+      "note": "参考编辑表达和上下文选择，不直接移植模型特定提示或声称某一种格式对所有模型最优。",
+      "take": "修改可定位、可预览、可检查；先做严格的单文件替换，把可读的相关上下文与完整归档分开。",
+      "limit": "C1 不实现多种 patch 语言、模糊自动修复或双模型 architect/editor；repo map 作为可选插件评审。",
+      "sources": [
+        {
+          "label": "编辑格式",
+          "url": "https://aider.chat/docs/more/edit-formats.html"
+        },
+        {
+          "label": "Repo map",
+          "url": "https://aider.chat/docs/repomap.html"
+        }
+      ],
+      "stars": 49937,
+      "repoUrl": "https://github.com/Aider-AI/aider",
+      "commit": "5dc9490bb35f9729ef2c95d00a19ccd30c26339c",
+      "apiUrl": "https://api.github.com/repos/Aider-AI/aider"
+    },
+    {
+      "id": "cline",
+      "repo": "cline/cline",
+      "name": "Cline",
+      "short": "SDK 分层 / 变更审阅",
+      "label": "参考 · UI 与运行层分离",
+      "fact": "当前 SDK 文档把 Agent loop、模型层、Node 运行编排分包；另有 hub / spoke / client 分工。IDE checkpoint 文档描述独立 shadow Git 快照。",
+      "note": "源码核对使用固定 commit。IDE checkpoint 与 SDK 部署模式分开看，不推断每种运行方式都有相同的恢复能力。",
+      "take": "核心运行能力不依赖 UI；审批展示具体变更；文件差异、会话记录和恢复操作各自有边界。",
+      "limit": "不把会话删除/回退等同于工作区回滚，也不在 C1 建 hub daemon、shadow Git 和双向历史恢复。",
+      "sources": [
+        {
+          "label": "SDK 包边界",
+          "url": "https://github.com/cline/cline/blob/7a7878cb52fc33967d8b464b3e3d899beac42d4d/docs/sdk/architecture/overview.mdx"
+        },
+        {
+          "label": "Hub / Spoke",
+          "url": "https://github.com/cline/cline/blob/7a7878cb52fc33967d8b464b3e3d899beac42d4d/docs/sdk/architecture/hub-spoke.mdx"
+        },
+        {
+          "label": "IDE checkpoints",
+          "url": "https://docs.cline.bot/core-workflows/checkpoints"
+        }
+      ],
+      "stars": 71284,
+      "repoUrl": "https://github.com/cline/cline",
+      "commit": "7a7878cb52fc33967d8b464b3e3d899beac42d4d",
+      "apiUrl": "https://api.github.com/repos/cline/cline"
+    },
+    {
+      "id": "openhands",
+      "repo": "OpenHands/OpenHands",
+      "name": "OpenHands",
+      "short": "执行环境 / SDK 组合",
+      "label": "参考 · 应用与环境独立",
+      "fact": "官方 SDK 文档分离 SDK、tools、workspace、agent-server；当前 OpenHands 主仓架构说明其为连接 Agent Server 的 Agent Canvas 应用。",
+      "note": "主仓 92,610 Stars；本次另外查询的 software-agent-sdk 为 1,351 Stars。关注度不能从应用仓转嫁给 SDK 仓。其工具并非都经 workspace 方法调用，Alpha 的 I/O 端口是本提案自己的选择。",
+      "take": "执行环境可以独立替换，工具与 UI 不绑死在单一部署方式；可信本地与隔离环境使用不同实现。",
+      "limit": "只提炼 Workspace 的替换边界；不复制 Python 对象模型、容器编排、远程服务与完整产品堆栈。",
+      "sources": [
+        {
+          "label": "SDK 架构",
+          "url": "https://docs.openhands.dev/sdk/arch/overview"
+        },
+        {
+          "label": "当前主仓架构",
+          "url": "https://github.com/OpenHands/OpenHands/blob/01d1970b8f96d576d8b42aad48fee5aa117f1cb8/docs/architecture.md"
+        },
+        {
+          "label": "SDK 仓库",
+          "url": "https://github.com/OpenHands/software-agent-sdk"
+        }
+      ],
+      "stars": 92610,
+      "repoUrl": "https://github.com/OpenHands/OpenHands",
+      "commit": "01d1970b8f96d576d8b42aad48fee5aa117f1cb8",
+      "apiUrl": "https://api.github.com/repos/OpenHands/OpenHands"
+    },
+    {
+      "id": "gemini",
+      "repo": "google-gemini/gemini-cli",
+      "name": "Gemini CLI",
+      "short": "策略 / 项目上下文",
+      "label": "参考 · 显式 policy",
+      "fact": "官方文档区分 CLI 与 core，工具调用由策略判断 allow / deny / ask_user；项目上下文通过 GEMINI.md 等独立机制收集。",
+      "note": "其 core 的职责比我们的微内核更广。文档中的规则优先级、配置层级与默认值不直接当成 Alpha 契约。",
+      "take": "工具执行决定明确，项目上下文有单独加载边界；无交互环境不能把需要询问的操作默认为许可。",
+      "limit": "保留现有 Provider 和 Session 分层，不把 Gemini 配置、模型回退、会话和工具实现都搬入 core。",
+      "sources": [
+        {
+          "label": "Core 职责",
+          "url": "https://geminicli.com/docs/core/"
+        },
+        {
+          "label": "Policy engine",
+          "url": "https://geminicli.com/docs/reference/policy-engine/"
+        }
+      ],
+      "stars": 108717,
+      "repoUrl": "https://github.com/google-gemini/gemini-cli",
+      "commit": "89e9d25d67e7dc7cb0deb84ad2c3474b7a392d31",
+      "apiUrl": "https://api.github.com/repos/google-gemini/gemini-cli"
+    }
+  ],
+  "sources": [
+    {
+      "title": "Pi SDK",
+      "url": "https://pi.dev/docs/latest/sdk",
+      "note": "可嵌入会话、资源配置与宿主集成；本提案使用已有 Session 而非复制其会话 API。"
+    },
+    {
+      "title": "Pi 工具入口（固定 commit）",
+      "url": "https://github.com/earendil-works/pi/blob/37b38e9f650fe38cc59bb65e4258345556b115f8/packages/coding-agent/src/core/tools/index.ts",
+      "note": "核对工具工厂、工具集合与环境参数；另读取同一 commit 的 AgentSession 文件。"
+    },
+    {
+      "title": "OpenCode Permissions / Plugins",
+      "url": "https://opencode.ai/docs/permissions/",
+      "note": "权限三态；插件说明另见 https://opencode.ai/docs/plugins/，使用公开 /docs 版本。"
+    },
+    {
+      "title": "Codex as a platform",
+      "url": "https://developers.openai.com/blog/codex-as-a-platform",
+      "note": "官方 harness / 宿主 / 接入分层，参考思想而非接入新的模型运行时。"
+    },
+    {
+      "title": "Codex Agent approvals & security",
+      "url": "https://learn.chatgpt.com/docs/agent-approvals-security",
+      "note": "区分审批策略与 OS sandbox，避免把路径限制当系统隔离。"
+    },
+    {
+      "title": "Aider edit formats",
+      "url": "https://aider.chat/docs/more/edit-formats.html",
+      "note": "编辑协议与模型输出形态；Alpha C1 只采用一种严格替换操作。"
+    },
+    {
+      "title": "Aider repository map",
+      "url": "https://aider.chat/docs/repomap.html",
+      "note": "符号 / 依赖与有界上下文；作为后续可选能力的参考。"
+    },
+    {
+      "title": "Cline SDK 包架构（固定 commit）",
+      "url": "https://github.com/cline/cline/blob/7a7878cb52fc33967d8b464b3e3d899beac42d4d/docs/sdk/architecture/overview.mdx",
+      "note": "当前 Agent、模型、共享契约与 Node 运行层的依赖方向。"
+    },
+    {
+      "title": "Cline Hub / Spoke（固定 commit）",
+      "url": "https://github.com/cline/cline/blob/7a7878cb52fc33967d8b464b3e3d899beac42d4d/docs/sdk/architecture/hub-spoke.mdx",
+      "note": "多客户端协调与执行进程拆分，C1 暂不引入此部署层。"
+    },
+    {
+      "title": "Cline IDE checkpoints",
+      "url": "https://docs.cline.bot/core-workflows/checkpoints",
+      "note": "文件 checkpoint 与 shadow Git；不能推导我们的 Session 已有文件回滚。"
+    },
+    {
+      "title": "OpenHands Software Agent SDK 架构",
+      "url": "https://docs.openhands.dev/sdk/arch/overview",
+      "note": "SDK / tools / workspace / agent-server 分层；SDK 仓为 OpenHands/software-agent-sdk，Stars 单独查询。"
+    },
+    {
+      "title": "OpenHands 主仓当前架构（固定 commit）",
+      "url": "https://github.com/OpenHands/OpenHands/blob/01d1970b8f96d576d8b42aad48fee5aa117f1cb8/docs/architecture.md",
+      "note": "主仓当前为 Agent Canvas，不能用旧架构图代表查询时源码。"
+    },
+    {
+      "title": "Gemini CLI core / Policy Engine",
+      "url": "https://geminicli.com/docs/core/",
+      "note": "CLI 与 core 的职责；策略文档为 https://geminicli.com/docs/reference/policy-engine/。"
+    }
+  ]
+}

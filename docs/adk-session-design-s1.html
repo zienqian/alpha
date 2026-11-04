@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alpha ADK · Session 扩展设计 S1</title>
+<style>
+:root{--bg:#f6f7fa;--paper:#fff;--ink:#182333;--muted:#56677d;--line:#dce3eb;--accent:#315bd6;--soft:#edf2ff;--green:#13705b;--amber:#92590d;--red:#b04040;--code:#162235;font-family:Inter,"Segoe UI","Microsoft YaHei",sans-serif;font-size:15px;line-height:1.75;color-scheme:light}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}button,select{cursor:pointer}button{padding:9px 15px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);min-height:42px}button:hover{border-color:var(--accent)}button[aria-pressed=true],button.primary{background:var(--accent);border-color:var(--accent);color:#fff}button:disabled{opacity:.5;cursor:default}:focus-visible{outline:3px solid #d69522;outline-offset:3px}a{color:var(--accent);text-underline-offset:4px}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(32px,4vw,54px);line-height:1.2;letter-spacing:-1.8px;margin-bottom:22px}h2{font-size:29px;line-height:1.4;letter-spacing:-.6px;margin-bottom:12px}h3{font-size:18px;margin-bottom:9px}p{margin-bottom:15px}code{font:13px/1.7 Consolas,"Cascadia Code",monospace;overflow-wrap:anywhere}p code,li code,td code{background:var(--soft);padding:2px 5px;border-radius:4px}pre{background:var(--code);color:#e5edfa;padding:24px;border-radius:8px;overflow:auto;margin:0;max-height:680px;tab-size:2}pre code{white-space:pre;overflow-wrap:normal}ul,ol{padding-left:23px}li{margin:7px 0}[hidden]{display:none!important}.shell{display:grid;grid-template-columns:232px minmax(0,1fr);max-width:1600px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;padding:29px 23px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:22px}.brand{font-size:23px;letter-spacing:-1px;font-weight:750}.brand span{color:var(--accent)}.sidebar nav{display:grid;gap:5px}.sidebar a{color:var(--muted);text-decoration:none;border-radius:6px;padding:8px 10px;font-size:14px}.sidebar a:hover,.sidebar a.active{background:var(--soft);color:var(--accent)}.sidebar nav b{display:inline-block;width:25px;font-size:11px;opacity:.65}.sidebar small{margin-top:auto;color:var(--muted);font-size:12px}.main{padding:40px 4.6vw 50px;min-width:0}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:45px}.badge{display:inline-block;padding:3px 10px;font-size:12px;background:var(--soft);color:var(--accent);border-radius:5px}.muted{color:var(--muted)}.eyebrow{font-size:12px;font-weight:700;letter-spacing:2px;color:var(--accent);margin-bottom:14px}.lead{font-size:18px;color:var(--muted);max-width:850px}.hero-meta{display:grid;grid-template-columns:repeat(3,1fr);border-block:1px solid var(--line);gap:24px;margin:30px 0 0;padding:25px 0}.hero-meta strong{display:block;font-size:20px}.hero-meta span{font-size:13px;color:var(--muted)}section{padding-top:64px;scroll-margin-top:24px}.section-no{font-size:12px;font-weight:650;letter-spacing:2px;color:var(--accent);margin-bottom:8px}.intro{max-width:850px;color:var(--muted)}.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:24px;margin:22px 0}.callout{padding:17px 21px;background:var(--soft);border-left:3px solid var(--accent);margin:22px 0}.callout.warning{background:#fff5e5;border-color:#c88b30}.callout p:last-child,.panel p:last-child{margin-bottom:0}.toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:18px 0}.split{display:grid;grid-template-columns:1fr 1fr;gap:20px}.split>.panel{margin:0}.table-wrap{overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:22px 0}table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;vertical-align:top;padding:15px 17px;border-bottom:1px solid var(--line)}th{background:#f0f3f8;font-weight:650;white-space:nowrap}tr:last-child td{border:0}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.framework{text-align:left;padding:16px;min-height:96px}.framework b{display:block;font-size:17px}.framework span{display:block;font-size:12px;opacity:.85}.source{font-size:13px;margin-top:13px}.comparison{display:grid;grid-template-columns:1fr 1fr;gap:24px}.kicker{font-size:12px;color:var(--green);font-weight:700;letter-spacing:.8px}.diagram-wrap{overflow:auto}.diagram{display:block;min-width:710px;width:100%;height:auto}.diagram .node rect{fill:#fff;stroke:#bdcbe2;stroke-width:1.4;rx:9}.diagram .node text{fill:var(--ink);font:14px "Segoe UI","Microsoft YaHei",sans-serif}.diagram .node .sub{fill:var(--muted);font-size:12px}.diagram .node{cursor:pointer;outline:none}.diagram .node[aria-pressed=true] rect{fill:var(--soft);stroke:var(--accent);stroke-width:2}.diagram .node:focus-visible rect{stroke:#d69522;stroke-width:3}.diagram .edge{fill:none;stroke:#8799b4;stroke-width:1.7}.diagram .edge-label{fill:var(--muted);font:12px "Segoe UI","Microsoft YaHei",sans-serif}.node-detail{min-height:116px;border-top:1px solid var(--line);padding-top:18px}.relation{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:14px}.entity{border:1px solid var(--line);border-radius:8px;padding:16px;background:#fff}.entity strong{display:block}.entity span{display:block;color:var(--muted);font-size:12px}.arrow{color:var(--muted);font-size:13px;text-align:center}.api-controls{display:flex;justify-content:space-between;align-items:center;gap:15px;margin:18px 0}.api-tabs{display:flex;gap:8px;flex-wrap:wrap}.code-label{font-size:12px;color:var(--muted);margin:10px 0}.scenario-controls{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:end}label{display:block;font-size:13px;color:var(--muted)}select,input,textarea{border:1px solid #aebbce;border-radius:6px;background:#fff;color:var(--ink);padding:9px;max-width:100%}select{width:100%}.scenario-actions{display:flex;gap:8px;flex-wrap:wrap}.steps{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;list-style:none;padding:0;margin:26px 0}.steps li{padding:9px 5px;border-bottom:3px solid var(--line);font-size:11px;color:var(--muted);text-align:center;margin:0}.steps li.active{border-color:var(--accent);color:var(--accent);font-weight:750}.steps li.done{border-color:var(--green);color:var(--green)}.sim-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.sim-metric{background:#f3f6fb;padding:17px;border-radius:7px}.sim-metric label{font-size:11px}.sim-metric strong{font-size:20px;display:block;overflow-wrap:anywhere}.sim-detail{min-height:100px;margin-top:22px}.status-line{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0;font-size:12px}.tag{padding:3px 9px;border:1px solid var(--line);border-radius:5px;background:#fff}.tag.good{color:var(--green);border-color:#a7cfc2}.tag.warn{color:var(--amber);border-color:#e1c48f}.source-list{padding-left:21px;font-size:14px}.source-list li{margin:13px 0}.source-list small{display:block;color:var(--muted)}.review-grid{display:grid;grid-template-columns:1fr 180px;gap:14px;align-items:center}.review-grid p{margin:0}.review-grid small{display:block;color:var(--muted)}textarea{width:100%;min-height:110px;resize:vertical;margin-top:8px}.review-status{font-size:12px;color:var(--muted);min-height:22px}.phase{display:grid;grid-template-columns:75px 1fr;gap:20px;padding:20px 0;border-bottom:1px solid var(--line)}.phase:last-child{border:0}.phase b{color:var(--accent)}.phase p{margin:0}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}footer{margin-top:55px;padding-top:22px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}details{margin:18px 0}summary{cursor:pointer;color:var(--accent);font-weight:600}details>div{padding-top:15px}.toast{position:fixed;bottom:22px;right:24px;background:var(--code);color:#fff;padding:11px 18px;border-radius:7px;font-size:13px;z-index:20;max-width:80vw}.print-only{display:none}@media(max-width:1050px){.shell{grid-template-columns:190px minmax(0,1fr)}.main{padding:32px 30px}.sidebar{padding:25px 15px}.cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.shell{display:block}.sidebar{position:static;height:auto;padding:18px 20px;border-right:0;border-bottom:1px solid var(--line);gap:12px}.sidebar nav{display:flex;overflow:auto;gap:5px}.sidebar nav a{white-space:nowrap}.sidebar small{display:none}.main{padding:25px 20px}.top{margin-bottom:28px}.hero-meta{gap:12px}.hero-meta strong{font-size:17px}.split,.comparison,.sim-grid{grid-template-columns:1fr}.scenario-controls{grid-template-columns:1fr}.review-grid{grid-template-columns:1fr}.relation{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}.steps{grid-template-columns:repeat(4,1fr)}h2{font-size:25px}.panel{padding:18px}.api-controls{align-items:flex-start;flex-direction:column}section{padding-top:46px}pre{padding:18px}.diagram{min-width:690px}.hero-meta span{font-size:11px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}@media print{body{background:#fff}.sidebar,.toolbar,.scenario-controls,.review-controls,.api-controls button,.top button,.toast{display:none!important}.shell{display:block}.main{padding:0}.panel,pre{break-inside:avoid}.print-only{display:block}.api-panel[hidden]{display:block!important}pre{max-height:none;white-space:pre-wrap;font-size:10px}pre code{white-space:pre-wrap}section{padding-top:30px}.hero-meta{margin-top:15px}a{color:#203b6b}.diagram{min-width:0}.cards{display:none}.review-grid select,textarea{border:1px solid #ccc}}
+</style>
+</head>
+<body><div class="shell">
+<aside class="sidebar"><div class="brand">alpha<span> / </span>adk</div><div><span class="badge">SESSION · S1</span></div><nav aria-label="文档目录">
+<a href="#decision"><b>01</b>分包与命名</a><a href="#research"><b>02</b>社区方案</a><a href="#modules"><b>03</b>模块关系</a><a href="#model"><b>04</b>数据与所有权</a><a href="#api"><b>05</b>API 设计</a><a href="#lifecycle"><b>06</b>生命周期演练</a><a href="#boundary"><b>07</b>一致性与边界</a><a href="#scope"><b>08</b>首版范围</a><a href="#review"><b>09</b>Review</a><a href="#sources"><b>10</b>调研来源</a>
+</nav><small>基于现有 core P0<br>2026-11-04 · S1 已实现<br>47 项 Session 测试通过<br>core 公开 API 保持不变</small></aside>
+<main class="main"><div class="top"><span class="badge">S1 已实现 / 本地验收通过 / 交互说明</span><button id="print">打印 / 保存 PDF</button></div>
+<div class="callout"><strong>S1 已实现并验收：</strong><a href="adk-session-s1-spec.md">S1 Spec</a> · <a href="adk-session-s1-todo.md">S1 TODO（12 / 12）</a> · <a href="adk-session-s1-validation.md">验收记录</a> · <a href="../packages/adk-session/README.md">使用说明</a>。47 项 Session 测试、149 项全仓库测试通过；本页交互仍是本地协议演示。</div><header><div class="eyebrow">PERSIST CONVERSATIONS, KEEP THE KERNEL SMALL</div><h1>会话独立管理，<br>执行留在微内核。</h1><p class="lead">已新增可选包 <strong>@alpha/adk-session</strong>。它持有会话记录、组合 Agent 生命周期、接入存储适配器。已有 <code>@alpha/adk/core</code> 继续拥有 Loop、工具执行和运行一致性。</p><div class="hero-meta"><div><strong>1 个可选包</strong><span>会话服务与 core 单向依赖</span></div><div><strong>0 项 core 改动</strong><span>首版只组合已有公开 API</span></div><div><strong>2 个明确结果</strong><span>运行结果 / 保存结果分别表达</span></div></div></header>
+
+<section id="decision"><div class="section-no">01 / DECISION</div><h2>独立能力包，以 Session 作为统一术语</h2><p class="intro">Session 是跨多次运行的持久会话；Run 是一次 core.prompt。Thread 在本方案中只是“会话”的同义词，不再增加 ThreadManager、ThreadStore 或第二套 ID。</p>
+<div class="table-wrap"><table><thead><tr><th>方案</th><th>对 core 的影响</th><th>保存语义</th><th>判断</th></tr></thead><tbody><tr><td>直接内置到 core</td><td>引入存储、会话索引和恢复职责</td><td>可以控制，但依赖面扩大</td><td>与微内核定位不匹配</td></tr><tr><td>只做 core Plugin</td><td>需新增加载、状态读取和受控保存 hook</td><td>现有 observe 不被等待，也没有完整快照</td><td>当前接口不足以单独承担</td></tr><tr><td><strong>独立 Session 包组合 Agent</strong></td><td>使用 prompt / state / replaceMessages / close</td><td>Session 等待 core 完成，再等待存储提交</td><td><strong>推荐首版</strong></td></tr></tbody></table></div>
+<div class="callout"><strong>可插拔体现为显式组合。</strong>业务可以选择是否使用 Session，替换 SessionStore 和上下文选择策略。Session 拥有 Agent 的使用权，但不重写 Loop；首版不提供一个功能重复的 <code>createSessionPlugin()</code>。</div>
+<div class="split"><div class="panel"><h3>包布局</h3><pre><code>packages/adk/           → @alpha/adk/core
+packages/adk-session/   → @alpha/adk-session
+  src/index.ts         # 管理器、契约、内存适配器
+  src/sqlite/          # 可选 SQLite 子入口
+
+@alpha/adk-session/sqlite
+  → createSqliteSessionStore(...)</code></pre></div><div class="panel"><h3>依赖原则</h3><ul><li>Session 只引用 core 公开类型；通过注入的 Agent 工厂获取实例。</li><li>core 不感知 sessionId、数据库、目录或存储适配器。</li><li>SQLite 驱动只从 sqlite 子入口加载；具体驱动在实施前按 Node 版本验证。</li><li>首版采用一个新增包；未来重型数据库驱动可再拆独立适配器包。</li></ul></div></div>
+</section>
+
+<section id="research"><div class="section-no">02 / RESEARCH</div><h2>四种实现，各自解决不同层次的问题</h2><p class="intro">查阅官方文档，并核对 Pi 的 SessionManager 源码。以下“借鉴 / 取舍”为针对当前 alpha core 的设计判断，不是对框架能力的排名。</p><div class="cards" role="group" aria-label="选择调研框架"><button class="framework" data-framework="pi" aria-pressed="true"><b>Pi</b><span>会话树 / AgentSession</span></button><button class="framework" data-framework="adk" aria-pressed="false"><b>Google ADK</b><span>SessionService / Runner</span></button><button class="framework" data-framework="langgraph" aria-pressed="false"><b>LangGraph</b><span>Thread / Checkpointer</span></button><button class="framework" data-framework="mastra" aria-pressed="false"><b>Mastra</b><span>Memory / Resource / Thread</span></button></div>
+<div class="panel" id="framework-detail" aria-live="polite"></div>
+<div class="table-wrap"><table><thead><tr><th>框架</th><th>核心切分</th><th>alpha 采用</th><th>首版暂缓</th></tr></thead><tbody><tr><td><a href="https://pi.dev/docs/latest/sdk" target="_blank" rel="noreferrer">Pi</a></td><td>AgentSession 运行外层 + SessionManager 会话记录</td><td>记录与执行分层；完整归档和模型上下文分离</td><td>树分支、完整编码 Agent 服务集合</td></tr><tr><td><a href="https://adk.dev/sessions/session/" target="_blank" rel="noreferrer">Google ADK</a></td><td>Runner 配合可替换 SessionService</td><td>统一管理接口、存储替换、身份作用域</td><td>应用 / 用户 / 临时状态命名空间体系</td></tr><tr><td><a href="https://docs.langchain.com/oss/javascript/langgraph/checkpointers" target="_blank" rel="noreferrer">LangGraph</a></td><td>Thread 中保存图状态 checkpoint</td><td>明确提交边界与故障恢复承诺</td><td>图任务恢复、审批暂停与节点级 checkpoint</td></tr><tr><td><a href="https://mastra.ai/docs/memory/overview" target="_blank" rel="noreferrer">Mastra</a></td><td>Memory 使用 resource / thread 隔离数据</td><td>会话归属与会话 ID 分开；存储适配器独立</td><td>向量召回、工作记忆、自动摘要策略</td></tr></tbody></table></div>
+<p class="source">调研基于 2026-11-04 可访问的官方文档；当前 Pi 官方文档指向 <code>earendil-works/pi</code>。网页 latest / main 会变化，本稿不把这些引用当作已锁定依赖版本。</p>
+</section>
+
+<section id="modules"><div class="section-no">03 / MODULE RELATIONSHIPS</div><h2>关系图：包依赖与运行调用分别查看</h2><p class="intro">切换视图，点击模块查看职责和禁止穿透的边界。依赖图中的箭头表示“使用目标公开契约”；运行图表示实际调用方向。</p><div class="toolbar" role="group" aria-label="关系图视图"><button data-graph="dependency" aria-pressed="true">包依赖</button><button data-graph="runtime" aria-pressed="false">运行调用</button></div>
+<div class="panel"><div class="diagram-wrap"><svg class="diagram" viewBox="0 0 900 445" role="group" aria-label="Session、core、Provider 与存储适配器关系图"><title>ADK Session 模块关系</title><desc>Session 依赖 core 的公开契约，core 不反向依赖 Session。运行时 Session 调用 Agent 和存储，Agent 调用 LanguageModel。</desc><defs><marker id="arrow-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8799b4"/></marker></defs><g id="graph-edges"></g>
+<g class="node" data-node="app" role="button" tabindex="0" aria-label="查看应用职责" aria-pressed="false"><rect x="340" y="10" width="220" height="70"/><text x="450" y="38" text-anchor="middle">应用 / HTTP / CLI</text><text class="sub" x="450" y="59" text-anchor="middle">作用域 · 模型 · 工具 · 工厂</text></g>
+<g class="node" data-node="session" role="button" tabindex="0" aria-label="查看 Session 包职责" aria-pressed="true"><rect x="70" y="175" width="300" height="85"/><text x="220" y="204" text-anchor="middle">@alpha/adk-session</text><text class="sub" x="220" y="226" text-anchor="middle">Manager / Session / Store 契约</text><text class="sub" x="220" y="247" text-anchor="middle">准入 → 恢复 → 执行 → 保存</text></g>
+<g class="node" data-node="core" role="button" tabindex="0" aria-label="查看 core 职责" aria-pressed="false"><rect x="530" y="175" width="300" height="85"/><text x="680" y="204" text-anchor="middle">@alpha/adk/core</text><text class="sub" x="680" y="226" text-anchor="middle">Agent / Loop / 工具网关</text><text class="sub" x="680" y="247" text-anchor="middle">单次运行一致性 · 进程内历史</text></g>
+<g class="node" data-node="store" role="button" tabindex="0" aria-label="查看存储适配器职责" aria-pressed="false"><rect x="70" y="345" width="300" height="75"/><text x="220" y="374" text-anchor="middle">Memory / SQLite / 自定义 Store</text><text class="sub" x="220" y="396" text-anchor="middle">实现 SessionStore · 原子 CAS</text></g>
+<g class="node" data-node="provider" role="button" tabindex="0" aria-label="查看 Provider 职责" aria-pressed="false"><rect x="530" y="345" width="300" height="75"/><text x="680" y="374" text-anchor="middle">@alpha/provider / LanguageModel</text><text class="sub" x="680" y="396" text-anchor="middle">协议 · 凭证 · 模型流</text></g></svg></div><p class="muted" id="graph-caption"></p><div class="node-detail" id="node-detail" aria-live="polite"></div></div>
+<div class="callout"><strong>core 可以单独使用。</strong>无状态或短时任务仍直接 <code>createAgent().prompt()</code>。需要会话管理时使用 <code>session.prompt()</code>；Session 内部仍只调用现有 Agent，业务不要持有其裸实例并绕过保存入口。</div>
+</section>
+
+<section id="model"><div class="section-no">04 / DATA & OWNERSHIP</div><h2>归档是完整记录，上下文是本次选择</h2><div class="panel"><div class="relation"><div class="entity"><strong>Session</strong><span>稳定 ID + agentKey + 元数据</span><span>namespace 内唯一</span></div><div class="arrow">1 → N</div><div class="entity"><strong>SessionTurn</strong><span>一轮已收束的 core 运行</span><span>RunResult + 本轮新增 Message[]</span></div><div class="arrow">0 → N</div><div class="entity"><strong>Message</strong><span>直接复用 core 只读消息</span><span>保留配对与 continuation</span></div></div></div>
+<div class="table-wrap"><table><thead><tr><th>标识 / 对象</th><th>归属与语义</th><th>生命周期</th></tr></thead><tbody><tr><td>sessionId</td><td>一个持久会话，不与 agentId 绑定</td><td>跨运行、跨进程</td></tr><tr><td>requestId</td><td>调用方提供；同一逻辑请求重试时保持不变</td><td>会话内唯一，关联输入摘要与已保存结果</td></tr><tr><td>runId / agentId</td><td>由 core 分配，分别标识一次运行与实例</td><td>恢复会话后可产生新 Agent 实例</td></tr><tr><td>revision</td><td>存储版本；准入与最终提交各做一次 CAS</td><td>单调递增；不同于消息 seq</td></tr><tr><td>pending</td><td>执行前持久化的受理标记，含 requestId、输入摘要、唯一 token</td><td>结果与消息原子保存后移除</td></tr><tr><td>agentKey</td><td>应用维护的兼容性版本，覆盖模型 / 协议、指令与工具配置</td><td>不匹配时拒绝运行，不能静默复用 opaque continuation</td></tr></tbody></table></div>
+<div class="split"><div class="panel"><div class="kicker">ARCHIVE</div><h3>SessionStore 持有完整会话</h3><p>每轮只向逻辑归档追加该轮新增的正式消息。保存 core 原始终态和 <code>historyStatus</code>；不保存预览 delta、函数、客户端或 appContext。</p><p>出现 <code>outcome_unknown</code> 时，整段会话标为 blocked。省略旧轮次不能绕过这个判断。</p></div><div class="panel"><div class="kicker">WORKING CONTEXT</div><h3>Agent 持有运行工作集</h3><p><code>selectContext</code> 返回按原顺序排列的完整 runId 子集。Session 将其消息交给 <code>replaceMessages()</code> 校验，再执行下一轮。</p><p>默认选全部，超出 core 容量就拒绝；示例显式选择最近 12 轮。归档保留原文，首版不自动摘要。</p></div></div>
+<p class="source">运行前记录导入基线；运行结束后检查基线前缀未改变，仅保存其后新增消息。工具批次作为完整轮次的一部分保留，禁止把 toolResult 单独裁掉。单轮自身的容量限制仍由 core 执行。</p>
+</section>
+
+<section id="api"><div class="section-no">05 / API DESIGN</div><h2>工厂统一 createX，行为方法保持明确动词</h2><p class="intro">下列 API 已在 packages/adk-session 实现，类型附件与代码同步。Agent 工厂仍使用现有 <code>createAgent</code>；Session 不再提供第二套模型、工具或 schema 定义。</p><div class="api-controls"><div class="api-tabs" role="group" aria-label="API 示例选择"><button data-api="usage" aria-pressed="true">业务用法</button><button data-api="manage" aria-pressed="false">恢复与管理</button><button data-api="store" aria-pressed="false">适配器契约</button><button data-api="types" aria-pressed="false">完整类型</button></div><button id="copy-code">复制当前代码</button></div>
+<div class="api-panel" id="api-usage"><div class="code-label">实际 API 用法 · provider 与身份作用域由应用传入</div><pre><code>// Implemented S1 API. Runnable offline examples: packages/adk-session/examples/conversation.js.
+import { createAgent } from '@alpha/adk/core';
+import { createSessionManager } from '@alpha/adk-session';
+import { createSqliteSessionStore } from '@alpha/adk-session/sqlite';
+import type { LanguageModel } from '@alpha/provider';
+
+// The application supplies its existing provider.use(...) model and authenticated scope.
+export async function example(model: LanguageModel, namespace: string) {
+  const store = await createSqliteSessionStore({ filename: './sessions.db' });
+  const sessions = createSessionManager({
+    namespace,
+    agentKey: 'support-agent@1',
+    store,
+    createAgent: ({ signal }) =&gt; createAgent({
+      model,
+      instructions: '根据已有对话回答，明确区分事实与推测。',
+      signal,
+    }),
+    // This selects context; the full archive remains available in the store.
+    selectContext: ({ turns }) =&gt; turns.slice(-12).map(turn =&gt; turn.run.runId),
+  });
+  try {
+    const session = await sessions.createSession({ title: '产品咨询' });
+    const unsubscribe = session.subscribe(event =&gt; {
+      if (event.type === 'agent' &amp;&amp; event.event.type === 'model.delta') {
+        console.log(event.event.text);
+      }
+    });
+    try {
+      const result = await session.prompt('请记住我的预算是 500 元。', {
+        requestId: 'request-001',
+      });
+      console.log(result.run.status, result.persistence.status);
+      if (result.persistence.status === 'pending') {
+        const saved = await session.flush();
+        if (saved.status === 'pending') throw new Error(saved.code);
+      }
+    } finally {
+      unsubscribe();
+      await session.close();
+    }
+    // Reopen after close; after a process restart, rebuild store/manager with the same
+    // namespace and agentKey, then open the saved session ID in exactly this way.
+    const resumed = await sessions.openSession(session.id);
+    const result = await resumed.prompt('我的预算是多少？', { requestId: 'request-002' });
+    if (result.persistence.status === 'pending') {
+      const saved = await resumed.flush();
+      if (saved.status === 'pending') throw new Error(saved.code);
+    }
+    console.log(result.run.text);
+  } finally {
+    try { await sessions.close(); }
+    finally { await store.close(); }
+  }
+}
+</code></pre></div>
+<div class="api-panel" id="api-manage" hidden><div class="code-label">同一个 manager 绑定一个可信 namespace 与 agentKey</div><pre><code>// 先从列表选择已有会话；读取不会调用模型。
+const page = await sessions.listSessions({ limit: 20 });
+const snapshot = await sessions.getSession('session-123');
+const session = await sessions.openSession('session-123');
+
+const result = await session.prompt('继续上次的话题', {
+  requestId: 'client-request-002', // 重试时必须保持相同
+});
+if (result.persistence.status === 'pending') {
+  const saved = await session.flush(); // 只重试提交，不重跑工具
+  console.log(saved.status);
+}
+
+await session.close(); // 关闭实例，不删除持久会话
+
+// 元数据更新也校验版本；metadata 按整对象替换。
+const current = await sessions.getSession('session-123');
+if (current) {
+  await sessions.updateSession('session-123', {
+    title: '产品咨询 · 第二轮',
+  }, { expectedRevision: current.revision });
+}
+
+// 显式删除：使用最新 revision，拒绝存在 pending 的会话。
+// 成功删除后旧句柄再次 prompt 必须返回 SESSION_NOT_FOUND；ID 不可复用。
+// await sessions.deleteSession(id, { expectedRevision });
+
+await sessions.close(); // 关闭所有自己持有的句柄
+await store.close();    // store 由应用创建，也由应用释放</code></pre></div>
+<div class="api-panel" id="api-store" hidden><div class="code-label">适配器作者使用 · 方法为异步 · 静态实现使用对象 + satisfies</div><pre><code>interface SessionStore {
+  readonly durability: 'memory' | 'transactional';
+  create(key: SessionKey, data: SessionData): Promise&lt;SessionSnapshot&gt;;
+  read(key: SessionKey): Promise&lt;SessionSnapshot | undefined&gt;;
+  list(namespace: string, options?: ListOptions): Promise&lt;Page&lt;SessionSummary&gt;&gt;;
+  compareAndSet(
+    key: SessionKey,
+    expectedRevision: number,
+    next: SessionData | null, // null = 写入墓碑，ID 不可复用
+  ): Promise&lt;CasResult&gt;;
+  close(): Promise&lt;void&gt;;
+}
+
+type CasResult =
+  | { readonly applied: true; readonly revision: number }
+  | { readonly applied: false };
+
+// 有连接和配置的适配器使用 createXStore(...)。
+// 无资源的静态实现可使用对象 + satisfies SessionStore。
+// create / CAS 必须原子；不能用无锁的 read → write 冒充 CAS。
+// SQLite 必须在一个事务中检查 revision、写记录并推进版本。</code></pre><div class="callout warning"><strong>S1 的成本明确：</strong>契约按整个 SessionData 快照读写，存储成本随会话长度增长，定位为有配额的首版。长归档的分页和 append-log 契约属于后续优化；不承诺无限历史或多机数据库性能。</div></div>
+<div class="api-panel" id="api-types" hidden><div class="code-label">完整声明附件 · 与实现契约同步 · 可独立下载</div><pre><code>/**
+ * ADK Session S1 — implemented API, 2026-11-04.
+ * Normative semantics: docs/adk-session-s1-spec.md.
+ * Source: packages/adk-session/src/contracts.ts and package exports.
+ * The session package composes the existing public core API; core is unchanged.
+ */
+declare module '@alpha/adk-session' {
+  import type { AdkError, Agent, AgentEvent, Awaitable, DeepReadonly, JsonObject, Message, RunResult } from '@alpha/adk/core';
+
+  export interface SessionKey { readonly namespace: string; readonly id: string }
+  export interface SessionTurn {
+    readonly requestId: string;
+    readonly inputHash: string;
+    readonly run: DeepReadonly&lt;RunResult&gt;;
+    /** Only messages appended by this run, including finalized tool outcomes. */
+    readonly messages: readonly Message[];
+    readonly historyStatus: 'ready' | 'blocked';
+    readonly committedAt: string;
+    /** Revision of this turn's atomic commit; reused in idempotent receipts. */
+    readonly committedRevision: number;
+  }
+  export interface PendingRequest {
+    readonly requestId: string;
+    readonly inputHash: string;
+    /** Unique admission token; never reused or automatically taken over. */
+    readonly token: string;
+    readonly startedAt: string;
+  }
+  export interface SessionData {
+    readonly formatVersion: 1;
+    readonly id: string;
+    /** Application-managed compatibility identity for model, tools and instructions. */
+    readonly agentKey: string;
+    readonly title: string;
+    readonly metadata: JsonObject;
+    readonly createdAt: string;
+    readonly updatedAt: string;
+    readonly turns: readonly SessionTurn[];
+    readonly pending: PendingRequest | null;
+  }
+  export interface SessionSnapshot {
+    readonly revision: number;
+    readonly data: SessionData;
+  }
+  export interface SessionSummary {
+    readonly id: string;
+    readonly revision: number;
+    readonly title: string;
+    readonly updatedAt: string;
+    readonly status: 'ready' | 'pending' | 'blocked';
+  }
+  export interface Page&lt;T&gt; { readonly items: readonly T[]; readonly cursor?: string }
+  export interface ListOptions { readonly cursor?: string; readonly limit?: number }
+  export interface SessionError extends Error {
+    readonly code: string;
+    /** Present when a create acknowledgement was lost and the ID needs inspection. */
+    readonly sessionId?: string;
+    readonly cleanupErrors?: readonly Readonly&lt;AdkError&gt;[];
+  }
+  export interface SessionLimits {
+    readonly maxTurns: number; // default 1000; admission limit
+    /** default 64 MiB; admission threshold, not a reason to discard a finalized turn */
+    readonly maxArchiveBytes: number;
+  }
+  export type CasResult =
+    | { readonly applied: true; readonly revision: number }
+    | { readonly applied: false };
+
+  /** Adapter-author API. Every operation is scoped; CAS MUST be atomic. */
+  export interface SessionStore {
+    /** memory is intentionally volatile; transactional promises survive process restart. */
+    readonly durability: 'memory' | 'transactional';
+    create(key: SessionKey, data: SessionData): Promise&lt;SessionSnapshot&gt;;
+    read(key: SessionKey): Promise&lt;SessionSnapshot | undefined&gt;;
+    list(namespace: string, options?: ListOptions): Promise&lt;Page&lt;SessionSummary&gt;&gt;;
+    /** next=null tombstones the ID. Applied writes increment revision; IDs cannot be reused. */
+    compareAndSet(key: SessionKey, expectedRevision: number, next: SessionData | null): Promise&lt;CasResult&gt;;
+    close(): Promise&lt;void&gt;;
+  }
+
+  export type SaveResult =
+    | { readonly status: 'saved'; readonly revision: number }
+    | { readonly status: 'pending'; readonly code: 'STORE_UNAVAILABLE' | 'COMMIT_CONFLICT' };
+  export interface SessionResult {
+    readonly requestId: string;
+    /** Unchanged core outcome; storage failure must not rewrite execution facts. */
+    readonly run: DeepReadonly&lt;RunResult&gt;;
+    readonly persistence: SaveResult;
+  }
+  export type SessionEvent =
+    | { readonly type: 'agent'; readonly sessionId: string; readonly event: AgentEvent }
+    | { readonly type: 'session.saved'; readonly sessionId: string; readonly requestId: string; readonly revision: number }
+    | { readonly type: 'session.unsaved'; readonly sessionId: string; readonly requestId: string; readonly code: 'STORE_UNAVAILABLE' | 'COMMIT_CONFLICT' };
+  export interface SessionState {
+    readonly status: 'idle' | 'running' | 'saving' | 'unsaved' | 'closed';
+    /** Eligibility follows the stored archive, even when context omits old turns. */
+    readonly historyStatus: 'ready' | 'pending' | 'blocked';
+    readonly revision: number;
+  }
+  export interface Session {
+    readonly id: string;
+    readonly state: SessionState;
+    /** requestId must remain stable for retries of the same logical input. */
+    prompt(input: string, options: { readonly requestId: string; readonly signal?: AbortSignal }): Promise&lt;SessionResult&gt;;
+    subscribe(listener: (event: SessionEvent) =&gt; void): () =&gt; void;
+    abort(reason?: string): void;
+    /** Retry only the captured storage commit. Unknown persisted pending rejects. */
+    flush(): Promise&lt;SaveResult&gt;;
+    /** Abort/drain core, flush once, then close its Agent. May reject if unsaved. */
+    close(): Promise&lt;void&gt;;
+  }
+  export interface SessionManagerOptions&lt;C = undefined&gt; {
+    readonly namespace: string;
+    readonly agentKey: string;
+    readonly store: SessionStore;
+    readonly limits?: Partial&lt;SessionLimits&gt;;
+    /** Observer errors do not affect execution or saving; no raw error payloads. */
+    readonly onObserverError?: (error: Readonly&lt;AdkError&gt;) =&gt; void;
+    /** Return a fresh, idle Agent with empty history; ownership transfers to Session. */
+    readonly createAgent: (context: { readonly sessionId: string; readonly signal?: AbortSignal }) =&gt; Promise&lt;Agent&lt;C&gt;&gt;;
+    /** Select complete turns, in original order. Default selects all turns. */
+    readonly selectContext?: (context: {
+      readonly turns: readonly SessionTurn[];
+      readonly signal?: AbortSignal;
+    }) =&gt; Awaitable&lt;readonly string[]&gt;; // selected core runIds
+  }
+  export interface SessionManager {
+    createSession(input?: { readonly id?: string; readonly title?: string; readonly metadata?: JsonObject }): Promise&lt;Session&gt;;
+    openSession(id: string): Promise&lt;Session&gt;;
+    getSession(id: string): Promise&lt;SessionSnapshot | undefined&gt;;
+    listSessions(options?: ListOptions): Promise&lt;Page&lt;SessionSummary&gt;&gt;;
+    updateSession(id: string, patch: { readonly title?: string; readonly metadata?: JsonObject }, options: { readonly expectedRevision: number }): Promise&lt;SessionSnapshot&gt;;
+    deleteSession(id: string, options: { readonly expectedRevision: number }): Promise&lt;void&gt;;
+    /** Closes owned Session handles; the borrowed store remains application-owned. */
+    close(): Promise&lt;void&gt;;
+  }
+  export function createSessionManager&lt;C = undefined&gt;(options: SessionManagerOptions&lt;C&gt;): SessionManager;
+  export function createMemorySessionStore(): SessionStore;
+}
+
+declare module '@alpha/adk-session/sqlite' {
+  import type { SessionStore } from '@alpha/adk-session';
+  /** Optional Node adapter. No SQLite driver is imported by the package root. */
+  export function createSqliteSessionStore(options: { readonly filename: string }): Promise&lt;SessionStore&gt;;
+}
+</code></pre></div>
+<div class="toolbar"><a href="adk-session-api-s1.d.ts" download>下载 API 声明 .d.ts</a><span class="muted">·</span><a href="adk-session-example-s1.ts" download>下载使用示例 .ts</a></div>
+<div class="table-wrap"><table><thead><tr><th>接口</th><th>确定约定</th></tr></thead><tbody><tr><td>createSessionManager</td><td>同步组合配置，不发起 I/O。绑定 namespace / agentKey；store 由应用持有。</td></tr><tr><td>createSession / openSession</td><td>异步创建 / 读取会话句柄；不是恢复未完成的执行栈。Agent 可延迟到 prompt 前创建。</td></tr><tr><td>session.prompt</td><td>拒绝同句柄并发；从存储重新读取并校验记录，再尝试原子准入。返回运行结果与保存结果。</td></tr><tr><td>session.flush</td><td>仅处理本句柄捕获的待保存结果；没有待保存内容且持久记录 ready 时返回当前确认 revision；记录仍有未知 pending 时拒绝。</td></tr><tr><td>session.subscribe</td><td>转发 core 事件并包装 sessionId；core run.end 只表示执行结束，session.saved 才表示存储确认。</td></tr><tr><td>session.close / manager.close</td><td>幂等；取消并等待运行，尝试 flush，再释放所有自有 Agent。即使保存失败也释放资源，并报告失败。</td></tr></tbody></table></div>
+</section>
+
+<section id="lifecycle"><div class="section-no">06 / INTERACTIVE WALKTHROUGH</div><h2>一轮运行，两个提交边界</h2><p class="intro">离线设计模拟，不调用模型或数据库。选择场景后逐步推进，观察 core 运行结果、Session 状态和存储版本的区别。</p><div class="panel"><div class="scenario-controls"><div><label for="scenario">演练场景</label><select id="scenario"><option value="success">正常：执行完成并保存</option><option value="save-failure">保存失败：工具已成功，只补写</option><option value="crash">进程中断：pending 留存，禁止自动重跑</option><option value="conflict">并发冲突：第二个调用在执行前退出</option></select></div><div class="scenario-actions"><button id="sim-reset">重置</button><button class="primary" id="sim-next">下一步</button><button id="sim-flush" hidden>仅重试保存</button></div></div>
+<ol class="steps" id="sim-steps"><li>0 · 已保存</li><li>1 · 装载</li><li>2 · 准入</li><li>3 · 执行</li><li>4 · 收束</li><li>5 · 保存</li><li>6 · 返回</li></ol><div class="sim-grid"><div class="sim-metric"><label>Session 句柄</label><strong id="sim-session">idle</strong></div><div class="sim-metric"><label>存储 revision</label><strong id="sim-revision">4</strong></div><div class="sim-metric"><label>本请求工具执行次数</label><strong id="sim-tools">0</strong></div></div><div class="status-line"><span class="tag" id="sim-pending">pending = null</span><span class="tag" id="sim-run">RunResult = 尚未产生</span><span class="tag" id="sim-save">保存结果 = 尚未产生</span></div><div class="sim-detail" aria-live="polite"><h3 id="sim-title">已保存的会话</h3><p id="sim-text"></p></div></div>
+<div class="table-wrap"><table><thead><tr><th>步骤</th><th>执行者</th><th>成功后的事实</th></tr></thead><tbody><tr><td>读取 / 校验 / 构建工作集</td><td>Session + Agent.replaceMessages</td><td>scope、格式、agentKey、配对与 blocked 状态已检查；尚未执行模型</td></tr><tr><td>CAS 写入 pending</td><td>SessionStore</td><td>旧 revision 匹配且没有 pending，取得唯一准入 token；必须确认后才能 prompt</td></tr><tr><td>await agent.prompt</td><td>现有 core</td><td>Loop 收束、工具结果配对完整、RunResult 和历史快照已确定</td></tr><tr><td>CAS 保存 turn + 清除 pending</td><td>SessionStore</td><td>同一个 token 和 revision 下原子提交，已发生的工具事实不被丢弃或改写</td></tr><tr><td>返回 SessionResult</td><td>Session</td><td>成功返回 saved；保存失败返回 pending，并禁止下一轮继续</td></tr></tbody></table></div>
+</section>
+
+<section id="boundary"><div class="section-no">07 / GUARANTEES & LIMITS</div><h2>恢复到已保存轮次，保守处理未知执行</h2><div class="callout"><strong>首版承诺：</strong>正常保存的会话可在重启后继续。首版没有执行栈、模型流或工具调用级 checkpoint；进程在运行中终止时，保留“已受理、结果未确认”的标记并阻止自动重放。</div>
+<div class="table-wrap"><table><thead><tr><th>边界场景</th><th>规定行为</th></tr></thead><tbody><tr><td>读取 / 构建 Agent / 投影失败</td><td>在准入前 reject，零模型与工具调用；清理新建但未使用的 Agent。</td></tr><tr><td>pending 写入成功但确认丢失</td><td>原进程可读取并核对自己生成的 token，且必须能证明尚未调用 core。不能确认则停止；新进程看到 pending 一律要求人工核对。</td></tr><tr><td>同 requestId、同输入重试</td><td>已提交：直接返回原 RunResult 与原提交 receipt，不发新 core 事件。进行中或结果未知：拒绝执行。输入不同：REQUEST_MISMATCH。</td></tr><tr><td>多个进程打开同一 Session</td><td>每次运行前刷新记录；原子准入只允许一个获胜。失败者不调用 core。S1 不使用 TTL 自动接管，不靠最终保存 CAS 来防止重复副作用。</td></tr><tr><td>core 完成，保存失败</td><td>保持原 RunResult；句柄变 unsaved，保留内存中的完整提交数据。flush 使用同一 token 重试提交；严禁重跑 prompt。</td></tr><tr><td>最终提交成功但确认丢失</td><td>重新读取已保存的 requestId、inputHash 与内容摘要；匹配则确认 saved，不能重复追加。已提交 receipt 需要由存储保留。</td></tr><tr><td>进程中断后重新打开</td><td>pending 可供读取与检查，但 prompt 返回 RECOVERY_REQUIRED。不能把上一轮当作“没发生”；人工核对 / 修复 API 留到 S2 独立设计。</td></tr><tr><td>core 返回 blocked</td><td>照实保存完整消息与状态；后续运行拒绝恢复。当前 replaceMessages 不接受 outcome_unknown，因此不能伪装为 ready 导入。</td></tr><tr><td>signal 中止 / close</td><td>只取消执行，不跳过收束后保存；存储不能复用已 aborted 的运行 signal。close 会等待必要 I/O，S1 不承诺强制终止或固定时限。</td></tr><tr><td>模型或配置发生变化</td><td>agentKey 不符时 AGENT_MISMATCH；应用负责版本准确性。Session 不推测 continuation 是否能跨模型迁移。</td></tr></tbody></table></div>
+<details><summary>存储契约必须落实的细节</summary><div class="panel"><ul><li>所有操作携带 namespace；由服务端可信身份构造。namespace 是隔离地址，不替代鉴权。</li><li>create 唯一插入；初始 revision 为 0；CAS 成功推进一个版本，失败不修改任何字段。</li><li>Session 服务禁止 pending 存在时重命名、改元数据或删除；CAS 再次阻止检查与写入之间的竞态。元数据不发送给模型。</li><li>输入摘要使用规范化的输入与 agentKey；信号和网络传输细节不进入幂等判定。存储还须保留每轮确认 revision，供重复请求返回相同 receipt。</li><li>单条数据使用格式版本；未知版本或坏数据返回 SESSION_FORMAT_INVALID，禁止当作空会话。首版只写 v1，不做隐式迁移。</li><li>Memory 的 saved 仅表示写入内存；SQLite 的 saved 以数据库事务提交为准，验收覆盖进程重启，不额外承诺所有硬件断电场景。</li><li>SQLite 子入口要求多进程原子 CAS；实现必须验证事务、busy timeout、唯一键和回滚行为。JSONL 暂缓：纯 appendFile 不能满足本稿的原子准入契约。</li><li>新运行默认受 1000 轮 / 64 MiB 归档准入阈值约束。已受理轮次即使跨过归档阈值也要完整保存；存储物理容量不足时保留 unsaved，不丢掉已确认工具结果。</li></ul></div></details>
+<div class="split"><div class="panel"><h3>S1 可以做到</h3><ul><li>隔离与列出会话，修改元数据，显式删除。</li><li>恢复已保存的对话，等待最终持久化。</li><li>阻止同会话并发受理，识别重复请求。</li><li>完整归档与有限运行上下文分离。</li></ul></div><div class="panel"><h3>独立后续能力</h3><ul><li>运行中断点续执行、审批暂停恢复。</li><li>外部副作用跨进程 exactly-once。</li><li>TTL 锁接管、分布式任务调度。</li><li>分支、摘要、向量记忆、跨 Agent 历史迁移。</li></ul></div></div>
+</section>
+
+<section id="scope"><div class="section-no">08 / DELIVERY SCOPE</div><h2>先完成线性会话，再验证更复杂的扩展</h2><p class="intro">S1 是 Session 模块首版，不改变现有 core P0 规范。以下范围已实现；具体行为和验收以 S1 Spec / TODO / 验收记录为准。</p><div class="panel"><div class="phase"><b>S1-01–03</b><div><h3>工程与数据</h3><p>独立包、公开契约、严格归档编码和 Memory Store；声明依赖边界并验证不可变快照、分页与墓碑。</p></div></div><div class="phase"><b>S1-04–07</b><div><h3>会话与运行</h3><p>管理 API、Agent 组合、完整轮次选择、pending 准入、请求去重、最终提交与 flush。</p></div></div><div class="phase"><b>S1-08–10</b><div><h3>生命周期与持久化</h3><p>取消、关闭、事件与错误隔离；SQLite 事务、跨进程竞争、恢复与两处强制进程终止测试。</p></div></div><div class="phase"><b>S1-11–12</b><div><h3>示例与验收</h3><p>Memory / SQLite 可运行示例、包 README、G1–G11 证据、构建产物与全仓库回归。</p></div></div></div>
+<div class="table-wrap"><table><thead><tr><th>验收证据</th><th>必须证明</th></tr></thead><tbody><tr><td>进程 A 保存 → 关闭 → 进程 B 打开</td><td>续接历史一致，模型收到的工具批次与 continuation 原值保留</td></tr><tr><td>两工作进程竞争同一个 revision</td><td>只有准入成功者调用模型 / 工具；不是“执行两次再丢一次结果”</td></tr><tr><td>执行后存储失败 / 确认丢失</td><td>结果事实保留；flush 与重复请求都不重复工具副作用</td></tr><tr><td>准入后、工具后强制结束进程</td><td>重启看到 pending 并拒绝自动执行；绝不误判为新请求</td></tr><tr><td>长历史选择最近完整轮次</td><td>工作集缩小，归档不被裁剪；blocked 不能通过选择器绕过</td></tr><tr><td>越域、坏版本、变更 agentKey、删除竞态</td><td>全部在执行前拒绝或由原子 CAS 仲裁；不静默创建空会话</td></tr></tbody></table></div>
+<p class="source">下一阶段可评审 Pi 风格分支树和 append-only 归档。只有确实需要“工具执行前后都落盘”时，再单独设计 core 的可等待提交边界；不能把现有异步 observer 当作可靠 checkpoint。</p>
+</section>
+
+<section id="review"><div class="section-no">09 / REVIEW</div><h2>记录对实施基线的补充意见</h2><p class="intro">以下架构方向已在会话中确认；本地选项用于记录补充意见。导出 JSON 不自动修改 spec 或实现进度。</p><div class="panel"><div class="review-grid">
+<div><strong>独立包 @alpha/adk-session</strong><small>首版不改变 core，使用 facade 组合 Agent</small></div><select data-review="package" aria-label="独立包决定"><option value="pending">待评审</option><option value="agree">认可</option><option value="change">需要调整</option></select>
+<div><strong>只使用 Session 命名</strong><small>Thread 作为同义词，不增加第二套对象</small></div><select data-review="naming" aria-label="命名决定"><option value="pending">待评审</option><option value="agree">认可</option><option value="change">需要调整</option></select>
+<div><strong>等待轮次保存 + 提前持久化 pending</strong><small>持久化失败可补写，进程中断需核对</small></div><select data-review="durability" aria-label="保存语义决定"><option value="pending">待评审</option><option value="agree">认可</option><option value="change">需要调整</option></select>
+<div><strong>Memory + SQLite</strong><small>JSONL、其他数据库按契约另行接入</small></div><select data-review="stores" aria-label="存储决定"><option value="pending">待评审</option><option value="agree">认可</option><option value="change">需要调整</option></select>
+<div><strong>线性会话优先</strong><small>分支树、摘要、运行 checkpoint 留待后续</small></div><select data-review="scope" aria-label="范围决定"><option value="pending">待评审</option><option value="agree">认可</option><option value="change">需要调整</option></select>
+</div><div style="margin-top:24px"><label for="review-notes">Review 备注</label><textarea id="review-notes" placeholder="例如：希望包名更短，或首版必须支持 JSONL……"></textarea></div><div class="toolbar review-controls"><button class="primary" id="export-review">导出 Review JSON</button><button id="reset-review">重置本页记录</button></div><div class="review-status" id="review-status" aria-live="polite"></div></div>
+</section>
+
+<section id="sources"><div class="section-no">10 / SOURCES</div><h2>官方资料与当前仓库依据</h2><ol class="source-list"><li><a href="https://pi.dev/docs/latest/sdk" target="_blank" rel="noreferrer">Pi · SDK / Session lifecycle / Session storage</a><small>AgentSession 外层、SessionManager、上下文恢复与会话生命周期。</small></li><li><a href="https://pi.dev/docs/latest/session-format" target="_blank" rel="noreferrer">Pi · Session File Format</a><small>JSONL、id / parentId 树结构、版本和上下文构建。</small></li><li><a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/session-manager.ts" target="_blank" rel="noreferrer">Pi · SessionManager 源码</a><small>入口数据类型、buildSessionContext、文件与内存记录职责；来源由 Pi 官方文档链接确认。</small></li><li><a href="https://adk.dev/sessions/session/" target="_blank" rel="noreferrer">Google ADK · Session 与 SessionService</a><small>Runner 与 SessionService 的交互、会话状态和存储实现；各语言支持范围不同。</small></li><li><a href="https://docs.langchain.com/oss/javascript/langgraph/persistence" target="_blank" rel="noreferrer">LangGraph · Persistence</a> / <a href="https://docs.langchain.com/oss/javascript/langgraph/checkpointers" target="_blank" rel="noreferrer">Checkpointers</a><small>Thread checkpoint 与跨线程 Store 的区别，以及故障和持久化边界。</small></li><li><a href="https://mastra.ai/docs/memory/overview" target="_blank" rel="noreferrer">Mastra · Memory</a> / <a href="https://mastra.ai/docs/storage" target="_blank" rel="noreferrer">Storage</a><small>Resource / Thread、会话记忆与存储域的分层。</small></li><li><a href="adk-p0-spec.md">本地 · core P0 spec</a> / <a href="../packages/adk/src/core/contracts.ts">公开契约</a> / <a href="../packages/adk/src/core/internal/agent.ts">Agent 实现</a> / <a href="../packages/adk/src/core/internal/events.ts">事件实现</a><small>当前 core 具备历史替换、只读快照、等待执行和关闭；observer 不等待完成。本方案基于这些已存在的接口。</small></li></ol></section>
+<footer>Alpha ADK · Session Design S1 · 2026-11-04<br>S1 已实现并通过本地验收。页面交互为协议演示，不发起模型请求、不连接数据库；真实运行请使用包内示例。</footer>
+</main></div><div id="toast" class="toast" role="status" hidden></div>
+<script>
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const frameworks={
+ pi:{title:'Pi：会话运行外层与记录管理分离',fact:'AgentSession 包含运行相关能力；SessionManager 管理持久或内存条目树及活动叶节点。会话用 JSONL 保存，id / parentId 表达分支，模型上下文由选中路径重建。',take:'采用记录与运行分层、归档与上下文分离；首版先做线性会话。',limit:'Pi 的 AgentSession 还承担队列、压缩和扩展运行时，alpha 不把这些全部放进会话首版。',url:'https://pi.dev/docs/latest/sdk',extra:'https://pi.dev/docs/latest/session-format'},
+ adk:{title:'Google ADK：Runner 驱动 SessionService',fact:'SessionService 负责创建、读取、追加事件、列出和删除会话。Runner 装载会话并追加执行事件，服务据此更新历史与状态。',take:'采用统一管理接口和可替换存储；归属作用域与会话 ID 分开。',limit:'本稿不复制其完整 state 命名空间。官方各语言对数据库和托管服务的支持并不一致。',url:'https://adk.dev/sessions/session/'},
+ langgraph:{title:'LangGraph：Thread 承载图状态 checkpoint',fact:'Checkpointer 以 thread_id 组织图状态快照，支持恢复、时间旅行和人工介入；跨线程长期数据交给 Store。它的 checkpoint 粒度比会话消息归档更深。',take:'借鉴明确的持久化边界，区分历史恢复与执行恢复。',limit:'alpha 首版只恢复已保存轮次。图节点、待执行任务和审批恢复都不属于本次 Session 合同。',url:'https://docs.langchain.com/oss/javascript/langgraph/checkpointers',extra:'https://docs.langchain.com/oss/javascript/langgraph/persistence'},
+ mastra:{title:'Mastra：Thread / Resource 配合 Memory',fact:'Memory 以 resource 标识归属实体，以 thread 隔离会话；Storage 可替换。消息历史、工作记忆和召回能力分别服务不同的上下文需求。',take:'采用归属与会话隔离，以及独立存储适配器。',limit:'记忆召回和摘要属于上下文策略，不并入 Session 管理与 core。',url:'https://mastra.ai/docs/memory/overview',extra:'https://mastra.ai/docs/storage'}
+};
+function showFramework(key){const f=frameworks[key];$$('[data-framework]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.framework===key)));$('#framework-detail').innerHTML='<h3>'+f.title+'</h3><p>'+f.fact+'</p><div class="comparison"><div><div class="kicker">采用的思路</div><p>'+f.take+'</p></div><div><div class="kicker">本方案的取舍</div><p>'+f.limit+'</p></div></div><p class="source"><a target="_blank" rel="noreferrer" href="'+f.url+'">官方说明</a>'+(f.extra?' · <a target="_blank" rel="noreferrer" href="'+f.extra+'">补充资料</a>':'')+'</p>';}
+$$('[data-framework]').forEach(b=>b.addEventListener('click',()=>showFramework(b.dataset.framework)));showFramework('pi');
+const nodeDetails={app:['应用 / 宿主','构造可信 namespace、兼容性 agentKey、Provider 与工具；注入 createAgent 工厂，持有并最终关闭 Store。用户界面只使用 Session，不直接绕过它调用其内部 Agent。'],session:['Session 包 · 会话与提交边界','管理索引、恢复完整轮次、准入与最终保存；控制所拥有 Agent 的生命周期。只调用现有公开方法，不拥有 callModel、callTool 或可替换 Loop。'],core:['Core · 单次运行一致性','拥有内置 Loop、预算、取消、工具配对和进程内历史。没有 sessionId、Store、SQLite 或会话列表概念；首版 API 保持不变。'],store:['Store 适配器 · 原子存储','实现 SessionStore 的作用域隔离、创建、读取、分页与 CAS。Memory 是易失实现；SQLite 以数据库事务实现跨进程准入。适配器不执行 Agent。'],provider:['Provider · 已有模型能力','LanguageModel 由应用注入 core；协议编码、凭证和网络流属于 Provider。Session 仅保存 core 已确认的消息，原值保留 continuation。']};
+function showNode(key){$$('[data-node]').forEach(n=>n.setAttribute('aria-pressed',String(n.dataset.node===key)));$('#node-detail').innerHTML='<h3>'+nodeDetails[key][0]+'</h3><p>'+nodeDetails[key][1]+'</p>';}
+$$('[data-node]').forEach(n=>{n.addEventListener('click',()=>showNode(n.dataset.node));n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showNode(n.dataset.node);}});});showNode('session');
+function edge(d,label,x,y){return '<path class="edge" marker-end="url(#arrow-head)" d="'+d+'"/><text class="edge-label" x="'+x+'" y="'+y+'" text-anchor="middle">'+label+'</text>';}
+function showGraph(mode){$$('[data-graph]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.graph===mode)));let edges=edge('M 390 80 L 220 150 L 220 173',mode==='dependency'?'使用 Session API':'session.prompt()',260,115)+edge('M 510 80 L 680 150 L 680 173',mode==='dependency'?'注入 Agent 工厂':'创建 Agent（工厂）',640,115)+edge('M 372 213 L 527 213',mode==='dependency'?'import type':'Agent.prompt()',450,199)+edge('M 680 262 L 680 342',mode==='dependency'?'import type':'model.stream()',748,305);edges+=mode==='dependency'?edge('M 220 343 L 220 263','实现公开 Store 契约',117,307):edge('M 220 262 L 220 343','read / CAS',130,307);$('#graph-edges').innerHTML=edges;$('#graph-caption').textContent=mode==='dependency'?'核心方向：Session → core → Provider；存储适配器实现 Session 包里的契约。应用负责具体装配，core 没有反向依赖。':'Session 分别调用 Agent 与 Store；core 只调用模型与工具。保存成功通知发生在 core.run.end 之后。';}
+$$('[data-graph]').forEach(b=>b.addEventListener('click',()=>showGraph(b.dataset.graph)));showGraph('dependency');
+let api='usage';$$('[data-api]').forEach(b=>b.addEventListener('click',()=>{api=b.dataset.api;$$('[data-api]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));$$('.api-panel').forEach(p=>p.hidden=p.id!=='api-'+api);}));
+let toastTimer;function toast(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,2500);}
+$('#copy-code').addEventListener('click',async()=>{const content=$('#api-'+api+' code').textContent;try{await navigator.clipboard.writeText(content);toast('代码已复制');}catch{const r=document.createRange();r.selectNodeContents($('#api-'+api+' code'));const s=window.getSelection();s.removeAllRanges();s.addRange(r);toast('已选中代码，请按 Ctrl+C 复制');}});
+let stage=0,scenario='success',flushed=false;
+const stages=[['已保存的会话','数据库中已有确认记录，当前版本为 4。尚未受理本次请求。'],['装载与上下文校验','重新读取记录，校验 namespace、agentKey 与状态。选取完整轮次导入空闲 Agent；此时还没有副作用。'],['先写 pending，再允许执行','CAS 将版本从 4 推进到 5，并写入唯一 token。只有拿到确认的请求才能进入 core.prompt。'],['core 推进 Loop','模型发出工具请求，core 校验并执行。本演示中工具已完成一次写操作，Session 不介入执行路径。'],['core 已完成','core 返回 completed 和完整消息快照。run.end 不是保存确认；接下来从快照提取本轮新增消息。'],['原子保存本轮结果','CAS 核对版本与 token，把 Turn、提交 receipt 和 pending 清除一起提交，版本推进到 6。'],['返回可确认结果','SessionResult 同时包含原始 RunResult 与 persistence: saved。下一轮可以受理。']];
+function renderSim(){const crash=scenario==='crash'&&stage>=3,conflict=scenario==='conflict'&&stage>=2,unsaved=scenario==='save-failure'&&stage>=5&&!flushed;let status=stage===0?'idle':stage<4?'running':stage<6?'saving':'idle',revision=stage<2?4:stage<5?5:6,tools=stage>=3?1:0,pending=stage>=2&&stage<5,run=stage>=4?'completed':'尚未产生',save=stage>=5?'saved':'尚未产生',title=stages[stage][0],description=stages[stage][1];if(unsaved){status='unsaved';revision=5;pending=true;save='pending';title='工具已完成，保存没有确认';description='返回 run: completed + persistence: pending。当前句柄保留完整结果并拒绝新 prompt；点击“仅重试保存”，执行次数不会增加。';}if(crash){status='进程已终止';revision=5;pending=true;run='进程内结果丢失';save='未确认';title='重启后：RECOVERY_REQUIRED';description='存储只有受理标记，无法判断执行到了哪一步。读取与检查仍然允许；禁止自动清除 pending、重跑工具或凭超时接管。本图已知工具执行一次，实际新进程无法据此确认外部结果。';}if(conflict){status='请求 B 被拒绝';revision=5;pending=true;tools=0;run='未启动';save='未产生';title='CAS 冲突：拒绝第二个执行者';description='请求 A 已占用 revision 5 的 pending。请求 B 的 expectedRevision=4 不匹配，在调用 core 之前退出。本请求工具执行次数保持为 0。';}if(flushed){status='idle';revision=6;pending=false;save='saved';title='补写成功，没有重新执行';description='flush 用同一个 token 与捕获的结果完成提交。工具执行次数仍为 1，可以继续下一轮。';}$('#sim-session').textContent=status;$('#sim-revision').textContent=revision;$('#sim-tools').textContent=tools;$('#sim-pending').textContent='pending = '+(pending?'存在':'null');$('#sim-pending').className='tag '+(pending?'warn':'good');$('#sim-run').textContent='RunResult = '+run;$('#sim-save').textContent='保存结果 = '+save;$('#sim-save').className='tag '+(save==='saved'?'good':save==='pending'?'warn':'');$('#sim-title').textContent=title;$('#sim-text').textContent=description;$$('#sim-steps li').forEach((li,i)=>li.className=i===stage?'active':i<stage?'done':'');$('#sim-next').disabled=stage===6||crash||conflict||unsaved;$('#sim-flush').hidden=!unsaved;}
+$('#scenario').addEventListener('change',e=>{scenario=e.target.value;stage=0;flushed=false;renderSim();});$('#sim-reset').addEventListener('click',()=>{stage=0;flushed=false;renderSim();});$('#sim-next').addEventListener('click',()=>{if(stage<6)stage++;renderSim();});$('#sim-flush').addEventListener('click',()=>{flushed=true;stage=6;renderSim();});renderSim();
+const reviewKey='alpha-adk-session-s1-review-v1';let storageOK=true;
+function getReview(){return {document:'ADK Session S1',version:1,exportedAt:new Date().toISOString(),decisions:Object.fromEntries($$('[data-review]').map(x=>[x.dataset.review,x.value])),notes:$('#review-notes').value};}
+function saveReview(){try{localStorage.setItem(reviewKey,JSON.stringify(getReview()));$('#review-status').textContent='已保存在当前浏览器。不会回写仓库或提交评审。';}catch{storageOK=false;$('#review-status').textContent='浏览器未允许本地保存；可导出 JSON 保留当前记录。';}}
+try{const saved=JSON.parse(localStorage.getItem(reviewKey)||'null');if(saved&&saved.version===1){$$('[data-review]').forEach(s=>{const v=saved.decisions?.[s.dataset.review];if(['pending','agree','change'].includes(v))s.value=v;});if(typeof saved.notes==='string')$('#review-notes').value=saved.notes;$('#review-status').textContent='已恢复当前浏览器中的评审记录。';}else{$('#review-status').textContent='尚未作出评审选择。';}}catch{storageOK=false;$('#review-status').textContent='本地保存不可用，仍可导出 JSON。';}
+$$('[data-review]').forEach(s=>s.addEventListener('change',saveReview));$('#review-notes').addEventListener('input',saveReview);
+$('#export-review').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(getReview(),null,2)],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='adk-session-s1-review.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('已导出当前评审记录');});
+$('#reset-review').addEventListener('click',()=>{$$('[data-review]').forEach(s=>s.value='pending');$('#review-notes').value='';try{localStorage.removeItem(reviewKey);}catch{storageOK=false;}$('#review-status').textContent='本页评审记录已重置。';});$('#print').addEventListener('click',()=>window.print());
+if('IntersectionObserver'in window){const observer=new IntersectionObserver(entries=>{for(const entry of entries){if(entry.isIntersecting){$$('.sidebar nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+entry.target.id));}}},{rootMargin:'-10% 0px -70% 0px'});$$('section').forEach(s=>observer.observe(s));}
+</script></body></html>

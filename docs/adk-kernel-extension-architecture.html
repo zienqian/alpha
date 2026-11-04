@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alpha ADK · 微内核与扩展架构</title>
+<style>
+:root{color-scheme:light;--ink:#182a35;--muted:#607580;--accent:#087c72;--line:#dce8e6;--paper:#fff;--bg:#f3f7f5}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 "Segoe UI","Microsoft YaHei",sans-serif}a{color:#087c72;text-decoration:none}a:hover{text-decoration:underline}.layout{max-width:1500px;margin:auto;display:grid;grid-template-columns:255px minmax(0,1fr);gap:48px;padding:48px 52px}.side{position:sticky;top:35px;align-self:start;max-height:calc(100vh - 70px);overflow:auto}.brand{font-size:12px;letter-spacing:.18em;font-weight:800;color:var(--accent);margin-bottom:24px}.side a{display:block;padding:7px 0;color:#607580;font-size:13px;line-height:1.5}.side a:hover{color:var(--accent)}main{min-width:0;background:var(--paper);border:1px solid #e1ebe8;border-radius:20px;box-shadow:0 18px 60px #183b3010;padding:56px 68px 90px}h1{font-size:clamp(30px,4vw,48px);letter-spacing:-.04em;line-height:1.2;margin:0 0 18px;max-width:860px}h2{font-size:26px;line-height:1.3;margin:68px 0 22px;padding-top:20px;border-top:1px solid var(--line);scroll-margin-top:25px}h3{font-size:19px;margin:32px 0 12px}p{margin:12px 0 18px}p.meta{font-size:13px;color:var(--muted);background:#edf7f3;border-radius:8px;padding:10px 14px}.meta+h2{border:0;margin-top:38px;padding-top:0}strong{color:#135d57}ul{padding-left:22px}li{padding:3px 0}code{font-family:Consolas,monospace;font-size:.88em;background:#eef4f2;padding:2px 5px;border-radius:4px}pre{background:#172d35;color:#dcf2e9;border-radius:12px;padding:22px;overflow:auto;line-height:1.6;font-size:13px}pre code{background:none;color:inherit;padding:0}.table-wrap{overflow-x:auto;margin:24px 0;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:620px;font-size:14px;line-height:1.65}th{text-align:left;background:#edf6f3;color:#28574f;font-weight:700}td,th{padding:13px 15px;vertical-align:top;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}@media(max-width:850px){.layout{display:block;padding:16px}.side{position:static;max-height:none;margin:10px 8px 20px}.side nav{display:flex;gap:10px;overflow:auto}.side a{white-space:nowrap}.brand{margin-bottom:6px}main{padding:30px 22px 55px;border-radius:14px}h2{margin-top:48px}}@media print{body{background:white}.layout{display:block;padding:0}.side{display:none}main{border:0;box-shadow:none;padding:0}h2{break-after:avoid}tr,pre{break-inside:avoid}}
+</style></head><body><div class="layout"><aside class="side"><div class="brand">ALPHA / MICROKERNEL</div><nav><a href="#section-0">1. 为什么前两版不成立</a><a href="#section-1">2. 调研：开源项目的扩展性不止 hooks</a><a href="#section-2">3. 架构图与依赖方向</a><a href="#section-3">4. 核心实体：每个对象只有一个所有者</a><a href="#section-4">5. 运行协议：微内核真正负责什么</a><a href="#section-5">6. 扩展点全景：不止 plugin / hooks</a><a href="#section-6">7. 关键端口与契约</a><a href="#section-7">8. Hooks、事件、插件：三类东西不要混淆</a><a href="#section-8">9. Plugin Host：可选的装配器</a><a href="#section-9">10. 三条扩展调用链验证</a><a href="#section-10">11. 消息、持久化与恢复</a><a href="#section-11">12. 包布局与依赖</a><a href="#section-12">13. 实施阶段与可证伪验收</a></nav></aside><main><h1 id="heading-0">Alpha ADK：微内核与扩展架构重新设计</h1><p class="meta">状态：架构设计草案 · 2026-11-03。替代此前的微内核及实体模型设计。所有代码为目标 API 示例，当前 ADK 尚未实现。</p><h2 id="section-0">1. 为什么前两版不成立</h2><p>前两版把“支持插件 / 有 hooks”当成微内核的证明；对象之间谁持有状态、谁执行副作用、扩展是否会绕过策略也不清楚。第二版虽然借鉴了 Pi 的有状态 Agent，但又把可替换执行策略、上下文和外部能力的接入退化成几个回调。</p><p>本版先回答三个问题：</p><ul><li><strong>内核固定什么？</strong> 固定一次运行的状态转换、能力调用入口、约束执行、事件与取消语义。</li><li><strong>哪些东西可换？</strong> 运行策略、模型适配、上下文构建、工具来源与执行环境；会话、记忆、编排和观测在外层组合。</li><li><strong>插件是什么？</strong> 插件是注册和管理这些扩展的一个载体；不使用插件也能直接注入实现。</li></ul><p>设计目标是可嵌入的 TypeScript ADK，不预设每个应用都需要插件宿主、数据库或分布式系统。</p><h2 id="section-1">2. 调研：开源项目的扩展性不止 hooks</h2><div class="table-wrap"><table><thead><tr><th>参考项目</th><th>源码或官方文档体现的机制</th><th>Alpha 的借鉴和取舍</th></tr></thead><tbody><tr><td><a href="https://github.com/earendil-works/pi/blob/main/packages/agent/README.md">Pi Agent Core</a></td><td>有状态 Agent 与底层 loop 分开；消息、工具、转换和事件为明确实体</td><td>借鉴实体语义；在 Alpha 增加受控的能力调用边界和可替换运行策略</td></tr><tr><td><a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md">Pi Coding Agent Extensions</a></td><td>在上层注册工具、命令、provider 和生命周期处理；也允许自定义工具执行后端</td><td>区分内核能力与产品能力；命令、UI 等不放进通用内核。Pi 的具体扩展 API 不直接照搬</td></tr><tr><td><a href="https://code.visualstudio.com/api/references/contribution-points">VS Code Contribution Points</a> 和 <a href="https://code.visualstudio.com/api/advanced-topics/extension-host">Extension Host</a></td><td>扩展贡献能力；宿主负责加载与运行环境</td><td>借鉴贡献点和宿主分离；首版只显式安装可信进程内代码，不实现清单发现或进程隔离</td></tr><tr><td><a href="https://fastify.dev/docs/latest/Reference/Plugins/">Fastify Plugins</a></td><td>通过插件组合能力，具有封装与作用域语义</td><td>借鉴明确的组装顺序和作用域；首版仅应用级不可变注册快照，不声称实现 Fastify 的嵌套封装</td></tr><tr><td><a href="https://opentelemetry.io/docs/specs/otel/trace/sdk/">OpenTelemetry Tracing SDK</a></td><td>采集 API、处理器和 exporter 分层，支持多个处理管线</td><td>事件生产与观测导出分离；默认不启用远程 exporter</td></tr></tbody></table></div><p>结论是：<strong>扩展是多个不同的替换和组合边界</strong>。hooks 适合干预固定时机，无法单独表达更换模型协议、切换上下文构建算法或替换执行环境。</p><h2 id="section-2">3. 架构图与依赖方向</h2><pre><code>                           应用 / CLI / 服务
+           组装模型、工具、策略、存储及可选 Plugin Host
+                                 │
+           ┌─────────────────────┴─────────────────────┐
+           ▼                                           ▼
+   Agent（对话实例 / 外观）                  可选的 Plugin Host
+   对外 prompt / state / events              装配贡献，不执行 Agent
+           │                                           │
+           ▼                                           │提供注册快照
+ ┌─────────────────────────────────────────────────────┴──┐
+ │ ADK 内核                                                │
+ │ Run 状态机 / Step 协议 / 能力网关 / 预算 / 取消 / 事件 │
+ └────────────────────────────────────────────────────────┘
+          │ 调用已注入的契约               │ 调用已授权能力
+          ▼                               ▼
+  Strategy：下一步是什么           Model / Tool / Context 等接口
+          ▲                               ▲
+          │                               │
+  默认工具循环 / 自定义策略      Provider bridge / 工具 / 执行后端
+                                           ▲
+                           Session / Memory / MCP / Trace 可选适配
+</code></pre><p>箭头表示调用或组装，不表示源码都依赖应用。源码依赖：<code>app → adk</code>，<code>app → provider</code>；外部扩展 → ADK 的公开接口；ADK 内核不依赖 provider、plugin host、数据库或特定传输协议。内核定义端口，外围提供实现。初期可在同一 <code>packages/adk</code> 内分目录实现，后续按照独立依赖或发布需求拆包。</p><p><strong>微内核的可检验定义</strong>：删除 Plugin Host、默认工具循环、所有存储与具体 provider 后，内核仍能以测试用 Strategy 和假 ModelPort 创建并完成一次运行；增加一种策略或工具来源时无需修改内核的状态机。可用性依赖应用注入实现，内核本身不假装具备默认功能。</p><h2 id="section-3">4. 核心实体：每个对象只有一个所有者</h2><div class="table-wrap"><table><thead><tr><th>名称</th><th>唯一职责</th><th>持有者与生命周期</th><th>不负责</th></tr></thead><tbody><tr><td>Agent</td><td>多轮对话的外观；保存消息历史、当前配置和可观察状态</td><td>应用持有；一个实例可运行多次</td><td>不执行 provider HTTP，不管理插件安装</td></tr><tr><td>Run</td><td>一次 <code>prompt</code> 的执行；包含状态、预算、取消和关联 ID</td><td>内核创建；每次 prompt 一个</td><td>不跨进程恢复，不保存长期历史</td></tr><tr><td>Strategy</td><td>根据上下文和前一步结果决定下一条 Step</td><td>应用注入；无状态或每 run 创建实例</td><td>不直接调用模型、工具或修改 Agent 历史</td></tr><tr><td>Step</td><td>策略提交的明确指令：模型调用、工具调用或结束</td><td>在单次 Run 中产生</td><td>不是可持久化工作流节点</td></tr><tr><td>Capability Gateway</td><td>内核唯一支持的模型/工具调用路径，执行校验、授权、预算和事件</td><td>Run 内核持有</td><td>不承担工具业务逻辑</td></tr><tr><td>AgentMessage</td><td>会话历史中的内容与工具调用/结果</td><td>Agent 持有；可被外层 Session 持久化</td><td>不自动等于发给模型的完整上下文</td></tr><tr><td>ContextBuilder</td><td>从历史和用户输入生成模型请求的消息投影</td><td>应用注入，供 Strategy 使用</td><td>不修改 Agent 原始历史</td></tr><tr><td>ModelPort / Tool</td><td>分别定义模型调用和工具能力</td><td>应用或扩展提供</td><td>不负责调度整个 run</td></tr><tr><td>Plugin Host</td><td>将插件贡献组装为可用配置</td><td>应用可选创建</td><td>不成为 Agent 的必要依赖</td></tr><tr><td>SessionStore</td><td>会话历史存取</td><td>外层应用持有，可选</td><td>不承诺未完成 run 恢复</td></tr></tbody></table></div><p><strong>状态所有权</strong>：Agent 是跨轮历史的唯一所有者；Run 拥有当前执行的临时状态；Strategy 每次只收到只读视图，并返回 Step，不能直接修改两者。Gateway 是受框架管理的能力调用入口。工具、模型、插件是可信进程内代码；接口不能阻止恶意代码自行访问网络。</p><p><code>run</code> = 一次用户输入触发的执行；<code>turn</code> = 一次模型调用及其后续工具处理；<code>step</code> = Strategy 交给内核处理的一项指令。三者不是可互换的名词。</p><h2 id="section-4">5. 运行协议：微内核真正负责什么</h2><h3 id="heading-79">5.1 公开类型轮廓</h3><pre><code>type Step =
+  | { type: &#x27;model&#x27;; request: ModelRequest }
+  | { type: &#x27;tool&#x27;; call: ToolCall }
+  | { type: &#x27;finish&#x27;; outcome: &#x27;completed&#x27; | &#x27;refused&#x27; | &#x27;incomplete&#x27; | &#x27;unknown&#x27;;
+      text?: string };
+
+type StepResult =
+  | { type: &#x27;model&#x27;; result: ModelResult }
+  | { type: &#x27;tool&#x27;; result: ToolResult };
+
+interface StrategyContext&lt;App&gt; {
+  readonly messages: readonly AgentMessage[];
+  readonly lastResult?: StepResult;
+  readonly contextBuilder: ContextBuilder;
+  readonly app: Readonly&lt;App&gt;;
+}
+interface Strategy&lt;App&gt; {
+  // 每次 run 新建实例；next 不能执行模型、工具等外部副作用。
+  next(context: StrategyContext&lt;App&gt;): Promise&lt;Step&gt;;
+}
+
+interface KernelOptions&lt;App&gt; {
+  createStrategy(): Strategy&lt;App&gt;;
+  model: ModelPort;
+  tools: readonly Tool&lt;App, any&gt;[];
+  contextBuilder: ContextBuilder;
+  authorizeTool: ToolAuthorizer&lt;App&gt;;
+  limits: { maxModelCalls: number; maxToolCalls: number; timeoutMs: number };
+}
+</code></pre><p><code>Step</code> 是受限的判别联合，不支持任意执行函数；内核只识别声明的三种操作。默认工具循环是 <code>Strategy</code> 的实现，例如收到 model 结果后按工具调用顺序逐个返回 tool Step；所有策略最终都走同一个网关。</p><h3 id="heading-115">5.2 内核调度伪代码</h3><pre><code>while (!run.signal.aborted) {
+  const step = await strategy.next(readonlyRunView());
+  switch (step.type) {
+    case &#x27;model&#x27;:
+      // 检查模型预算和消息合法性；等待 model hooks；
+      // 调用 ModelPort；收集完整 finish 并发出事件。
+      run.lastResult = await gateway.callModel(step.request);
+      commitAssistantMessage(run.lastResult);
+      break;
+    case &#x27;tool&#x27;:
+      // 仅接受最新 assistant 已声明且尚未处理的 toolCallId。
+      // 验证工具名/参数 → 授权 → 执行 → 记录结果。
+      run.lastResult = await gateway.callTool(step.call);
+      commitToolResult(run.lastResult);
+      break;
+    case &#x27;finish&#x27;:
+      ensureNoUnresolvedToolCalls();
+      return completeRun(step);
+  }
+}
+return cancelRun();
+</code></pre><p>内核在接受 model / finish 前检查未完成的工具调用；无效 step、越权工具、重复调用 ID 均失败。每次模型调用前检查并扣减预算，每次工具调用前检查并扣减工具预算；再加总 step 上限以防策略无限返回无效操作。超时和外部 AbortSignal 合并，取消后不启动新调用。外部副作用不能回滚；工具不自动重试。</p><p><strong>策略边界的重要限制</strong>：这是同进程协作契约，不是沙箱。自定义 Strategy 仍可通过自己的闭包自行发 HTTP 或执行任意代码；这种行为不经过 Gateway，也不受 ADK 权限、预算和追踪保证。需要对不可信策略强制约束时，必须在进程/容器边界隔离并只暴露受控 RPC；这是后续独立项目。</p><h3 id="heading-145">5.3 状态机</h3><pre><code>created → running → completed / refused / incomplete / unknown
+                  → failed
+                  → cancelling → cancelled
+</code></pre><p>每个 Run 恰好一个终态。单个 Agent 同时只允许一个活跃 Run；不同 Agent 可并发。模型文本增量为暂定数据，最终以模型 finish 和 Run 终态为准。<code>prompt()</code> 返回结果并可选择订阅事件；无订阅者时绝不阻塞执行。订阅者同步通知且异常隔离；异步导出由订阅者自行使用有界队列。安全决策不依赖事件监听。</p><h2 id="section-5">6. 扩展点全景：不止 plugin / hooks</h2><p>下表的“何时”是建议优先级，P1 为首个可用版本，P2/P3 为契约经过用例验证后的扩展，不代表已实现。</p><div class="table-wrap"><table><thead><tr><th>扩展点</th><th>扩展机制</th><th>做什么 / 替换什么</th><th>边界与优先级</th></tr></thead><tbody><tr><td>ModelPort</td><td>接口适配</td><td>对接 Alpha Provider、测试模型或其他模型协议</td><td>单个 Agent 配置一个实例；P1</td></tr><tr><td>Tool</td><td>能力贡献</td><td>接入业务函数、搜索、数据库查询等</td><td>显式注册；schema 与授权始终经 Gateway；P1</td></tr><tr><td>Strategy</td><td>算法替换</td><td>默认循环、确定性流程、人工控制式流程</td><td>每 run 创建；只能通过 Step 使用受控能力；P1 验证最小替换</td></tr><tr><td>ContextBuilder</td><td>策略注入</td><td>历史裁剪、上下文模板、RAG 检索结果拼装</td><td>返回投影、不改历史；检索调用的权限与取消由其外层明确管理；P1 接口，P2 丰富实现</td></tr><tr><td>ToolSource</td><td>适配 / 发现</td><td>MCP 服务、本地工具集合、动态服务目录</td><td>解析为固定的 Tool 列表后注入；P2</td></tr><tr><td>ToolExecutor</td><td>执行后端</td><td>本地函数、远程 RPC、隔离环境</td><td>由 Tool 调用；认证/超时/幂等各实现负责；P2</td></tr><tr><td>SessionStore</td><td>存储适配</td><td>内存、文件、数据库</td><td>外层加载/保存；不等于 checkpoint；P2</td></tr><tr><td>Memory / Retrieval</td><td>能力组合</td><td>搜索、长期记忆和索引</td><td>作为 ContextBuilder 或工具依赖；不直接写 Agent 状态；P2</td></tr><tr><td>Hooks / Policy</td><td>固定时机干预</td><td>工具授权、输入校验、上下文变换</td><td>在 Gateway 内按确定顺序运行；P1 限定接口</td></tr><tr><td>Events / Exporter</td><td>观察管线</td><td>UI、日志、metrics、OpenTelemetry</td><td>不参与授权；默认不采集正文；P1 事件、P2 exporter</td></tr><tr><td>Workflow / Agent composition</td><td>上层编排</td><td>顺序/并行调用多个 Agent、handoff</td><td>通过公开 Agent API 组合；不把图引擎塞入内核；P3</td></tr><tr><td>Message codec</td><td>数据适配</td><td>自定义消息转换为模型消息、跨边界序列化</td><td>未识别或续接数据不兼容时显式失败；P2</td></tr><tr><td>Plugin Host</td><td>打包与组装</td><td>一个扩展一次贡献工具、策略工厂及 hooks</td><td>可选；不是以上能力的唯一入口；P2</td></tr></tbody></table></div><p>例如：替换排序策略不应通过 hook 强行改写模型响应；更换向量数据库不需要修改 Agent；MCP 是工具来源而不是一个必须写进内核的特殊工具类别。</p><h2 id="section-6">7. 关键端口与契约</h2><h3 id="heading-179">7.1 Agent 外观与状态</h3><pre><code>interface AgentState {
+  readonly status: &#x27;idle&#x27; | &#x27;running&#x27;;
+  readonly messages: readonly AgentMessage[];
+  readonly pendingToolCalls: readonly string[];
+}
+interface Agent&lt;App&gt; {
+  readonly state: AgentState; // 只读快照
+  prompt(input: string, options?: { signal?: AbortSignal }): Promise&lt;RunResult&gt;;
+  subscribe(listener: (event: AgentEvent) =&gt; void): () =&gt; void;
+  abort(reason?: unknown): void;
+}
+function createAgent&lt;App&gt;(
+  options: KernelOptions&lt;App&gt; &amp; { systemPrompt: string; app: App },
+): Agent&lt;App&gt;;
+</code></pre><p>Agent 负责多轮消息与一次 Run 的互斥，不拥有全局注册表。RunResult 包含完成、拒答、不完整、unknown、失败、取消及本次消息；内部状态经网关提交，不让策略随意修改。</p><h3 id="heading-200">7.2 模型与现有 Provider</h3><p><code>ModelPort</code> 由应用组装的 adapter 将 ADK 请求映射到已有 <code>@alpha/provider</code> 的 <code>LanguageModel.stream()</code>。适配器必须保留 <code>completed/tool_calls/refused/incomplete/unknown</code>，只有 tool_calls 可执行工具；以 <code>finish.result.toolCalls</code> 为唯一执行来源，不能同时处理 stream 中的 tool-call 和 finish 列表。</p><p>Anthropic continuation 要绑定原 assistant 消息并原样续接；Responses 的 previousResponseId 是服务端增量模式，需要独立策略且不能混发完整历史。continuation 属于敏感协议数据，不能跨模型使用；切换模型无法安全转换时明确报错。Alpha 当前 Provider 的真实服务行为尚未验证；模型桥接需真实服务与 mock 契约测试。</p><h3 id="heading-206">7.3 工具和授权</h3><pre><code>interface Tool&lt;App, Input&gt; {
+  name: string;
+  description: string;
+  schema: { jsonSchema: JsonObject; parse(value: unknown): Input };
+  execute(input: Input, ctx: { app: App; signal: AbortSignal;
+    callId: string }): Promise&lt;{ content: string; isError?: boolean }&gt;;
+}
+type ToolAuthorizer&lt;App&gt; = (request: {
+  toolName: string; input: unknown; app: App; signal: AbortSignal;
+}) =&gt; Promise&lt;{ allow: true } | { allow: false; reason: string }&gt;;
+</code></pre><p>网关按“确认调用归属 → schema 校验 → 授权 → 执行”顺序工作。业务上下文和凭证不会自动进入模型。默认 authorizer 只允许应用显式注册并允许的工具；危险操作是否需要审批由应用策略决定。若未来要暂停等待人类审批，需引入可持久化 Run 状态和恢复协议，不能用一个等待中的 Promise 宣称可靠恢复。</p><h3 id="heading-223">7.4 上下文构建</h3><pre><code>interface ContextBuilder {
+  build(input: {
+    systemPrompt: string;
+    history: readonly AgentMessage[];
+    tools: readonly ToolDescriptor[];
+    signal: AbortSignal;
+  }): Promise&lt;ModelRequest&gt;;
+}
+</code></pre><p>返回值是这次模型调用的投影，历史仍由 Agent 管理；裁剪不能拆开工具调用及其结果。RAG 实现注入其自己的检索服务、权限和取消信号；默认只读历史 builder 不依赖外部服务。</p><h2 id="section-7">8. Hooks、事件、插件：三类东西不要混淆</h2><div class="table-wrap"><table><thead><tr><th>概念</th><th>用途</th><th>能否影响执行</th><th>典型例子</th></tr></thead><tbody><tr><td>Hook</td><td>内核中定义的异步决策/变换点</td><td>能；内核等待并处理结果</td><td>beforeTool 授权，beforeModel 修改请求</td></tr><tr><td>Event</td><td>描述已经发生的事实</td><td>不能；监听失败隔离</td><td>turn.started、tool.completed、text.delta</td></tr><tr><td>Plugin</td><td>交付和注册扩展的单元</td><td>通过注册的能力或 hook 间接影响</td><td>打包一个工具来源与授权策略</td></tr></tbody></table></div><p>建议 P1 hooks 只包含 <code>beforeModel</code>、<code>beforeTool</code>、<code>afterTool</code>；顺序按注册顺序、串行 await。<code>beforeTool</code> 任一拒绝则停止后续并拒绝执行，异常 fail closed；<code>afterTool</code> 异常可能发生在副作用之后，run 失败且不自动重试。订阅事件不得作为授权边界。事件默认含 ID、耗时、状态；面向 UI 的增量含正文，应与默认脱敏观测通道分开。</p><h2 id="section-8">9. Plugin Host：可选的装配器</h2><p>直接注入已经满足内核使用；Plugin Host 是扩展生态层，专门收集贡献并构造配置：</p><pre><code>interface Plugin&lt;App&gt; {
+  readonly id: string;
+  readonly apiVersion: 1;
+  setup(registry: Contributions&lt;App&gt;): void;
+}
+interface Contributions&lt;App&gt; {
+  addTool(tool: Tool&lt;App, any&gt;): void;
+  addStrategy(id: string, factory: () =&gt; Strategy&lt;App&gt;): void;
+  addContextBuilder(id: string, builder: ContextBuilder): void;
+  onBeforeTool(hook: ToolAuthorizer&lt;App&gt;): void;
+  observe(listener: (event: ObservabilityEvent) =&gt; void): void;
+}
+</code></pre><p>首版只做显式安装，不扫描文件、不下载、不热更新。插件按传入顺序 setup；ID 和贡献的同类名称重复时报错。冻结后每个 Agent 从选定贡献创建自己的快照；不共享可变的当前 Agent 状态。setup 失败不创建 Agent；启动资源、依赖解析与异步清理需在扩展到真实需求时增加明确生命周期。</p><pre><code>const auditPlugin: Plugin&lt;App&gt; = {
+  id: &#x27;example.audit&#x27;,
+  apiVersion: 1,
+  setup(registry) {
+    registry.observe(event =&gt; auditQueue.tryWrite(event));
+    registry.onBeforeTool(async ({ toolName, app }) =&gt;
+      app.allowedTools.has(toolName)
+        ? { allow: true }
+        : { allow: false, reason: &#x27;未授权&#x27; },
+    );
+  },
+};
+</code></pre><p>上面的 <code>auditQueue</code> 由应用创建，容量满的处理策略要显式定义。安全审计若要求可靠落盘，应定义独立的同步策略和存储故障行为，不能把普通 observer 当成可靠审计。</p><h2 id="section-9">10. 三条扩展调用链验证</h2><h3 id="heading-288">A. 换模型：业务 Agent 不变</h3><pre><code>const agent = createAgent({
+  systemPrompt: &#x27;帮助用户查询订单。&#x27;,
+  model: adaptProvider(provider.use(&#x27;primary&#x27;, &#x27;chat&#x27;)),
+  tools: [getOrder],
+  contextBuilder: defaultContextBuilder(),
+  createStrategy: () =&gt; createToolLoopStrategy(),
+  authorizeTool,
+  limits,
+  app,
+});
+await agent.prompt(&#x27;查询 A123&#x27;);
+</code></pre><p>切换 provider 只在组装处替换 model。链路：Agent → Run → Strategy 返回 model Step → Gateway → ModelPort → Provider adapter。工具授权和策略保持不变。跨模型续接要按前述规则验证，不能一概保证无损。</p><h3 id="heading-306">B. 增加 MCP 工具：不改 loop 和 Gateway</h3><pre><code>const mcpTools = await mcpToolSource.list({ signal });
+const agent = createAgent({
+  ...baseOptions,
+  tools: [...localTools, ...mcpTools],
+});
+</code></pre><p>链路：MCP adapter 把发现的远程能力转成 Tool → Strategy 返回 tool Step → Gateway 验证名称、参数并授权 → Tool adapter 调用 MCP。策略不会看到 MCP 私有传输细节。连接和关闭由应用或未来 Plugin Host 生命周期管理；这里不声称接口已实现。</p><h3 id="heading-318">C. 更换运行策略：工具与授权不变</h3><pre><code>const agent = createAgent({
+  ...baseOptions,
+  createStrategy: () =&gt; new FixedSequenceStrategy([&#x27;lookup&#x27;, &#x27;summarize&#x27;]),
+});
+</code></pre><p>链路：新策略决定下一步 → 与默认策略相同的 Step → Gateway → 相同的模型/工具/授权。策略不能让 Gateway 执行不存在于当前 assistant 工具调用中的任意 tool call；若需要确定性业务工具直接调用，未来必须增加一个单独且经授权的 Step 类型，而不是绕开校验。也因此上述示例中的 fixed sequence 只能安排符合现有 Step 契约的流程，不能假设任意工具可直接调用。</p><h2 id="section-10">11. 消息、持久化与恢复</h2><ul><li>Agent 持有的 messages 是跨轮历史；ContextBuilder 构建模型看到的投影；Run 状态是本次执行的临时数据。三者互不等价。</li><li>Assistant 的 tool_calls 与每个 toolResult 以 callId 关联；工具成功后即记录结果。取消时未开始的调用可记录明确取消结果；若无法构造可信配对，标记历史不可续接并显式报错。</li><li>SessionStore 在外层保存经过应用处理的历史；需要跨进程并发控制时，存储应提供原子版本检查。默认不保存 app context 或凭证。</li><li>Checkpoint 不是本版内核承诺。恢复未完成流程需独立设计版本、幂等、租约和副作用对账；无 exactly-once 保证。</li></ul><h2 id="section-11">12. 包布局与依赖</h2><pre><code>packages/adk/src/
+  kernel/       run 状态机、Step、Gateway、预算与事件
+  agent/        Agent 外观、AgentState、AgentMessage
+  ports/        ModelPort、Tool、ContextBuilder、Strategy 契约
+  defaults/     默认工具循环、默认 ContextBuilder
+  index.ts      公开 API
+  extensions/   可选 Plugin Host（首版可不实现）
+packages/provider/  现有模型接口与协议
+apps/example-agent/ 应用组装及 Provider bridge 示例
+</code></pre><p>逻辑依赖为 <code>agent/defaults/extensions → kernel/ports</code>；<code>kernel → ports</code>；<code>ports</code> 不依赖具体实现。模型桥接放在应用或独立可选适配包，不使 ADK 和 Provider 互相依赖。真实实现前需用 lint / Nx 验证依赖方向。</p><h2 id="section-12">13. 实施阶段与可证伪验收</h2><div class="table-wrap"><table><thead><tr><th>阶段</th><th>做什么</th><th>验收</th></tr></thead><tbody><tr><td>P0</td><td>锁定 Step、状态和事件；用 fake model 和 fake tool 验证模型</td><td>删除默认 Strategy 与所有插件后，测试策略仍能完成模型调用与结束</td></tr><tr><td>P1</td><td>Agent、Gateway、默认工具循环、Provider bridge、基础 hooks</td><td>替换策略后同一工具授权仍执行；重复 ID、越权、取消和预算不被绕过</td></tr><tr><td>P2</td><td>ContextBuilder、ToolSource、SessionStore、Plugin Host</td><td>直接注入与插件装配产生等价配置；MCP 适配不修改 Gateway 和 loop</td></tr><tr><td>P3</td><td>按业务选择执行隔离、多 Agent 或可靠恢复</td><td>明确进程边界、故障恢复和外部副作用对账，并通过故障注入</td></tr></tbody></table></div><p><strong>重点测试</strong>：模型 stream 断流/重复 finish；tool calls 批量校验；拒答与 incomplete 不执行工具；不订阅事件仍完成；并发 Agent 状态隔离；策略恶意闭包不被当成沙箱；可观察数据默认脱敏；连续 prompt 和异常后历史仍可安全转换。真实 Provider 接口需要额外受控集成验证。</p><p><strong>仍待决定</strong>：首个业务场景、是否需要策略层在首版就支持替换、ContextBuilder 是否允许直接做外部检索、以及持久化的事务语义。若首个场景只需默认循环，可先实现 Step 契约和一个测试策略，不必提前建设完整策略生态。</p></main></div></body></html>

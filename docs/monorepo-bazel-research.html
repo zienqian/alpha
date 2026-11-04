@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="基于 Alpha 仓库现状的 Bazel 多语言 monorepo 技术预研：Nx 对照、Go 接入、TypeScript 迁移风险与 PoC 验收。">
+  <title>Alpha · Bazel 多语言 Monorepo 技术预研</title>
+  <style>
+    :root{color-scheme:light;--bg:#f5f6f5;--paper:#fff;--ink:#182b33;--muted:#586b73;--line:#dbe3e3;--accent:#086c60;--soft:#eaf4f0;--blue:#285e9a;--amber:#9b5917;--amber-bg:#fff4e4;--code:#172c34;font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-size:15px;line-height:1.8}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink)}a{color:var(--accent);text-underline-offset:4px}button,select{font:inherit;color:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:7px;background:white;padding:8px 15px;min-height:42px}button:hover{border-color:var(--accent)}button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:white}:focus-visible{outline:3px solid #cf8524;outline-offset:4px}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(35px,4.5vw,62px);line-height:1.18;letter-spacing:-2px;margin-bottom:26px}h2{font-size:28px;line-height:1.4;letter-spacing:-.5px;margin-bottom:12px}h3{font-size:18px;line-height:1.5;margin-bottom:10px}p{margin-bottom:16px}small,.muted{color:var(--muted)}strong{font-weight:650}code{font-family:Consolas,"Cascadia Code",monospace;font-size:.9em;overflow-wrap:anywhere}p code,li code,td code{background:#edf1f1;border-radius:3px;padding:1px 4px}pre{margin:0;background:var(--code);color:#e3efef;padding:24px;border-radius:9px;overflow:auto;font-size:13px;line-height:1.8;tab-size:2}pre code{overflow-wrap:normal}ul,ol{padding-left:22px}li{margin:7px 0}hr{border:0;border-top:1px solid var(--line);margin:28px 0}[hidden]{display:none!important}.skip{position:absolute;left:16px;top:-90px;background:white;padding:12px;z-index:20}.skip:focus{top:12px}.progress{position:fixed;left:0;top:0;height:3px;background:var(--accent);width:0;z-index:30}.shell{max-width:1600px;margin:auto;display:grid;grid-template-columns:230px minmax(0,1fr)}.rail{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:36px 24px;border-right:1px solid var(--line);background:#f9faf8;overflow:auto}.brand{font-size:25px;font-weight:750;letter-spacing:-1px}.brand span{color:var(--accent)}.rail-caption{font-size:11px;color:var(--muted);letter-spacing:2px;margin:0 0 32px}.rail nav{display:grid;gap:4px}.rail nav a{display:flex;gap:13px;padding:8px 10px;border-radius:5px;color:var(--muted);text-decoration:none;font-size:13px}.rail nav a.active,.rail nav a:hover{color:var(--accent);background:var(--soft)}.rail nav b{font-family:Consolas,monospace;font-size:12px;font-weight:400;opacity:.7}.rail-note{font-size:11px;color:var(--muted);margin-top:auto;padding-top:30px;line-height:1.9}.main{padding:34px clamp(22px,4.4vw,72px) 36px;min-width:0}.topline{display:flex;justify-content:space-between;align-items:center;gap:15px;font-size:12px;color:var(--muted);margin-bottom:46px}.tag{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;background:var(--soft);color:var(--accent);font-weight:650;letter-spacing:.5px}.tag.amber{background:var(--amber-bg);color:var(--amber)}.eyebrow{color:var(--accent);font-size:11px;letter-spacing:2px;font-weight:700;margin-bottom:18px}.hero{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(210px,.8fr);gap:34px;align-items:start}.lead{font-size:17px;color:var(--muted);line-height:1.95;max-width:760px}.hero-aside{border-top:3px solid var(--accent);padding:22px 0 0;margin-top:5px}.hero-aside h3{font-size:16px}.hero-aside p{font-size:13px;color:var(--muted)}.hero-aside .row{border-top:1px solid var(--line);padding:12px 0;display:flex;justify-content:space-between;gap:10px;font-size:12px}.hero-aside .row strong{color:var(--accent)}.metrics{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:32px 0 0;padding:22px 0;gap:18px}.metric strong{font-size:24px;display:block;letter-spacing:-.5px}.metric span{font-size:12px;color:var(--muted)}.section{padding-top:65px;scroll-margin-top:25px}.section-no{font-family:Consolas,monospace;font-size:12px;letter-spacing:2px;color:var(--accent);margin-bottom:10px}.intro{color:var(--muted);max-width:900px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.panel{background:white;border:1px solid var(--line);border-radius:9px;padding:24px;margin:22px 0}.grid2>.panel,.grid3>.panel{margin:0}.panel p:last-child{margin-bottom:0}.panel .kicker{font-size:11px;color:var(--accent);letter-spacing:1px;margin-bottom:8px}.panel p,.panel li{font-size:14px}.callout{background:var(--soft);padding:19px 22px;border-left:3px solid var(--accent);margin:24px 0;font-size:14px}.callout.warn{background:var(--amber-bg);border-color:#c7802d}.callout p:last-child{margin-bottom:0}.table-wrap{overflow:auto;background:white;border:1px solid var(--line);border-radius:9px;margin:22px 0}table{border-collapse:collapse;width:100%;font-size:13px;min-width:730px}th,td{padding:15px 17px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{background:#edf1f0;font-size:12px;white-space:nowrap}tr:last-child td{border-bottom:0}td strong{display:block;margin-bottom:4px}td small{display:block}.recommended{background:#f0f7f3}.ref{font-size:11px;white-space:nowrap;margin-left:3px}.evidence{font-size:12px;margin-top:10px;color:var(--muted)}.toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:24px 0 18px}.stage-panel{border:1px solid var(--line);border-radius:10px;background:white;overflow:hidden}.stage-header{padding:22px 25px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;align-items:start}.stage-header h3{margin:0}.stage-header p{font-size:13px;margin:5px 0 0;color:var(--muted)}.diagram{display:grid;grid-template-columns:1fr 42px 1fr 42px 1fr;align-items:stretch;padding:28px 25px;gap:0}.stack{display:grid;gap:9px;align-content:start;min-width:0}.stack-title{font-size:10px;letter-spacing:1.5px;color:var(--muted);margin-bottom:5px}.node{border:1px solid var(--line);border-radius:6px;padding:13px 15px;background:#f8faf9;font-size:13px}.node strong{display:block;line-height:1.5}.node span{display:block;color:var(--muted);font-size:11px;margin-top:4px}.node.accent{background:var(--soft);border-color:#a8cfc3}.node.future{border-style:dashed}.arrow{align-self:center;text-align:center;color:var(--accent);font-size:25px}.stage-foot{background:#f7f9f8;border-top:1px solid var(--line);padding:15px 25px;font-size:12px;color:var(--muted)}.stage-foot strong{color:var(--ink)}.subtle{font-size:12px;color:var(--muted);margin-top:12px}.tree{font-size:12px}.code-title{font-family:Consolas,monospace;font-size:12px;color:var(--muted);margin:20px 0 8px}.steps{counter-reset:step;display:grid;gap:0;margin:24px 0}.step{display:grid;grid-template-columns:52px 1fr 112px;gap:20px;padding:24px 0;border-top:1px solid var(--line)}.step::before{counter-increment:step;content:"0" counter(step);font-family:Consolas,monospace;font-size:26px;color:var(--accent)}.step h3{margin-bottom:6px}.step p{font-size:13px;margin-bottom:0;color:var(--muted)}.step .time{font-size:12px;color:var(--muted);text-align:right}.risk{display:inline-block;border-radius:4px;background:var(--amber-bg);color:var(--amber);font-size:10px;padding:1px 6px;white-space:nowrap}.impact{display:grid;grid-template-columns:1fr 1.3fr;gap:22px}.impact select{width:100%;padding:10px;border:1px solid #b0c1bf;border-radius:6px;background:white;font-size:13px;min-height:44px;margin:9px 0 12px}.impact-result{border-left:3px solid var(--accent);padding:0 0 0 23px}.impact-result h3{font-size:16px}.impact-result ul{font-size:13px}.impact-result p{font-size:12px;color:var(--muted)}details{background:white;border:1px solid var(--line);border-radius:8px;padding:17px 21px;margin:14px 0}summary{cursor:pointer;font-size:14px;font-weight:650}details p{font-size:13px;margin:15px 0}details pre{margin-top:16px}.sources{display:grid;grid-template-columns:1fr 1fr;gap:0 28px;list-style:none;padding:0}.sources li{border-top:1px solid var(--line);padding:14px 0;margin:0;font-size:12px;overflow-wrap:anywhere}.sources span{display:block;color:var(--muted);font-size:11px;margin-top:5px}.source-no{font-family:Consolas,monospace;color:var(--accent);font-weight:600;margin-right:8px}.footer{border-top:1px solid var(--line);padding-top:24px;margin-top:50px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:15px}.print-only{display:none}.checklist{list-style:none;padding:0}.checklist li{padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}.checklist li::before{content:"○";color:var(--amber);margin-right:10px}.checklist li:last-child{border:0}
+    @media(min-width:1500px){.main{padding-left:70px;padding-right:70px}}@media(max-width:1100px){.shell{grid-template-columns:195px minmax(0,1fr)}.rail{padding:28px 16px}.hero{grid-template-columns:1fr}.hero-aside{display:none}.grid3{grid-template-columns:1fr}.diagram{grid-template-columns:1fr 26px 1fr 26px 1fr;padding:22px 16px}.node{padding:12px 10px}.main{padding-left:30px;padding-right:30px}}
+    @media(max-width:760px){.shell{display:block}.rail{position:static;height:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.brand{font-size:22px}.rail-caption{margin-bottom:14px}.rail nav{display:flex;overflow:auto;padding-bottom:4px}.rail nav a{white-space:nowrap;padding:6px 9px}.rail-note{display:none}.main{padding:22px 20px}.topline{margin-bottom:30px;font-size:11px;align-items:start}.topline button{font-size:12px}h1{letter-spacing:-1px;font-size:38px}h2{font-size:24px}.lead{font-size:15px}.metrics{gap:10px}.metric strong{font-size:19px}.metric span{font-size:11px}.section{padding-top:46px}.grid2,.impact{grid-template-columns:1fr}.diagram{grid-template-columns:1fr;gap:14px}.arrow{transform:rotate(90deg);line-height:1;height:24px}.stage-header{padding:20px;display:block}.stage-header .tag{margin-top:12px}.stage-foot{padding:18px}.step{grid-template-columns:35px 1fr;gap:12px}.step .time{grid-column:2;text-align:left}.sources{grid-template-columns:1fr}.panel{padding:20px}.impact-result{padding-left:18px}.footer{display:block}.footer span{display:block;margin-bottom:8px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+    @media print{html{scroll-behavior:auto}body{background:white;color:#15272d;font-size:10pt}.shell{display:block}.rail,.topline button,.progress,.toolbar,.impact select,.no-print{display:none!important}.main{padding:0}.hero{grid-template-columns:1fr}.hero-aside{display:none}h1{font-size:29pt}h2{font-size:19pt}.section{padding-top:26px;break-inside:auto}.panel,.callout,.step,pre,.stage-panel{break-inside:avoid}.table-wrap{overflow:visible}table{min-width:0;font-size:9pt}th,td{padding:9px}tr{break-inside:avoid}.sources{grid-template-columns:1fr 1fr}.print-only{display:block}.stage-panel[hidden]{display:block!important;margin-top:18px}.stage-panel{break-inside:avoid}.diagram{grid-template-columns:1fr 25px 1fr 25px 1fr;padding:15px}.arrow{transform:none}.topline{margin-bottom:20px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:9pt}a{color:#086054}details{break-inside:avoid}.footer{margin-top:25px}.metrics{margin-top:20px}.impact-result{border-color:#777}.tag{border:1px solid #ccd8d3}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style>
+</head>
+<body>
+<a class="skip" href="#main">跳转到正文</a>
+<div class="progress" id="reading-progress" aria-hidden="true"></div>
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">alpha<span>.</span></div>
+    <p class="rail-caption">ENGINEERING RESEARCH / 01</p>
+    <nav aria-label="报告目录">
+      <a href="#decision"><b>01</b>结论与适用边界</a>
+      <a href="#baseline"><b>02</b>仓库现状</a>
+      <a href="#options"><b>03</b>方案对照</a>
+      <a href="#architecture"><b>04</b>演进架构</a>
+      <a href="#layout"><b>05</b>目录与依赖</a>
+      <a href="#integration"><b>06</b>构建接入设计</a>
+      <a href="#risks"><b>07</b>迁移难点</a>
+      <a href="#pilot"><b>08</b>试点与验收</a>
+      <a href="#sources"><b>09</b>资料与证据</a>
+    </nav>
+    <div class="rail-note">研究日期 · 2026.11.04<br>范围 · 当前工作区快照<br>状态 · 技术预研 / 待验证<br>形式 · 单文件 · 可离线阅读</div>
+  </aside>
+  <main class="main" id="main">
+    <div class="topline"><span>ALPHA / INFRASTRUCTURE / RFC–RESEARCH</span><button type="button" id="print-button">打印 / 保存 PDF</button></div>
+    <header>
+      <div class="hero">
+        <div><p class="eyebrow">POLYGLOT MONOREPO · TECHNICAL SPIKE</p><h1>让一个仓库，<br>承载更多语言。</h1><p class="lead">从 pnpm + Nx 出发，评估 Bazel 如何承接 TypeScript、Go 服务与工程工具，以及我们需要为统一构建付出的成本。</p><span class="tag">建议：小范围试点，按验收结果扩展</span></div>
+        <aside class="hero-aside" aria-label="决策摘要"><h3>Bazel 可以用。<br>迁移价值需要被验证。</h3><p>Go 接入路径相对清晰。当前仓库的迁移难点集中在 TypeScript 编译器、原生依赖和测试运行环境。</p><div class="row"><span>短期路径</span><strong>Nx 保持可用</strong></div><div class="row"><span>验证切片</span><strong>Go 工具 + Provider</strong></div><div class="row"><span>长期候选</span><strong>Bazel 统一构建</strong></div></aside>
+      </div>
+      <div class="metrics"><div class="metric"><strong>4 个工作区包</strong><span>3 个 TypeScript 库 + 1 个示例应用</span></div><div class="metric"><strong>2 条迁移路径</strong><span>扩展 Nx / 渐进引入 Bazel</span></div><div class="metric"><strong>0 项构建改动</strong><span>本次交付仅为研究文档，未执行 PoC</span></div></div>
+    </header>
+
+    <section class="section" id="decision">
+      <p class="section-no">01 / DECISION</p><h2>支持引入 Bazel，先验证最小闭环</h2>
+      <p class="intro">多语言本身并不要求更换 monorepo 工具。Bazel 更有价值的场景，是语言之间开始共享代码生成、工具链、构建产物与缓存，需要把这些关系纳入同一张依赖图。</p>
+      <div class="grid3">
+        <div class="panel"><p class="kicker">CAPABILITY</p><h3>能力上可行</h3><p>Go 可使用 rules_go + Gazelle；JS/TS 可使用 rules_js + rules_ts。Bazel 按规则描述的输入、工具与输出构建，而非限制仓库只能包含一种语言。<a class="ref" href="#s2">[2]</a><a class="ref" href="#s3">[3]</a><a class="ref" href="#s4">[4]</a></p></div>
+        <div class="panel"><p class="kicker">FIT FOR ALPHA</p><h3>近期价值尚未量化</h3><p>仓库只有 4 个 JS 工作区包，已配置 Nx 缓存；尚未发现 Go 模块或 CI 配置。当前没有构建耗时基线，不能据此承诺提速或成本下降。</p></div>
+        <div class="panel"><p class="kicker">RECOMMENDATION</p><h3>从真实工具切入</h3><p>先接一个纯 Go CLI，随后用 Provider 验证现有 TS 产物和测试。再以 Session 的 SQLite 适配器验证原生依赖，完成后决定是否推广。</p></div>
+      </div>
+      <div class="callout"><strong>建议决策：</strong>把 Bazel 列为长期构建底座候选，开展有时间上限的 PoC。若短期只是增加一个独立 Go 服务，继续用 Nx 调用 Go 原生命令也能满足需求；若出现跨语言产物依赖、可复现交付或明显 CI 压力，Bazel 的优先级提高。以上为基于仓库现状的工程判断。</div>
+      <p class="subtle">本文区分三类信息：仓库事实来自本地文件；生态能力来自一手资料；目录、阶段、工期与验收阈值为本报告的建议，未表示迁移已经验证通过。</p>
+    </section>
+
+    <section class="section" id="baseline">
+      <p class="section-no">02 / BASELINE</p><h2>当前基架已经具备什么</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">层面</th><th scope="col">实际配置</th><th scope="col">对迁移的影响</th></tr></thead><tbody>
+        <tr><td>工作区与任务</td><td>pnpm <code>9.15.1</code>；Nx <code>22.7.12</code>；<code>apps/*</code>、<code>packages/*</code>。</td><td>pnpm 管 JS 依赖，Nx 调度 build / typecheck / lint / test。二者职责需要分别迁移。</td></tr>
+        <tr><td>缓存与顺序</td><td>build 缓存 <code>{projectRoot}/dist</code>，依赖上游 build；test 依赖自身 build；typecheck 通常依赖上游 build。</td><td>已有项目级增量能力。ADK / Session 另要求先构建自身，不能照搬成只看源码的类型检查。</td></tr>
+        <tr><td>TS 编译</td><td><code>tsrs 0.20.1-ts7.1.0-beta</code> 负责构建与类型检查；TypeScript <code>6.0.3</code> 供工具使用；ESM + NodeNext + declarations。</td><td><code>rules_ts</code> 的标准 tsc 路线不能直接等同于当前 tsrs；需要选择编译器策略。</td></tr>
+        <tr><td>库与应用</td><td><code>@alpha/provider</code>、<code>@alpha/adk</code>、<code>@alpha/adk-session</code>、<code>@alpha/example-agent</code>；均为 private。</td><td>现有目录可以保留。当前 example-agent 直接依赖 ADK / Provider / zod，尚未依赖 Session。</td></tr>
+        <tr><td>原生依赖</td><td>Session 的 SQLite 入口可选加载 <code>better-sqlite3</code>；开发依赖固定 <code>12.4.1</code>。</td><td>原生模块构建、Node ABI、不同 OS / CPU 的缓存和运行文件都要单独验证。</td></tr>
+        <tr><td>边界与测试</td><td>Nx 标签 + ESLint import 规则 + 产物边界测试；使用 <code>node:test</code>，多处读取 <code>../dist</code>、启动子进程。</td><td>必须保留 package exports、type-only 依赖和无 SQLite 场景的约束，并重建测试所需的文件布局。</td></tr>
+        <tr><td>发布与多语言</td><td>README 明确尚未配置发布或 CI；本次文件扫描未发现 Go / Rust / Python 项目清单或 Bazel 配置。</td><td>有较大的设计空间，但缺少真实 CI 数据和多语言目标。不能把预期收益当作实测结果。</td></tr>
+      </tbody></table></div>
+      <p class="evidence">本地证据：<a href="../package.json">package.json</a> · <a href="../pnpm-workspace.yaml">pnpm-workspace.yaml</a> · <a href="../nx.json">nx.json</a> · <a href="../tsconfig.base.json">tsconfig.base.json</a> · <a href="../eslint.config.js">eslint.config.js</a> · <a href="../packages/adk-session/package.json">Session manifest</a> · <a href="../packages/adk-session/test/boundaries.test.js">Session 边界测试</a> · <a href="../README.md">README</a>。分析对象包含工作区内尚未提交的修改。</p>
+    </section>
+
+    <section class="section" id="options">
+      <p class="section-no">03 / TRADE-OFFS</p><h2>Nx 与 Bazel 解决问题的粒度不同</h2>
+      <p class="intro">Nx 可以通过自定义命令接入 Go，并根据项目图调度、缓存任务；Bazel 将输入、工具、依赖与输出细化为构建动作。实际收益取决于声明的完整性和目标拆分质量。<a class="ref" href="#s5">[5]</a><a class="ref" href="#s6">[6]</a></p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">比较维度</th><th scope="col">A · Nx + 原生语言工具</th><th scope="col">B · 渐进引入 Bazel</th><th scope="col">C · 一次性全量迁移</th></tr></thead><tbody>
+        <tr><td>近期投入</td><td>较低。新增 Go project.json，调用 go build / test。</td><td class="recommended">中等。新增规则、工具链和试点目标，分阶段补齐。</td><td>最高。四个包、所有测试和边界检查同时适配。</td></tr>
+        <tr><td>开发体验</td><td>保持 pnpm、Go 原生工具和 IDE 习惯。</td><td class="recommended">原生 IDE 体验保留；构建入口逐步切换，需要维护过渡说明。</td><td>需要立即学习 labels、runfiles、工具链和 Bazel 排错。</td></tr>
+        <tr><td>跨语言依赖</td><td>用项目依赖、inputs / outputs 和脚本显式串联；Go import 图需手工配置或插件支持。</td><td class="recommended">逐步形成统一目标图；适合 schema → TS / Go 生成代码这类链路。</td><td>理论上一次统一，但迁移期间耦合面大。</td></tr>
+        <tr><td>缓存与隔离</td><td>已有任务缓存；补齐源码、Go 版本、环境和输出声明。</td><td class="recommended">可细化到 action；工具链和输入必须完整声明，才能安全复用缓存。</td><td>能力与 B 相同，全量迁移不会自动提高缓存正确性。</td></tr>
+        <tr><td>当前 tsrs / SQLite</td><td>保持已有流程。</td><td class="recommended">逐个做兼容性实验，失败可停留在已完成阶段。</td><td>任何一个问题都可能阻塞全仓切换。</td></tr>
+        <tr><td>维护成本</td><td>任务配置、语言工具升级；跨语言依赖靠约定补齐。</td><td class="recommended">规则版本、BUILD 文件和工具链；过渡期有双系统成本。</td><td>稳态也有 Bazel 成本，且前期风险集中。</td></tr>
+        <tr><td>适用判断</td><td><strong>短期有效备选</strong>少量独立 Go 工具 / 服务。</td><td class="recommended"><strong>推荐研究路线</strong>预期多语言协同，愿意承担构建维护。</td><td><strong>当前不建议</strong>缺少性能基线和兼容性证据。</td></tr>
+      </tbody></table></div>
+      <div class="callout warn"><strong>避免“换一层命令外壳”。</strong>用一个 Bazel genrule 包住整仓 <code>pnpm build</code>，同时读取宿主 node_modules、向源码目录写 dist，只完成了入口包装。它仍可能继承隐藏输入、粗粒度重建和缓存不可靠的问题。PoC 必须验证声明输入与独立输出。<a class="ref" href="#s7">[7]</a></div>
+      <details><summary>A 方案具体怎么接 Go？</summary><p>新增 Go 项目及其 project.json；通过 nx:run-commands 运行 build / test，构建输出到该项目的独立产物目录。缓存 inputs 应包含 Go 源码、go.mod、go.sum、共享 Go 库、工具链版本、GOOS / GOARCH / CGO 设置。跨项目依赖需显式登记。纯 Go 目录无需为了 Nx 而加入 pnpm workspace。当前仓库的 Nx schema 已包含 command、inputs、outputs、implicitDependencies；官方文档也支持自定义命令。<a class="ref" href="#s5">[5]</a></p><p>这条路线可以直接服务短期需求，后续再把同一项目接入 Bazel；没有必要先迁走全部 TypeScript 包。</p></details>
+    </section>
+
+    <section class="section" id="architecture">
+      <p class="section-no">04 / ARCHITECTURE</p><h2>从两条流水线，逐步走向一张构建图</h2>
+      <p class="intro">切换阶段查看任务由谁负责。每个阶段都应有清楚的权威构建入口，避免 Nx 与 Bazel 相互调用或同时写入同一份产物。</p>
+      <div class="toolbar" role="group" aria-label="构建演进阶段"><button type="button" data-stage="current" aria-pressed="true" aria-controls="stage-current">现状</button><button type="button" data-stage="pilot" aria-pressed="false" aria-controls="stage-pilot">试点阶段</button><button type="button" data-stage="target" aria-pressed="false" aria-controls="stage-target">目标状态</button></div>
+      <div class="stage-panel" id="stage-current">
+        <div class="stage-header"><div><h3>现状 · TypeScript 项目级调度</h3><p>已存在于仓库的配置与流程。</p></div><span class="tag">仓库事实</span></div>
+        <div class="diagram"><div class="stack"><div class="stack-title">ENTRY / 入口</div><div class="node"><strong>pnpm build / test / lint</strong><span>根 package.json scripts</span></div><div class="node"><strong>pnpm install</strong><span>workspace + pnpm-lock.yaml</span></div></div><div class="arrow" aria-hidden="true">→</div><div class="stack"><div class="stack-title">ORCHESTRATOR / 调度</div><div class="node accent"><strong>Nx 任务图与缓存</strong><span>build → typecheck / test</span></div><div class="node"><strong>ESLint + Nx 标签</strong><span>架构依赖与 import 边界</span></div></div><div class="arrow" aria-hidden="true">→</div><div class="stack"><div class="stack-title">OUTPUT / 执行与产物</div><div class="node"><strong>tsrs → 各包 dist</strong><span>JavaScript + .d.ts</span></div><div class="node"><strong>node:test</strong><span>读取 dist / package exports</span></div></div></div>
+        <div class="stage-foot"><strong>当前依赖：</strong>ADK → Provider（类型）；Session → ADK/core（类型）；示例应用 → ADK + Provider（运行时）。Session 是可选扩展，当前示例尚未组装它。</div>
+      </div>
+      <div class="stage-panel" id="stage-pilot" hidden>
+        <div class="stage-header"><div><h3>试点 · 责任分离，结果对照</h3><p>保留现有 TS 权威流程，Bazel 新增验证分支。</p></div><span class="tag amber">建议方案</span></div>
+        <div class="diagram"><div class="stack"><div class="stack-title">ENTRY / 入口</div><div class="node"><strong>pnpm build / test</strong><span>现有 TS 工作流继续有效</span></div><div class="node accent"><strong>bazel build / test</strong><span>仅显式选择试点 targets</span></div></div><div class="arrow" aria-hidden="true">→</div><div class="stack"><div class="stack-title">OWNERSHIP / 所有权</div><div class="node"><strong>Nx → 现有 TS 包</strong><span>保留质量与边界检查</span></div><div class="node accent"><strong>Bazel → Go + Provider 验证</strong><span>规则、工具链、测试数据显式声明</span></div></div><div class="arrow" aria-hidden="true">→</div><div class="stack"><div class="stack-title">OUTPUT / 隔离产物</div><div class="node"><strong>Nx → 源码目录 dist</strong><span>旧流程基线</span></div><div class="node accent"><strong>Bazel → bazel-out / runfiles</strong><span>验证产物接口与测试结果</span></div></div></div>
+        <div class="stage-foot"><strong>退出条件：</strong>产物、测试、边界和性能均达标后，逐项目切换权威入口。Bazel 不调用 Nx。若增加 Nx → Bazel 便捷别名，需对该别名禁用 Nx 缓存；试点默认直接调用 Bazel。</div>
+      </div>
+      <div class="stage-panel" id="stage-target" hidden>
+        <div class="stage-header"><div><h3>目标 · Bazel 统一构建与测试</h3><p>以通过验收为前提；语言生态工具仍保留自己的职责。</p></div><span class="tag amber">条件性目标</span></div>
+        <div class="diagram"><div class="stack"><div class="stack-title">DECLARATION / 声明</div><div class="node"><strong>pnpm-lock + go.mod / sum</strong><span>各语言依赖来源</span></div><div class="node"><strong>MODULE + BUILD</strong><span>规则版本、工具链、目标与依赖</span></div></div><div class="arrow" aria-hidden="true">→</div><div class="stack"><div class="stack-title">BUILD GRAPH / 构建图</div><div class="node accent"><strong>Bazel action graph</strong><span>TS / Go / 按需代码生成</span></div><div class="node"><strong>声明式质量检查</strong><span>单测、类型、lint、边界测试</span></div></div><div class="arrow" aria-hidden="true">→</div><div class="stack"><div class="stack-title">DELIVERY / 交付</div><div class="node"><strong>JS 包 + Go 二进制</strong><span>可追溯的独立产物</span></div><div class="node future"><strong>共享缓存 / 远程执行</strong><span>按真实收益分期开启</span></div></div></div>
+        <div class="stage-foot"><strong>职责：</strong>pnpm / Go modules 继续管理语言依赖，IDE 继续使用语言服务。Nx 调度在替代完成后退出；依赖 Nx 图的 ESLint 规则需先完成替换。构建系统不承担服务部署和发布策略。</div>
+      </div>
+      <p class="subtle">远程缓存复用已有结果；远程执行将动作交给远端 worker 执行。二者可独立采用，PoC 不需要先部署远程执行集群。<a class="ref" href="#s6">[6]</a><a class="ref" href="#s10">[10]</a></p>
+      <div class="panel impact"><div><h3>改动影响推演</h3><label for="change-select">选择一个改动，查看应验证的范围</label><select id="change-select"><option value="go">新增独立 Go CLI 的实现改动</option><option value="provider">修改 Provider 的公开类型</option><option value="schema">修改未来的共享 API schema</option><option value="docs">只修改 docs 中的说明文字</option></select><p class="subtle">这是依赖建模示例，不是扫描结果或实测缓存命中。以最终 BUILD / task inputs 为准。</p></div><div class="impact-result" id="impact-result" aria-live="polite"><h3 id="impact-title">Go 工具应形成独立构建分支</h3><ul id="impact-list"><li>重建该 CLI 及依赖它的目标，执行关联 Go 测试。</li><li>若没有声明跨语言依赖，TS 编译与测试应复用已有结果。</li></ul><p id="impact-note">验收时应检查 action 日志；全仓共享输入配置过宽可能造成额外失效。</p></div></div>
+    </section>
+
+    <section class="section" id="layout">
+      <p class="section-no">05 / REPOSITORY SHAPE</p><h2>保留现有路径，按职责容纳新语言</h2>
+      <p class="intro">Bazel 不要求重排整个仓库。先保留已有 imports、package exports 与文档链接，在新项目旁添加 BUILD 文件；下方目录是目标示意，仅在实际需要时创建。</p>
+      <div class="grid2"><div><pre class="tree"><code>alpha/
+├─ .bazelversion             # 精确固定 Bazel
+├─ .bazelrc                  # 共享构建配置
+├─ .bazelignore              # 排除非目标目录
+├─ MODULE.bazel              # Bzlmod 入口
+├─ MODULE.bazel.lock         # 生成并提交
+├─ BUILD.bazel               # 根目标 / Gazelle
+├─ package.json
+├─ pnpm-workspace.yaml
+├─ pnpm-lock.yaml            # 保留 JS 依赖来源
+├─ go.mod / go.sum           # 首个 Go 项目后加入
+├─ apps/
+│  └─ example-agent/         # 保留 TS 应用
+├─ packages/
+│  ├─ provider/              # 保留 TS 库
+│  ├─ adk/
+│  └─ adk-session/
+├─ services/
+│  └─ gateway/               # 未来 Go 服务示例
+├─ tools/
+│  └─ repo-check/            # 首个 Go CLI 候选
+├─ libs/go/                  # 按需共享 Go 库
+├─ schemas/                  # 按需共享协议
+├─ build/defs/               # 稳定后再抽公共宏
+└─ docs/</code></pre></div><div>
+        <div class="panel" style="margin-top:0"><h3>Go：先一个 module</h3><p>首个 Go 工具使用根 go.mod，实际 module path 由仓库地址确定。服务、工具及共享库可放在同一个 module 内；独立部署不等于必须拆 module。</p><p>出现独立版本发布或明确隔离需求时，再拆多个 module，并按需要引入 go.work。Bazel 侧通过 Gazelle 的 go_deps 读取依赖，BUILD 中仍需明确 deps。<a class="ref" href="#s2">[2]</a></p></div>
+        <div class="panel"><h3>TS：继续由 pnpm 管依赖</h3><p>保留当前 apps/* 与 packages/*。纯 Go services / tools 不加入 pnpm workspace；若 tools 中出现 JS 包，再精确加入相应路径。</p><p>rules_js 导入 pnpm 锁文件并构造受控的依赖布局；这与把开发机现有 node_modules 直接作为构建输入不同。<a class="ref" href="#s11">[11]</a></p></div>
+        <div class="callout" style="margin-bottom:0"><strong>语言之间共享协议与产物。</strong>Go 服务通过 HTTP / RPC 与 TS 调用方交互。出现真实需求后，再由 schemas 生成客户端；Bazel 不会自动让 Go 直接调用 TypeScript 库。</div>
+      </div></div>
+      <div class="table-wrap"><table><thead><tr><th scope="col">版本 / 依赖文件</th><th scope="col">保留的职责</th><th scope="col">更新原则</th></tr></thead><tbody>
+        <tr><td><code>package.json</code> + <code>pnpm-lock.yaml</code></td><td>JS 依赖约束、已解析的版本与完整性信息。</td><td>使用固定 pnpm 更新；验证当前 lockfile v9、workspace:*、peer / optional 依赖导入。</td></tr>
+        <tr><td><code>go.mod</code> + <code>go.sum</code></td><td>Go 模块需求与内容校验；go.sum 不是传统意义上独立的版本锁文件。</td><td>固定 Go SDK；go mod tidy 与 Gazelle 更新作为显式维护步骤，CI 检查无漂移。</td></tr>
+        <tr><td><code>MODULE.bazel</code> + <code>MODULE.bazel.lock</code></td><td>Bazel 模块与扩展解析；不能替代语言侧所有依赖清单。</td><td>选定规则兼容组合后生成、提交锁文件；CI 验证锁定解析结果。</td></tr>
+        <tr><td><code>.bazelversion</code> + 工具链声明</td><td>Bazel、Node、Go、编译器的精确版本。</td><td>用 Bazelisk 选择 Bazel 版本；避免宿主环境静默更换编译器。<a class="ref" href="#s12">[12]</a></td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section class="section" id="integration">
+      <p class="section-no">06 / INTEGRATION DESIGN</p><h2>先选编译器策略，再设计 BUILD</h2>
+      <p class="intro">Bazel 9.0 已移除 WORKSPACE 逻辑，新方案使用 MODULE.bazel / Bzlmod。建议以 Bazel 9 LTS 系列为候选，在 PoC 中核验 rules_go、Gazelle、rules_js、rules_ts 的精确版本组合；这不是已经验证过的兼容矩阵。<a class="ref" href="#s1">[1]</a></p>
+      <div class="grid2"><div class="panel"><p class="kicker">TS 路线 1 · 低定制成本候选</p><h3>rules_ts + 固定 tsc</h3><p>使用标准 ts_project 对接 TS 编译、声明文件和依赖传播。先拿 Provider 比较现有 tsrs 的类型诊断、.d.ts、ESM exports 和行为测试。<a class="ref" href="#s4">[4]</a></p><p><strong>代价：</strong>这是编译器变更。当前 TypeScript 6 与 tsrs 的 TS 7.1 beta 语义不能视为相同，需独立评估，不能随构建迁移悄悄替换。</p></div><div class="panel"><p class="kicker">TS 路线 2 · 保留现有编译器</p><h3>为 tsrs 建立受控 action</h3><p>以 rules_js 的工具执行能力或自定义规则封装 tsrs，显式声明源码、tsconfig、包清单、类型依赖、平台二进制与输出。先验证 Provider。</p><p><strong>代价：</strong>输出预测、声明传递、执行平台、可选平台包和缓存语义都需要维护。能启动 tsrs 命令不等于完成 Bazel 集成；当前未证实开箱即用支持。</p></div></div>
+      <div class="table-wrap"><table><thead><tr><th scope="col">现有任务</th><th scope="col">Bazel 接入方向</th><th scope="col">必须保留的语义</th></tr></thead><tbody>
+        <tr><td>build</td><td>TS 编译 target；Go go_library / go_binary。</td><td>.js / .d.ts 布局、NodeNext、package exports、运行时依赖及正确 deps。</td></tr>
+        <tr><td>typecheck</td><td>独立类型检查目标或编译目标的明确检查入口。</td><td>包括 src 与 test/tsconfig；部分类型测试需要已构建的自身公开包接口。</td></tr>
+        <tr><td>test</td><td>JS 测试规则运行现有 node:test；Go go_test。</td><td>声明测试脚本、helpers、worker、产物、包清单、配置和工具；使用测试临时目录存 SQLite 文件。</td></tr>
+        <tr><td>lint / boundaries</td><td>声明 ESLint 输入并运行；BUILD visibility 限制目标可见性。</td><td>visibility 约束目标依赖，不能独自识别 TS import type 或 package exports；保留源码与产物检查。<a class="ref" href="#s8">[8]</a></td></tr>
+        <tr><td>start / live</td><td>本地运行目标与独立的显式联调入口。</td><td>离线测试保持确定性；真实 LLM、密钥、网络费用不进入默认 build / test 或可缓存测试。</td></tr>
+        <tr><td>pack / deploy（未来）</td><td>显式打包目标，再由交付流程发布。</td><td>JS 包包含 manifest + 正确 dist；Go 二进制按目标平台构建。镜像、注册表和服务编排另行设计。</td></tr>
+      </tbody></table></div>
+      <details><summary>配置示意：根模块与首个 Go 工具</summary><p><strong>设计草图，未执行，不可原样复制运行。</strong>尖括号是待锁定版本或真实 module path。只展示 Go 切片；完整 TS / Node 工具链配置在编译器决策后补充。Go Bzlmod 入口依据 rules_go 文档。<a class="ref" href="#s2">[2]</a></p>
+        <div class="code-title">MODULE.bazel · Go 切片</div><pre><code>module(name = "alpha")
+
+bazel_dep(name = "rules_go", version = "&lt;verified-version&gt;")
+bazel_dep(name = "gazelle", version = "&lt;verified-version&gt;")
+
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "&lt;pinned-go-version&gt;")
+
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//:go.mod")
+# 有第三方 Go 依赖时，补齐 go_deps 的 use_repo 导入。
+# 依赖更新时运行 bazel mod tidy，检查并提交变更。</code></pre>
+        <div class="code-title">BUILD.bazel · 根目录</div><pre><code>load("@gazelle//:def.bzl", "gazelle")
+
+exports_files(["go.mod"])
+
+# gazelle:prefix &lt;actual-module-path&gt;
+gazelle(name = "gazelle")</code></pre>
+        <div class="code-title">tools/repo-check/BUILD.bazel · 示例目标</div><pre><code>load("@rules_go//go:def.bzl", "go_binary", "go_test")
+
+go_binary(
+    name = "repo-check",
+    srcs = ["main.go"],
+    importpath = "&lt;actual-module-path&gt;/tools/repo-check",
+)
+
+go_test(
+    name = "repo-check_test",
+    srcs = ["main.go", "main_test.go"],
+    importpath = "&lt;actual-module-path&gt;/tools/repo-check",
+)</code></pre><p>脚手架完成后的目标命令为 <code>bazel run //:gazelle</code>、<code>bazel build //tools/repo-check:repo-check</code>、<code>bazel test //tools/repo-check:repo-check_test</code>。本次未创建这些文件或目标。Go deps 由 Gazelle 维护，避免一开始就为所有规则增加自定义宏。</p>
+      </details>
+      <details><summary>未来接 Rust / Python 时，哪些设计可以复用？</summary><p>统一入口、目标依赖、工具链固定、缓存与验证方法可以复用；依赖导入和运行环境仍需使用对应规则集。Rust 可考察 rules_rust，Python 可考察 rules_python。含 C 扩展、平台 wheel 或 native build script 的依赖，需要再次做平台验证；当前不引入这些语言的额外配置。<a class="ref" href="#s14">[14]</a><a class="ref" href="#s15">[15]</a></p></details>
+    </section>
+
+    <section class="section" id="risks">
+      <p class="section-no">07 / MIGRATION RISKS</p><h2>真正的工作量，在运行环境与行为等价</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">风险</th><th scope="col">Alpha 中的具体触发点</th><th scope="col">验证与处理</th></tr></thead><tbody>
+        <tr><td><strong>编译器兼容</strong><span class="risk">高 · 决策门槛</span></td><td>tsrs 实验版本；TS 6 工具链并存；NodeNext、声明输出和公开类型测试。</td><td>双路线 Provider spike。记录诊断差异与 API 产物差异；不能只看 build 退出码。</td></tr>
+        <tr><td><strong>SQLite 原生模块</strong><span class="risk">高 · 推广门槛</span></td><td>better-sqlite3 安装脚本、原生 .node 文件与 Node ABI。</td><td>固定 Node，验证 Windows / Linux 的预构建或本地编译路线；生命周期脚本显式配置，检查原生文件进入 runfiles。缺预构建产物时需要相应编译环境。<a class="ref" href="#s11">[11]</a><a class="ref" href="#s13">[13]</a></td></tr>
+        <tr><td><strong>测试运行文件</strong><span class="risk">高</span></td><td>相对 ../dist、动态扫描 .test.js、spawnSync(process.execPath)、worker / loader、读取兄弟包源码。</td><td>在 Bazel 输出树重建受控布局或调整测试定位；显式声明所有 data。不能依赖源码目录残留 dist 或本机已安装 node_modules。</td></tr>
+        <tr><td><strong>边界检查退化</strong><span class="risk">高</span></td><td>@nx/enforce-module-boundaries 依赖 Nx 图；Session 与 ADK 的 type-only 约束和 exports 测试。</td><td>过渡期保留 Nx 相关校验。退出 Nx 前，用等价静态规则 + 负例验证覆盖；Bazel visibility 只是补充。</td></tr>
+        <tr><td><strong>Windows 与 ESM</strong><span class="risk">中高</span></td><td>原生 Windows 开发、长路径、symlink / runfiles、ESM 解析与子进程。</td><td>短输出路径、PowerShell 调用；按所选规则要求核验链接能力和 launcher。rules_js 文档仍列出 ESM 逃逸 runfiles / sandbox 的已知问题，需审查选定版本，额外用干净 Linux 环境验证隔离。<a class="ref" href="#s9">[9]</a><a class="ref" href="#s3">[3]</a></td></tr>
+        <tr><td><strong>缓存正确性</strong><span class="risk">中高</span></td><td>编译器版本、环境变量、原生安装脚本、外部网络、遗漏文件输入。</td><td>先完成干净构建与失效实验，再开共享缓存；区分 OS / CPU / 工具链，可信 CI 写、开发端初期只读；不缓存带密钥的真实联调。</td></tr>
+        <tr><td><strong>Go / IDE 两套视图</strong><span class="risk">中</span></td><td>Go modules 与 BUILD deps；未来 codegen 文件；gopls 导航。</td><td>保留 go.mod 与语言服务；固定 SDK，自动维护 BUILD 并做无漂移检查。第一阶段用纯 Go，cgo 作为独立验证范围。</td></tr>
+        <tr><td><strong>冷启动与维护负担</strong><span class="risk">中</span></td><td>下载 Bazel、语言 SDK、规则和依赖；新增 BUILD 文件与版本升级。</td><td>分别测量初次下载、冷 action、热增量；指定维护人。为规则升级建立小范围验证，按真实瓶颈再做镜像 / 缓存优化。</td></tr>
+      </tbody></table></div>
+      <div class="callout warn"><strong>必须保留当前离线边界。</strong>Provider 的默认 test 只运行 provider.test.js；真实 OpenRouter 测试是独立入口。ADK 的 test:live 也是显式入口。迁移时不可用泛化文件扫描把这些真实服务测试纳入默认套件。</div>
+      <p class="subtle">Windows 上不能把“Bazel 支持 Windows”直接解释为所有语言规则、安装脚本和 sandbox 行为都与 Linux 相同。本报告建议用原生 Windows 验证开发体验，以干净 Linux CI 验证交付环境；若未来 CI 并非 Linux，应替换成实际目标平台。</p>
+    </section>
+
+    <section class="section" id="pilot">
+      <p class="section-no">08 / VALIDATION PLAN</p><h2>一次有限试点，回答是否值得迁移</h2>
+      <p class="intro">建议上限为 6–10 个工程人日，包含学习和排错，不是交付承诺；CI、服务规模及 Bazel 熟悉程度尚未知。任何阶段达到退出条件，都可停止扩展，保留已经获得的证据。</p>
+      <div class="steps">
+        <div class="step"><div><h3>建立现状与兼容性基线</h3><p>记录当前 build / typecheck / lint / test 结果、产物与耗时；确认 CI 平台。锁定 Bazel / rules / SDK 候选，核验 Node engines 与 pnpm lockfile 支持。</p></div><div class="time">预计 1 人日<br>产出：基线记录</div></div>
+        <div class="step"><div><h3>接入一个真实的纯 Go CLI</h3><p>建议 repo-check 或其他即将使用的工程工具。完成 Go module、Gazelle、build / test / run 和 Windows + Linux 验证；先不做 cgo、镜像与远程执行。</p></div><div class="time">预计 1–2 人日<br>产出：最小闭环</div></div>
+        <div class="step"><div><h3>用 Provider 确定 TS 方案</h3><p>比较 rules_ts + tsc 与保留 tsrs 的成本；验证 JS / .d.ts / exports、类型测试、node:test、ESLint。Bazel 产物与旧 dist 分离，对照并保留原命令。</p></div><div class="time">预计 2–3 人日<br>产出：编译器决策</div></div>
+        <div class="step"><div><h3>验证最难路径，再评审推广</h3><p>用 Session 的 SQLite 和子进程测试验证原生依赖；补齐 ADK 类型依赖及边界检查。测量冷 / 热 / 改动构建，记录错误失效；决定推广、继续局部共存或撤回。</p></div><div class="time">预计 2–4 人日<br>产出：Go / No-go</div></div>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th scope="col">验收项</th><th scope="col">测量方法 / 通过条件</th><th scope="col">本次状态</th></tr></thead><tbody>
+        <tr><td>干净环境构建</td><td>新 checkout、无残留 dist / node_modules，Windows 与目标 CI 平台能仅凭声明的依赖和工具链完成选定切片。</td><td>未执行</td></tr>
+        <tr><td>功能与边界等价</td><td>原有离线测试、类型测试、exports / import-type / 无 SQLite 场景保持；故意加入违规 import 必须仍失败。</td><td>未执行</td></tr>
+        <tr><td>正确失效</td><td>分别改 Go 叶子、Provider 公共类型、tsconfig、锁文件与文档；该重建的动作必须重建，不应重建的范围有解释。工具链更换也必须生效。</td><td>未执行</td></tr>
+        <tr><td>产物一致</td><td>固定同平台与工具链，在独立输出根目录重复构建，检查可分发文件 hash；若含时间 / 路径等不稳定内容，记录并修复或明确评估。</td><td>未执行</td></tr>
+        <tr><td>耗时与资源</td><td>同机、同目标、同测试覆盖，每种场景至少 5 次，比较中位数；首轮下载、服务启动、冷动作、热动作分别记录。观察峰值内存与缓存占用。</td><td>未测量</td></tr>
+        <tr><td>推广的性能门槛</td><td>建议热增量不比基线慢超过 20%；若因可复现交付接受额外成本，需要显式记录取舍。提速是预期收益，不是预设结果。</td><td>建议阈值</td></tr>
+        <tr><td>可维护性</td><td>另一位开发者能按文档新增 Go / TS 目标并定位失败；明确规则维护人，未留下需要长期手改生成文件的流程。</td><td>未执行</td></tr>
+      </tbody></table></div>
+      <div class="grid2"><div class="panel"><h3>推进到统一 Bazel 的条件</h3><ul class="checklist"><li>Go、TS 和原生依赖均跑通真实测试。</li><li>tsrs 的保留或替换已有明确决定。</li><li>边界检查与公开包接口没有退化。</li><li>构建收益或一致性交付价值覆盖维护成本。</li><li>有明确负责人维护规则与工具链升级。</li></ul><p class="subtle">以上均为待验收条件；圆圈并不表示已检查。</p></div><div class="panel"><h3>退出与回滚策略</h3><p><strong>阶段回退：</strong>若 TS 迁移成本过高，可只保留 Go 的 Bazel 试点；现有 TS 继续由 Nx 管理，记录复评时间，避免无限期双份配置。</p><p><strong>完整撤回：</strong>试点提交单独管理，移除新增构建配置并恢复便捷入口；保留业务 Go 代码，通过 go build / test 或 Nx 运行。旧 pnpm 锁文件、scripts 与 dist 约定在验收前保持可用。</p><p><strong>暂缓条件：</strong>tsrs 与规则无法可靠适配、SQLite 依赖宿主隐式环境、边界检查无法等价覆盖，或到达人日上限仍缺少闭环。</p></div></div>
+      <div class="callout"><strong>下一步的具体范围：</strong>新增 Bazel 基础配置 + 一个纯 Go CLI + Provider 的独立验证目标；保留现有 pnpm / Nx 命令。完成这一个切片后，再决定是否迁移 ADK、Session 与示例应用。本报告未安装 Bazel、未生成 BUILD 文件，也未修改仓库构建入口。</div>
+    </section>
+
+    <section class="section" id="sources">
+      <p class="section-no">09 / REFERENCES</p><h2>一手资料与证据边界</h2>
+      <p class="intro">资料检索于 2026-11-04。链接到官方文档或规则维护者仓库；main / master 与在线文档可能更新。落地时应固定 release / tag，不把本文当成已验证的版本兼容承诺。</p>
+      <ol class="sources">
+        <li id="s1"><b class="source-no">[1]</b><a href="https://github.com/bazelbuild/bazel/releases/tag/9.0.0" target="_blank" rel="noopener noreferrer">Bazel 9.0.0 release notes</a><span>Bzlmod 始终启用；WORKSPACE 移除；语言规则外置。</span></li>
+        <li id="s2"><b class="source-no">[2]</b><a href="https://github.com/bazel-contrib/rules_go/blob/master/docs/go/core/bzlmod.md" target="_blank" rel="noopener noreferrer">rules_go · Go with Bzlmod</a><span>Go SDK、go_deps、go.mod / go.work 与模块配置。</span></li>
+        <li id="s3"><b class="source-no">[3]</b><a href="https://github.com/aspect-build/rules_js" target="_blank" rel="noopener noreferrer">Aspect · rules_js</a><span>JS / Node 支持、pnpm 布局与 ESM 已知问题。</span></li>
+        <li id="s4"><b class="source-no">[4]</b><a href="https://github.com/aspect-build/rules_ts" target="_blank" rel="noopener noreferrer">Aspect · rules_ts</a><span>ts_project、tsc 类型检查与声明输出；不证明 tsrs 直接兼容。</span></li>
+        <li id="s5"><b class="source-no">[5]</b><a href="https://nx.dev/docs/reference/nx/executors#run-commands" target="_blank" rel="noopener noreferrer">Nx · run-commands executor</a><span>自定义命令与任务调度。在线文档较仓库 Nx 22 更新；基础配置能力另对照本地 schema。</span></li>
+        <li id="s6"><b class="source-no">[6]</b><a href="https://bazel.build/remote/caching" target="_blank" rel="noopener noreferrer">Bazel · Remote Caching</a><span>action、输入输出、缓存复用与后端配置。</span></li>
+        <li id="s7"><b class="source-no">[7]</b><a href="https://bazel.build/basics/hermeticity" target="_blank" rel="noopener noreferrer">Bazel · Hermeticity</a><span>固定工具、显式输入与隐藏宿主依赖。</span></li>
+        <li id="s8"><b class="source-no">[8]</b><a href="https://bazel.build/concepts/visibility" target="_blank" rel="noopener noreferrer">Bazel · Visibility</a><span>目标依赖的可见性约束及其作用范围。</span></li>
+        <li id="s9"><b class="source-no">[9]</b><a href="https://bazel.build/configure/windows" target="_blank" rel="noopener noreferrer">Bazel · Using Bazel on Windows</a><span>长路径、symlink / runfiles 与 PowerShell 使用。</span></li>
+        <li id="s10"><b class="source-no">[10]</b><a href="https://bazel.build/remote/rbe" target="_blank" rel="noopener noreferrer">Bazel · Remote Execution Overview</a><span>远程执行与执行环境要求。</span></li>
+        <li id="s11"><b class="source-no">[11]</b><a href="https://github.com/aspect-build/rules_js/blob/main/docs/pnpm.md" target="_blank" rel="noopener noreferrer">rules_js · pnpm and rules_js</a><span>锁文件导入与 lifecycle hooks；具体配置按选定版本核验。</span></li>
+        <li id="s12"><b class="source-no">[12]</b><a href="https://bazel.build/install/bazelisk" target="_blank" rel="noopener noreferrer">Bazel · Installing with Bazelisk</a><span>Bazel 版本选择与安装入口。</span></li>
+        <li id="s13"><b class="source-no">[13]</b><a href="https://github.com/WiseLibs/better-sqlite3/blob/master/docs/troubleshooting.md" target="_blank" rel="noopener noreferrer">better-sqlite3 · Troubleshooting</a><span>原生模块安装与构建环境问题。</span></li>
+        <li id="s14"><b class="source-no">[14]</b><a href="https://github.com/bazelbuild/rules_rust" target="_blank" rel="noopener noreferrer">rules_rust</a><span>后续 Rust 接入的规则候选，未做仓库适配验证。</span></li>
+        <li id="s15"><b class="source-no">[15]</b><a href="https://github.com/bazel-contrib/rules_python" target="_blank" rel="noopener noreferrer">rules_python</a><span>后续 Python 接入的规则候选，未做仓库适配验证。</span></li>
+      </ol>
+      <details><summary>本地证据索引与尚未回答的问题</summary><p>除前文链接外，还检查了 <a href="../packages/provider/package.json">Provider scripts</a>、<a href="../packages/adk/package.json">ADK scripts</a>、<a href="../apps/example-agent/package.json">示例应用依赖</a>、<a href="../packages/adk/test/run.js">ADK 测试启动器</a>、<a href="../packages/adk-session/test/run.js">Session 测试启动器</a>、<a href="../packages/adk/test/boundaries.test.js">ADK 产物边界</a>、<a href="../pnpm-lock.yaml">pnpm 锁文件</a>和本地 Nx project schema。配置版本来自文件内容，未重新运行现有构建与业务测试。</p><p>尚待落地前确认：第一个 Go 工具 / 服务的真实职责、最终部署平台、团队规模、可接受维护预算、是否必须保留 tsrs。当前方案采用“原生 Windows 开发 + Linux CI 候选 + 首个纯 Go 工具”的假设；这些假设可以调整，不影响先做局部验证的结论。</p></details>
+    </section>
+    <footer class="footer"><span>ALPHA / BAZEL MONOREPO RESEARCH · 2026.11.04</span><span>仓库实情 + 一手资料 + 待验证方案</span></footer>
+  </main>
+</div>
+<script>
+  (() => {
+    const stageButtons = Array.from(document.querySelectorAll('[data-stage]'));
+    const panels = Array.from(document.querySelectorAll('.stage-panel'));
+    stageButtons.forEach(button => button.addEventListener('click', () => {
+      stageButtons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      panels.forEach(panel => { panel.hidden = panel.id !== 'stage-' + button.dataset.stage; });
+    }));
+    const impactData = {
+      go: { title: 'Go 工具应形成独立构建分支', items: ['重建该 CLI 及依赖它的目标，执行关联 Go 测试。', '若没有声明跨语言依赖，TS 编译与测试应复用已有结果。'], note: '验收时应检查 action 日志；全仓共享输入配置过宽可能造成额外失效。' },
+      provider: { title: '公开类型变化沿消费关系传播', items: ['Provider 自身的构建、类型与行为测试需要重新验证。', 'ADK 类型检查和声明消费者进入受影响范围；示例应用、Session 根据实际声明依赖和产物变化继续传播。', '即使运行时仅保留 type-only 关系，编译期依赖仍必须显式建模。'], note: '源文件改动不一定改变所有下游输入；最终重建范围由产物摘要与所选规则行为决定。' },
+      schema: { title: '未来的跨语言代码生成链路', items: ['共享 schema 作为代码生成目标的显式输入。', 'TS 与 Go 生成目标把产物传递给各自客户端 / 服务及相关测试。', '生成器与版本也属于构建输入；源 schema 不变时升级生成器同样需要正确失效。'], note: '仓库目前没有这条链路。这是 Bazel 增加价值的候选场景，出现真实需求后再实现。' },
+      docs: { title: '纯文档改动应尽量保持编译缓存', items: ['若 docs 不是编译或测试的输入，语言编译动作应复用已有结果。', '如另设文档检查目标，仅执行对应检查；无需强制全仓重建。'], note: '默认全仓 inputs、glob 范围过宽或嵌入文档的代码生成都会改变这一判断，需用真实日志验证。' }
+    };
+    const select = document.getElementById('change-select');
+    select.addEventListener('change', () => {
+      const data = impactData[select.value];
+      document.getElementById('impact-title').textContent = data.title;
+      const list = document.getElementById('impact-list');
+      list.replaceChildren(...data.items.map(text => { const li = document.createElement('li'); li.textContent = text; return li; }));
+      document.getElementById('impact-note').textContent = data.note;
+    });
+    const navLinks = Array.from(document.querySelectorAll('.rail nav a'));
+    const sections = Array.from(document.querySelectorAll('section[id]'));
+    let pending = false;
+    const updateReading = () => {
+      const max = document.documentElement.scrollHeight - innerHeight;
+      document.getElementById('reading-progress').style.width = (max > 0 ? scrollY / max * 100 : 0) + '%';
+      let active = sections[0].id;
+      sections.forEach(section => { if (section.getBoundingClientRect().top <= 170) active = section.id; });
+      navLinks.forEach(link => { const selected = link.hash === '#' + active; link.classList.toggle('active', selected); if (selected) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current'); });
+      pending = false;
+    };
+    addEventListener('scroll', () => { if (!pending) { pending = true; requestAnimationFrame(updateReading); } }, { passive: true });
+    addEventListener('resize', updateReading);
+    updateReading();
+    let printDetails = [];
+    addEventListener('beforeprint', () => { printDetails = Array.from(document.querySelectorAll('details')).map(item => ({ item, open: item.open })); printDetails.forEach(({ item }) => { item.open = true; }); });
+    addEventListener('afterprint', () => { printDetails.forEach(({ item, open }) => { item.open = open; }); });
+    document.getElementById('print-button').addEventListener('click', () => window.print());
+  })();
+</script>
+</body>
+</html>

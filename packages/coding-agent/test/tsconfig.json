@@ -1,0 +1,11 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "types": ["node"], "paths": {
+    "@alpha/coding-agent": ["../dist/index.d.ts"],
+    "@alpha/coding-agent/node": ["../dist/node/index.d.ts"],
+    "@alpha/adk/core": ["../../adk/dist/core/index.d.ts"],
+    "@alpha/adk-session": ["../../adk-session/dist/index.d.ts"],
+    "@alpha/provider": ["../../provider/dist/index.d.ts"]
+  } },
+  "include": ["types.ts", "../../../docs/coding-agent-example-c1.ts"]
+}

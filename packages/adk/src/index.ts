@@ -1,2 +1,2 @@
-// Agent development framework entry point; implementation will follow.
+// Business APIs are exported exclusively from @alpha/adk/core.
 export {};

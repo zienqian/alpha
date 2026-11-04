@@ -1,0 +1,266 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alpha ADK · API 设计与 Roadmap</title><style>
+:root{--ink:#172634;--muted:#607383;--accent:#175f58;--line:#dce6e4;--bg:#f3f7f6;--panel:#fff}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 "Segoe UI","Microsoft YaHei",sans-serif}a{color:var(--accent)}header{background:#102c36;color:#fff}header .bar{max-width:1440px;margin:auto;display:flex;align-items:center;padding:17px 32px;gap:18px}.brand{font-size:12px;font-weight:800;letter-spacing:.16em}.logo{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:6px;margin-right:10px;background:#ccf275;color:#102c36;letter-spacing:0}.crumb{color:#a4bbbd;border-left:1px solid #587079;padding-left:18px;font-size:12px}.badge{margin-left:auto;border:1px solid #52716b;color:#d3e9db;padding:3px 10px;border-radius:20px;font-size:11px}.layout{max-width:1440px;margin:auto;padding:0 32px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:45px}nav{position:sticky;top:18px;height:calc(100vh - 36px);overflow:auto;padding-top:38px}nav .label{font:700 10px Consolas;letter-spacing:.16em;color:#8ba19e;margin-bottom:12px}nav a{display:block;text-decoration:none;font-size:12px;color:#607b7c;padding:5px 0}nav a:hover{color:var(--accent)}main{padding:48px 0 80px;min-width:0}.eyebrow{font:700 11px Consolas;letter-spacing:.16em;color:var(--accent)}h1{font-size:clamp(40px,5vw,64px);line-height:1.1;letter-spacing:-.05em;margin:16px 0}h1 span{color:var(--accent)}.lead{font-size:17px;max-width:850px;color:var(--muted)}.tags{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 28px}.tag{font-size:11px;border-radius:16px;padding:3px 10px;color:#39665a;background:#e4f0e9;border:1px solid #d3e5da}.tag.draft{background:#fff0df;color:#966337;border-color:#f4dec3}.hero{border-bottom:1px solid var(--line);padding-bottom:23px}section{margin-top:65px;scroll-margin-top:20px}.heading{display:flex;align-items:baseline;gap:15px}.heading span{font:12px Consolas;color:#91a9a4}.heading h2{font-size:27px;line-height:1.25;letter-spacing:-.035em;margin:0}.intro{color:var(--muted);margin:10px 0 22px;max-width:880px}.code{margin:14px 0;background:#102832;border-radius:12px;overflow:hidden;color:#d5e6e1}.code-head{display:flex;justify-content:space-between;align-items:center;padding:10px 17px;border-bottom:1px solid #304a4f;color:#a6c1b9;font:11px Consolas}.copy{background:transparent;color:#cce0d7;border:1px solid #526e69;border-radius:5px;padding:4px 9px;cursor:pointer}.copy:hover{background:#29474a}pre{margin:0;padding:20px;overflow:auto;font:12.5px/1.8 Consolas,"Cascadia Code",monospace}code{font-family:Consolas,monospace}.table{overflow:auto;border:1px solid var(--line);border-radius:12px;background:white;margin:14px 0}table{border-collapse:collapse;width:100%;min-width:710px;font-size:13px}th,td{padding:12px 15px;vertical-align:top;text-align:left;border-bottom:1px solid #e9efed}th{background:#f9fbfa;color:#78918e;font-size:11px}tr:last-child td{border:0}td:first-child{font-weight:600;color:#21463f}.note{background:#e7f2ed;border-left:3px solid #40897a;border-radius:0 8px 8px 0;padding:13px 16px;color:#42635a;font-size:13px;margin:15px 0}.note.warning{background:#fff2e1;border-color:#d89c61;color:#7a5b3d}.muted{font-size:12px;color:var(--muted)}footer{border-top:1px solid var(--line);margin-top:60px;padding-top:20px;color:#829896;font-size:12px}@media(max-width:850px){.layout{display:block;padding:0 20px}nav{position:static;height:auto;display:flex;gap:14px;overflow:auto;padding-top:18px}nav .label{display:none}nav a{white-space:nowrap}.crumb{display:none}main{padding-top:35px}section{margin-top:48px}}
+</style></head><body><header><div class="bar"><div class="brand"><span class="logo">A</span>ALPHA / ADK</div><div class="crumb">Agent Development Kit / API 设计</div><div class="badge">API DESIGN · V2</div></div></header><div class="layout"><nav aria-label="页面目录"><div class="label">ON THIS PAGE</div><a href="#quick">01 / 快速开始</a><a href="#surface">02 / API 总览</a><a href="#tool">03 / 工具</a><a href="#stream">04 / 流与结果</a><a href="#middleware">05 / Middleware</a><a href="#session">06 / Session</a><a href="#runtime">07 / Runtime</a><a href="#provider">08 / Provider 续接</a><a href="#architecture">09 / 包结构</a><a href="#roadmap">10 / Roadmap</a><a href="#decisions">11 / 决策点</a><a href="#sources">12 / 调研来源</a></nav><main><div class="hero"><div class="eyebrow">DEFINE · RUN · EXTEND</div><h1>先把 API 设计清楚。<br><span>再把能力逐步做出来。</span></h1><p class="lead">以真实的开发方式讨论 Alpha ADK：如何创建 Agent、接入模型与工具、处理流式结果，并替换运行策略和存储。</p><div class="tags"><span class="tag draft">设计草案 · 尚未实现</span><span class="tag">自有 Agent Runtime</span><span class="tag">接现有 Provider</span><span class="tag">不依赖 AI SDK</span></div></div><section id="quick"><div class="heading"><span>01</span><h2>先看我们的 API</h2></div><p class="intro">这是拟议 API：先定义工具，再创建 Agent，最后运行。现在仓库中的 ADK 仍是骨架，以下代码暂不能运行。</p><div class="code"><div class="code-head"><span>01 / 定义并调用一个 Agent</span><button type="button" class="copy">复制</button></div><pre><code>import { createAgent, defineTool } from &#x27;@alpha/adk&#x27;;
+import { provider } from &#x27;./provider.config.js&#x27;; // 已有 Provider
+
+const weather = defineTool({
+  name: &#x27;get_weather&#x27;,
+  description: &#x27;根据城市名称查询天气&#x27;,
+  inputSchema: {
+    type: &#x27;object&#x27;,
+    properties: { city: { type: &#x27;string&#x27; } },
+    required: [&#x27;city&#x27;],
+    additionalProperties: false,
+  },
+  parse(input) {
+    if (!input || typeof input !== &#x27;object&#x27; || Array.isArray(input)
+        || !(&#x27;city&#x27; in input) || typeof input.city !== &#x27;string&#x27; || !input.city.trim()) {
+      throw new Error(&#x27;city 必须是非空字符串&#x27;);
+    }
+    return { city: input.city };
+  },
+  async execute({ city }, { signal }) {
+    // 换成你的天气服务；这里只返回示例数据
+    return { city, weather: &#x27;晴&#x27;, temperature: 22 };
+  },
+});
+
+export const assistant = createAgent({
+  name: &#x27;weather-assistant&#x27;,
+  model: provider.use(&#x27;openrouter&#x27;, &#x27;free&#x27;),
+  instructions: &#x27;回答天气问题，必要时使用工具。&#x27;,
+  tools: [weather],
+});
+
+const result = await assistant.run(&#x27;北京天气怎么样？&#x27;);
+if (result.status === &#x27;completed&#x27;) console.log(result.output);
+else console.log(result.status, result.reason);</code></pre></div><div class="note"><b>一次调用做什么：</b>自动把用户输入发给模型；模型请求工具时，先校验参数并执行工具，再把结果送回模型，直到最终回答或达到终止条件。示例天气数据是假的。</div></section><section id="surface"><div class="heading"><span>02</span><h2>公开 API：第一版到底提供什么</h2></div><p class="intro">默认值、覆盖顺序与扩展点都写进契约。请求级配置优先于 Agent 配置；Provider 的模型限制仍然生效。</p><div class="code"><div class="code-head"><span>02 / 包的导出</span><button type="button" class="copy">复制</button></div><pre><code>// 公开入口（提案）
+import {
+  createAgent, defineTool,
+  createMemorySession,
+  createReActRuntime,
+  messagesConversation, responsesConversation, anthropicConversation,
+} from &#x27;@alpha/adk&#x27;;
+import type {
+  Agent, AgentConfig, RunOptions, RunResult, RunEvent,
+  Tool, ToolContext, Middleware, Session, Runtime, Conversation,
+} from &#x27;@alpha/adk&#x27;;</code></pre></div><div class="code"><div class="code-head"><span>03 / Agent 与运行参数</span><button type="button" class="copy">复制</button></div><pre><code>type ModelOptions = Pick&lt;GenerateInput, 'temperature' | 'maxOutputTokens' | 'thinkingLevel'&gt;;
+
+interface AgentConfig&lt;Context = unknown&gt; {
+  name: string;
+  model: LanguageModel;           // 直接接现有 provider.use(...) 的结果
+  instructions?: string;
+  tools?: readonly Tool&lt;any, Context&gt;[]; // 不同工具的输入类型可以不同
+  modelOptions?: ModelOptions;    // temperature / maxOutputTokens / thinkingLevel
+  maxSteps?: number;              // 默认 8，最多发起的模型请求次数
+  toolError?: &#x27;stop&#x27; | &#x27;return&#x27;; // 默认 stop；return 允许模型看到脱敏错误
+  middleware?: readonly Middleware&lt;Context&gt;[];
+  conversation?: Conversation;  // 默认 messagesConversation()
+  runtime?: Runtime&lt;Context&gt;;     // 默认 createReActRuntime()
+}
+
+interface Agent&lt;Context = unknown&gt; {
+  run(input: AgentInput, options?: RunOptions&lt;Context&gt;): Promise&lt;RunResult&gt;;
+  stream(input: AgentInput, options?: RunOptions&lt;Context&gt;): AsyncIterable&lt;RunEvent&gt;;
+}
+type AgentInput = string | readonly Message[];
+interface RunOptions&lt;Context&gt; {
+  context?: Context;             // 只给工具和 middleware，不自动发给模型
+  session?: Session;
+  signal?: AbortSignal;
+  maxSteps?: number;             // 覆盖 agent 默认值
+  modelOptions?: ModelOptions;   // 逐字段覆盖 agent 默认值
+}</code></pre></div><div class="table"><table><thead><tr><th>参数</th><th>默认 / 行为</th><th>边界</th></tr></thead><tbody><tr><td>model</td><td>必填，接收 LanguageModel 实例</td><td>ADK 不读取 API Key、不创建 Provider。</td></tr><tr><td>instructions</td><td>不传则没有额外指令</td><td>每次独立运行插入 system 消息；Responses 续接时必须重新发送必要指令。</td></tr><tr><td>tools</td><td>空数组</td><td>名称必须非空且唯一；无工具时不发送 tools。</td></tr><tr><td>maxSteps</td><td>8；run() 可单次覆盖</td><td>数的是模型请求次数；第 8 次若返回工具，不执行这些工具并返回 max_steps。</td></tr><tr><td>toolError</td><td>stop</td><td>stop 表示停止；return 把安全错误文本发给模型，绝不把堆栈和密钥发给模型。</td></tr><tr><td>modelOptions</td><td>不传则不覆盖模型默认值</td><td>限定为 temperature、maxOutputTokens、thinkingLevel；不允许通过这里覆盖 signal / messages / tools。</td></tr><tr><td>session</td><td>不传时单次无状态</td><td>同一个 session 的并发 run 默认拒绝；历史和 context 是两种数据。</td></tr></tbody></table></div></section><section id="tool"><div class="heading"><span>03</span><h2>Tool：校验、上下文与执行</h2></div><p class="intro">工具是普通函数加一份明确的模型输入契约。parse 的返回值才会交给 execute；TypeScript 类型不代替运行时校验。</p><div class="code"><div class="code-head"><span>04 / Tool 契约</span><button type="button" class="copy">复制</button></div><pre><code>type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
+type JsonObject = { [key: string]: Json };
+
+interface Tool&lt;Input = unknown, Context = unknown&gt; {
+  readonly name: string;
+  readonly description?: string;
+  readonly inputSchema: JsonObject; // 发给模型的 JSON Schema
+  parse(input: unknown): Input;   // 运行时校验；失败时 throw
+  execute(input: Input, ctx: ToolContext&lt;Context&gt;): Promise&lt;Json&gt;;
+}
+interface ToolContext&lt;Context&gt; {
+  runId: string;
+  toolCallId: string;
+  signal: AbortSignal;
+  context: Context | undefined;
+}
+// defineTool 让 parse 的返回类型自动流向 execute 的 input。
+// 本段为简化后的对外契约；泛型 helper 的最终声明在实现时定稿。</code></pre></div><div class="code"><div class="code-head"><span>05 / 用 context 注入应用服务</span><button type="button" class="copy">复制</button></div><pre><code>import { createAgent, defineTool } from &#x27;@alpha/adk&#x27;;
+import type { ToolContext } from &#x27;@alpha/adk&#x27;;
+import { model, orderService } from &#x27;./app-deps.js&#x27;; // 应用自行提供
+type AppContext = { tenantId: string; orders: OrderService };
+
+const queryOrder = defineTool({
+  name: &#x27;query_order&#x27;,
+  description: &#x27;查询当前租户的订单状态&#x27;,
+  inputSchema: {
+    type: &#x27;object&#x27;,
+    properties: { orderId: { type: &#x27;string&#x27; } },
+    required: [&#x27;orderId&#x27;], additionalProperties: false,
+  },
+  parse(input) {
+    if (!input || typeof input !== &#x27;object&#x27; || Array.isArray(input)
+        || !(&#x27;orderId&#x27; in input) || typeof input.orderId !== &#x27;string&#x27;) throw new Error(&#x27;invalid orderId&#x27;);
+    return { orderId: input.orderId };
+  },
+  async execute({ orderId }, { context, signal }: ToolContext&lt;AppContext&gt;) {
+    if (!context) throw new Error(&#x27;missing context&#x27;);
+    return context.orders.get(context.tenantId, orderId, { signal });
+  },
+});
+
+const orderAgent = createAgent&lt;AppContext&gt;({ name: &#x27;order-agent&#x27;, model, tools: [queryOrder] });
+const result = await orderAgent.run(&#x27;订单 A123 状态？&#x27;, {
+  context: { tenantId: &#x27;tenant-1&#x27;, orders: orderService },
+  signal: AbortSignal.timeout(30_000),
+});</code></pre></div><div class="note"><b>执行顺序：</b>名称匹配 → 参数 parse → middleware 授权 → execute → 转成 JSON 字符串写入工具消息。工具未注册、parse 失败或执行失败按 toolError 处理。工具可以忽略取消信号，因此取消不保证外部副作用回滚。</div></section><section id="stream"><div class="heading"><span>04</span><h2>run / stream：使用和结果</h2></div><p class="intro">两个方法共享同一运行语义。stream 是惰性的单消费者异步迭代器；run 会消费同一套内部执行流程并返回最终结果。</p><div class="code"><div class="code-head"><span>06 / 实时输出与工具进度</span><button type="button" class="copy">复制</button></div><pre><code>const controller = new AbortController();
+for await (const event of assistant.stream(&#x27;北京天气怎么样？&#x27;, {
+  signal: controller.signal,
+})) {
+  switch (event.type) {
+    case &#x27;text.delta&#x27;: process.stdout.write(event.text); break;
+    case &#x27;tool.started&#x27;: console.log(&#x27;开始工具&#x27;, event.name); break;
+    case &#x27;tool.finished&#x27;: console.log(&#x27;结束工具&#x27;, event.name); break;
+    case &#x27;run.finished&#x27;: console.log(event.result.status); break;
+  }
+}</code></pre></div><div class="code"><div class="code-head"><span>07 / 结果与事件的精确字段</span><button type="button" class="copy">复制</button></div><pre><code>type RunStatus = &#x27;completed&#x27; | &#x27;refused&#x27; | &#x27;incomplete&#x27; | &#x27;cancelled&#x27; | &#x27;failed&#x27;;
+interface RunResult {
+  runId: string;
+  status: RunStatus;
+  output: string;                // 非 completed 时可能是部分文本
+  reason?: string;               // 如 max_steps、tool_error、model_error
+  steps: number;                 // 本次已经发出的模型请求次数
+  messages: readonly Message[];  // 本次新增消息，含必要协议续接数据
+  usage?: { inputTokens?: number; outputTokens?: number };
+}
+type RunEvent =
+  | { type: &#x27;run.started&#x27;; runId: string; seq: number }
+  | { type: &#x27;model.started&#x27;; runId: string; seq: number; step: number }
+  | { type: &#x27;text.delta&#x27;; runId: string; seq: number; text: string }
+  | { type: &#x27;tool.started&#x27;; runId: string; seq: number; toolCallId: string; name: string }
+  | { type: &#x27;tool.finished&#x27;; runId: string; seq: number; toolCallId: string; name: string }
+  | { type: &#x27;run.finished&#x27;; runId: string; seq: number; result: RunResult };</code></pre></div><div class="table"><table><thead><tr><th>情况</th><th>状态 / reason</th><th>调用方看到什么</th></tr></thead><tbody><tr><td>模型完成</td><td>completed</td><td>output 为最终回答；messages 为本次新增消息。</td></tr><tr><td>模型拒答</td><td>refused / model_refused</td><td>保留模型拒答内容，不执行工具。</td></tr><tr><td>模型截断 / 达到 maxSteps</td><td>incomplete / model_incomplete 或 max_steps</td><td>output 可为部分文本，不能当完整答案。</td></tr><tr><td>用户取消</td><td>cancelled / aborted</td><td>传递 signal；若工具已产生副作用，结果不表示已撤销。</td></tr><tr><td>模型、工具、校验、session 错误</td><td>failed / model_error、tool_error、session_error</td><td>返回脱敏原因；结构化 observer 留到后续阶段设计。</td></tr><tr><td>配置非法</td><td>抛出错误</td><td>无效 Agent 在创建时抛错；无效 run 参数在开始运行前抛错。</td></tr></tbody></table></div><div class="note"><b>事件约定：</b>同一 run 的 seq 从 1 递增；正常消费到结束时有且仅有一个 run.finished。文本增量是暂定内容，也可能来自工具调用前的中间步骤；最终回答以 result.output 为准。主动 break 视为取消并释放模型流，此时不保证收到结束事件；事件按需生产，消费者慢时产生背压，不无限缓存。</div></section><section id="middleware"><div class="heading"><span>05</span><h2>Middleware：能拦截什么、顺序是什么</h2></div><p class="intro">第一版先明确工具执行拦截，而不是定义一组含义不清的万能插件。模型观测通过事件，替换整个调用流程通过 Runtime。</p><div class="code"><div class="code-head"><span>08 / 日志与工具权限</span><button type="button" class="copy">复制</button></div><pre><code>const audit = {
+  name: &#x27;audit&#x27;,
+  async onToolCall(call, next) {
+    console.log(&#x27;tool:&#x27;, call.name, &#x27;run:&#x27;, call.runId); // 不记录参数
+    return next(call);
+  },
+};
+
+const accessControl = {
+  name: &#x27;access-control&#x27;,
+  async onToolCall(call, next) {
+    if (!call.context?.allowedTools.includes(call.name)) {
+      throw new Error(&#x27;tool not allowed&#x27;);
+    }
+    return next(call);
+  },
+};
+
+const agent = createAgent({
+  name: &#x27;secured-agent&#x27;, model, tools: [queryOrder],
+  middleware: [audit, accessControl],
+});</code></pre></div><div class="code"><div class="code-head"><span>09 / Middleware 接口</span><button type="button" class="copy">复制</button></div><pre><code>interface ToolCallContext&lt;Context&gt; {
+  runId: string;
+  toolCallId: string;
+  name: string;
+  input: unknown;              // 已通过该工具的 parse
+  context: Context | undefined;
+  signal: AbortSignal;
+}
+interface Middleware&lt;Context&gt; {
+  name: string;               // 重名在 createAgent 时拒绝
+  onToolCall?(
+    call: ToolCallContext&lt;Context&gt;,
+    next: (call: ToolCallContext&lt;Context&gt;) =&gt; Promise&lt;Json&gt;,
+  ): Promise&lt;Json&gt;;
+}</code></pre></div><div class="note"><b>规则：</b>按注册顺序进入，逆序退出；每个 next 最多调用一次。middleware 可以拒绝、修改已校验输入或返回结果；修改 input 后，核心必须再次调用原工具 parse 再执行。单个 hook 抛错按 toolError 处理。middleware 是可信代码，不构成沙箱。</div></section><section id="session"><div class="heading"><span>06</span><h2>Session：聊天历史如何保存</h2></div><p class="intro">Session 可替换，默认不启用。首版只管理消息历史，checkpoint、跨进程恢复和长期记忆单独设计。</p><div class="code"><div class="code-head"><span>10 / 两轮对话</span><button type="button" class="copy">复制</button></div><pre><code>const session = createMemorySession(); // 每个对话一个实例
+await assistant.run(&#x27;我叫小明。&#x27;, { session });
+const reply = await assistant.run(&#x27;我叫什么？&#x27;, { session });
+console.log(reply.output);</code></pre></div><div class="code"><div class="code-head"><span>11 / 自定义 Session 接口</span><button type="button" class="copy">复制</button></div><pre><code>interface SessionSnapshot {
+  version: string;
+  messages: readonly Message[];
+}
+interface Session {
+  load(): Promise&lt;SessionSnapshot&gt;;
+  append(expectedVersion: string, messages: readonly Message[]): Promise&lt;void&gt;;
+  // 版本变化必须抛 SessionConflict；不得静默覆盖。
+}</code></pre></div><div class="note"><b>提交规则：</b>run 开始读取一次快照，completed / refused 时原子追加用户输入与本次完整消息；failed / incomplete / cancelled 时不自动追加。并发冲突返回 failed / session_conflict，不自动重试工具。失败时已有外部副作用不会回滚，应用必须按业务需要处理。</div></section><section id="runtime"><div class="heading"><span>07</span><h2>替换运行引擎：不是只有 Hook</h2></div><p class="intro">默认 ReAct 循环只是一个内置实现。自定义 runtime 决定模型调用顺序和工具调度，同时使用受控端口复用校验、middleware 和 step 限制。</p><div class="code"><div class="code-head"><span>12 / Runtime 接口</span><button type="button" class="copy">复制</button></div><pre><code>interface Runtime&lt;Context = unknown&gt; {
+  execute(ctx: RuntimeContext&lt;Context&gt;): AsyncIterable&lt;RunEvent&gt;;
+}
+interface RuntimeContext&lt;Context&gt; {
+  runId: string;
+  messages: readonly Message[];
+  instructions?: string;
+  context: Context | undefined;
+  maxSteps: number;
+  signal: AbortSignal;
+  model: ModelPort;      // call() 包含协议续接、参数合并、步骤计数
+  tools: ToolPort;      // call() 包含 parse、middleware、工具事件
+  conversation: Conversation;
+}
+
+const agent = createAgent({
+  name: &#x27;planner&#x27;, model, tools: [queryOrder],
+  runtime: myRuntime, // 自定义循环、路由或多个模型调用
+});</code></pre></div><div class="code"><div class="code-head"><span>13 / Runtime 使用的端口</span><button type="button" class="copy">复制</button></div><pre><code>type ModelTurn = Pick&lt;GenerateInput, 'messages' | 'previousResponseId'&gt;;
+type ModelEvent = StreamEvent; // 来自共享模型契约；包括 text-delta 和 finish
+
+interface ModelPort {
+  // 每次调用消费一个 step；超上限抛 StepLimitError。
+  call(input: ModelTurn): AsyncIterable&lt;ModelEvent&gt;;
+}
+interface ToolPort {
+  // 执行指定调用：解析参数，应用 middleware，调用工具并返回 JSON。
+  call(call: ToolCall): Promise&lt;Json&gt;;
+}
+interface Conversation {
+  // 每个 run 创建独立状态；不得跨 run 共享可变状态。
+  create(history: readonly Message[]): ConversationRun;
+}
+interface ConversationRun {
+  first(): ModelTurn;
+  next(result: GenerateResult, toolResults: readonly Message[]): ModelTurn;
+}</code></pre></div><div class="note"><b>终态责任：</b>框架负责创建 runId、处理 session 和外部 signal；runtime 产生一个 run.finished。框架包装器检查缺失或重复终态并转换为 failed。通过 ToolPort 才会经过框架的工具校验与 middleware；自定义 runtime 直接访问外部资源不受这些规则保护。ModelTurn / ModelEvent 是共享模型类型的子集，实施前按 Provider 契约冻结。</div></section><div class="code"><div class="code-head"><span>默认 Runtime：逐步执行伪代码</span><button type="button" class="copy">复制</button></div><pre><code>// 默认 runtime 的执行顺序（伪代码，便于评审）
+conversation = conversationFactory.create(history + input)
+turn = conversation.first()
+while (true) {
+  result = await consumeModel(ctx.model.call(turn)) // 消费实时文本，读取 finish.result
+  if (result.outcome === &#x27;completed&#x27;) return completed(result.text)
+  if (result.outcome === &#x27;refused&#x27;) return refused(result)
+  if (result.outcome !== &#x27;tool_calls&#x27;) return stopped(result)
+  if (steps &gt;= maxSteps) return incomplete(&#x27;max_steps&#x27;)
+
+  toolResults = []
+  for (const call of result.toolCalls) { // 首版严格顺序执行
+    value = await ctx.tools.call(call)   // parse + middleware + execute
+    toolResults.push(toolMessage(call.id, JSON.stringify(value)))
+  }
+  turn = conversation.next(result, toolResults)
+}</code></pre></div><div class="note">该伪代码省略事件发送、异常映射和 session 提交，具体规则见前文。模型的 tool-call 增量事件用于展示，执行依据只有 finish.result.toolCalls，避免重复执行。</div><section id="provider"><div class="heading"><span>08</span><h2>真实模型如何接入：续接策略明确选择</h2></div><p class="intro">这里使用目前 Provider 已实现的字段。当前模型对象没有公开协议标识，首版显式选择 conversation，不用 Provider 名称猜协议。</p><div class="code"><div class="code-head"><span>14 / 三种续接方式</span><button type="button" class="copy">复制</button></div><pre><code>// 默认：OpenAI Completions 兼容服务，完整消息往返
+const localAgent = createAgent({
+  name: &#x27;local&#x27;, model: provider.use(&#x27;ollama&#x27;, &#x27;chat&#x27;),
+  tools: [weather], conversation: messagesConversation(),
+});
+
+// Responses：本次续接使用 previousResponseId + 新的工具结果
+const openaiAgent = createAgent({
+  name: &#x27;openai&#x27;, model: provider.use(&#x27;openai&#x27;, &#x27;chat&#x27;),
+  tools: [weather], conversation: responsesConversation(),
+});
+
+// Anthropic：原样回传 assistant continuation 和工具结果
+const claudeAgent = createAgent({
+  name: &#x27;claude&#x27;, model: provider.use(&#x27;anthropic&#x27;, &#x27;chat&#x27;),
+  tools: [weather], conversation: anthropicConversation(),
+});</code></pre></div><div class="table"><table><thead><tr><th>策略</th><th>具体行为</th><th>已知限制</th></tr></thead><tbody><tr><td>messagesConversation()</td><td>向消息历史追加 assistant.toolCalls 和 tool 消息。</td><td>适合目前验证过的 Completions 兼容路径；厂商私有 reasoning 字段尚未抽象。</td></tr><tr><td>responsesConversation()</td><td>读取 result.responseId；下次请求设置 previousResponseId，发送新增工具结果与必要 system 指令。</td><td>要求服务端保存响应；缺少 responseId 时返回 failed，不默默丢 reasoning 状态。</td></tr><tr><td>anthropicConversation()</td><td>把 result.continuation 原样附在 assistant 消息，之后追加 tool 消息。</td><td>thinking block 和签名不得跨模型使用。</td></tr><tr><td>自定义 Conversation</td><td>实现 create / first / next，使用每个 run 的独立状态。</td><td>Provider 目前无无状态 reasoning 全量回放 API；这是后续兼容点。</td></tr></tbody></table></div><div class="note warning">responsesConversation 和 anthropicConversation 是拟议新 API，不是现有 Provider 功能。Responses 持久 session 的跨进程 / 新一轮续接还需定义 responseId 的持久化：首版先明确只支持同一 run 的工具循环，跨 run 不声称完整保留服务端推理状态。</div></section><section id="architecture"><div class="heading"><span>09</span><h2>目录与依赖：代码实际放哪里</h2></div><p class="intro">保持当前仓库的既有边界：ADK 与 Provider 不直接依赖对方；应用负责组装。</p><div class="code"><div class="code-head"><span>15 / 提议的包依赖</span><button type="button" class="copy">复制</button></div><pre><code>apps/example-agent       组装配置 / 模型 / Agent / 工具
+  ├── @alpha/adk         Agent、Runtime、Tool、事件、Session
+  └── @alpha/provider    凭证、HTTP、协议适配
+          │                  │
+          └────────┬─────────┘
+                   ▼
+          @alpha/model-contract    Message / LanguageModel / GenerateResult
+
+后续按需扩展：@alpha/adk-mcp / @alpha/adk-storage / @alpha/adk-observability</code></pre></div><div class="note">共享类型目前在 @alpha/provider；提议提取到 @alpha/model-contract，并由 @alpha/provider 原入口继续导出，避免破坏现有 import。此为需要实施的变更，并非当前已有包。MVP 不引入 AI SDK 或其他 Agent 框架作为运行时。</div></section><section id="roadmap"><div class="heading"><span>10</span><h2>Roadmap：每一步提交什么、怎样算完成</h2></div><p class="intro">顺序围绕首个真实单 Agent 工具循环；每阶段可以单独合并并验收。</p><div class="table"><table><thead><tr><th>阶段</th><th>具体产物</th><th>验收标准</th></tr></thead><tbody><tr><td>P0 · 模型契约</td><td>新建 model-contract；提取现有 Message、LanguageModel 和 GenerateResult；Provider 旧路径 re-export。</td><td>现有 Provider 测试与类型检查不变；新旧 import 类型兼容；无循环依赖。</td></tr><tr><td>P1 · 单次 Agent</td><td>实现 createAgent、defineTool、run、默认 ReActRuntime、messagesConversation。</td><td>mock 覆盖直接回答、1 个工具往返、多工具顺序、解析失败、未知工具、最大步数、拒答、截断。</td></tr><tr><td>P2 · 流与取消</td><td>实现 stream、六种 RunEvent、signal 传递和资源释放。</td><td>文字实时到达；错误和取消有终态；提前 break 关闭 Provider 流；run 和 stream 最终语义一致。</td></tr><tr><td>P3 · 真实接入</td><td>接现有 OpenRouter Provider；编写天气 / 查询示例；记录模型与服务。</td><td>实际跑通模型→工具→模型的非流式和流式；取消与无效 Key 可复现；不以输出文案完全一致作为唯一通过标准。</td></tr><tr><td>P4 · 扩展与 Session</td><td>实现 middleware、内存 Session、版本冲突与可替换 Runtime。</td><td>至少两种 session 实现和两个 runtime 跑同一契约测试；middleware 顺序和重入限制可验证。</td></tr><tr><td>P5 · 其他协议续接</td><td>实现 responsesConversation / anthropicConversation 与合同测试。</td><td>工具回传保留 responseId / continuation；做对应真实服务验证；跨 run 状态限制写入文档。</td></tr><tr><td>之后 · 按需求扩展</td><td>MCP、远程工具、审批、持久 checkpoint、多 Agent、图工作流、多模态。</td><td>每项先单独设计权限、数据和失败语义，不承诺仅靠现有接口完成。</td></tr></tbody></table></div></section><section id="decisions"><div class="heading"><span>11</span><h2>需要先定下的四个设计决定</h2></div><p class="intro">下面是建议的默认选择，目的是让 API 评审有具体对象。</p><div class="table"><table><thead><tr><th>决定</th><th>当前建议</th><th>为什么</th></tr></thead><tbody><tr><td>工具失败</td><td>默认 stop；可配置 return</td><td>默认避免把敏感异常信息直接反馈模型；允许应用主动选择继续。</td></tr><tr><td>maxSteps</td><td>默认 8，统计模型请求次数</td><td>与工具数量无关，含最终模型请求；超限绝不执行尚未执行的工具。</td></tr><tr><td>状态与恢复</td><td>首版 Session 只存成功或拒答的完整对话</td><td>不把普通历史持久化宣传为崩溃恢复或 exactly-once。</td></tr><tr><td>协议适配</td><td>首次创建时明确选择 conversation</td><td>现有模型缺少协议标识，显式选择优先于依赖 provider 名称猜测。</td></tr></tbody></table></div></section><section id="sources"><div class="heading"><span>12</span><h2>调研依据与项目现状</h2></div><p class="intro">社区项目提供设计参考，下面的 API 和取舍是 Alpha 自己的方案。</p><div class="table"><table><thead><tr><th>来源</th><th>学习内容 / 本项目选择</th></tr></thead><tbody><tr><td><a href="https://openai.github.io/openai-agents-js/guides/running-agents/">OpenAI Agents SDK</a></td><td>Agent 和运行参数分离；Alpha 提供 agent.run / stream 和可替换 runtime。</td></tr><tr><td><a href="https://adk.dev/plugins/">Google ADK</a></td><td>插件介入生命周期；Alpha 首版先落地明确的工具 middleware。</td></tr><tr><td><a href="https://docs.langchain.com/oss/javascript/langgraph/persistence">LangGraph</a></td><td>区分消息历史、checkpoint 和跨会话存储；Alpha 不把 Session 当作恢复能力。</td></tr><tr><td><a href="https://mastra.ai/docs/agents/overview">Mastra</a></td><td>Agent、工具、memory、workflow 组合；Alpha 将后者保留为按需扩展。</td></tr></tbody></table></div><p class="muted">查阅日期：2026-11-03。仓库现状：Provider 已实现并通过 OpenRouter Completions 路径的真实测试；ADK 仍为空骨架。除现有 Provider 类型外，页面 API 均为提案。</p></section><footer>ALPHA / AGENT DEVELOPMENT KIT · 设计讨论稿；代码示例为拟议 API。</footer></main></div><script>document.querySelectorAll(".copy").forEach(b=>b.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(b.closest(".code").querySelector("code").textContent);b.textContent="已复制";setTimeout(()=>b.textContent="复制",1600)}catch{b.textContent="请手动复制"}}));</script></body></html>

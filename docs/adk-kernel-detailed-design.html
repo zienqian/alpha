@@ -1,0 +1,348 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alpha ADK · 微内核详细设计 K1</title><style>
+:root{color-scheme:light;--bg:#f6f7f9;--paper:#fff;--ink:#172331;--muted:#536476;--line:#dce2e9;--accent:#2258d5;--soft:#edf2ff;--green:#196b50;--amber:#8b5506;--code:#142032;--code-ink:#e0e9fa;font-family:Inter,"Segoe UI","Microsoft YaHei",sans-serif;font-size:15px;line-height:1.75}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}a{color:var(--accent);text-underline-offset:4px}button,input,textarea,select{font:inherit}button,select{cursor:pointer}button{border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);padding:8px 14px;min-height:42px}button:hover{border-color:var(--accent)}button[aria-pressed=true],.primary{background:var(--accent);color:white;border-color:var(--accent)}button:disabled{opacity:.5;cursor:default}:focus-visible{outline:3px solid #efaa2a;outline-offset:3px}select,textarea,input{border:1px solid #aebdcd;border-radius:6px;background:var(--paper);color:var(--ink);padding:8px}textarea{width:100%;resize:vertical;min-height:88px}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(30px,4.5vw,55px);letter-spacing:-1.8px;line-height:1.2;margin-bottom:22px}h2{font-size:29px;letter-spacing:-.6px;margin-bottom:12px}h3{font-size:18px;margin-bottom:8px}p{margin-bottom:16px}small,.muted{color:var(--muted)}code{font-family:Consolas,"Cascadia Code",monospace;font-size:.92em;overflow-wrap:anywhere}p code,td code,li code{background:var(--soft);padding:2px 4px;border-radius:3px}pre{background:var(--code);color:var(--code-ink);padding:22px;border-radius:9px;overflow:auto;line-height:1.65;font-size:13px;margin:0;tab-size:2}pre code{overflow-wrap:normal}ul,ol{padding-left:23px}li{margin:6px 0}.shell{display:grid;grid-template-columns:238px minmax(0,1fr);max-width:1600px;margin:auto}.sidebar{height:100vh;position:sticky;top:0;padding:32px 24px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:28px}.brand{font-size:22px;font-weight:700;letter-spacing:-1px}.brand span{color:var(--accent)}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:2px;font-weight:650;color:var(--accent);margin-bottom:16px}.sidebar nav{display:grid;gap:6px}.sidebar nav a{color:var(--muted);text-decoration:none;padding:8px 11px;border-radius:6px;font-size:14px}.sidebar nav a:hover,.sidebar nav a.active{background:var(--soft);color:var(--accent)}.sidebar nav b{display:inline-block;width:27px;font-size:12px;opacity:.65}.sidebar .meta{margin-top:auto;font-size:12px}.main{min-width:0;padding:52px 5vw 24px}.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:45px}.pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:5px;background:var(--soft);color:var(--accent)}.hero{max-width:850px}.lead{font-size:18px;color:var(--muted);max-width:790px}.hero-rule{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:26px 0;margin-top:28px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.hero-rule strong{font-size:20px;display:block}.hero-rule span{color:var(--muted);font-size:13px}.section{padding:60px 0 8px;scroll-margin-top:20px}.section-no{font-size:12px;letter-spacing:2px;color:var(--accent);margin-bottom:8px}.intro{color:var(--muted);max-width:850px}.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:24px;margin:22px 0}.panel p:last-child{margin-bottom:0}.split{display:grid;grid-template-columns:1fr 1fr;gap:22px}.split>.panel{margin:0}.callout{border-left:3px solid var(--accent);padding:15px 20px;background:var(--soft);margin:22px 0}.warning{border-color:#bb7b19;background:#fff7e8}.tag{font-size:12px;font-weight:600;display:inline-block;color:var(--green);margin-right:8px}.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:18px 0}.table-wrap{overflow-x:auto;margin:22px 0;background:var(--paper);border:1px solid var(--line);border-radius:9px}table{border-collapse:collapse;width:100%;font-size:14px;min-width:690px}th,td{padding:16px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font-size:12px;letter-spacing:.4px;background:#f0f3f8}tr:last-child td{border:0}td strong{display:block;margin-bottom:5px}td small{display:block}.source-ref{font-size:12px;white-space:nowrap}.research-detail{border-top:1px solid var(--line);margin-top:20px;padding-top:18px}.boundary-layout{display:grid;grid-template-columns:1.15fr 1fr;gap:22px}.layers{display:grid;gap:10px}.layer{width:100%;text-align:left;padding:16px 20px;display:flex;justify-content:space-between;gap:15px;border-radius:8px;min-height:68px}.layer strong{display:block}.layer span{font-size:12px}.layer[data-layer=kernel]{border:2px solid var(--accent)}.layer-detail{background:var(--paper);padding:25px;border-radius:9px;border:1px solid var(--line)}.layer-detail ul{margin-bottom:0}.dependency{padding:18px 0;color:var(--muted);font-family:Consolas,monospace;text-align:center;font-size:13px}.plugin-builder{display:grid;grid-template-columns:280px minmax(0,1fr);gap:22px}.plugin-options{display:grid;gap:9px;align-content:start}.check{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:7px}.check input{margin:7px 0 0;accent-color:var(--accent);width:16px;height:16px;flex-shrink:0}.check span{font-size:13px;color:var(--muted);display:block}.builder-output{min-width:0}.status{font-size:13px;color:var(--green);padding:12px 0;min-height:50px}.status.invalid{color:#a03726}.code-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0}.api-panel[hidden]{display:none}.api-panel>p{color:var(--muted)}details{background:var(--paper);border:1px solid var(--line);border-radius:8px;margin:12px 0;padding:14px 20px}summary{cursor:pointer;font-weight:600}details p,details ul{margin-top:12px}details pre{margin-top:15px}.scenario-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px}.trace{padding:0;list-style:none;margin:0}.trace li{display:grid;grid-template-columns:28px 1fr;gap:12px;border-left:2px solid var(--line);padding:8px 0 14px 16px;margin:0;color:var(--muted)}.trace li.current{border-color:var(--accent);color:var(--ink);background:var(--soft)}.trace li.done{color:var(--green)}.trace .num{font-family:Consolas,monospace}.trace strong{display:block;font-size:14px}.trace small{display:block;line-height:1.65}.trace-box{padding:22px;background:var(--paper);border:1px solid var(--line);border-radius:9px}.snapshot{background:var(--code);color:var(--code-ink);border-radius:9px;padding:24px}.snapshot p{color:#b8c6de;font-size:13px}.snapshot dt{color:#aabedb;font-size:12px;margin-top:16px}.snapshot dd{margin-left:0;font-family:Consolas,monospace;font-size:16px;overflow-wrap:anywhere}.snapshot .explain{margin-top:24px;border-top:1px solid #425269;padding-top:16px;color:#e0e9fa}.decision{display:grid;grid-template-columns:1fr 220px;gap:15px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:22px;margin:14px 0}.decision p{color:var(--muted);font-size:14px;margin-bottom:12px}.decision textarea{grid-column:1/-1}.decision select{width:100%;height:44px}.decision label{font-size:13px;color:var(--muted)}.sources{padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:14px}.sources li{margin:0;padding:16px;background:var(--paper);border:1px solid var(--line);border-radius:7px;font-size:13px;overflow-wrap:anywhere}.sources strong{display:block;margin-bottom:4px}.sources p{margin:8px 0 0;color:var(--muted)}footer{border-top:1px solid var(--line);padding:30px 0;margin-top:55px;font-size:12px;color:var(--muted)}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.skip{position:fixed;top:-80px;left:10px;z-index:3;background:white;padding:12px}.skip:focus{top:10px}[hidden]{display:none!important}
+@media(max-width:1050px){.shell{grid-template-columns:190px minmax(0,1fr)}.sidebar{padding:26px 14px}.main{padding:35px 28px}.split,.boundary-layout,.scenario-layout{grid-template-columns:1fr}.plugin-builder{grid-template-columns:235px minmax(0,1fr)}}
+@media(max-width:760px){.shell{display:block}.sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 20px;gap:12px}.sidebar nav{display:flex;overflow:auto;gap:2px}.sidebar nav a{white-space:nowrap}.sidebar .meta{display:none}.main{padding:25px 20px}.topline{margin-bottom:32px;align-items:flex-start}.hero-rule{gap:14px}.hero-rule strong{font-size:16px}.section{padding-top:44px}.plugin-builder,.sources{grid-template-columns:1fr}.plugin-options{grid-template-columns:1fr 1fr}.decision{grid-template-columns:1fr}.decision textarea{grid-column:auto}.panel{padding:18px}h2{font-size:25px}pre{padding:16px}.layer{padding:13px}.toolbar select{max-width:100%}}
+@media(max-width:420px){.plugin-options{grid-template-columns:1fr}.hero-rule{grid-template-columns:1fr}.hero-rule strong{display:inline;margin-right:12px}.topline{flex-wrap:wrap}.main{padding:24px 16px}}
+@media print{.sidebar,.topline button,.toolbar,.code-head button,.review-actions{display:none!important}.shell{display:block}.main{padding:0}.section{padding-top:30px;break-inside:auto}.panel,.decision,.trace-box{break-inside:avoid}.api-panel[hidden]{display:block!important}.api-panel{margin-bottom:24px}.table-wrap{overflow:visible}table{min-width:0;font-size:10px}pre{white-space:pre-wrap;font-size:10px;background:#f3f3f3;color:#111;border:1px solid #ddd}.sources{grid-template-columns:1fr 1fr}.hero-rule{margin-top:10px}.plugin-builder{grid-template-columns:1fr}.snapshot{background:#eee;color:#111}.snapshot p,.snapshot dt,.snapshot .explain{color:#333}a{color:#222}body{background:white}h1{font-size:35px}.section{scroll-margin:0}}
+
+.sidebar{gap:16px}.sidebar nav{overflow-y:auto;min-height:0}.sidebar nav a{padding:5px 10px}.api-panel pre{max-height:760px}
+.modules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.module{padding:18px;background:var(--paper);border:1px solid var(--line);border-radius:8px}.module strong{display:block;color:var(--accent)}.module p{font-size:13px;margin:8px 0 0}
+@media(max-width:800px){.modules{grid-template-columns:1fr}.api-panel pre{max-height:none}}@media print{.api-panel{display:block!important}.api-panel pre{max-height:none}}
+</style></head><body><a class="skip" href="#main">跳到正文</a><div class="shell"><aside class="sidebar"><div class="brand">alpha<span> / </span>kernel</div><nav aria-label="章节"><a href="#scope"><b>01</b>边界与不变量</a><a href="#architecture"><b>02</b>模块与所有权</a><a href="#api"><b>03</b>接口契约</a><a href="#lifecycle"><b>04</b>状态机推演</a><a href="#model"><b>05</b>模型调用</a><a href="#tools"><b>06</b>工具调用</a><a href="#hooks"><b>07</b>Hooks 与扩展</a><a href="#termination"><b>08</b>取消与终结</a><a href="#events"><b>09</b>事件协议</a><a href="#data"><b>10</b>数据与限额</a><a href="#host"><b>11</b>外围集成</a><a href="#errors"><b>12</b>错误语义</a><a href="#implementation"><b>13</b>布局与验收</a><a href="#review"><b>14</b>待评审决策</a><a href="#basis"><b>15</b>设计基线</a></nav><div class="meta">KERNEL DESIGN / K1<br>2026-11-04 · 待评审<br>基于已确认的 v3 方向<br>无框架实现代码</div></aside><main class="main" id="main"><div class="topline"><span class="pill">K1 · 微内核详细设计 / 待评审</span><button id="print">打印 / 保存 PDF</button></div><div class="hero"><div class="eyebrow">From boundaries to executable contracts</div><h1>让微内核的每个边界<br>都有确定行为。</h1><p class="lead">把已确认的 API 方向细化为状态、调用、提交与故障协议。先 review 这份实现依据，再进入编码。</p><div class="hero-rule"><div><strong>6 个内部模块</strong><span>高内聚的运行机制</span></div><div><strong>2 种受控调用</strong><span>模型与工具共享约束</span></div><div><strong>9 项待确认</strong><span>新增细节逐项评审</span></div></div></div><section class="section" id="scope"><div class="section-no">01 / SCOPE</div><h2>内核只承担不可下放的机制</h2><p class="intro">本稿是待评审的实现依据。沿用 v3 的有状态 Agent、createX 命名与单 schema 工具；旧稿的 Runtime / Executor / Step 方案不再作为前提。</p><div class="callout"><strong>目标：</strong>删除默认循环、Plugin Host、Provider、存储与 UI 后，core 仍可接收显式的 Driver / ModelPort / Tool 完成运行；增加能力不修改内核状态机。</div><div class="table-wrap"><table><thead><tr><th>范围</th><th>内核机制</th><th>外围策略</th></tr></thead><tbody><tr><td>执行</td><td>单 run、两种受控调用、计数与终态</td><td>默认工具循环、工作流、多 Agent</td></tr><tr><td>数据</td><td>历史唯一写入、消息配对、只读快照</td><td>Session、数据库、checkpoint、自动摘要</td></tr><tr><td>扩展</td><td>ModelPort / Tool / Driver / 三个 hook 契约</td><td>具体模型 SDK、schema 库、业务授权、MCP</td></tr><tr><td>资源</td><td>有限输出、协作取消、有序通知</td><td>强杀、隔离、外部费用结算、跨进程去重</td></tr></tbody></table></div><h3>实现必须保持的九条不变量</h3><ol><li>Agent 是正式历史的唯一写入者；Driver / hook / observer 无可写历史引用。</li><li>一个 Agent 最多一个 run，一个 run 最多一个已受理的模型或工具操作。</li><li>模型流正常结束且恰好一个 finish，才提交 assistant；delta 永不触发工具。</li><li>工具只能来自本 run 已提交 assistant 的调用列表，按消息与 callId 一起定位。</li><li>参数校验、授权、执行依次发生；每次 await 后检查停止意图。</li><li>每个已确认调用恰好一个结果，每个 run 最多一个终态事件与结果。</li><li>内核不自动重试；当前 run 去重不等于外部恰好执行一次。</li><li>首次停止意图不可覆盖；终态等待所有已受理工作收束。</li><li>观察者故障不改变执行，必需策略不依赖 observe。</li></ol></section><section class="section" id="architecture"><div class="section-no">02 / OWNERSHIP</div><h2>六个内部模块，不增加六个公共实体</h2><div class="modules"><div class="module"><strong>Agent façade</strong><p>入口检查、运行互斥、快照、close；持有跨轮历史。</p></div><div class="module"><strong>Run controller</strong><p>runId、信号、首次停止意图、操作锁和统一 finalizer。</p></div><div class="module"><strong>Model gateway</strong><p>上下文投影、预算、流校验、assistant 提交。</p></div><div class="module"><strong>Tool gateway</strong><p>调用归属、prepare、授权、执行和去重账本。</p></div><div class="module"><strong>History store</strong><p>纯进程内记录、配对验证、不可变快照与容量预留。</p></div><div class="module"><strong>Event dispatcher</strong><p>分配 seq、顺序通知和观察者错误隔离。</p></div></div><pre><code>应用 → standard / Plugin Host / loops / 模型桥接
+                     ↓ 仅依赖 core 公开契约
+core.createAgent → Run controller
+                     ├→ Model gateway → ModelPort
+                     ├→ Tool gateway  → Tool
+                     ├→ History store
+                     └→ Event dispatcher
+
+core 不导入 standard、loops、provider、MCP、schema 库或 Node I/O</code></pre><div class="table-wrap"><table><thead><tr><th>对象</th><th>所有权与生命周期</th><th>共享规则</th></tr></thead><tbody><tr><td>AgentState</td><td>Agent；跨多次 prompt</td><td>冻结快照，无客户端 / 工具函数 / appContext</td></tr><tr><td>Run record</td><td>Run controller；一次 prompt</td><td>信号、预算、操作锁和 completed 表都不跨 run</td></tr><tr><td>Driver / ModelPort / Tool</td><td>应用注入，Agent 生命周期</td><td>可复用无状态对象；闭包共享可变状态由作者负责</td></tr><tr><td>PreparedTool</td><td>一次工具校验至收束</td><td>绑定该次规范化参数，不跨调用复用</td></tr><tr><td>continuation</td><td>对应 assistant 消息</td><td>首版建议限 JSON，复制冻结；协议解释留给 bridge</td></tr></tbody></table></div></section><section class="section" id="api"><div class="section-no">03 / CONTRACTS</div><h2>接口声明与开发者入口</h2><p class="intro">下面是设计附件，未写入 packages。core 只接收规范化能力；createTool 的 schema 编译与插件安装都在外围。 本稿 Core / Standard / Driver 声明已通过严格 TypeScript 检查，并核对参数推导、工具上下文混用及预期类型错误；运行协议和真实服务仍待实现验证。</p><div class="toolbar" role="group" aria-label="接口页签"><button data-api="example" aria-pressed="true">业务用法</button><button data-api="core" aria-pressed="false">Core 类型</button><button data-api="standard" aria-pressed="false">Standard / Host</button><button data-api="driver" aria-pressed="false">默认循环</button></div><div class="api-panel" id="api-example"><h3>业务用法</h3><pre><code>import { z } from &#x27;zod&#x27;;
+import { createAgent, createTool } from &#x27;@alpha/adk/standard&#x27;;
+import { model, orders } from &#x27;./app-deps.js&#x27;; // 应用提供
+
+const getOrder = createTool({
+  name: &#x27;get_order&#x27;,
+  description: &#x27;查询订单状态&#x27;,
+  input: z.strictObject({ id: z.string().min(1).describe(&#x27;订单号&#x27;) }),
+  effect: &#x27;read&#x27;, // 可省略，默认 unknown
+  async execute({ id }, { signal }) {
+    return JSON.stringify(await orders.get(id, { signal }));
+  },
+});
+const agent = await createAgent({
+  model,
+  instructions: &#x27;先查询事实，再回答。&#x27;,
+  tools: [getOrder],
+});
+try {
+  const result = await agent.prompt(&#x27;查询订单 A123&#x27;);
+  console.log(result.status, result.text);
+} finally {
+  await agent.close();
+}</code></pre></div><div class="api-panel" id="api-core" hidden><h3>Core 类型</h3><pre><code>// 拟议模块：@alpha/adk/core。声明附件，不是运行实现。
+export type Awaitable&lt;T&gt; = T | Promise&lt;T&gt;;
+export type Json = null | boolean | number | string | readonly Json[] | { readonly [k: string]: Json };
+export type JsonObject = { readonly [k: string]: Json };
+export type DeepReadonly&lt;T&gt; = T extends object
+  ? { readonly [K in keyof T]: DeepReadonly&lt;T[K]&gt; } : T;
+export type Effect = &#x27;read&#x27; | &#x27;write&#x27; | &#x27;unknown&#x27;;
+export interface Usage { inputTokens?: number; outputTokens?: number }
+export interface AdkError { code: string; message: string }
+
+export interface ToolCall {
+  readonly id: string;
+  readonly name: string;
+  readonly arguments: JsonObject;
+}
+export interface Continuation {
+  readonly owner: string;
+  readonly data: Json; // K1 建议：限 JSON，不透明处理
+}
+export interface ModelResult {
+  readonly outcome: &#x27;completed&#x27; | &#x27;tool_calls&#x27; | &#x27;refused&#x27; | &#x27;incomplete&#x27; | &#x27;unknown&#x27;;
+  readonly content: string;
+  readonly toolCalls: readonly ToolCall[];
+  readonly usage?: Readonly&lt;Usage&gt;;
+  readonly reason?: string;
+  readonly continuation?: Continuation;
+}
+export type AssistantMessage = ModelResult &amp; {
+  readonly id: string; readonly role: &#x27;assistant&#x27;;
+};
+export type ToolExecution = &#x27;succeeded&#x27; | &#x27;failed&#x27; | &#x27;denied&#x27; |
+  &#x27;not_executed&#x27; | &#x27;outcome_unknown&#x27;;
+export interface ToolResultMessage {
+  readonly id: string;
+  readonly role: &#x27;toolResult&#x27;;
+  readonly assistantId: string; // 与 callId 一起构成配对键
+  readonly callId: string;
+  readonly content: string;
+  readonly execution: ToolExecution;
+}
+export type Message =
+  | { readonly id: string; readonly role: &#x27;user&#x27;; readonly content: string }
+  | AssistantMessage
+  | ToolResultMessage
+  | { readonly id: string; readonly role: &#x27;custom&#x27;;
+      readonly kind: string; readonly data: Json };
+
+export interface ToolInfo {
+  readonly name: string;
+  readonly description: string;
+  readonly inputSchema: JsonObject;
+  readonly effect: Effect;
+}
+export interface RunContext&lt;C&gt; {
+  readonly agentId: string;
+  readonly runId: string;
+  readonly signal: AbortSignal;
+  readonly app: C;
+}
+export interface ToolContext&lt;C&gt; extends RunContext&lt;C&gt; {
+  readonly assistantId: string; readonly callId: string;
+}
+// 规范化工具供适配器作者使用；业务侧只写 createTool({ input, execute })。
+export interface PreparedTool&lt;C&gt; {
+  readonly arguments: JsonObject;
+  readonly execute: (ctx: ToolContext&lt;C&gt;) =&gt; Awaitable&lt;string&gt;;
+}
+export interface Tool&lt;C = unknown&gt; {
+  readonly info: ToolInfo;
+  readonly prepare: (
+    raw: JsonObject, signal: AbortSignal
+  ) =&gt; Awaitable&lt;PreparedTool&lt;C&gt;&gt;;
+}
+// prepare 校验一次；execute 闭包绑定同一份冻结参数。
+// prepare 不做业务副作用；网关保证同一已确认调用只执行一次。
+
+export interface ModelRequest {
+  readonly instructions: string;
+  readonly messages: readonly Message[];
+  readonly tools: readonly ToolInfo[];
+  readonly signal: AbortSignal;
+}
+export type ModelEvent =
+  | { readonly type: &#x27;delta&#x27;; readonly text: string }
+  | { readonly type: &#x27;finish&#x27;; readonly result: ModelResult };
+export interface ModelPort {
+  readonly id: string;
+  stream(request: ModelRequest): AsyncIterable&lt;ModelEvent&gt;;
+}
+export interface ValidatedCall {
+  readonly assistantId: string; readonly callId: string;
+  readonly name: string;
+  readonly arguments: JsonObject;
+  readonly effect: Effect;
+}
+export interface HookMap&lt;C&gt; {
+  beforeModel: (messages: readonly Message[], ctx: RunContext&lt;C&gt;) =&gt;
+    Awaitable&lt;readonly Message[]&gt;;
+  authorizeTool: (call: ValidatedCall, ctx: RunContext&lt;C&gt;) =&gt;
+    Awaitable&lt;{ action: &#x27;allow&#x27; } | { action: &#x27;deny&#x27;; reason: string }&gt;;
+  mapToolResult: (result: Readonly&lt;ToolResultMessage&gt;, ctx: RunContext&lt;C&gt;) =&gt;
+    Awaitable&lt;string&gt;;
+}
+export type Hooks&lt;C&gt; = {
+  readonly [K in keyof HookMap&lt;C&gt;]?: readonly HookMap&lt;C&gt;[K][];
+};
+export type DriverEnd =
+  | { kind: &#x27;model&#x27;; messageId: string }
+  | { kind: &#x27;stopped&#x27;; reason: string };
+export interface DriverContext&lt;C&gt; extends RunContext&lt;C&gt; {
+  readonly messages: readonly Message[]; // getter：最新只读快照
+  callModel(): Promise&lt;AssistantMessage&gt;;
+  callTool(assistantId: string, callId: string): Promise&lt;ToolResultMessage&gt;;
+}
+export interface Driver&lt;C = undefined&gt; {
+  execute(ctx: DriverContext&lt;C&gt;): Promise&lt;DriverEnd&gt;;
+}
+export interface Limits {
+  maxModelCalls: number;        // 默认 8
+  maxToolCalls: number;         // 默认 32；同时限制单响应调用列表长度
+  timeoutMs?: number;           // 缺省无墙钟期限；不代表强制终止
+  maxModelOutputBytes: number;  // 默认 1 MiB
+  maxToolResultBytes: number;   // 默认 128 KiB
+  maxHistoryBytes: number;      // 默认 4 MiB
+  maxHistoryMessages: number;   // 默认 512
+}
+export type RunStatus = &#x27;completed&#x27; | &#x27;refused&#x27; | &#x27;incomplete&#x27; | &#x27;unknown&#x27; |
+  &#x27;limited&#x27; | &#x27;cancelled&#x27; | &#x27;failed&#x27;;
+export type RunResult = {
+  readonly runId: string;
+  readonly text: string; // 本 run 最后已提交的 assistant 内容，可能为空
+  readonly usage?: Readonly&lt;Usage&gt;; // 仅汇总已报告量，不是完整费用账单
+} &amp; (
+  | { readonly status: &#x27;failed&#x27;; readonly error: AdkError }
+  | { readonly status: Exclude&lt;RunStatus, &#x27;failed&#x27;&gt;; readonly reason?: string }
+);
+export interface AgentState {
+  readonly status: &#x27;idle&#x27; | &#x27;running&#x27; | &#x27;cancelling&#x27; | &#x27;closed&#x27;;
+  readonly historyStatus: &#x27;ready&#x27; | &#x27;blocked&#x27;;
+  readonly messages: readonly Message[];
+}
+export interface EventMeta {
+  readonly agentId: string; readonly runId: string; readonly seq: number;
+}
+export type AgentEvent = EventMeta &amp; (
+  | { type: &#x27;run.start&#x27; }
+  | { type: &#x27;run.stop_requested&#x27;; status: &#x27;cancelled&#x27; | &#x27;failed&#x27; | &#x27;limited&#x27; }
+  | { type: &#x27;model.start&#x27;; modelCallId: string }
+  | { type: &#x27;model.delta&#x27;; modelCallId: string; text: string }
+  | { type: &#x27;model.end&#x27;; modelCallId: string;
+      outcome: ModelResult[&#x27;outcome&#x27;] | &#x27;failed&#x27; | &#x27;cancelled&#x27; }
+  | { type: &#x27;tool.start&#x27;; assistantId: string; callId: string; name: string }
+  | { type: &#x27;tool.end&#x27;; assistantId: string; callId: string; execution: ToolExecution }
+  | { type: &#x27;message.commit&#x27;; messageId: string; role: Message[&#x27;role&#x27;] }
+  | { type: &#x27;run.end&#x27;; status: RunStatus }
+);
+export type AppOption&lt;C&gt; = undefined extends C
+  ? { appContext?: C } : { appContext: C };
+export type AgentOptions&lt;C = undefined&gt; = AppOption&lt;C&gt; &amp; {
+  id?: string;
+  instructions: string;
+  model: ModelPort;
+  driver: Driver&lt;C&gt;;
+  tools?: readonly Tool&lt;NoInfer&lt;C&gt;&gt;[];
+  hooks?: Hooks&lt;NoInfer&lt;C&gt;&gt;;
+  limits?: Partial&lt;Limits&gt;;
+  onObserverError?: (error: AdkError) =&gt; void;
+};
+export interface Agent&lt;C = undefined&gt; {
+  readonly id: string;
+  readonly state: AgentState;
+  prompt(input: string, options?: { signal?: AbortSignal }): Promise&lt;RunResult&gt;;
+  subscribe(listener: (event: AgentEvent) =&gt; void): () =&gt; void;
+  abort(reason?: string): void;
+  waitForIdle(): Promise&lt;void&gt;;
+  replaceMessages(messages: readonly Message[]): void;
+  close(): Promise&lt;void&gt;;
+}
+export declare function createAgent&lt;C = undefined&gt;(
+  options: AgentOptions&lt;C&gt;
+): Agent&lt;C&gt;; // core 同步创建，不进行 I/O 或插件启动
+</code></pre></div><div class="api-panel" id="api-standard" hidden><h3>Standard / Host</h3><pre><code>// 拟议模块：@alpha/adk/standard。
+// Core.* 仅表示导入的 core 类型，不是新增 SDK 命名空间。
+import type * as Core from &#x27;@alpha/adk/core&#x27;;
+import type { StandardSchemaV1, StandardJSONSchemaV1 } from &#x27;@standard-schema/spec&#x27;;
+type InputSchema = StandardSchemaV1 &amp; StandardJSONSchemaV1;
+type Infer&lt;S extends InputSchema&gt; = Core.DeepReadonly&lt;StandardSchemaV1.InferOutput&lt;S&gt;&gt;;
+
+export declare function createTool&lt;S extends InputSchema, C = unknown&gt;(spec: {
+  name: string;
+  description: string;
+  input: S;
+  effect?: Core.Effect;
+  execute(input: Infer&lt;S&gt;, ctx: Core.ToolContext&lt;C&gt;): Core.Awaitable&lt;string&gt;;
+}): Core.Tool&lt;C&gt;;
+// C=unknown 的普通工具可用于任何 Agent；需要 app 时标注 ToolContext&lt;App&gt;。
+// input schema 决定参数类型，不重复手写输入泛型。
+
+export interface PluginAPI&lt;C&gt; {
+  provideModel(model: Core.ModelPort): void;
+  provideDriver(driver: Core.Driver&lt;C&gt;): void;
+  addTool(tool: Core.Tool&lt;C&gt;): void;
+  hook&lt;K extends keyof Core.HookMap&lt;C&gt;&gt;(name: K, fn: Core.HookMap&lt;C&gt;[K]): void;
+  observe(listener: (event: Core.AgentEvent) =&gt; void): void;
+}
+export interface Plugin&lt;C = undefined&gt; {
+  readonly id: string;
+  readonly apiVersion: 1;
+  readonly requires?: readonly string[];
+  setup(api: PluginAPI&lt;C&gt;): void;
+  start?(signal: AbortSignal): Promise&lt;void&gt;;
+  dispose?(): Core.Awaitable&lt;void&gt;;
+}
+export type StandardAgentOptions&lt;C = undefined&gt; =
+  Omit&lt;Core.AgentOptions&lt;C&gt;, &#x27;model&#x27; | &#x27;driver&#x27;&gt; &amp; {
+    model?: Core.ModelPort;
+    driver?: Core.Driver&lt;C&gt;;
+    plugins?: readonly Plugin&lt;NoInfer&lt;C&gt;&gt;[];
+  };
+export declare function createAgent&lt;C = undefined&gt;(
+  options: StandardAgentOptions&lt;C&gt;
+): Promise&lt;Core.Agent&lt;C&gt;&gt;;
+// 收集贡献后必须恰好一个 model；缺 driver 才补 createToolLoop。
+// 启动失败 reject，不暴露半初始化实例；Host 关闭前先等待 core.close。
+</code></pre></div><div class="api-panel" id="api-driver" hidden><h3>默认循环</h3><pre><code>// 拟议模块：@alpha/adk/loops。这里只展示算法。
+import type { Driver } from &#x27;@alpha/adk/core&#x27;;
+
+export function createToolLoop&lt;C&gt;(): Driver&lt;C&gt; {
+  return {
+    async execute(ctx) {
+      while (true) {
+        const reply = await ctx.callModel();
+        if (reply.outcome !== &#x27;tool_calls&#x27;) {
+          return { kind: &#x27;model&#x27;, messageId: reply.id };
+        }
+        for (const call of reply.toolCalls) {
+          await ctx.callTool(reply.id, call.id);
+        }
+      }
+    },
+  };
+}
+// while 与串行执行顺序属于扩展。
+// 校验、授权、计数、取消、状态提交仍由同一个内核网关执行。
+// 每 run 可变状态放在 execute 内；复用 Driver 不复用运行状态。
+</code></pre></div><div class="callout"><strong>工厂与静态定义：</strong>createAgent / createTool / createToolLoop / createModelBridge；无参数、无独立状态的插件直接对象 + satisfies Plugin。core 不接受 plugins，不新增服务定位器或通用 DI。</div></section><section class="section" id="lifecycle"><div class="section-no">04 / STATE MACHINE</div><h2>Agent 状态与 Run 结果分开</h2><p class="intro">Agent.status 表示实例能否接收工作；RunResult.status 表示某次执行结果；historyStatus 单独表示能否安全续接。</p><div class="table-wrap"><table><thead><tr><th>动作与条件</th><th>转换</th><th>确定行为</th></tr></thead><tbody><tr><td>core.createAgent(options)</td><td>无 → idle / ready</td><td>同步验证端口、工具重名、limits，复制配置；无外部 I/O</td></tr><tr><td>prompt，idle + ready</td><td>idle → running</td><td>首个 await 前占用 run；登记 signal，发 run.start，提交 user，再调用 Driver</td></tr><tr><td>prompt 输入非法 / busy / closed / blocked</td><td>状态不变</td><td>返回 rejected Promise；无 run、事件或历史变更</td></tr><tr><td>prompt 的 signal 已 aborted</td><td>idle → running → idle</td><td>生成 cancelled run 与 start/end；不提交 user，不进入 Driver</td></tr><tr><td>abort / timeout / 执行故障 / 达限制</td><td>running → cancelling</td><td>记录停止意图并 abort 内部信号；不提前释放 Agent</td></tr><tr><td>收束完成</td><td>running / cancelling → idle</td><td>补齐配对、生成终态、发 run.end 后 settle prompt</td></tr><tr><td>close()</td><td>活跃时先收束，再 closed</td><td>立即置内部 closing 闸门，拒绝新 prompt；复用同一关闭 Promise</td></tr><tr><td>replaceMessages</td><td>仅 idle 且非 closing</td><td>整体验证后原子替换；拒绝孤立结果和 outcome_unknown；不调用模型或工具</td></tr><tr><td>waitForIdle</td><td>不改变状态</td><td>等待当前 run 的 finalizer；closed 也视为无活跃 run</td></tr></tbody></table></div><p>cancelling 表示正在停止和清理，最终结果也可能是 failed / limited。closing 是内部闸门；不额外扩张公共状态枚举。</p><h3>交互推演</h3><p class="muted">手工定义的契约轨迹，不是运行内核的测试结果。</p><div class="toolbar"><label for="scenario">场景</label><select id="scenario"><option value="success">正常循环</option><option value="deny">授权拒绝</option><option value="cancel">写工具中取消</option><option value="duplicate">去重与跨轮 ID</option><option value="malformed">重复 finish</option><option value="close">close 与并发请求</option></select><button id="previous">上一步</button><button id="next" class="primary">下一步</button><button id="reset">从头查看</button></div><div class="scenario-layout"><div class="trace-box"><ol id="trace" class="trace"></ol></div><div class="snapshot" id="snapshot" aria-live="polite"></div></div></section><section class="section" id="model"><div class="section-no">05 / MODEL GATEWAY</div><h2>callModel：把流转成已确认的消息</h2><div class="table-wrap"><table><thead><tr><th>阶段</th><th>处理</th><th>必须满足</th></tr></thead><tbody><tr><td>M1 受理</td><td>检查 run 有效、无停止意图、无 activeOp、无 pending</td><td>工具结果不完整时不能继续模型调用</td></tr><tr><td>M2 投影</td><td>取历史快照，按顺序 await beforeModel</td><td>投影不修改历史；每次 await 后重检停止</td></tr><tr><td>M3 验证</td><td>检查 JSON、配对、continuation 一致性与大小</td><td>保留的工具批次完整且与正式记录一致；可整组裁剪，可增删普通用户 / 自定义上下文</td></tr><tr><td>M4 预算</td><td>原子预留 modelCalls，生成 modelCallId，发 model.start</td><td>计数表示 port 调用尝试；立即失败也不退还</td></tr><tr><td>M5 消费</td><td>delta 仅通知；finish 暂存，继续等待迭代结束</td><td>finish 后再有任何事件即协议错误；整个流不缓存 delta 历史</td></tr><tr><td>M6 结果验证</td><td>正常结束、恰好一个 finish、合法 outcome 和完整工具列表</td><td>tool_calls 非空，其他 outcome 无工具；批次内 callId 非空且唯一</td></tr><tr><td>M7 提交</td><td>检查历史容量，生成 assistant.id，原子提交消息与 pending 索引</td><td>无 await；先 message.commit，再 model.end，返回已提交消息</td></tr></tbody></table></div><details><summary>断流、重复 finish、拒答与取消</summary><ul><li>缺失 / 重复 finish、finish 后 delta、流异常、坏工具批次：不提交本次 assistant，不执行工具，已提交 user 保留。</li><li>收到 finish 但流不结束，不能提前认定成功；仍依赖协作取消。</li><li>refused / incomplete / unknown 合法时提交消息，默认 Driver 原样导出终态，不执行工具。</li><li>流期间记录了取消，则本次 assistant 不提交；迟来的完整结果不能覆盖停止意图。</li><li>最终内容可与 delta 预览不同，UI 应用正式消息替换预览。</li></ul></details><details><summary>与现有 Provider 的映射</summary><p>应用侧 createModelBridge 将 <a href="../packages/provider/src/types.ts">LanguageModel</a> 的 text-delta 映射为 delta、finish.result.text 映射为 content；独立 tool-call 事件不执行。AbortSignal 透传。Anthropic continuation 绑定对应 assistant；Responses previousResponseId 为显式增量策略，不能与全部历史混发。</p><p>core 计数仅覆盖 ModelPort 调用，不覆盖 hook 自行发出的检索 / HTTP。首版不做自动重试、fallback 或跨模型无损转换。</p></details></section><section class="section" id="tools"><div class="section-no">06 / TOOL GATEWAY</div><h2>callTool：校验、授权、执行共用一条路径</h2><p class="intro">调用键为当前 run 内的 (assistantId, callId)。不同模型响应可以复用供应商 callId，同一响应内不允许重复。</p><div class="table-wrap"><table><thead><tr><th>阶段</th><th>操作</th><th>失败语义</th></tr></thead><tbody><tr><td>T1 归属与去重</td><td>已完成同键直接返回既有结果；否则要求无 activeOp，且该调用属于当前 pending</td><td>错误消息、旧 run、伪造 ID：CALL_NOT_PENDING；并发新操作：RUN_OPERATION_BUSY</td></tr><tr><td>T2 prepare</td><td>查冻结工具表，await prepare(raw, signal)；验证规范化参数为 JSON 对象</td><td>未知工具或校验失败：not_executed，run failed，副作用 0</td></tr><tr><td>T3 授权</td><td>按顺序 await authorizeTool，参数冻结且与 execute 绑定一致</td><td>首个 deny 提交 denied；抛错 failed；不执行工具</td></tr><tr><td>T4 执行</td><td>重检停止、原子预留工具预算、发 tool.start；通知后再查停止，再进入 execute</td><td>观察者在 tool.start 中 abort 时仍不执行；已预留计数不退还</td></tr><tr><td>T5 内容处理</td><td>await execute 返回字符串；检查类型 / 大小，再依次 mapToolResult</td><td>正常返回后执行事实已确认；内容处理失败不重试</td></tr><tr><td>T6 提交</td><td>唯一结果写入历史，删除 pending，加入 completed；发 message.commit → tool.end</td><td>停止意图存在则由 finalizer 继续收束，Driver 不启动新调用</td></tr></tbody></table></div><div class="table-wrap"><table><thead><tr><th>发生位置 / 情况</th><th>execution</th><th>Run / 历史</th></tr></thead><tbody><tr><td>参数无效、工具不存在、execute 前取消</td><td>not_executed</td><td>failed / cancelled；配对补齐后 ready</td></tr><tr><td>授权 deny</td><td>denied</td><td>默认可继续模型解释；ready</td></tr><tr><td>execute 返回成功</td><td>succeeded</td><td>可继续；ready</td></tr><tr><td>read 工具进入 execute 后抛错</td><td>failed</td><td>run failed；信任 read 声明，ready</td></tr><tr><td>write / unknown 工具进入 execute 后抛错（含取消）</td><td>outcome_unknown</td><td>按首次停止意图 failed / cancelled；blocked</td></tr><tr><td>工具已返回，但 mapToolResult / 输出检查失败</td><td>succeeded + 安全占位内容</td><td>run failed；已知执行完成，ready，不重跑</td></tr><tr><td>取消后工具仍正常返回</td><td>succeeded</td><td>记录确认结果；终态仍 cancelled</td></tr></tbody></table></div><div class="callout"><strong>effect 是受信任声明，不是安全证明。</strong>默认 unknown，异常时保守阻断续接。执行事实仅由 execution 表达，不再维护重复的 isError。普通工具返回文本，抛错按上表收束。</div><details><summary>prepare 为何不让开发者多写一套接口</summary><p>业务仍只写 createTool({ input: schema, execute })。外层工厂编译 schema 描述，并生成 prepare：校验一次，把同一份复制冻结后的 JSON 参数交给授权和执行闭包。内核不会在授权后重新解析成另一份参数。</p><p>prepare 不产生业务副作用。无 app 依赖的工具默认 C=unknown，可用于不同 Agent；需要依赖时只标注 ToolContext&lt;App&gt;。规范化 Tool 是可信适配器的公开契约，不是防恶意进程内代码的安全边界。</p></details></section><section class="section" id="hooks"><div class="section-no">07 / EXTENSIONS</div><h2>三个 hook、只读事件、外围安装</h2><div class="table-wrap"><table><thead><tr><th>扩展点</th><th>可做什么</th><th>顺序与失败</th></tr></thead><tbody><tr><td>beforeModel</td><td>生成本次投影；不得改变保留工具批次和 opaque continuation</td><td>按注册顺序变换；抛错 failed；最终统一校验</td></tr><tr><td>authorizeTool</td><td>对已校验参数返回 allow / deny，不改名或参数</td><td>首个 deny 短路，不能被后续 allow 翻转；抛错 failed</td></tr><tr><td>mapToolResult</td><td>仅返回新文本，不改 execution / 归属 ID</td><td>逐项 await；失败保留工具执行事实并终止</td></tr><tr><td>subscribe / observe</td><td>描述事实，不参与控制流</td><td>按序通知；异常隔离；不提供持久化保证</td></tr><tr><td>Plugin Host</td><td>贡献端口、工具、hooks 和生命周期</td><td>直接配置 hooks 在前，插件按清单顺序追加；core 不认识 Plugin</td></tr></tbody></table></div><p>不开放可重复调用 next 的通用中间件。Driver 决定算法，hook 处理固定阶段的横向策略。所有异步扩展须响应 signal；外部客户端及其共享状态由作者管理。</p><details><summary>重入与配置冻结</summary><p>创建时复制冻结工具描述、工具表、hook 数组和 limits；函数和 appContext 按引用持有，不冻结用户客户端。首版不支持运行中变更模型 / 工具 / hooks，换配置创建新 Agent。</p><p>事件回调分发时，prompt / replaceMessages / close 等状态修改操作报告 REENTRANT_MUTATION；abort 例外，允许请求取消。新任务放到回调退出后的微任务。subscribe / unsubscribe 可调用，订阅列表采用本次事件开始时的快照，变化影响后续事件。</p></details></section><section class="section" id="termination"><div class="section-no">08 / TERMINATION</div><h2>停止意图与真正终结分开</h2><p>内部 stopIntent 只能首次写入 cancelled / failed / limited；后来原因不覆盖它。自然结束需 Driver 正常返回、无活动操作、pending 完整收束且没有停止意图。</p><div class="table-wrap"><table><thead><tr><th>触发</th><th>意图</th><th>要求</th></tr></thead><tbody><tr><td>abort / 外部 signal / timeout / close</td><td>cancelled</td><td>reason 区分来源；禁止新调用，不提前 resolve</td></tr><tr><td>模型 / 工具 / 历史预算耗尽</td><td>limited</td><td>未开始的调用不执行，已确认批次由 finalizer 补齐</td></tr><tr><td>端口、hook、协议或 Driver 故障</td><td>failed</td><td>稳定错误码；活动操作继续等待收束</td></tr><tr><td>Driver 返回 model messageId</td><td>自然模型终态</td><td>必须指向本 run 最后已提交 assistant，且不是 tool_calls；无 pending</td></tr><tr><td>Driver 返回 stopped</td><td>limited</td><td>保留 reason；补齐未执行调用</td></tr><tr><td>Driver 返回时仍有未等待的网关操作</td><td>failed / DRIVER_UNAWAITED_OPERATION</td><td>禁止 detached 操作；abort 活动操作并等待</td></tr></tbody></table></div><h3>统一 finalizer：六步，只有一个所有者</h3><ol><li>关闭 run 操作入口，等待已受理操作、Driver 和已开始的内容处理返回；不丢弃后台副作用。</li><li>为未开始的 pending 补 not_executed；未知执行补 outcome_unknown；已提交结果不重复产生。</li><li>出现 outcome_unknown 即 historyStatus=blocked。已知成功的结果保留 succeeded。</li><li>生成 RunResult，更新 Agent 为 idle / closed，准备唯一 run.end。</li><li>在重入保护内分发 run.end，再释放占用并 settle prompt / waitForIdle；关闭路径随后 settle close。</li><li>移除 timer、外部 signal listener、临时文本缓冲、completed 表与 run 引用。</li></ol><div class="callout"><strong>不承诺硬截止：</strong>同进程工具 / hook / Driver 忽略 signal 时，prompt 和 close 可能一直等待。timeoutMs 只是请求取消的时限。首版不靠 Promise.race 丢弃工作来假装完成；强终止需要独立进程执行器。</div><details><summary>并发操作和异常优先级</summary><p>网关受理时先原子占用 activeOp。不同调用同时进入时，第二个拒绝并记录 RUN_OPERATION_BUSY，abort 已受理操作并等待。即使 Driver 捕获了错误，也不能清除 stopIntent 或继续调用。</p><p>Driver 自己抛错、预算、用户取消的先后以运行控制器实际接收到请求的顺序决定；首次意图不变。工具结果仍按真实阶段记录，因此 run.cancelled 与 tool.succeeded 可以同时成立。</p></details></section><section class="section" id="events"><div class="section-no">09 / EVENTS</div><h2>事件是事实通知，正式状态只有一个来源</h2><pre><code>run.start
+message.commit(user)
+model.start → model.delta* → message.commit(assistant) → model.end
+  tool.start → message.commit(toolResult) → tool.end
+model.start → model.delta* → message.commit(assistant) → model.end
+run.end(completed)
+
+授权拒绝 / 执行前校验失败：message.commit(toolResult) → tool.end
+通常没有 tool.start；若在 tool.start 回调中被取消，end=not_executed。</code></pre><div class="table-wrap"><table><thead><tr><th>关注点</th><th>契约</th></tr></thead><tbody><tr><td>排序</td><td>seq 从 1 开始，run 内递增；不同 Agent 无全局顺序。先提交再通知，读 state 可见该记录</td></tr><tr><td>无订阅者</td><td>没有队列，也不等消费者；执行一致</td></tr><tr><td>慢监听</td><td>同步阻塞会拖慢调用栈；回调不得阻塞 I/O，异步 exporter 自管有界队列</td></tr><tr><td>监听失败</td><td>同步抛错 / 异步拒绝交 onObserverError；不等待；错误处理器再抛错不递归报告</td></tr><tr><td>正文</td><td>model.delta 主动携带 UI 文本；其他事件仅 ID / 状态，message.commit 不附全文或 continuation</td></tr><tr><td>持久化</td><td>事件无重放 / 事务承诺；可靠保存与审计须显式 await，不能依赖普通观察者</td></tr><tr><td>背压</td><td>首版不提供无限 AsyncIterable 队列；应用可写独立有界适配</td></tr></tbody></table></div></section><section class="section" id="data"><div class="section-no">10 / DATA & LIMITS</div><h2>完整历史、不可变快照与资源边界</h2><div class="table-wrap"><table><thead><tr><th>数据</th><th>规则</th></tr></thead><tbody><tr><td>消息 ID</td><td>内核生成正式消息 ID；导入历史全局唯一；custom ID 同样检查</td></tr><tr><td>配对</td><td>toolResult.assistantId + callId 匹配唯一声明，结果在所属 assistant 之后；禁止孤立或重复结果</td></tr><tr><td>自定义消息</td><td>kind 使用命名空间，data 为 JSON；bridge 明确转换或拒绝，不自动 stringify</td></tr><tr><td>continuation</td><td>K1 建议 data 限 JSON，复制冻结；owner 校验由 bridge 负责；不跨模型使用、不默认记录日志</td></tr><tr><td>快照</td><td>每次提交新顶层数组与新记录；旧快照共享不可变消息；delta 不触发全历史复制</td></tr><tr><td>blocked 恢复</td><td>replaceMessages 拒绝 outcome_unknown；应用先核对外部系统，再提供配对完整、结果已确认的历史</td></tr><tr><td>持久化</td><td>codec 外置，需保存 historyStatus / 格式版本 / continuation；普通 JSON 序列化不等于可恢复执行</td></tr></tbody></table></div><h3>以下默认值是待评审建议，不是性能实测</h3><div class="table-wrap"><table><thead><tr><th>限制</th><th>默认值</th><th>触发行为</th></tr></thead><tbody><tr><td>maxModelCalls</td><td>8 / run</td><td>调用 ModelPort 前预留；超出 limited</td></tr><tr><td>maxToolCalls</td><td>32 / run</td><td>执行阶段前预留；同一模型响应调用列表长度也不得超过该值</td></tr><tr><td>timeoutMs</td><td>不设置</td><td>配置后从 run 受理开始计时；取消后仍等待协作</td></tr><tr><td>maxModelOutputBytes</td><td>1 MiB</td><td>限制 delta 总字节与最终结果 JSON 字节；超出 failed，不提交 assistant</td></tr><tr><td>maxToolResultBytes</td><td>128 KiB</td><td>限制原始返回及每次变换；已执行则保留 succeeded 占位并 failed</td></tr><tr><td>maxHistoryBytes / maxHistoryMessages</td><td>4 MiB / 512 条</td><td>UTF-8 JSON 字节，包含 continuation；提交前检查，容量不足 limited，不自动裁剪</td></tr></tbody></table></div><details><summary>工具结果的容量必须提前预留</summary><p>提交带工具调用的 assistant 前，为每个工具结果预留消息条数与安全占位记录空间。放不下就不提交 assistant、不执行任何工具。预留按真实 ID / callId 与固定占位内容序列化计算。</p><p>正常结果超过可用历史空间时，使用预留写入短占位内容并保留 execution，终止 run；不能丢失已发生的副作用。输出过大归 failed，历史容量不足归 limited，以最先检测到的停止意图为准。run 结束释放未用预留。</p></details></section><section class="section" id="host"><div class="section-no">11 / OUTER LAYERS</div><h2>Host 与策略保持外围职责</h2><div class="table-wrap"><table><thead><tr><th>阶段</th><th>Standard / Host</th><th>Core</th></tr></thead><tbody><tr><td>检查</td><td>插件 ID / apiVersion / requires；依赖必须已在清单前面</td><td>无发现、下载或隐式依赖解析</td></tr><tr><td>setup</td><td>同步注册到临时表，无 I/O；冲突整体失败</td><td>只校验最终规范化能力</td></tr><tr><td>冻结 / 补默认</td><td>model 必须唯一；无显式 Driver 才装 createToolLoop</td><td>不隐式补能力</td></tr><tr><td>start</td><td>顺序 await；失败逆序 dispose 所有已进入 start 的插件，含失败者</td><td>不暴露半初始化实例</td></tr><tr><td>close</td><td>等待 core.close 后逆序 dispose；一个失败继续其他，聚合错误</td><td>先拒绝新任务，再收束活跃 run</td></tr><tr><td>共享</td><td>无状态插件可静态对象；资源或独立状态用 createXPlugin</td><td>不持有全局注册表或当前 Plugin 指针</td></tr></tbody></table></div><p>MCP 在外围转换成 Tool，进入与本地工具相同的网关；createModelBridge 在应用层同时依赖 ADK 与 Provider，两包仍不互相依赖。Session 保存失败独立于运行结果，不重跑 Agent 来修复冲突。图编排、checkpoint、暂停审批、热重载与不可信插件隔离均后置。</p></section><section class="section" id="errors"><div class="section-no">12 / ERRORS</div><h2>稳定错误码与确定的失败出口</h2><div class="table-wrap"><table><thead><tr><th>分类</th><th>示例</th><th>出口</th></tr></thead><tbody><tr><td>创建</td><td>CONFIG_INVALID / DUPLICATE_TOOL / MISSING_PORT</td><td>core 同步抛错；standard reject；无 run</td></tr><tr><td>入口</td><td>AGENT_BUSY / AGENT_CLOSING / AGENT_CLOSED / HISTORY_BLOCKED / INPUT_INVALID / REENTRANT_MUTATION</td><td>prompt reject；replaceMessages 同步抛；无新历史</td></tr><tr><td>协议</td><td>MODEL_PROTOCOL / MODEL_TOOL_BATCH_TOO_LARGE / CALL_NOT_PENDING / DRIVER_INVALID_END</td><td>RunResult failed，统一 finalizer</td></tr><tr><td>扩展</td><td>TOOL_INPUT_INVALID / HOOK_FAILED / MODEL_FAILED / TOOL_FAILED / TOOL_OUTCOME_UNKNOWN</td><td>failed；工具结果按执行阶段记录</td></tr><tr><td>输出</td><td>MODEL_OUTPUT_TOO_LARGE / TOOL_RESULT_INVALID / TOOL_RESULT_PROCESSING</td><td>failed；已完成工具保留事实</td></tr><tr><td>并发违约</td><td>RUN_OPERATION_BUSY / DRIVER_UNAWAITED_OPERATION</td><td>failed，等待已受理操作收束</td></tr><tr><td>预算 / 主动停止</td><td>max_model_calls / max_tool_calls / history_capacity / driver_stopped</td><td>limited + reason</td></tr><tr><td>取消</td><td>user / external_signal / timeout / close</td><td>cancelled + reason；未知写入 blocked</td></tr></tbody></table></div><p>对外 error 不包含凭证、参数全文、HTTP 原始响应或 continuation。cause 不自动进入结果或事件。观察者错误独立上报。进程崩溃、OOM 和不协作的执行代码不在“必然 settle”的承诺内。</p></section><section class="section" id="implementation"><div class="section-no">13 / ACCEPTANCE</div><h2>文件布局与可证伪验收</h2><p class="intro">只规划实施范围；本次不修改 packages。文档状态推演不等于已实现测试。</p><pre><code>packages/adk/src/
+  core/
+    index.ts                 公开导出
+    contracts.ts             Agent / Port / Tool / Driver / Hook / Event
+    create-agent.ts          外观与运行互斥
+    run-controller.ts        停止意图、操作锁、finalizer
+    model-gateway.ts         流式调用与提交
+    tool-gateway.ts          校验、授权、调用账本
+    history.ts               快照、配对、容量预留
+    events.ts                同步有序通知
+  standard/
+    create-tool.ts           单 schema 编译与规范化
+    create-agent.ts          插件组装与默认配置
+    plugin-host.ts           注册、启动、逆序清理
+  loops/
+    create-tool-loop.ts       默认算法
+apps/example-agent/          应用组装与 createModelBridge
+packages/provider/           保持独立</code></pre><div class="table-wrap"><table><thead><tr><th>验收组</th><th>反例与场景</th><th>通过标准</th></tr></thead><tbody><tr><td>G1 边界</td><td>仅导入 core，去掉所有默认模块</td><td>显式 fake Driver / port 可运行，无反向运行时依赖</td></tr><tr><td>G2 类型</td><td>输入类型错误、上下文不匹配、无依赖工具混用</td><td>参数正确推导，错误被捕获，不用 any 绕过</td></tr><tr><td>G3 模型</td><td>0/2 finish、finish 后 delta、重复调用 ID、拒答带工具</td><td>坏 assistant 不提交，工具执行次数 0</td></tr><tr><td>G4 工具</td><td>同键重复、跨轮同 callId、伪造 assistantId、校验失败、deny</td><td>同键一次，新批次可执行；拒绝前无副作用</td></tr><tr><td>G5 并发</td><td>双 prompt、并行网关调用、未 await 就结束 Driver</td><td>最多一个 run / 操作；无 detached 调用残留</td></tr><tr><td>G6 取消</td><td>在 hook、tool.start、execute、返回后取消</td><td>执行前取消无副作用；已完成结果保留；未知写入 blocked</td></tr><tr><td>G7 收束</td><td>结果 hook 抛错、历史空间不足、忽略 signal</td><td>事实不丢，配对完整；不假装强制完成</td></tr><tr><td>G8 事件</td><td>无监听、监听抛错 / 异步拒绝、回调重入</td><td>执行一致，seq 正确，无隐式正文泄露</td></tr><tr><td>G9 资源</td><td>start 部分失败、dispose 抛错、重复 close</td><td>逆序清理继续，timer / listener 释放，close 幂等</td></tr><tr><td>G10 桥接</td><td>Provider delta / tool-call / finish / continuation</td><td>唯一工具执行来源；mock 与真实服务分别验证</td></tr></tbody></table></div><div class="callout"><strong>实施顺序：</strong>声明与纯历史规则 → core + fake Driver → 两个网关与故障注入 → 默认循环 → createTool / Host → Provider bridge。性能、体积与真实服务结论另附实测。</div></section><section class="section" id="review"><div class="section-no">14 / REVIEW</div><h2>本次需要确认的细节</h2><p class="intro">已确认的方向、schema 与命名不重新投票。下面只列新增或收紧的行为；记录仅存本地浏览器，可导出。</p><div id="decisions"></div><div class="toolbar review-actions"><button id="export-review" class="primary">导出评审 JSON</button><button id="copy-review">复制评审文本</button><span id="review-status" aria-live="polite"></span></div></section><section class="section" id="basis"><div class="section-no">15 / BASELINE</div><h2>基线与本稿增量</h2><div class="panel"><ul><li>基线：<a href="adk-architecture-review-v3.html">v3 命名与架构</a>、<a href="adk-architecture-review-v2.html">v2 Schema</a>、<a href="../README.md">工程依赖约定</a>。</li><li>现状：<a href="../packages/adk/src/index.ts">ADK 仍为空入口</a>；<a href="../packages/provider/src/types.ts">Provider 已有文本流、调用与续接类型</a>。</li><li>单 schema 沿用 <a href="https://standardschema.dev/" target="_blank" rel="noreferrer">Standard Schema / Standard JSON Schema</a> 两项能力，编译在外层，core 不导入库。</li><li>K1 新增：工具调用键含 assistantId；continuation 拟限 JSON；无上下文工具泛型为 unknown；细化停止仲裁、并发锁、内存预留与错误分类。</li><li>旧 Runtime / Step 方案与手写 schema + parse 不作为实现依据。K1 是独立评审稿，不覆盖旧文档。</li></ul></div></section><footer>K1 · 2026-11-04 · 独立待评审版本<br>接口与场景均为设计。单文件离线文档；评审仅保存在本地浏览器。</footer></main></div><script type="application/json" id="doc-data">{"scenarios": {"success": [["受理 prompt", "running", "ready", 0, 0, "user 已提交", "先占用 run，再进入 Driver。"], ["模型完成工具请求", "running", "ready", 1, 0, "assistant A1；pending=(A1,c1)", "完整 finish 且正常结束后才提交。"], ["校验与授权", "running", "ready", 1, 0, "pending 未执行", "授权与 execute 使用同一份参数。"], ["工具成功", "running", "ready", 1, 1, "toolResult(A1,c1)=succeeded", "先提交事实，再通知 tool.end。"], ["最终回答", "idle", "ready", 2, 1, "assistant A2；pending=0", "run.end(completed)，prompt settle。"]], "deny": [["模型申请工具", "running", "ready", 1, 0, "assistant A1", "模型请求不是业务授权。"], ["授权 deny", "running", "ready", 1, 0, "result=denied；pending=0", "工具不执行，没有 tool.start。"], ["解释权限限制", "idle", "ready", 2, 0, "assistant A2", "completed 表示回答完成，不是业务操作获准。"]], "cancel": [["写工具进入 execute", "running", "ready", 1, 1, "外部写入已发出", "effect=write。"], ["用户 abort", "cancelling", "ready", 1, 1, "stopIntent=cancelled", "不能提前释放 Agent。"], ["工具忽略 signal", "cancelling", "ready", 1, 1, "prompt / close 仍等待", "timeout 不代表强杀。"], ["工具随后抛错", "idle", "blocked", 1, 1, "result=outcome_unknown", "cancelled；先核对外部副作用再恢复历史。"]], "duplicate": [["A1,c1 已完成", "running", "ready", 1, 1, "completed[(A1,c1)]", "去重表只属于本 run。"], ["再 callTool(A1,c1)", "running", "ready", 1, 1, "直接返回既有结果", "无新执行、无新事件、无新预算。"], ["模型 A2 复用 c1", "running", "ready", 2, 1, "pending[(A2,c1)]", "跨响应 callId 可以重复。"], ["callTool(A2,c1)", "running", "ready", 2, 2, "新结果提交", "组合键不同，合法执行而非误去重。"]], "malformed": [["收到 delta", "running", "ready", 1, 0, "正式历史仅 user", "delta 只是预览。"], ["第一个 finish", "running", "ready", 1, 0, "结果暂存", "仍需等待流结束。"], ["第二个 finish", "cancelling", "ready", 1, 0, "stopIntent=failed", "MODEL_PROTOCOL，清理迭代器。"], ["收束", "idle", "ready", 1, 0, "仍只有 user", "坏 assistant 未提交，工具执行次数为 0。"]], "close": [["运行中", "running", "ready", 1, 0, "模型操作 active", "最多一个 run。"], ["close", "cancelling", "ready", 1, 0, "closing=true", "拒绝新请求，等待活动 run。"], ["再次 prompt / close", "cancelling", "ready", 1, 0, "prompt reject；close 复用", "无新 run 或模型调用。"], ["操作收束", "closed", "ready", 1, 0, "run.end(cancelled)", "core.close 完成后 Host 才释放插件资源。"]]}, "decisions": [["key", "D1 · 工具归属键", "callTool(assistantId, callId)，当前 run 去重；允许不同 assistant 复用供应商 callId。"], ["tool", "D2 · 规范化 Tool", "业务 createTool 不变；内部 prepare 校验一次并绑定参数；无依赖工具泛型默认 unknown。"], ["stop", "D3 · 首次停止意图", "cancelled / failed / limited 首次获胜；等待已受理操作与 Driver 收束，不承诺强制截止。"], ["unknown", "D4 · 未知副作用", "write / unknown 工具执行后抛错导致 blocked；已成功返回但后处理失败记录 succeeded 占位。"], ["limits", "D5 · 资源默认值", "8 次模型、32 次工具、1 MiB 模型输出、128 KiB 工具结果、4 MiB / 512 条历史；工具批次预留结果空间。"], ["continuation", "D6 · continuation 限 JSON", "首版复制冻结 JSON 数据，owner 由 bridge 校验；未来非 JSON 协议另设计 codec。"], ["events", "D7 · 事件与重入", "同步通知、无默认队列；回调内禁止启动新 run / 换历史 / close，abort 例外。"], ["core", "D8 · Core 入口与冻结", "同步 createAgent，无插件启动；创建后配置冻结；运行策略替换仍使用两种受控调用。"], ["acceptance", "D9 · 实施门槛", "按 G1–G10 验收，先 fake port 验证 core，再接默认循环、工具工厂、Host 和 Provider。"]]}</script><script>
+'use strict';
+const $=id=>document.getElementById(id);
+const data=JSON.parse($('doc-data').textContent);
+document.querySelectorAll('[data-api]').forEach(b=>b.addEventListener('click',()=>{
+ document.querySelectorAll('[data-api]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+ document.querySelectorAll('.api-panel').forEach(p=>p.hidden=p.id!=='api-'+b.dataset.api);
+}));
+let scenario='success',position=0;
+function renderScenario(){
+ const rows=data.scenarios[scenario];$('trace').replaceChildren();
+ rows.forEach((r,i)=>{const li=document.createElement('li');li.className=i===position?'current':i<position?'done':'';if(i===position)li.setAttribute('aria-current','step');
+ const n=document.createElement('span');n.textContent=String(i+1).padStart(2,'0');const body=document.createElement('div');const title=document.createElement('strong');title.textContent=r[0];const sub=document.createElement('small');sub.textContent=r[5];body.append(title,sub);li.append(n,body);$('trace').append(li)});
+ const r=rows[position];$('snapshot').replaceChildren();const h=document.createElement('h3');h.textContent='步骤 '+(position+1)+' / '+rows.length;const dl=document.createElement('dl');
+ [['Agent.status',r[1]],['historyStatus',r[2]],['模型调用 / 工具执行',r[3]+' / '+r[4]],['正式状态',r[5]]].forEach(([k,v])=>{const dt=document.createElement('dt');dt.textContent=k;const dd=document.createElement('dd');dd.textContent=v;dl.append(dt,dd)});
+ const p=document.createElement('p');p.className='explain';p.textContent=r[6];$('snapshot').append(h,dl,p);$('previous').disabled=position===0;$('next').disabled=position===rows.length-1;
+}
+$('scenario').addEventListener('change',e=>{scenario=e.target.value;position=0;renderScenario()});
+$('previous').addEventListener('click',()=>{position--;renderScenario()});$('next').addEventListener('click',()=>{position++;renderScenario()});$('reset').addEventListener('click',()=>{position=0;renderScenario()});renderScenario();
+const storageKey='alpha-adk-kernel-k1-review';let reviews={},stored=true;
+try{const v=JSON.parse(localStorage.getItem(storageKey)||'{}');if(v&&typeof v==='object'&&!Array.isArray(v))reviews=v}catch{stored=false}
+function persist(){try{localStorage.setItem(storageKey,JSON.stringify(reviews));stored=true}catch{stored=false}const n=data.decisions.filter(d=>reviews[d[0]]?.status&&reviews[d[0]].status!=='pending').length;$('review-status').textContent='已评 '+n+' / '+data.decisions.length+' · '+(stored?'已保存到本浏览器':'存储不可用，请导出')}
+data.decisions.forEach(([id,title,description])=>{
+ const row=document.createElement('div');row.className='decision';const body=document.createElement('div');const h=document.createElement('h3');h.textContent=title;const p=document.createElement('p');p.textContent=description;body.append(h,p);
+ const label=document.createElement('label');label.textContent='你的判断';const select=document.createElement('select');select.id='review-'+id;label.htmlFor=select.id;
+ [['pending','尚未评审'],['accept','同意建议'],['change','需要修改'],['discuss','待讨论']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;select.append(o)});
+ select.value=['pending','accept','change','discuss'].includes(reviews[id]?.status)?reviews[id].status:'pending';
+ const input=document.createElement('textarea');input.setAttribute('aria-label',title+'的意见');input.placeholder='记录需要调整的边界、行为或默认值…';input.value=typeof reviews[id]?.comment==='string'?reviews[id].comment:'';
+ const save=()=>{reviews[id]={status:select.value,comment:input.value};persist()};select.addEventListener('change',save);input.addEventListener('input',save);row.append(body,label,input);$('decisions').append(row);
+});persist();
+function payload(){return{document:'Alpha ADK Kernel Detailed Design',revision:'K1',date:new Date().toISOString(),decisions:data.decisions.map(([id,title,proposal])=>({id,title,proposal,status:reviews[id]?.status||'pending',comment:reviews[id]?.comment||''}))}}
+$('export-review').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(payload(),null,2)],{type:'application/json;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='alpha-adk-kernel-k1-review.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);$('review-status').textContent='已发起评审 JSON 下载。'});
+$('copy-review').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(JSON.stringify(payload(),null,2));$('review-status').textContent='已复制评审内容。'}catch{$('review-status').textContent='浏览器限制剪贴板，请导出 JSON。'}});
+$('print').addEventListener('click',()=>window.print());
+if('IntersectionObserver' in window){const ob=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)document.querySelectorAll('.sidebar nav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id))})},{rootMargin:'-10% 0px -75% 0px'});document.querySelectorAll('main>section').forEach(s=>ob.observe(s))}
+</script></body></html>

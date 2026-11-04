@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alpha ADK · 开发者如何使用</title>
+<style>
+:root{color-scheme:light;--ink:#182a35;--muted:#607580;--accent:#087c72;--line:#dce8e6;--paper:#fff;--bg:#f3f7f5}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 "Segoe UI","Microsoft YaHei",sans-serif}a{color:#087c72;text-decoration:none}a:hover{text-decoration:underline}.layout{max-width:1500px;margin:auto;display:grid;grid-template-columns:255px minmax(0,1fr);gap:48px;padding:48px 52px}.side{position:sticky;top:35px;align-self:start;max-height:calc(100vh - 70px);overflow:auto}.brand{font-size:12px;letter-spacing:.18em;font-weight:800;color:var(--accent);margin-bottom:24px}.side a{display:block;padding:7px 0;color:#607580;font-size:13px;line-height:1.5}.side a:hover{color:var(--accent)}main{min-width:0;background:var(--paper);border:1px solid #e1ebe8;border-radius:20px;box-shadow:0 18px 60px #183b3010;padding:56px 68px 90px}h1{font-size:clamp(30px,4vw,48px);letter-spacing:-.04em;line-height:1.2;margin:0 0 18px;max-width:860px}h2{font-size:26px;line-height:1.3;margin:68px 0 22px;padding-top:20px;border-top:1px solid var(--line);scroll-margin-top:25px}h3{font-size:19px;margin:32px 0 12px}p{margin:12px 0 18px}p.meta{font-size:13px;color:var(--muted);background:#edf7f3;border-radius:8px;padding:10px 14px}.meta+h2{border:0;margin-top:38px;padding-top:0}strong{color:#135d57}ul{padding-left:22px}li{padding:3px 0}code{font-family:Consolas,monospace;font-size:.88em;background:#eef4f2;padding:2px 5px;border-radius:4px}pre{background:#172d35;color:#dcf2e9;border-radius:12px;padding:22px;overflow:auto;line-height:1.6;font-size:13px}pre code{background:none;color:inherit;padding:0}.table-wrap{overflow-x:auto;margin:24px 0;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:620px;font-size:14px;line-height:1.65}th{text-align:left;background:#edf6f3;color:#28574f;font-weight:700}td,th{padding:13px 15px;vertical-align:top;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}@media(max-width:850px){.layout{display:block;padding:16px}.side{position:static;max-height:none;margin:10px 8px 20px}.side nav{display:flex;gap:10px;overflow:auto}.side a{white-space:nowrap}.brand{margin-bottom:6px}main{padding:30px 22px 55px;border-radius:14px}h2{margin-top:48px}}@media print{body{background:white}.layout{display:block;padding:0}.side{display:none}main{border:0;box-shadow:none;padding:0}h2{break-after:avoid}tr,pre{break-inside:avoid}}
+</style></head><body><div class="layout"><aside class="side"><div class="brand">ALPHA / DEVELOPER GUIDE</div><nav><a href="#section-0">1. 我们要让开发者做什么</a><a href="#section-1">2. 完整示例：一个订单助手</a><a href="#section-2">3. 多轮对话怎么写</a><a href="#section-3">4. 流式输出和取消</a><a href="#section-4">5. 开发者最常见的扩展</a><a href="#section-5">6. API 总览</a><a href="#section-6">7. 背后如何体现微内核</a><a href="#section-7">8. 先实现什么，如何验证</a></nav></aside><main><h1 id="heading-0">Alpha ADK：先从开发者怎么用开始</h1><p class="meta">API 设计草案 · 2026-11-03  </p><p class="meta">下面的 <code>@alpha/adk</code> API 都是拟议用法，尚未实现。目标是先让开发者能写出 Agent，再确定内部架构。</p><h2 id="section-0">1. 我们要让开发者做什么</h2><p>一个开发者要做订单助手，只需完成四件事：</p><ul><li>从现有 <code>@alpha/provider</code> 选择模型。</li><li>写一个查询订单的工具。</li><li>创建 Agent，把模型和工具交给它。</li><li>调用 Agent，获得回答；需要时订阅流式事件。</li></ul><p>开发者不需要先理解内核、网关、策略或插件宿主。</p><h2 id="section-1">2. 完整示例：一个订单助手</h2><pre><code>import { createProvider } from &#x27;@alpha/provider&#x27;;
+import { Agent, tool } from &#x27;@alpha/adk&#x27;;
+import { z } from &#x27;zod&#x27;;
+
+// 1. 选择模型：沿用当前 Alpha Provider
+const provider = createProvider({
+  providers: {
+    primary: {
+      adapter: &#x27;openai-completions&#x27;,
+      options: { apiKey: { env: &#x27;MODEL_API_KEY&#x27; } },
+      models: { chat: { id: &#x27;your-model-id&#x27; } },
+    },
+  },
+});
+const model = provider.use(&#x27;primary&#x27;, &#x27;chat&#x27;);
+
+// 2. 定义工具
+const getOrder = tool({
+  name: &#x27;get_order&#x27;,
+  description: &#x27;查询指定订单的状态&#x27;,
+  parameters: z.object({
+    orderId: z.string().describe(&#x27;要查询的订单号&#x27;),
+  }),
+  async execute({ orderId }) {
+    // 实际项目中在这里调用订单服务，并校验当前用户权限
+    const order = await orderService.getById(orderId);
+    return JSON.stringify(order);
+  },
+});
+
+// 3. 创建 Agent
+const agent = new Agent({
+  name: &#x27;order-assistant&#x27;,
+  instructions: &#x27;帮助用户查询订单状态。查询前使用工具获取信息，不要编造。&#x27;,
+  model,
+  tools: [getOrder],
+});
+
+// 4. 发起对话
+const result = await agent.prompt(&#x27;帮我查询订单 A123&#x27;);
+if (result.status === &#x27;completed&#x27;) {
+  console.log(result.text);
+} else {
+  console.log(&#x27;本次运行未正常完成：&#x27;, result.status);
+}
+</code></pre><p><code>orderService</code> 是应用已有的业务服务，由应用导入或注入；示例省略其具体实现。Zod 是示例 schema 库，是否作为首版依赖尚待决定；上面的自动推导、校验和 JSON Schema 转换是预期能力，不是现有功能。</p><p><strong>执行过程：</strong> ADK 把用户消息、指令和工具描述发给模型；模型选择调用 <code>get_order</code>；ADK 校验参数并执行函数；工具结果返回模型；模型生成最终回答。订单查询失败或模型拒答不会被当成成功回答。</p><h2 id="section-2">3. 多轮对话怎么写</h2><p>同一个 Agent 实例保留自己的消息历史：</p><pre><code>const first = await agent.prompt(&#x27;查询订单 A123&#x27;);
+// completed: “订单 A123 正在配送中。”
+
+const second = await agent.prompt(&#x27;它是什么时候发出的？&#x27;);
+// Agent 可以使用前一轮历史继续回答。
+
+console.log(agent.state.messages);
+</code></pre><p>一个 Agent 实例一次只运行一个 <code>prompt</code>；同一实例并发调用时报明确错误。不同 Agent 实例各自拥有独立历史。默认历史只在内存中，进程退出后丢失；持久化属于可选能力。</p><h2 id="section-3">4. 流式输出和取消</h2><pre><code>const controller = new AbortController();
+
+const unsubscribe = agent.subscribe((event) =&gt; {
+  if (event.type === &#x27;text.delta&#x27;) process.stdout.write(event.text);
+  if (event.type === &#x27;tool.start&#x27;) console.log(&#x27;\n正在调用：&#x27;, event.name);
+});
+
+try {
+  const result = await agent.prompt(&#x27;查询订单 A123&#x27;, {
+    signal: controller.signal,
+  });
+  if (result.status !== &#x27;completed&#x27;) {
+    console.log(&#x27;运行结束：&#x27;, result.status);
+  }
+} finally {
+  unsubscribe();
+}
+
+// 需要停止时：controller.abort()
+</code></pre><p>流式文本在最终结果确认前只是增量；调用方仍需检查 <code>result.status</code>。取消会停止后续工作，但不能撤销已经完成的业务操作。事件订阅用于展示和观察，不能代替工具授权。</p><h2 id="section-4">5. 开发者最常见的扩展</h2><h3 id="heading-114">5.1 添加或替换工具</h3><pre><code>const searchProducts = tool({
+  name: &#x27;search_products&#x27;,
+  description: &#x27;搜索商品&#x27;,
+  parameters: z.object({ keyword: z.string() }),
+  async execute({ keyword }) {
+    return JSON.stringify(await productService.search(keyword));
+  },
+});
+
+const agent = new Agent({
+  name: &#x27;shop-assistant&#x27;,
+  instructions: &#x27;帮助用户查询订单和商品。&#x27;,
+  model,
+  tools: [getOrder, searchProducts],
+});
+</code></pre><p>工具是普通 TypeScript 函数加名称、描述和输入 schema。ADK 在执行前校验模型生成的参数；业务服务仍负责用户身份、数据权限和自身副作用。</p><h3 id="heading-136">5.2 切换模型</h3><pre><code>const model = provider.use(&#x27;anotherProvider&#x27;, &#x27;chat&#x27;);
+
+const agent = new Agent({
+  name: &#x27;order-assistant&#x27;,
+  instructions: &#x27;帮助用户查询订单状态。&#x27;,
+  model,
+  tools: [getOrder],
+});
+</code></pre><p>工具代码不需要修改。不同服务的能力和协议续接并不完全相同；新建 Agent 切换模型较简单，已有历史中包含特定模型的续接数据时必须先检查能否安全转换，不能承诺所有历史都可无损迁移。</p><p><strong>实现要求：</strong> ADK 与 Provider 保持独立包。上面的直接传入能否通过结构类型实现，需要用现有 <code>LanguageModel</code> 做类型 POC；如果不能，应提供单独的 bridge，并调整示例中的导入，不能为了示例好看强行增加两包依赖。</p><h3 id="heading-153">5.3 在工具执行前加权限控制</h3><pre><code>const agent = new Agent({
+  name: &#x27;order-assistant&#x27;,
+  instructions: &#x27;帮助用户查询订单。&#x27;,
+  model,
+  tools: [getOrder],
+  hooks: {
+    async beforeToolCall({ toolName, args }) {
+      const allowed = await permissions.canUse(currentUser, toolName, args);
+      if (!allowed) return { allow: false, reason: &#x27;没有权限执行此操作&#x27; };
+      return { allow: true };
+    },
+  },
+});
+</code></pre><p>hook 在参数校验后、工具执行前运行；拒绝时不调用工具。抛错按拒绝处理。具体拒绝后是结束 run 还是把安全的拒绝结果交给模型，应作为明确配置，而不是由模型决定。参数和用户身份来自可信应用上下文，不应默认写入日志。</p><h3 id="heading-173">5.4 接入自己的上下文处理</h3><p>当历史过长或需要检索知识时，开发者可以更换模型调用前的上下文构建方式：</p><pre><code>const agent = new Agent({
+  name: &#x27;support&#x27;,
+  instructions: &#x27;根据知识库帮助用户。&#x27;,
+  model,
+  tools: [],
+  context: {
+    async build({ messages, signal }) {
+      const docs = await knowledgeBase.search(latestUserText(messages), { signal });
+      return addReferenceMessages(messages, docs);
+    },
+  },
+});
+</code></pre><p><code>knowledgeBase</code>、<code>latestUserText</code> 和 <code>addReferenceMessages</code> 是应用提供的示意函数。返回的是本次发给模型的上下文投影，不直接覆盖原始历史；工具调用和结果不能被裁剪成不匹配的消息对。</p><h3 id="heading-194">5.5 将多个能力打包成插件</h3><p>多个 Agent 想复用同一组工具和 hooks 时，才需要插件：</p><pre><code>const orderPlugin = definePlugin({
+  name: &#x27;orders&#x27;,
+  setup(api) {
+    api.addTool(getOrder);
+    api.on(&#x27;beforeToolCall&#x27;, async ({ toolName, args }) =&gt; {
+      const allowed = await permissions.canUse(currentUser, toolName, args);
+      return allowed ? { allow: true } : { allow: false, reason: &#x27;没有权限&#x27; };
+    });
+  },
+});
+
+const agent = new Agent({
+  name: &#x27;order-assistant&#x27;,
+  instructions: &#x27;帮助用户查询订单状态。&#x27;,
+  model,
+  plugins: [orderPlugin],
+});
+</code></pre><p><code>definePlugin</code> 同样是拟议 API。插件是一个组装单元，不是使用 ADK 的前提。首版若实现插件，采用显式传入、名称冲突报错、按注册顺序执行；不自动扫描或加载不可信代码。</p><h2 id="section-5">6. API 总览</h2><div class="table-wrap"><table><thead><tr><th>开发者想做的事</th><th>拟议入口</th><th>首版建议</th></tr></thead><tbody><tr><td>创建对话 Agent</td><td><code>new Agent({ instructions, model, tools })</code></td><td>必需</td></tr><tr><td>定义工具</td><td><code>tool({ name, description, parameters, execute })</code></td><td>必需</td></tr><tr><td>发起对话</td><td><code>await agent.prompt(text)</code></td><td>必需</td></tr><tr><td>接收流式事件</td><td><code>agent.subscribe(listener)</code></td><td>必需</td></tr><tr><td>停止执行</td><td><code>AbortSignal</code> / <code>agent.abort()</code></td><td>必需</td></tr><tr><td>查询当前状态</td><td><code>agent.state</code> 只读快照</td><td>必需</td></tr><tr><td>模型调用/工具调用前检查</td><td><code>hooks</code></td><td>先支持少量明确 hook</td></tr><tr><td>自定义上下文</td><td><code>context.build</code></td><td>首版定义清晰输入输出，按用例实现</td></tr><tr><td>复用一组工具及 hooks</td><td><code>plugins</code></td><td>在基础 API 验证后实现</td></tr><tr><td>更换模型</td><td>Provider 模型或 bridge</td><td>对接现有 Provider 后验证</td></tr><tr><td>外部持久化、MCP、多 Agent</td><td>独立可选适配或应用组合</td><td>用真实场景驱动</td></tr></tbody></table></div><h2 id="section-6">7. 背后如何体现微内核</h2><p>开发者不需要操作内核，但应能理解它为这些 API 提供了什么保证：</p><pre><code>开发者调用 agent.prompt()
+       ↓
+Agent 管理当前会话与一次运行
+       ↓
+内核执行模型 → 工具 → 模型的循环
+       ├─ 调用已注入的模型
+       ├─ 校验并执行已注册的工具
+       ├─ 运行授权 hook、限制次数、处理取消
+       └─ 发出事件，返回明确结果
+</code></pre><p><strong>内核固定机制</strong>：消息与工具调用的关联、运行状态、取消、最大模型调用次数、工具参数校验和事件顺序。它不内置订单服务、数据库、MCP 客户端或某个模型厂商。</p><p><strong>外围提供能力</strong>：工具、模型、上下文处理和可选插件通过参数注入。后续如果真实业务需要替换整个 Agent 循环，再公开低层执行接口；首版不要求普通开发者提供策略对象。</p><p>这里的微内核是设计目标，不是已通过实现验证的事实。特别是：进程内插件是可信代码，不是安全沙箱；持久化会话也不自动提供崩溃恢复或外部操作恰好一次执行。</p><h2 id="section-7">8. 先实现什么，如何验证</h2><ul><li>先用现有 Provider 类型做最小 POC，确定模型直接传入还是需要 bridge；同时选定 schema 方案。</li><li>实现上述最小路径：Agent、tool、prompt、事件、取消和最大模型调用次数。</li><li>用 mock 模型验证“模型调用工具 → 工具返回 → 模型回答”，再验证多轮历史、参数错误、工具失败、拒答和取消。</li><li>在两个目标模型服务上受控验证流式、工具调用与协议续接，不假设兼容协议端点行为完全一致。</li><li>至少出现第二个真实使用场景后，再验证插件、上下文替换及其他抽象是否真的降低接入成本。</li></ul><p><strong>需要我们一起决定的两个 API 细节：</strong>工具 schema 是否首版采用 Zod；模型是直接接收现有 Provider 实例，还是使用独立 bridge。其他示例中的具体命名可以在实现 POC 时调整。</p></main></div></body></html>

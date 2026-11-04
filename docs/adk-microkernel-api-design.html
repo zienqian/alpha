@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alpha ADK · 微内核与插件 API 设计</title>
+<style>
+:root{color-scheme:light;--ink:#182a35;--muted:#607580;--accent:#087c72;--line:#dce8e6;--paper:#fff;--bg:#f3f7f5}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 "Segoe UI","Microsoft YaHei",sans-serif}a{color:#087c72;text-decoration:none}a:hover{text-decoration:underline}.layout{max-width:1500px;margin:auto;display:grid;grid-template-columns:255px minmax(0,1fr);gap:48px;padding:48px 52px}.side{position:sticky;top:35px;align-self:start;max-height:calc(100vh - 70px);overflow:auto}.brand{font-size:12px;letter-spacing:.18em;font-weight:800;color:var(--accent);margin-bottom:24px}.side a{display:block;padding:7px 0;color:#607580;font-size:13px;line-height:1.5}.side a:hover{color:var(--accent)}main{min-width:0;background:var(--paper);border:1px solid #e1ebe8;border-radius:20px;box-shadow:0 18px 60px #183b3010;padding:56px 68px 90px}h1{font-size:clamp(30px,4vw,48px);letter-spacing:-.04em;line-height:1.2;margin:0 0 18px;max-width:860px}h2{font-size:26px;line-height:1.3;margin:68px 0 22px;padding-top:20px;border-top:1px solid var(--line);scroll-margin-top:25px}h3{font-size:19px;margin:32px 0 12px}p{margin:12px 0 18px}p.meta{font-size:13px;color:var(--muted);background:#edf7f3;border-radius:8px;padding:10px 14px}.meta+h2{border:0;margin-top:38px;padding-top:0}strong{color:#135d57}ul{padding-left:22px}li{padding:3px 0}code{font-family:Consolas,monospace;font-size:.88em;background:#eef4f2;padding:2px 5px;border-radius:4px}pre{background:#172d35;color:#dcf2e9;border-radius:12px;padding:22px;overflow:auto;line-height:1.6;font-size:13px}pre code{background:none;color:inherit;padding:0}.table-wrap{overflow-x:auto;margin:24px 0;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:620px;font-size:14px;line-height:1.65}th{text-align:left;background:#edf6f3;color:#28574f;font-weight:700}td,th{padding:13px 15px;vertical-align:top;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}@media(max-width:850px){.layout{display:block;padding:16px}.side{position:static;max-height:none;margin:10px 8px 20px}.side nav{display:flex;gap:10px;overflow:auto}.side a{white-space:nowrap}.brand{margin-bottom:6px}main{padding:30px 22px 55px;border-radius:14px}h2{margin-top:48px}}@media print{body{background:white}.layout{display:block;padding:0}.side{display:none}main{border:0;box-shadow:none;padding:0}h2{break-after:avoid}tr,pre{break-inside:avoid}}
+</style></head><body><div class="layout"><aside class="side"><div class="brand">ALPHA / ADK DESIGN</div><nav><a href="#section-0">1. 目标与边界</a><a href="#section-1">2. 对象模型</a><a href="#section-2">3. 内核公开 API 草案</a><a href="#section-3">4. 执行器与内核网关</a><a href="#section-4">5. 插件 API</a><a href="#section-5">6. Hooks 与中间件</a><a href="#section-6">7. 事件、错误与预算</a><a href="#section-7">8. Session 与并发</a><a href="#section-8">9. 应用侧组装示例</a><a href="#section-9">10. 扩展点演进与版本</a><a href="#section-10">11. 验收与待决事项</a></nav></aside><main><h1 id="heading-0">Alpha ADK 微内核、插件与 Hooks 详细设计</h1><p class="meta">状态：设计草案 · 2026-11-03  </p><p class="meta">范围：TypeScript / Node.js，单进程单 Agent 起步；示例为拟议 API，不是当前已实现的 API。</p><h2 id="section-0">1. 目标与边界</h2><p>构建可嵌入应用的 Agent 开发框架。使用者能够以较少配置运行默认工具循环，也能替换执行器、模型桥接、会话存储和策略。插件通过有限、明确的公开扩展点组合；业务不需要继承框架基类或修改内部状态。</p><p><strong>依赖关系</strong>：应用依赖 <code>@alpha/adk</code> 和 <code>@alpha/provider</code> 完成组装；两包不互相依赖。外部插件只依赖 ADK 公开 API。当前 Provider 已实现自有 <code>LanguageModel</code>，支持 <code>generate/stream</code>、工具、使用量、取消和协议续接；本设计不依赖 AI SDK。</p><p><strong>暂不承诺</strong>：跨进程恢复、分布式调度、恰好一次副作用、插件隔离、多 Agent 或图工作流。接口的预留不等于这些能力已经可用。</p><h3 id="heading-13">1.1 内核与内置扩展</h3><div class="table-wrap"><table><thead><tr><th>类别</th><th>内容</th><th>责任</th></tr></thead><tbody><tr><td>内核</td><td>Runtime、Run、Executor 契约、模型/工具调用网关、扩展组装、事件、取消、预算</td><td>实现一致的生命周期和策略执行边界</td></tr><tr><td>默认执行器</td><td>上下文构造、模型/工具循环和终止判断</td><td>通过内核网关发起操作</td></tr><tr><td>内置扩展</td><td>内存 session、日志观察者、工具策略</td><td>可替换、可不启用</td></tr><tr><td>外部扩展</td><td>MCP、持久化、图执行器、trace exporter</td><td>只使用公开契约；各自独立维护依赖</td></tr></tbody></table></div><p>“微内核”是依赖和能力边界，不要求第一天拆多个包。建议先在 <code>packages/adk</code> 中分目录，通过 exports 控制公开面。</p><h2 id="section-1">2. 对象模型</h2><div class="table-wrap"><table><thead><tr><th>对象</th><th>生命周期</th><th>作用</th></tr></thead><tbody><tr><td>Agent</td><td>定义阶段</td><td>不可变配置快照：ID、指令、模型、工具、执行器默认值</td></tr><tr><td>Runtime</td><td>应用级</td><td>安装插件，冻结扩展集合，创建 Run</td></tr><tr><td>Run</td><td>每次请求</td><td>保存 ID、事件、终态、取消信号与预算</td></tr><tr><td>Executor</td><td>Runtime 级可复用实例</td><td>实现算法；每次执行只使用该次 RunContext</td></tr><tr><td>RunContext</td><td>每次 Run</td><td>只读 ID、信号、预算视图、应用注入的上下文</td></tr><tr><td>Tool</td><td>定义阶段</td><td>输入 schema、校验器、执行函数和副作用声明</td></tr><tr><td>Session</td><td>跨 Run</td><td>带版本的会话项读写；不是 checkpoint</td></tr><tr><td>Plugin</td><td>Runtime 级</td><td>在启动时同步注册能力和 hooks；可选异步启动/关闭</td></tr></tbody></table></div><p>约定 Agent 定义使用浅层冻结的快照；嵌套 schema 与数组由创建函数复制，函数和注入的对象按引用持有，使用者负责其线程/并发安全。每个 Run 的可变运行状态独立，插件闭包与注入依赖可能被并发访问。</p><h2 id="section-2">3. 内核公开 API 草案</h2><p>以下代码块是类型设计示意，省略少量辅助字段；它们一起定义预期语义，不宣称已经编译或发布。</p><h3 id="heading-43">3.1 Agent、Runtime 与 Run</h3><pre><code>export type Awaitable&lt;T&gt; = T | Promise&lt;T&gt;;
+export type Json = null | boolean | number | string | Json[] |
+  { [key: string]: Json };
+export type JsonObject = { [key: string]: Json };
+
+export interface Agent&lt;C = unknown&gt; {
+  readonly id: string;
+  readonly instructions: string;
+  readonly model: ModelPort;
+  readonly tools: readonly Tool&lt;C&gt;[];
+}
+
+export function defineAgent&lt;C&gt;(definition: Agent&lt;C&gt;): Agent&lt;C&gt;;
+
+export interface RunInput&lt;C&gt; {
+  input: string;
+  context: C;                       // 应用依赖，不自动发送给模型或持久化
+  session?: Session;
+  signal?: AbortSignal;
+  limits?: { maxModelCalls?: number; timeoutMs?: number };
+  stream?: &#x27;none&#x27; | &#x27;events&#x27;;       // 默认为 none
+}
+
+export interface Runtime&lt;C = unknown&gt; {
+  start(agent: Agent&lt;C&gt;, input: RunInput&lt;C&gt;): Run;
+  close(): Promise&lt;void&gt;;
+}
+
+export interface Run {
+  readonly id: string;
+  readonly result: Promise&lt;RunResult&gt;;
+  readonly events?: AsyncIterable&lt;RunEvent&gt;; // 仅 stream: &#x27;events&#x27; 时存在
+  cancel(reason?: unknown): void;
+}
+
+export type RunResult =
+  | { status: &#x27;completed&#x27;; text: string; usage: Usage }
+  | { status: &#x27;refused&#x27;; text: string; usage: Usage }
+  | { status: &#x27;incomplete&#x27;; text: string; reason?: string; usage: Usage }
+  | { status: &#x27;unknown&#x27;; text: string; usage: Usage }
+  | { status: &#x27;cancelled&#x27;; usage: Usage }
+  | { status: &#x27;failed&#x27;; error: AdkError; usage: Usage };
+</code></pre><p><strong>运行契约</strong>：</p><ul><li><code>start</code> 立即返回句柄并启动运行；同步参数错误在调用时抛出，执行期间的错误折叠为 <code>result.status = &#x27;failed&#x27;</code>。取消同样通过 result 表达。避免必须通过异常处理所有业务终态。</li><li><code>result</code> 总会在运行结束时 settle；<code>close()</code> 拒绝新运行、取消活跃运行、等待其清理，然后逆序关闭已启动插件。重复调用 <code>close()</code> 返回同一关闭结果。</li><li><code>stream: &#x27;none&#x27;</code> 时无事件队列，调用方可以只等待结果；观察者仍可收到生命周期通知。</li><li><code>stream: &#x27;events&#x27;</code> 必须恰好一个消费者。使用有界队列，队列满时执行器等待消费者，形成背压；结果只有执行完成后才 settle。调用者应立即并发消费流和等待结果。消费者提前 <code>break</code>、迭代异常或显式 <code>cancel</code> 时取消 run、关闭底层模型流并唤醒阻塞写入；永不消费的调用者应配置 timeout 或主动取消。</li><li>事件流仅传达本次进程内事件，不是持久日志；流完成不替代检查 <code>result</code>。取消是协作式的，无法撤销已发生的副作用。</li><li>同一 Runtime 可以并发运行不同 Agent；同一 Session 的并发写入按第 8 节处理。无全局可变的当前 Run。</li></ul><p>建议消费方式：</p><pre><code>const run = runtime.start(agent, {
+  input: &#x27;查询订单 A123&#x27;,
+  context: { tenantId: &#x27;tenant-1&#x27; },
+  stream: &#x27;events&#x27;,
+  limits: { maxModelCalls: 8, timeoutMs: 30_000 },
+});
+
+const consume = (async () =&gt; {
+  for await (const event of run.events!) {
+    if (event.type === &#x27;model.text.delta&#x27;) process.stdout.write(event.text);
+  }
+})();
+const [result] = await Promise.all([run.result, consume]);
+if (result.status !== &#x27;completed&#x27;) handleNonSuccess(result);
+</code></pre><h3 id="heading-118">3.2 工具定义与校验</h3><p>使用 JSON Schema 作为发送给模型的描述，并要求开发者提供与 schema 一致的运行时解析函数。首版不绑定特定 schema 库；适配器可以把 Zod 等库转换成这一对值。</p><pre><code>export interface Schema&lt;T&gt; {
+  readonly jsonSchema: JsonObject;
+  parse(value: unknown): T;  // 校验失败时抛出，绝不只依赖模型遵循 schema
+}
+export interface ToolExecutionContext&lt;C&gt; {
+  readonly runId: string;
+  readonly toolCallId: string;
+  readonly signal: AbortSignal;
+  readonly app: C;
+}
+export interface Tool&lt;C = unknown, I = unknown&gt; {
+  readonly name: string;
+  readonly description: string;
+  readonly input: Schema&lt;I&gt;;
+  readonly effect: &#x27;read&#x27; | &#x27;write&#x27; | &#x27;unknown&#x27;;
+  execute(input: I, context: ToolExecutionContext&lt;C&gt;): Promise&lt;string&gt;;
+}
+export function defineTool&lt;C, I&gt;(tool: Tool&lt;C, I&gt;): Tool&lt;C, I&gt;;
+</code></pre><p><code>effect</code> 是开发者声明，不是安全证明。首版结果为字符串，与现有 Provider 的 tool message 对齐；结果大小上限和错误脱敏由网关执行。模型返回的 <code>toolCallId</code> 必须存在且同一模型响应中唯一；空值或重复视为协议错误，不能执行任何该响应中的工具。</p><h3 id="heading-145">3.3 ModelPort 与 Provider 桥接</h3><p>避免复制 Provider 的结构后假设类型自然兼容。ADK 使用独立的标准类型，应用显式传入桥接函数；初版桥接可以作为应用级示例，待接口稳定再提取到可选适配包。</p><pre><code>export interface ModelPort {
+  readonly id: string;
+  stream(request: ModelRequest): AsyncIterable&lt;ModelEvent&gt;;
+}
+export interface ModelRequest {
+  readonly messages: readonly ModelMessage[];
+  readonly tools: readonly ModelToolDefinition[];
+  readonly signal: AbortSignal;
+}
+export type ModelEvent =
+  | { type: &#x27;text.delta&#x27;; text: string }
+  | { type: &#x27;finish&#x27;; result: ModelResult };
+export interface ModelResult {
+  outcome: &#x27;completed&#x27; | &#x27;tool_calls&#x27; | &#x27;refused&#x27; | &#x27;incomplete&#x27; | &#x27;unknown&#x27;;
+  text: string;
+  toolCalls: readonly { id: string; name: string; arguments: JsonObject }[];
+  usage?: Usage;
+  refusal?: string;
+  incompleteReason?: string;
+  continuation?: ModelContinuation;
+}
+export interface ModelContinuation {
+  readonly owner: string; // 实例/协议身份，由桥接实现校验
+  readonly data: unknown; // 不透明；不可记录、修改或跨 owner 使用
+}
+</code></pre><p>桥接必须：</p><ul><li>显式映射消息、schema、终态和错误；仅将 Provider 的 <code>finish.result.toolCalls</code> 映射到最终结果，不再执行 Provider 单独发出的 <code>tool-call</code> 事件。</li><li>保留 Anthropic <code>continuation</code> 与对应 assistant 消息的关联；不跨模型使用，也不向日志输出其内容。</li><li>Responses 的 <code>previousResponseId</code> 使用独立的可选续接策略，启用时只发送新增消息且重新提供必要指令；不能同时把全部历史和增量错误叠加。默认优先无状态消息续接，遇到无法安全续接的情形明确失败。</li><li>透传 AbortSignal；只有正常结束恰好收到一次 finish 才提交模型结果。缺失或重复 finish 视为协议错误。</li><li>Provider 当前未用真实服务凭证验证；桥接需契约测试与目标服务验证。</li></ul><h2 id="section-3">4. 执行器与内核网关</h2><pre><code>export interface Executor&lt;C&gt; {
+  execute(context: ExecutorContext&lt;C&gt;): Promise&lt;RunResult&gt;;
+}
+
+export interface ExecutorContext&lt;C&gt; {
+  readonly agent: Agent&lt;C&gt;;
+  readonly app: C;
+  readonly signal: AbortSignal;
+  readonly runId: string;
+  readonly input: string;
+  readonly session?: Session;
+  readonly limits: Readonly&lt;RunLimits&gt;;
+  readonly services: ExecutionServices&lt;C&gt;;
+}
+
+export interface ExecutionServices&lt;C&gt; {
+  callModel(request: ModelRequest): Promise&lt;ModelResult&gt;;
+  callTool(call: ToolCall): Promise&lt;ToolCallResult&gt;;
+  emit(event: ExecutorEvent): Promise&lt;void&gt;;
+}
+</code></pre><p><code>services.callModel</code> 和 <code>services.callTool</code> 是策略、预算、事件和 trace 的统一执行边界。<code>callModel</code> 消费 ModelPort 的流、转发暂定文本、等待 finish；<code>callTool</code> 执行解析、授权、中间件及工具调用。执行器只通过这些服务获得受框架保护的调用；自行访问网络或直接调用 <code>agent.model</code> 无法自动受到框架约束，受信任代码需遵循这一约定。工具网关只允许调用当前 Agent 显式注册的工具。</p><p>默认执行器的伪代码：</p><pre><code>async function execute(ctx: ExecutorContext&lt;AppContext&gt;): Promise&lt;RunResult&gt; {
+  const messages = await buildContext(ctx);
+  while (true) {
+    // 网关在发出请求前原子检查并扣减模型调用预算。
+    const response = await ctx.services.callModel({
+      messages, tools: describeTools(ctx.agent.tools), signal: ctx.signal,
+    });
+    if (response.outcome !== &#x27;tool_calls&#x27;) {
+      return toTerminalResult(response); // completed / refused / incomplete / unknown
+    }
+    validateCallIds(response.toolCalls); // 在执行任意工具前整体验证
+    messages.push(toAssistantMessage(response)); // 保留续接数据
+    for (const call of response.toolCalls) {
+      const result = await ctx.services.callTool(call); // 首版串行
+      messages.push(toToolMessage(call.id, result));
+    }
+  }
+}
+</code></pre><p>工具执行失败可以按配置：终止 run，或返回经过脱敏的工具错误供模型处理；取消、授权拒绝和内部不变量错误不能被误当成普通工具结果。工具默认不重试。模型重试若以后支持，必须限定为未开始工具副作用的请求阶段，记录重复计费可能性。</p><h2 id="section-4">5. 插件 API</h2><p>插件是<strong>启动期显式注册</strong>，不是动态加载不可信代码的机制。一个插件可以组合多个扩展点；简单替换不必强制包装成插件。</p><pre><code>export interface Plugin&lt;C = unknown&gt; {
+  readonly name: string;       // 例如 &#x27;acme.audit&#x27;
+  readonly apiVersion: 1;
+  setup(registry: PluginRegistry&lt;C&gt;): void;
+  start?(): Awaitable&lt;void&gt;;
+  close?(): Awaitable&lt;void&gt;;
+}
+export interface PluginRegistry&lt;C&gt; {
+  useModel(middleware: ModelMiddleware&lt;C&gt;): void;
+  useTool(middleware: ToolMiddleware&lt;C&gt;): void;
+  observe(observer: RunObserver&lt;C&gt;): void;
+}
+export interface RuntimeOptions&lt;C&gt; {
+  executor: Executor&lt;C&gt;;
+  plugins?: readonly Plugin&lt;C&gt;[];
+  observerError?: (error: unknown, plugin: string) =&gt; void;
+}
+export function createRuntime&lt;C&gt;(options: RuntimeOptions&lt;C&gt;): Promise&lt;Runtime&lt;C&gt;&gt;;
+</code></pre><p><strong>生命周期与冲突规则</strong>：</p><ul><li>先按数组顺序校验插件名唯一、API 版本支持，再同步依次执行 <code>setup</code>；任一步失败则不创建 Runtime。setup 只注册，不应启动后台任务或产生外部副作用。</li><li>冻结注册表后按顺序 await <code>start</code>。启动失败时按逆序 close 已成功启动的插件；聚合清理错误，向调用方报告启动失败。失败插件负责清理自己在 start 部分创建的资源。</li><li>Runtime 存活期间注册表不变；无需支持动态卸载、热更新和隐式全局注册。</li><li>关闭按逆序执行，即使某个 close 失败也继续清理其余插件，最终聚合错误。</li><li>插件与应用处于同一进程、拥有相同权限；API 版本用于兼容检查，不提供安全隔离。权限和资源由应用显式注入。</li><li>注册顺序即同一扩展点的执行顺序。重复插件名报错；工具重名在 Agent 创建时失败。插件不允许覆盖内核服务或默认工具。</li></ul><h2 id="section-5">6. Hooks 与中间件</h2><p>区分<strong>能改变执行的中间件</strong>和<strong>只观察的事件订阅</strong>。前者异常会影响 run，后者异常由错误处理器记录，不阻断运行。</p><h3 id="heading-274">6.1 拦截点</h3><div class="table-wrap"><table><thead><tr><th>扩展点</th><th>输入</th><th>可做的事</th><th>失败语义</th></tr></thead><tbody><tr><td>model middleware</td><td>请求与只读运行上下文</td><td>包装调用、检查或拒绝；通过显式 request 副本修改模型输入</td><td>抛错终止 run</td></tr><tr><td>tool middleware</td><td>已解析的调用、工具元数据与只读上下文</td><td>检查或拒绝、计时、包装执行</td><td>抛错终止 run；不能绕过 schema</td></tr><tr><td>observer</td><td>不可变事件</td><td>日志、指标、trace</td><td>异常隔离并报告，不改变 run</td></tr></tbody></table></div><pre><code>export interface HookContext&lt;C&gt; {
+  readonly runId: string;
+  readonly agentId: string;
+  readonly signal: AbortSignal;
+  readonly app: C;
+}
+export type ModelMiddleware&lt;C&gt; = (
+  ctx: HookContext&lt;C&gt;,
+  request: ModelRequest,
+  next: (request: ModelRequest) =&gt; Promise&lt;ModelResult&gt;,
+) =&gt; Promise&lt;ModelResult&gt;;
+
+export interface ParsedToolCall {
+  readonly id: string;
+  readonly name: string;
+  readonly input: unknown; // 已经使用该工具的 Schema.parse 校验
+  readonly effect: &#x27;read&#x27; | &#x27;write&#x27; | &#x27;unknown&#x27;;
+}
+export type ToolMiddleware&lt;C&gt; = (
+  ctx: HookContext&lt;C&gt;,
+  call: ParsedToolCall,
+  next: () =&gt; Promise&lt;ToolCallResult&gt;,
+) =&gt; Promise&lt;ToolCallResult&gt;;
+
+export type RunObserver&lt;C&gt; = (
+  event: Readonly&lt;ObservabilityEvent&gt;,
+  context: HookContext&lt;C&gt;,
+) =&gt; Awaitable&lt;void&gt;;
+</code></pre><ul><li>中间件按注册顺序进入，逆序退出；<code>next</code> 至多调用一次。调用零次表示中断，必须抛出明确的 <code>PolicyDeniedError</code>；重复调用由框架拒绝。不能通过多次 next 实现重试。</li><li>模型中间件能修改请求，最终模型网关在发送前再次验证参数和预算；中间件不得替换 signal 来绕过取消。工具中间件不能直接修改已校验输入；要修改需设计独立转换扩展并重新校验，首版不开放。</li><li>授权中间件在工具执行前运行。为了避免其他插件通过短路伪造成功结果绕过审计，首版要求中间件调用并等待 next，且返回该次 next 的原始结果对象；网关检查对象身份，否则报插件错误。可扩展缓存要作为后续独立契约评估。</li><li>观察者按注册顺序调用；每个 observer 的异常被捕获并传给 <code>observerError</code>，该回调失败也不影响 run。observer 是可信进程内代码，逻辑只读约束不是安全隔离。</li><li>观察者若异步且串行等待会增加延迟。首版明确串行 await，建议观察者内部使用有界队列；不提供无限缓冲。默认不将正文、工具参数、结果或续接数据放入观察事件。</li><li>每个并发 Run 独立执行 hooks；同一插件可能被多个 Run 同时调用，插件维护的共享状态必须自行同步。</li></ul><h3 id="heading-320">6.2 生命周期与顺序</h3><pre><code>run.started
+  → 构造上下文 / 加载 session
+  → model middleware 进入
+      → model.started → 文本增量* → model.completed
+    model middleware 退出
+  → 参数校验
+  → tool middleware 进入
+      → tool.started → 执行工具 → tool.completed / tool.failed
+    tool middleware 退出
+  → 需要时再次调用模型
+  → 提交 session（若配置）
+  → run.completed / run.failed / run.cancelled（恰好一个终态）
+</code></pre><p>钩子/事件位置是契约：<code>model.started</code>、<code>tool.started</code> 表示底层操作即将真正开始，而不是 middleware 刚进入；策略拒绝不会伪造 started。被调用的工具因参数无效时发出 <code>tool.rejected</code>，并按错误策略处理；必须先验证工具调用 ID，再发出任何工具操作。工具返回后，若 middleware 的退出逻辑失败，副作用可能已经发生，run 应失败且不得自动重试。</p><h3 id="heading-339">6.3 插件示例：授权与审计</h3><pre><code>interface AppContext { tenantId: string; allowedTools: ReadonlySet&lt;string&gt; }
+
+function authorizationPlugin(): Plugin&lt;AppContext&gt; {
+  return {
+    name: &#x27;example.authorization&#x27;,
+    apiVersion: 1,
+    setup(registry) {
+      registry.useTool(async (ctx, call, next) =&gt; {
+        if (!ctx.app.allowedTools.has(call.name)) {
+          throw new PolicyDeniedError(&#x27;TOOL_DENIED&#x27;);
+        }
+        return next();
+      });
+    },
+  };
+}
+
+function auditPlugin(sink: AuditSink): Plugin&lt;AppContext&gt; {
+  return {
+    name: &#x27;example.audit&#x27;,
+    apiVersion: 1,
+    setup(registry) {
+      registry.observe(async (event) =&gt; {
+        // 默认事件只有元数据，不含输入/输出和凭证。
+        await sink.write({ runId: event.runId, type: event.type });
+      });
+    },
+    close: () =&gt; sink.flush(),
+  };
+}
+</code></pre><p>以上授权规则仅是示例；<code>allowedTools</code> 必须从可信服务端身份解析，不能由模型生成。异步 audit sink 必须有超时和容量限制，避免阻塞所有运行。</p><h2 id="section-6">7. 事件、错误与预算</h2><pre><code>export interface EventBase {
+  readonly version: 1;
+  readonly runId: string;
+  readonly sequence: number; // 从 1 开始，同一 run 单调递增
+  readonly timestamp: string;
+}
+export type RunEvent = EventBase &amp; (
+  | { type: &#x27;run.started&#x27;; agentId: string }
+  | { type: &#x27;model.started&#x27;; callId: string }
+  | { type: &#x27;model.text.delta&#x27;; callId: string; text: string }
+  | { type: &#x27;model.completed&#x27;; callId: string; outcome: ModelResult[&#x27;outcome&#x27;] }
+  | { type: &#x27;tool.started&#x27;; toolCallId: string; name: string }
+  | { type: &#x27;tool.completed&#x27; | &#x27;tool.failed&#x27; | &#x27;tool.rejected&#x27;; toolCallId: string; name: string }
+  | { type: &#x27;run.completed&#x27; | &#x27;run.failed&#x27; | &#x27;run.cancelled&#x27; }
+);
+export interface Usage {
+  inputTokens?: number;
+  outputTokens?: number;
+  complete: boolean; // false 表示至少一次调用未提供完整用量
+}
+export type ObservabilityEvent =
+  | (EventBase &amp; { type: &#x27;model.text.delta&#x27;; callId: string; textLength: number })
+  | Exclude&lt;RunEvent, { type: &#x27;model.text.delta&#x27; }&gt;;
+</code></pre><p>事件的 delta 用于调用方展示，属于敏感正文；传给 observer 前转换为 <code>ObservabilityEvent</code>，其中 <code>model.text.delta</code> 只含长度，不含文本。这个区分是隐私默认值的一部分。应用的 <code>run.events</code> 才包含展示所需文本。</p><p><code>AdkError</code> 至少有 <code>code</code>、安全的 <code>message</code>、内部 <code>cause</code>；对外事件不包含堆栈或参数。建议类别：<code>CONFIG_INVALID</code>、<code>PROTOCOL_INVALID</code>、<code>MODEL_FAILED</code>、<code>TOOL_INPUT_INVALID</code>、<code>TOOL_DENIED</code>、<code>TOOL_FAILED</code>、<code>BUDGET_EXCEEDED</code>、<code>SESSION_CONFLICT</code>、<code>PLUGIN_FAILED</code>。错误码可稳定，详细 message 不作为机器协议。</p><p>默认最多 8 次模型调用；<code>maxModelCalls</code> 必须为正整数，预算在实际模型调用前递减，恢复运行未来必须保留预算。超时与外部 AbortSignal 合并；第一个取消原因获胜，取消清理必须执行。token 使用量仅累加 Provider 实际返回值；<code>complete: false</code> 表示总量不完整，不能用于计算确定的总成本。</p><h2 id="section-7">8. Session 与并发</h2><pre><code>export interface SessionSnapshot {
+  readonly revision: string;
+  readonly items: readonly SessionItem[];
+}
+export interface Session {
+  readonly id: string; // 在同一 Runtime 内稳定且唯一
+  read(signal: AbortSignal): Promise&lt;SessionSnapshot&gt;;
+  append(expectedRevision: string, items: readonly SessionItem[],
+         signal: AbortSignal): Promise&lt;{ revision: string }&gt;;
+}
+</code></pre><p>首版建议内存实现按 session ID 进行独占租约：从读取到提交，同一进程内另一个 run 使用同一 session 则立即返回 <code>SESSION_CONFLICT</code>；不能仅依赖进程内锁保护跨进程存储。接口中的 revision 是存储层 compare-and-swap；外部实现仍需保证原子检查与写入。提交失败时 run 标记失败，不能回滚已经发生的工具副作用。</p><p>历史提交策略需避免模型续接缺失：已执行的工具调用及对应结果作为不可拆分的一组保存；中断或失败时，根据实际已完成工作保存安全、有效的调用/结果对及当前输入，而不是伪造成功；拒答或失败不写入未经验证的候选终态。若存储本身失败，向应用报告失败和副作用可能已发生。具体事务边界与内容保留策略在实现前通过协议契约测试锁定。</p><p>Session 数据与 <code>app context</code> 分开；密钥、连接对象不进入 session。多 Agent、多租户授权、保存时限和删除策略由未来具体实现与应用决定。</p><h2 id="section-8">9. 应用侧组装示例</h2><pre><code>import { createProvider } from &#x27;@alpha/provider&#x27;;
+import {
+  createRuntime, createToolLoopExecutor, defineAgent, defineTool,
+} from &#x27;@alpha/adk&#x27;;
+
+const provider = createProvider(providerConfig);  // 配置与密钥由应用管理
+const model = adaptAlphaProvider(provider.use(&#x27;primary&#x27;, &#x27;chat&#x27;));
+const orderTool = defineTool&lt;AppContext, { orderId: string }&gt;({
+  name: &#x27;get_order&#x27;,
+  description: &#x27;查询当前租户的订单&#x27;,
+  effect: &#x27;read&#x27;,
+  input: orderIdSchema, // { jsonSchema, parse }，应用提供
+  async execute({ orderId }, { app, signal }) {
+    const order = await orderService.get(app.tenantId, orderId, { signal });
+    return JSON.stringify(order);
+  },
+});
+
+const agent = defineAgent&lt;AppContext&gt;({
+  id: &#x27;order-assistant&#x27;,
+  instructions: &#x27;帮助用户查询订单状态。&#x27;,
+  model,
+  tools: [orderTool],
+});
+
+const runtime = await createRuntime&lt;AppContext&gt;({
+  executor: createToolLoopExecutor(),
+  plugins: [authorizationPlugin(), auditPlugin(auditSink)],
+});
+try {
+  const run = runtime.start(agent, {
+    input: &#x27;订单 A123 到哪里了？&#x27;,
+    context: { tenantId: &#x27;tenant-1&#x27;, allowedTools: new Set([&#x27;get_order&#x27;]) },
+  });
+  const result = await run.result;
+  if (result.status === &#x27;completed&#x27;) console.log(result.text);
+  else handleNonSuccess(result);
+} finally {
+  await runtime.close();
+}
+</code></pre><p><code>adaptAlphaProvider</code>、<code>providerConfig</code>、<code>orderIdSchema</code>、<code>orderService</code>、<code>auditSink</code> 和 <code>handleNonSuccess</code> 都是示意中由应用或未来适配器提供的内容。当前仓库尚不存在上述 ADK API。</p><h2 id="section-9">10. 扩展点演进与版本</h2><div class="table-wrap"><table><thead><tr><th>阶段</th><th>开放功能</th><th>暂缓</th></tr></thead><tbody><tr><td>P0</td><td>固化模型桥接、事件、Run 和错误契约；编写 mock 验证</td><td>真实插件生态承诺</td></tr><tr><td>P1</td><td>默认执行器、工具 schema、预算、取消、事件与有限的 model/tool middleware</td><td>checkpoint、动态加载、并发工具</td></tr><tr><td>P2</td><td>插件生命周期、观察者、内存 session、自定义执行器</td><td>不可信插件隔离、热重载</td></tr><tr><td>P3</td><td>经真实业务验证后增加 MCP、更多 session 实现</td><td>通用分布式框架</td></tr><tr><td>需求驱动</td><td>图执行器、审批、持久恢复、多 Agent</td><td>未经幂等与故障测试的恢复承诺</td></tr></tbody></table></div><p>建议核心 API 与插件 API 在 v0 阶段明确实验性；每次变更提供迁移说明。未来稳定后：新增可选字段通常兼容，删除/重命名扩展点、修改顺序、错误语义和事件含义均视为破坏性变更。插件 <code>apiVersion</code> 与 npm 包版本独立管理，加载时校验，无法保证行为兼容时拒绝启动。</p><h2 id="section-10">11. 验收与待决事项</h2><p><strong>最小验收</strong>：</p><ul><li>使用脚本化 mock model 验证两轮模型调用和一次工具调用；覆盖所有终态、无效/重复工具 ID、schema 错误与工具失败。</li><li>断言中间件进入/退出顺序、拒绝、重复 next、插件启动失败时逆序清理及并发隔离。</li><li>验证只等待 result 不死锁；流慢消费者背压、提前退出、取消、模型抛错和超时均能结束并释放资源。</li><li>验证一个 Agent 能替换模型桥接和执行器；替换 session 与 observer 不改 Agent。</li><li>两个同 session run 冲突；模拟 session 提交失败并确认不会重试已发生的工具副作用。</li><li>对现有 Provider 的三种协议做桥接契约测试，覆盖 finish、续接及信号，另对目标服务进行受控集成测试。</li><li>观察事件、错误和日志不含密钥、工具参数、正文或续接数据；用户流中允许的文本需按应用策略处理。</li></ul><p><strong>实现前需要拍板</strong>：首个业务场景与目标模型；schema 适配采用哪个库；是否允许工具失败后反馈模型；会话写入的具体事务与保留策略；公开 API 稳定级别。本文对这些点提供默认方向，但不假设它们已经经过业务验证。</p></main></div></body></html>

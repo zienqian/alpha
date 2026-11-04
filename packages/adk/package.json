@@ -3,8 +3,40 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "files": ["dist"],
-  "scripts": { "build": "tsrs -p tsconfig.json", "typecheck": "tsrs -p tsconfig.json --noEmit", "lint": "eslint src" },
-  "nx": { "tags": ["layer:adk"] }
+  "exports": {
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsrs -p tsconfig.json",
+    "typecheck": "tsrs -p tsconfig.json --noEmit && tsrs -p test/tsconfig.json",
+    "lint": "eslint src",
+    "test": "node test/run.js",
+    "test:live": "node integration/live.js"
+  },
+  "nx": {
+    "tags": [
+      "layer:adk"
+    ],
+    "targets": {
+      "typecheck": {
+        "dependsOn": [
+          "build"
+        ]
+      }
+    }
+  },
+  "dependencies": {
+    "@alpha/provider": "workspace:*",
+    "@standard-schema/spec": "1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "zod": "4.6.7"
+  }
 }

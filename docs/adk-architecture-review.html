@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alpha ADK · 微内核架构评审</title>
+<style>
+:root{color-scheme:light;--bg:#f6f7f9;--paper:#fff;--ink:#172331;--muted:#536476;--line:#dce2e9;--accent:#2258d5;--soft:#edf2ff;--green:#196b50;--amber:#8b5506;--code:#142032;--code-ink:#e0e9fa;font-family:Inter,"Segoe UI","Microsoft YaHei",sans-serif;font-size:15px;line-height:1.75}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}a{color:var(--accent);text-underline-offset:4px}button,input,textarea,select{font:inherit}button,select{cursor:pointer}button{border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);padding:8px 14px;min-height:42px}button:hover{border-color:var(--accent)}button[aria-pressed=true],.primary{background:var(--accent);color:white;border-color:var(--accent)}button:disabled{opacity:.5;cursor:default}:focus-visible{outline:3px solid #efaa2a;outline-offset:3px}select,textarea,input{border:1px solid #aebdcd;border-radius:6px;background:var(--paper);color:var(--ink);padding:8px}textarea{width:100%;resize:vertical;min-height:88px}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(30px,4.5vw,55px);letter-spacing:-1.8px;line-height:1.2;margin-bottom:22px}h2{font-size:29px;letter-spacing:-.6px;margin-bottom:12px}h3{font-size:18px;margin-bottom:8px}p{margin-bottom:16px}small,.muted{color:var(--muted)}code{font-family:Consolas,"Cascadia Code",monospace;font-size:.92em;overflow-wrap:anywhere}p code,td code,li code{background:var(--soft);padding:2px 4px;border-radius:3px}pre{background:var(--code);color:var(--code-ink);padding:22px;border-radius:9px;overflow:auto;line-height:1.65;font-size:13px;margin:0;tab-size:2}pre code{overflow-wrap:normal}ul,ol{padding-left:23px}li{margin:6px 0}.shell{display:grid;grid-template-columns:238px minmax(0,1fr);max-width:1600px;margin:auto}.sidebar{height:100vh;position:sticky;top:0;padding:32px 24px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:28px}.brand{font-size:22px;font-weight:700;letter-spacing:-1px}.brand span{color:var(--accent)}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:2px;font-weight:650;color:var(--accent);margin-bottom:16px}.sidebar nav{display:grid;gap:6px}.sidebar nav a{color:var(--muted);text-decoration:none;padding:8px 11px;border-radius:6px;font-size:14px}.sidebar nav a:hover,.sidebar nav a.active{background:var(--soft);color:var(--accent)}.sidebar nav b{display:inline-block;width:27px;font-size:12px;opacity:.65}.sidebar .meta{margin-top:auto;font-size:12px}.main{min-width:0;padding:52px 5vw 24px}.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:45px}.pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:5px;background:var(--soft);color:var(--accent)}.hero{max-width:850px}.lead{font-size:18px;color:var(--muted);max-width:790px}.hero-rule{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:26px 0;margin-top:28px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.hero-rule strong{font-size:20px;display:block}.hero-rule span{color:var(--muted);font-size:13px}.section{padding:60px 0 8px;scroll-margin-top:20px}.section-no{font-size:12px;letter-spacing:2px;color:var(--accent);margin-bottom:8px}.intro{color:var(--muted);max-width:850px}.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:24px;margin:22px 0}.panel p:last-child{margin-bottom:0}.split{display:grid;grid-template-columns:1fr 1fr;gap:22px}.split>.panel{margin:0}.callout{border-left:3px solid var(--accent);padding:15px 20px;background:var(--soft);margin:22px 0}.warning{border-color:#bb7b19;background:#fff7e8}.tag{font-size:12px;font-weight:600;display:inline-block;color:var(--green);margin-right:8px}.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:18px 0}.table-wrap{overflow-x:auto;margin:22px 0;background:var(--paper);border:1px solid var(--line);border-radius:9px}table{border-collapse:collapse;width:100%;font-size:14px;min-width:690px}th,td{padding:16px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font-size:12px;letter-spacing:.4px;background:#f0f3f8}tr:last-child td{border:0}td strong{display:block;margin-bottom:5px}td small{display:block}.source-ref{font-size:12px;white-space:nowrap}.research-detail{border-top:1px solid var(--line);margin-top:20px;padding-top:18px}.boundary-layout{display:grid;grid-template-columns:1.15fr 1fr;gap:22px}.layers{display:grid;gap:10px}.layer{width:100%;text-align:left;padding:16px 20px;display:flex;justify-content:space-between;gap:15px;border-radius:8px;min-height:68px}.layer strong{display:block}.layer span{font-size:12px}.layer[data-layer=kernel]{border:2px solid var(--accent)}.layer-detail{background:var(--paper);padding:25px;border-radius:9px;border:1px solid var(--line)}.layer-detail ul{margin-bottom:0}.dependency{padding:18px 0;color:var(--muted);font-family:Consolas,monospace;text-align:center;font-size:13px}.plugin-builder{display:grid;grid-template-columns:280px minmax(0,1fr);gap:22px}.plugin-options{display:grid;gap:9px;align-content:start}.check{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:7px}.check input{margin:7px 0 0;accent-color:var(--accent);width:16px;height:16px;flex-shrink:0}.check span{font-size:13px;color:var(--muted);display:block}.builder-output{min-width:0}.status{font-size:13px;color:var(--green);padding:12px 0;min-height:50px}.status.invalid{color:#a03726}.code-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0}.api-panel[hidden]{display:none}.api-panel>p{color:var(--muted)}details{background:var(--paper);border:1px solid var(--line);border-radius:8px;margin:12px 0;padding:14px 20px}summary{cursor:pointer;font-weight:600}details p,details ul{margin-top:12px}details pre{margin-top:15px}.scenario-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px}.trace{padding:0;list-style:none;margin:0}.trace li{display:grid;grid-template-columns:28px 1fr;gap:12px;border-left:2px solid var(--line);padding:8px 0 14px 16px;margin:0;color:var(--muted)}.trace li.current{border-color:var(--accent);color:var(--ink);background:var(--soft)}.trace li.done{color:var(--green)}.trace .num{font-family:Consolas,monospace}.trace strong{display:block;font-size:14px}.trace small{display:block;line-height:1.65}.trace-box{padding:22px;background:var(--paper);border:1px solid var(--line);border-radius:9px}.snapshot{background:var(--code);color:var(--code-ink);border-radius:9px;padding:24px}.snapshot p{color:#b8c6de;font-size:13px}.snapshot dt{color:#aabedb;font-size:12px;margin-top:16px}.snapshot dd{margin-left:0;font-family:Consolas,monospace;font-size:16px;overflow-wrap:anywhere}.snapshot .explain{margin-top:24px;border-top:1px solid #425269;padding-top:16px;color:#e0e9fa}.decision{display:grid;grid-template-columns:1fr 220px;gap:15px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:22px;margin:14px 0}.decision p{color:var(--muted);font-size:14px;margin-bottom:12px}.decision textarea{grid-column:1/-1}.decision select{width:100%;height:44px}.decision label{font-size:13px;color:var(--muted)}.sources{padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:14px}.sources li{margin:0;padding:16px;background:var(--paper);border:1px solid var(--line);border-radius:7px;font-size:13px;overflow-wrap:anywhere}.sources strong{display:block;margin-bottom:4px}.sources p{margin:8px 0 0;color:var(--muted)}footer{border-top:1px solid var(--line);padding:30px 0;margin-top:55px;font-size:12px;color:var(--muted)}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.skip{position:fixed;top:-80px;left:10px;z-index:3;background:white;padding:12px}.skip:focus{top:10px}[hidden]{display:none!important}
+@media(max-width:1050px){.shell{grid-template-columns:190px minmax(0,1fr)}.sidebar{padding:26px 14px}.main{padding:35px 28px}.split,.boundary-layout,.scenario-layout{grid-template-columns:1fr}.plugin-builder{grid-template-columns:235px minmax(0,1fr)}}
+@media(max-width:760px){.shell{display:block}.sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 20px;gap:12px}.sidebar nav{display:flex;overflow:auto;gap:2px}.sidebar nav a{white-space:nowrap}.sidebar .meta{display:none}.main{padding:25px 20px}.topline{margin-bottom:32px;align-items:flex-start}.hero-rule{gap:14px}.hero-rule strong{font-size:16px}.section{padding-top:44px}.plugin-builder,.sources{grid-template-columns:1fr}.plugin-options{grid-template-columns:1fr 1fr}.decision{grid-template-columns:1fr}.decision textarea{grid-column:auto}.panel{padding:18px}h2{font-size:25px}pre{padding:16px}.layer{padding:13px}.toolbar select{max-width:100%}}
+@media(max-width:420px){.plugin-options{grid-template-columns:1fr}.hero-rule{grid-template-columns:1fr}.hero-rule strong{display:inline;margin-right:12px}.topline{flex-wrap:wrap}.main{padding:24px 16px}}
+@media print{.sidebar,.topline button,.toolbar,.code-head button,.review-actions{display:none!important}.shell{display:block}.main{padding:0}.section{padding-top:30px;break-inside:auto}.panel,.decision,.trace-box{break-inside:avoid}.api-panel[hidden]{display:block!important}.api-panel{margin-bottom:24px}.table-wrap{overflow:visible}table{min-width:0;font-size:10px}pre{white-space:pre-wrap;font-size:10px;background:#f3f3f3;color:#111;border:1px solid #ddd}.sources{grid-template-columns:1fr 1fr}.hero-rule{margin-top:10px}.plugin-builder{grid-template-columns:1fr}.snapshot{background:#eee;color:#111}.snapshot p,.snapshot dt,.snapshot .explain{color:#333}a{color:#222}body{background:white}h1{font-size:35px}.section{scroll-margin:0}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<div class="shell">
+<aside class="sidebar">
+ <div class="brand">alpha<span> / </span>ADK</div>
+ <nav aria-label="文档章节">
+  <a href="#proposal"><b>00</b>设计主张</a><a href="#research"><b>01</b>社区调研</a><a href="#boundary"><b>02</b>内核边界</a><a href="#composition"><b>03</b>插件组装</a><a href="#api"><b>04</b>API 草案</a><a href="#scenarios"><b>05</b>技术推演</a><a href="#validation"><b>06</b>验证计划</a><a href="#review"><b>07</b>你的 Review</a><a href="#sources"><b>08</b>证据与上下文</a>
+ </nav>
+ <div class="meta">ARCHITECTURE / RFC 01<br>2026-11-03 · 待评审<br>TypeScript · 嵌入式 Agent SDK<br><br>单文件 · 离线交互<br>所有 API 均为设计草案</div>
+</aside>
+<main class="main" id="main">
+ <div class="topline"><span class="pill">研究与设计 / 尚未实现</span><button id="print">打印 / 保存 PDF</button></div>
+ <section id="proposal" class="hero">
+  <div class="eyebrow">A small kernel. An open agent.</div>
+  <h1>让内核保持小。<br>让 Agent 自由生长。</h1>
+  <p class="lead">Alpha ADK 的微内核与插件架构预演。以开发 Agent 为中心，将可变策略交给扩展，将不可破坏的运行约束留在内核。</p>
+  <div class="hero-rule"><div><strong>Agent 优先</strong><span>开发者从 prompt 开始</span></div><div><strong>机制内聚</strong><span>状态与执行约束归一处</span></div><div><strong>能力可替换</strong><span>循环、模型、工具、上下文</span></div></div>
+ </section>
+ <div class="callout"><strong>建议评审的核心判断：</strong>采用 Pi 风格的有状态 <code>Agent</code> 入口，加上明确的执行端口。默认工具循环、插件宿主和便利预设都在内核外。内核不依赖它们；普通开发者使用预设即可运行。</div>
+ <div class="split">
+  <div class="panel"><h3>“一切都是插件”的准确落点</h3><p>所有<strong>可变能力</strong>通过端口、hook 或组合模块接入；插件是这些扩展的安装单元。事件排序、状态提交、调用配对、取消传播等<strong>不变量</strong>由内核统一执行。</p><p>模型和工具可以直接注入，无需为了扩展性先写一个插件类。插件负责复用、组装和资源生命周期。</p></div>
+  <div class="panel"><h3>这份文档如何阅读</h3><p><span class="tag">事实</span>来自官方文档、源码或本地仓库，附来源。<br><span class="tag">建议</span>针对 Alpha 的设计判断，不是社区共识。<br><span class="tag">待验证</span>尚无代码、基准测试或真实服务证明。</p><p>交互推演是预先定义的契约示例，不运行模型，也不执行真实工具。</p></div>
+ </div>
+
+ <section id="research" class="section">
+  <div class="section-no">01 / RESEARCH</div><h2>借鉴边界，不搬运框架</h2>
+  <p class="intro">核对日期：2026-11-03。比较的是公开的抽象与扩展机制，不做缺乏实测的体积、性能或星级排名。语言与运行语义不同，API 不直接移植。</p>
+  <div class="toolbar" role="group" aria-label="调研视角"><button data-filter="all" aria-pressed="true">全部</button><button data-filter="kernel" aria-pressed="false">内核与循环</button><button data-filter="extension" aria-pressed="false">扩展机制</button><button data-filter="state" aria-pressed="false">状态与恢复</button></div>
+  <div class="table-wrap"><table><caption class="sr-only">Agent 框架机制比较，Alpha 取舍为设计推断</caption><thead><tr><th style="width:16%">框架 / 范围</th><th style="width:30%">已核对的实现机制</th><th style="width:28%">Alpha 借鉴点 · 建议</th><th>边界与代价 · 判断</th></tr></thead><tbody id="research-rows">
+   <tr data-tags="kernel extension"><td><strong>Pi Agent</strong><small>TypeScript / agent-core 与 coding-agent</small></td><td>有状态 Agent、独立 loop、事件流；消息转换与上下文变换分离。完整 Extension API 位于 coding-agent 层。<a class="source-ref" href="#s1">[1–3]</a></td><td>以 Agent 为入口；模型上下文是历史的投影；把应用扩展宿主放在上层。</td><td>Pi core 本身依赖 pi-ai；其当前 loop 已有更多策略与 hook。借鉴分层，不声称原样复制即可得到零依赖内核。</td></tr>
+   <tr data-tags="extension state"><td><strong>Google ADK</strong><small>以 Python 插件语义为主</small></td><td>Plugin 在 Runner / App 范围拦截；Agent callback 是局部配置。插件优先，部分非空返回值会跳过后续局部回调。<a class="source-ref" href="#s4">[4]</a></td><td>统一扩展生命周期，明确 scope、排序、短路和失败规则。</td><td>不照搬多层 callback 优先级；Alpha 首版合并为一条有序管线，避免行为藏在返回值中。不同语言版本不假设一致。</td></tr>
+   <tr data-tags="kernel state"><td><strong>LangGraph</strong><small>Python 文档 / 图运行时</small></td><td>以共享状态、节点、边组织执行；checkpointer 保存线程图状态，store 保存跨线程数据。<a class="source-ref" href="#s5">[5–6]</a></td><td>区分对话历史、长时记忆、执行检查点。需要图编排时在外层组合 Agent。</td><td>持久恢复需要调度与副作用协议，无法只靠“存一下消息”补齐；不将图调度器塞进首版内核。</td></tr>
+   <tr data-tags="extension kernel"><td><strong>LangChain</strong><small>Python / middleware</small></td><td>middleware 包装或介入模型与工具步骤；这些 hook 运行在 create_agent 返回的 LangGraph 内。<a class="source-ref" href="#s7">[7]</a></td><td>在调用边界建立上下文、策略、观察扩展点。</td><td>不一开始暴露可任意多次调用 next 的万能中间件；重试会放大副作用与预算语义。</td></tr>
+   <tr data-tags="extension"><td><strong>Pydantic AI</strong><small>Python / typed dependencies</small></td><td>运行时传入 deps，通过泛型 RunContext 供工具与指令函数访问，支持测试替换。<a class="source-ref" href="#s8">[8]</a></td><td>应用上下文显式、类型化注入；上下文和模型消息分离。</td><td>借鉴类型边界，不将 DI 容器、Python 类型系统或某个 schema 库写进内核。</td></tr>
+   <tr data-tags="extension"><td><strong>Mastra</strong><small>TypeScript / processors</small></td><td>Agent 组合模型与工具；input / output processors 在消息处理阶段变换、验证或控制内容。<a class="source-ref" href="#s9">[9–10]</a></td><td>便利入口与能力组合；将上下文变换做成明确流水线。</td><td>全栈产品能力不等于内核职责。存储、Studio、工作流和部署层保持可选。</td></tr>
+  </tbody></table></div>
+  <p id="filter-status" class="muted" aria-live="polite">显示 6 项框架机制。</p>
+  <details><summary>Pi 的关键启发，以及我们刻意不照搬的部分</summary><p>Pi 的 Agent 状态、底层 loop 和 coding-agent 扩展属于不同层；这是本方案最主要的结构参考。源码还明确提供模型消息转换、上下文变换和工具调用拦截。<a href="#s1">[1–3]</a></p><p>Alpha 进一步把默认 loop 变成可替换模块，同时保留一个小型调用网关，保证替换 loop 后工具参数校验和取消约束仍存在。这是本方案的设计推断，并非 Pi 原有架构的逐项复刻。目录发现、TUI、slash command、热重载均属于更上层产品。</p></details>
+ </section>
+
+ <section id="boundary" class="section">
+  <div class="section-no">02 / BOUNDARY</div><h2>小内核，明确的权责</h2><p class="intro">点击各层查看职责。首版可同包分目录，以 exports 与静态依赖检查约束；包数量不是微内核的证明。</p>
+  <div class="boundary-layout"><div><div class="layers" role="group" aria-label="架构分层">
+   <button class="layer" data-layer="app" aria-pressed="false"><strong>应用 / Agent 产品</strong><span>业务、UI、部署</span></button>
+   <button class="layer" data-layer="standard" aria-pressed="false"><strong>Standard / Plugin Host</strong><span>预设、安装、资源清理</span></button>
+   <button class="layer" data-layer="extensions" aria-pressed="false"><strong>能力扩展</strong><span>loop · model · tools · hooks</span></button>
+   <button class="layer" data-layer="kernel" aria-pressed="true"><strong>Agent Core</strong><span>状态 + 受控调用 + 生命周期</span></button>
+  </div><div class="dependency">应用 → 预设 / 插件 → 内核公开契约<br>内核 ↛ 插件实现 / Provider / Node I/O</div></div><div class="layer-detail" id="layer-detail" aria-live="polite"></div></div>
+  <div class="table-wrap"><table><thead><tr><th>能力</th><th>留在内核的机制</th><th>插件 / 外层实现的策略</th></tr></thead><tbody>
+   <tr><td>执行算法</td><td>Driver 契约；run 状态；模型与工具调用边界</td><td>默认 toolLoop、固定单步、其他对话执行策略</td></tr>
+   <tr><td>模型</td><td>ModelPort；流完成验证；终态与消息配对</td><td>Provider 桥接、路由、协议参数；重试需独立契约</td></tr>
+   <tr><td>工具</td><td>名称唯一；schema.parse 调用；已确认调用 ID；结果提交</td><td>具体工具、schema 库、授权规则、沙箱、MCP</td></tr>
+   <tr><td>上下文</td><td>只读历史；受控投影 hook；投影后配对校验</td><td>RAG、裁剪、摘要、skills、记忆召回</td></tr>
+   <tr><td>停止与预算</td><td>AbortSignal；每次调用前原子计数；统一终态</td><td>次数与时限配置、费用估算、业务停止条件</td></tr>
+   <tr><td>观察与持久化</td><td>有序事件、只读快照、错误隔离；无默认存储</td><td>trace exporter、日志、显式 session 保存 / 加载</td></tr>
+  </tbody></table></div>
+  <div class="callout"><strong>内核准入测试：</strong>移除这个机制后，任意 Agent 是否会失去一致性或可组合性？如果只是某个产品少了一项功能，它应留在插件层。新增插件不得要求向 core 写 <code>if (pluginName === ...)</code>。</div>
+  <div class="split"><div class="panel"><h3>轻量的可验证定义</h3><ul><li>core 运行时第三方依赖目标为 0；不导入 Provider、Node 文件系统、MCP、数据库或 schema 库。</li><li>仅导入 <code>/core</code> 时，不加载默认 loop 与插件宿主。</li><li>两种执行策略、两种模型适配共享公开契约，core 无修改。</li><li>bundle 体积、冷启动、事件开销在 POC 后给实测；本稿不编造 KB 或毫秒目标。</li></ul></div><div class="panel"><h3>扩展的实际边界</h3><p>替换 loop 仍要遵循“对话消息 + 模型 / 工具调用”的 Agent 语义。任意分布式工作流不强行塞进 Driver；可在外层调用多个 Agent。</p><p>进程内插件是受信任代码。网关约束框架 API，不是安全隔离；恶意插件仍可自己联网。进程隔离由独立执行适配器与部署环境承担。</p></div></div>
+ </section>
+
+ <section id="composition" class="section">
+  <div class="section-no">03 / COMPOSITION</div><h2>卸掉插件，看看还剩什么</h2><p class="intro">这是组装契约的本地演示。必需端口缺失时启动失败；选上功能只展示拟议配置，不代表功能已实现。</p>
+  <div class="plugin-builder"><div class="plugin-options" id="plugin-options">
+   <label class="check"><input type="checkbox" data-plugin="loop" checked><div>工具循环<span>提供 Driver 插槽</span></div></label>
+   <label class="check"><input type="checkbox" data-plugin="model" checked><div>Alpha Provider 桥接<span>提供 ModelPort 插槽</span></div></label>
+   <label class="check"><input type="checkbox" data-plugin="tools" checked><div>订单工具<span>业务工具包</span></div></label>
+   <label class="check"><input type="checkbox" data-plugin="policy" checked><div>工具授权<span>拒绝未获授权的调用</span></div></label>
+   <label class="check"><input type="checkbox" data-plugin="rag"><div>检索上下文<span>模型前投影 hook</span></div></label>
+   <label class="check"><input type="checkbox" data-plugin="trace"><div>Trace 观察者<span>失败不影响执行</span></div></label>
+   <label class="check"><input type="checkbox" data-plugin="session"><div>Session 外层组合<span>显式加载 / CAS 保存</span></div></label>
+   <label class="check"><input type="checkbox" data-plugin="mcp"><div>MCP 工具包<span>由 host 管理连接</span></div></label>
+  </div><div class="builder-output"><pre><code id="composition-code"></code></pre><div id="composition-status" class="status" aria-live="polite"></div><small>所有组合的 core 职责相同。无工具的 Agent 仍可对话；没有策略插件时，仅执行内核校验，不自动产生业务授权。</small></div></div>
+  <h3 style="margin-top:30px">三类扩展点，不引入万能服务定位器</h3>
+  <div class="table-wrap"><table><thead><tr><th>形态</th><th>用途</th><th>冲突与组合</th></tr></thead><tbody>
+   <tr><td>单值端口</td><td><code>Driver</code>、<code>ModelPort</code></td><td>每个 Agent 恰好一个。直接配置与插件重复提供均报错；默认 loop 仅在没有显式提供时补上。</td></tr>
+   <tr><td>有序管线</td><td><code>beforeModel</code>、<code>authorizeTool</code>、<code>mapToolResult</code></td><td>注册顺序执行；变换依次传递；授权遇 deny 停止且不可被后续 allow 翻转。</td></tr>
+   <tr><td>集合 / 观察者</td><td>工具注册、事件订阅</td><td>工具名唯一，重复失败；观察者异常隔离。观察者不能阻止工具或持久化关键提交。</td></tr>
+  </tbody></table></div>
+  <details open><summary>插件生命周期：显式安装、冻结注册、逆序清理</summary><ol><li><strong>检查清单：</strong>插件 ID 唯一、apiVersion 支持，requires 引用已列在前面的插件；缺失、循环或向后依赖启动失败。不自动下载依赖、不隐式重排。</li><li><strong>setup：</strong>同步注册到临时表，无 I/O；任何名称或单值端口冲突使组装整体失败。随后冻结所有注册项。</li><li><strong>start：</strong>按清单顺序等待异步资源启动。失败时清理所有已进入 start 的插件，包含失败的那个，按逆序 dispose；清理错误聚合报告。</li><li><strong>运行：</strong>插件实例按 Agent 创建；可显式共享外部客户端，但作者负责共享可变状态。同一 Agent 单 run，多个 Agent 可并发。</li><li><strong>close：</strong>拒绝新 prompt，取消活跃 run，等待收束后逆序 dispose；一次失败不阻断其他清理，重复 close 返回同一结果。</li></ol><p>首版不做动态卸载、热更新、目录扫描、插件市场、任意字符串服务注册。资源型插件的 dispose 必须能处理部分启动；setup 不得持有资源。</p></details>
+ </section>
+
+ <section id="api" class="section">
+  <div class="section-no">04 / API PROPOSAL</div><h2>先能写 Agent，再能写框架扩展</h2><p class="intro">下列接口是统一命名后的 TypeScript 设计摘录，省略部分辅助类型；尚未编译、发布或实现。包子路径也为拟议结构。应用依赖注入对象在示例中明确标注。</p>
+  <div class="toolbar" role="group" aria-label="API 示例"><button data-api="usage" aria-pressed="true">开发者用法</button><button data-api="core" aria-pressed="false">Agent / 消息 / 工具</button><button data-api="driver" aria-pressed="false">可替换循环</button><button data-api="plugin" aria-pressed="false">插件与 Hooks</button><button data-api="model" aria-pressed="false">模型与 Provider</button><button data-api="session" aria-pressed="false">Session 组合</button></div>
+  <div class="code-head"><h3 id="api-title">开发者用法</h3><button id="copy-api">复制当前草案</button></div><div id="api-panels"></div><p id="copy-status" class="muted" aria-live="polite"></p>
+  <details open><summary>必须先稳定的运行语义</summary><div class="table-wrap"><table><thead><tr><th>对象 / 动作</th><th>明确约定</th></tr></thead><tbody>
+   <tr><td>Agent / prompt</td><td>Agent 持有跨轮消息，单实例只允许一个活跃 run。构造错误同步抛出；prompt 的 busy / closed / 输入错误以 Promise rejection 返回；启动后的执行故障通过 RunResult 表达。身份不同的用户必须使用不同实例。</td></tr>
+   <tr><td>状态快照</td><td>数组、普通数据返回只读副本；model、工具实现和 appContext 不在公开快照中。消息内容仍可能敏感。运行中的重配或 replaceMessages 报 AGENT_BUSY。</td></tr>
+   <tr><td>模型流 / 消息提交</td><td>delta 是暂定文本；流正常结束且恰好一个 finish 才提交 assistant。整个工具调用列表先验 ID 与结构；只有 tool_calls 终态可进入工具执行。拒答、截断、unknown 不执行工具。</td></tr>
+   <tr><td>调用网关</td><td>Driver 只能通过 ctx.model / ctx.tool 调用。网关提交已验证消息、分配 run 内递增 seq，缓存本 run 已执行 callId 的结果；重复请求不重复执行。该去重不跨崩溃、不保证外部 exactly-once。</td></tr>
+   <tr><td>事件 / 流压力</td><td>subscribe 同步通知、禁止阻塞 I/O；返回值不参与执行，抛错或异步拒绝隔离到 onObserverError。首版不内置无限 AsyncIterable 队列。UI / exporter 自管有界队列，可合并 delta；最终状态从 result / state 读取。</td></tr>
+   <tr><td>预算与取消</td><td>maxModelCalls 在每次模型请求前原子扣减；不受 Driver 影响。达到限制返回 limited。timeout 发取消信号并禁止后续调用；取消为协作式，未收束的工具不能被宣称已停止。Agent 保持 cancelling 直至执行返回。</td></tr>
+   <tr><td>失败与副作用</td><td>工具异常默认 run failed；如需交给模型修正，工具包显式返回安全的 isError 结果。工具无自动重试。after 阶段失败不能回滚副作用；结果未知时标记 history blocked，禁止直接再次 prompt。</td></tr>
+  </tbody></table></div></details>
+  <details><summary>Hooks 的顺序、可变性与错误处理</summary><ol><li><code>beforeModel</code>：按注册顺序传递消息投影，可裁剪 / 增补；不得改变 Agent 历史。网关重新验证 assistant / toolResult 配对。异常使 run failed。</li><li><code>authorizeTool</code>：工具查找与 parse 后、副作用前，参数为规范化只读值。不得改名或改参；首个 deny 返回安全 denied 工具结果。抛错终止 run，工具不执行。</li><li><code>mapToolResult</code>：允许变换回传模型的文本；不能改 callId、执行事实或取消 / 错误状态。异常时记录“已执行但结果处理失败”，不再次执行工具。</li><li><code>observe</code>：接收事实；不能短路、变换、授权或承诺可靠落盘。</li></ol><p>直接 hooks 先注册，然后按 plugins 数组顺序注册。两者走同一条管线；没有隐式“全局 callback 高于局部 callback”。插件作者应声明顺序依赖。授权不是任意 around middleware，避免策略被替换结果或再次 next 绕过。</p></details>
+  <details><summary>取消后的历史修复与恢复边界</summary><p>用户消息在 run 开始时提交；未完成的模型 delta 不进正式历史。已确认的 assistant 工具批次中，完成的结果保留，未开始的调用补 <code>not_executed</code> 结果。对于已开始但执行结果无法确定的工具，补 <code>outcome_unknown</code>，并将 <code>historyStatus</code> 标为 <code>blocked</code>。</p><p>blocked 不能直接续问或自动重放。应用核对外部系统后，通过空闲态 <code>replaceMessages(reconciled)</code> 提供配对完整的新历史；该 API 不替应用证明业务副作用。持久恢复、steer/follow-up、暂停审批和多分支历史需要后续单独设计。</p></details>
+ </section>
+
+ <section id="scenarios" class="section">
+  <div class="section-no">05 / CONTRACT WALKTHROUGH</div><h2>用失败场景检验抽象</h2><p class="intro">点击“下一步”观察事件、已执行副作用和历史状态。这是契约演示，不是内核 POC 或测试结果。</p>
+  <div class="toolbar"><label for="scenario">推演场景</label><select id="scenario"><option value="happy">正常：模型 → 工具 → 回答</option><option value="deny">策略拒绝：工具不执行</option><option value="cancel">取消：工具结果仍未知</option><option value="protocol">协议异常：重复 toolCallId</option><option value="persist">保存冲突：副作用不重放</option><option value="observer">观察者故障：执行继续</option></select><button id="prev-step">上一步</button><button id="next-step" class="primary">下一步</button><button id="restart">从头查看</button></div>
+  <div class="scenario-layout"><div class="trace-box"><ol id="trace" class="trace"></ol></div><div id="snapshot" class="snapshot" aria-live="polite"></div></div>
+  <div class="callout warning"><strong>技术结论：</strong>调用边界不能完全下放到插件，否则替换循环就可能跳过校验与授权；持久恢复也不能仅由事件观察者实现，否则保存失败、重复工具调用和未确认副作用将无法区分。</div>
+ </section>
+
+ <section id="validation" class="section">
+  <div class="section-no">06 / SPIKE PLAN</div><h2>评审后，用最小实验淘汰坏抽象</h2><p class="intro">本次完成源码 / 文档研究、API 草案与交互推演。下列是后续实施门槛，目前均为待验证；不以“文档能展示”代替“框架能运行”。</p>
+  <div class="table-wrap"><table><thead><tr><th>实验</th><th>验证方式</th><th>通过条件</th><th>失败后的调整</th></tr></thead><tbody>
+   <tr><td>S1 / 最小开发路径</td><td>订单工具 + fake ModelPort + 两轮 prompt；严格 TypeScript 类型检查</td><td>工具参数泛型推导正确；无需理解 Plugin Host；示例与签名一致</td><td>删减入口概念，先修 Developer API</td></tr>
+   <tr><td>S2 / 循环可替换</td><td>默认 toolLoop 与单模型调用 Driver 使用同一 Agent</td><td>不修改 core；两者都不能绕过预算、消息校验与取消</td><td>修正端口粒度，不加入特定 Driver 分支</td></tr>
+   <tr><td>S3 / 插件组合</td><td>工具、授权、上下文、trace 四插件；冲突、依赖缺失、start 部分失败</td><td>确定性顺序；deny 不翻转；资源逆序释放；无运行中注册</td><td>简化 hook / 生命周期；不增加全局可变注册表</td></tr>
+   <tr><td>S4 / Provider 桥接</td><td>对本地 LanguageModel 做类型与模拟流契约测试，随后受控真实服务验证</td><td>不双执行 tool-call；finish、取消、拒答、截断、Anthropic continuation、Responses 续接均覆盖</td><td>明确不支持的协议组合并显式失败</td></tr>
+   <tr><td>S5 / 异常收束</td><td>六个推演场景 + busy、预算耗尽、慢观察者、忽略 signal 的工具</td><td>终态唯一；状态不串 run；未知副作用阻断续接；无无界事件队列</td><td>收紧契约；需要强终止时独立进程执行</td></tr>
+   <tr><td>S6 / 轻量审计</td><td>检查依赖图、exports；core 单独 bundle；记录空载与插件启用时开销</td><td>core 无可选能力运行时依赖；公开入口可独立导入；记录可复现实测</td><td>拆分实现依赖；根据证据设置体积与延迟门槛</td></tr>
+  </tbody></table></div>
+  <div class="split"><div class="panel"><h3>建议首轮 POC 范围</h3><p>Agent + 状态、ModelPort、Tool、Driver 网关、三类 hooks、插件组装、toolLoop、现有 Provider bridge。存储仅验证显式外层 CAS 接口；不接入完整数据库。</p></div><div class="panel"><h3>保持在后续阶段</h3><p>MCP 实际客户端、RAG 实现、持久 checkpoint、多 Agent 调度、热重载、审批恢复、自动重试、多模态、远程沙箱。现阶段检验扩展接缝，不一次性建设全部生态。</p></div></div>
+ </section>
+
+ <section id="review" class="section">
+  <div class="section-no">07 / YOUR REVIEW</div><h2>先决定边界，再实现细节</h2><p class="intro">逐项选择“同意 / 需修改 / 待讨论”，并写下意见。记录保存在本浏览器；导出 JSON 后可交回继续迭代。浏览器限制本地存储时仍可在本次页面中填写与导出。</p>
+  <div id="decisions"></div><div class="toolbar review-actions"><button class="primary" id="export-review">导出 Review JSON</button><button id="copy-review">复制 Review 文本</button><span id="review-status" aria-live="polite"></span></div>
+ </section>
+
+ <section id="sources" class="section">
+  <div class="section-no">08 / EVIDENCE</div><h2>来源与仓库约束</h2><p class="intro">只引用项目官方文档与源码。在线来源为本次访问的滚动文档 / main，未锁定 release 或 commit；进入实现阶段须固定版本重新核对。Pi 的旧 badlogic/pi-mono 地址本次访问重定向到 earendil-works/pi；Google ADK 文档重定向到 adk.dev。</p>
+  <ol class="sources">
+   <li id="s1"><strong>[1] Pi Agent Core README</strong><a href="https://github.com/earendil-works/pi/blob/main/packages/agent/README.md" target="_blank" rel="noreferrer">Agent、状态与底层 loop</a><p>用于核对对象模型和 core 对 pi-ai 的依赖。</p></li>
+   <li id="s2"><strong>[2] Pi Types / Agent Loop 源码</strong><a href="https://github.com/earendil-works/pi/blob/main/packages/agent/src/types.ts" target="_blank" rel="noreferrer">types.ts</a> · <a href="https://github.com/earendil-works/pi/blob/main/packages/agent/src/agent-loop.ts" target="_blank" rel="noreferrer">agent-loop.ts</a><p>用于核对消息投影、工具 hook 和执行循环边界。</p></li>
+   <li id="s3"><strong>[3] Pi Coding Agent Extensions</strong><a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md" target="_blank" rel="noreferrer">Extension API 与运行权限</a><p>用于区分 agent-core 和应用扩展宿主。</p></li>
+   <li id="s4"><strong>[4] Google ADK Plugins</strong><a href="https://adk.dev/plugins/" target="_blank" rel="noreferrer">插件作用域、优先级和返回值语义</a><p>以 Python 的多插件语义为主，不概括为所有语言相同行为。</p></li>
+   <li id="s5"><strong>[5] LangGraph Overview</strong><a href="https://docs.langchain.com/oss/python/langgraph/overview" target="_blank" rel="noreferrer">状态、图与运行时分层</a><p>用于区分 Agent 框架与图调度运行时。</p></li>
+   <li id="s6"><strong>[6] LangGraph Persistence</strong><a href="https://docs.langchain.com/oss/python/langgraph/persistence" target="_blank" rel="noreferrer">Checkpointers 与 Stores</a><p>用于区分线程执行状态和跨线程应用数据。</p></li>
+   <li id="s7"><strong>[7] LangChain Middleware</strong><a href="https://docs.langchain.com/oss/python/langchain/middleware/overview" target="_blank" rel="noreferrer">调用边界扩展与 LangGraph 关系</a><p>用于评估 hook 与 around middleware 的设计取舍。</p></li>
+   <li id="s8"><strong>[8] Pydantic AI Dependencies</strong><a href="https://pydantic.dev/docs/ai/core-concepts/dependencies/" target="_blank" rel="noreferrer">Typed deps / RunContext</a><p>用于应用上下文与模型消息隔离的设计参考。</p></li>
+   <li id="s9"><strong>[9] Mastra Agents</strong><a href="https://mastra.ai/docs/agents/overview" target="_blank" rel="noreferrer">Agent 的模型与工具组合</a><p>用于开发者入口的对比。</p></li>
+   <li id="s10"><strong>[10] Mastra Processors</strong><a href="https://mastra.ai/docs/agents/processors" target="_blank" rel="noreferrer">输入 / 输出处理流水线</a><p>用于上下文与消息变换边界的参考。</p></li>
+  </ol>
+  <div class="panel"><h3>本地事实与本次设计增量</h3><ul><li><a href="../README.md">README.md</a> 规定 ADK 与 Provider 互不依赖，应用负责组装；<a href="../packages/adk/src/index.ts">ADK 入口</a> 目前仅有 <code>export {}</code>。</li><li><a href="../packages/provider/src/types.ts">Provider types.ts</a> 已定义 LanguageModel、文本消息、工具、流 finish 与 continuation。本方案采用显式 bridge，不假设两套类型结构兼容。</li><li>沿用 <a href="adk-agent-model-design.md">Agent 实体草案</a> 中的有状态入口和 <a href="adk-developer-first.md">开发者优先草案</a> 的使用目标。</li><li>本次新增建议：将默认 loop 移至可替换模块，同时通过内核调用网关保持约束；插件资源生命周期外置；统一 API、异常收束和 Review 决策。</li><li>这些建议尚未替代既有草案，也未修改框架代码。Session 可靠保存采用外层显式调用，不使用事件订阅伪装事务。</li></ul></div>
+ </section>
+ <footer>Alpha ADK · Architecture Review v1 · 2026-11-03<br>研究与设计草案。无模型调用、无工具副作用、无第三方脚本。Review 仅存本地浏览器，可手动导出。</footer>
+</main></div>
+<noscript><p style="padding:24px">JavaScript 未启用：静态调研与架构正文仍可阅读，API 示例、组装预览和 Review 交互需要启用 JavaScript。</p></noscript>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const layers = {
+ app:{title:'应用层 · 定义产品与业务边界',body:'创建 Agent、注入身份与业务服务，选择插件，并决定日志、持久化、UI 和部署方式。',items:['订单 / 编码 / 研究助手都是应用，不是内核分支。','应用可同时依赖 ADK 与 Provider；bridge 起步放在应用中。','多 Agent、审批页面和图工作流在此组合。']},
+ standard:{title:'预设与 Host · 易用性来自组合',body:'createAgent 负责安装插件、补默认 toolLoop、启动资源，返回托管 Agent。core 不导入该层。',items:['普通开发者不需要操作注册表。','setup 与异步 start 分开；启动失败逆序清理。','预设可以整个替换，原生 Agent 仍可独立构造。']},
+ extensions:{title:'能力层 · 普通对象也可扩展',body:'Driver、ModelPort、Tool 和 Hook 是小而明确的契约。Plugin 将若干能力和资源生命周期组合起来。',items:['toolLoop、RAG、MCP、schema adapter 均为外部实现。','Session 是外层组合；trace 是只读观察者。','所有扩展只依赖公开契约，不导入 core 私有文件。']},
+ kernel:{title:'内核 · 只拥有运行不变量',body:'Agent 保存消息和状态，执行端口调用前后校验，提供有序事实与统一终态。它不知道模型厂商、MCP、数据库或 UI。',items:['单 run、只读快照、消息 / 工具结果配对。','每次调用的预算、取消、参数校验和 hook 执行机制。','通过 Driver 驱动；不内置具体工具循环算法。']}
+};
+function renderLayer(key){const v=layers[key];$('layer-detail').replaceChildren();const h=document.createElement('h3');h.textContent=v.title;const p=document.createElement('p');p.textContent=v.body;const ul=document.createElement('ul');v.items.forEach(t=>{const li=document.createElement('li');li.textContent=t;ul.append(li)});$('layer-detail').append(h,p,ul);document.querySelectorAll('[data-layer]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.layer===key)));}
+document.querySelectorAll('[data-layer]').forEach(b=>b.addEventListener('click',()=>renderLayer(b.dataset.layer)));renderLayer('kernel');
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{const f=b.dataset.filter;let n=0;document.querySelectorAll('#research-rows tr').forEach(r=>{r.hidden=f!=='all'&&!r.dataset.tags.split(' ').includes(f);if(!r.hidden)n++});document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('filter-status').textContent=`显示 ${n} 项框架机制。`;}));
+function composition(){const selected=new Set([...document.querySelectorAll('[data-plugin]:checked')].map(x=>x.dataset.plugin));let code='// 设计示意：Plugin Host 的无默认值组装入口\n// import { assembleAgent } from \'@alpha/adk/plugins\';\nconst agent = await assembleAgent({\n  id: "order-assistant",\n  instructions: "查询事实后回答",\n  appContext,\n';if(selected.has('model'))code+='  model: bridge(providerModel),\n';if(selected.has('loop'))code+='  driver: toolLoop(),\n';else code+='  // 未注册 Driver：组装将失败\n';code+='  plugins: [\n';const lines={tools:'orderTools()',policy:'authorizeTools(policy)',rag:'retrievalContext(retriever)',trace:'traceObserver(exporter)',mcp:'mcpTools(clientFactory)'};Object.entries(lines).forEach(([k,v])=>{if(selected.has(k))code+='    '+v+',\n'});code+='  ],\n});';if(selected.has('session'))code+='\n\n// Session 是外层显式组合，非 observe 保存\nconst saved = await store.load(sessionId);\nagent.replaceMessages(decode(saved.messages));\nconst result = await agent.prompt(input);\nawait store.save(sessionId, encode(agent.state), {\n  expectedVersion: saved.version,\n});';$('composition-code').textContent=code;const missing=[];if(!selected.has('loop'))missing.push('Driver');if(!selected.has('model'))missing.push('ModelPort');$('composition-status').classList.toggle('invalid',missing.length>0);$('composition-status').textContent=missing.length?'组装不可启动：缺少 '+missing.join('、')+'。这是配置校验失败，不在运行时猜测默认实现。':'端口齐备 · 组装预览有效。core 未增加任何可选功能；这不是实现验证结果。';}
+document.querySelectorAll('[data-plugin]').forEach(c=>c.addEventListener('change',composition));composition();
+const api = {
+usage:{title:'01 / 开发者只需模型、工具和 Agent',note:'providerConfig、orders、policy 是应用提供的配置与服务；bridge 是应用侧适配器。createAgent 为预设入口，默认安装 toolLoop；new Agent 的 core 入口则要求显式 Driver。',code:`import { createProvider } from '@alpha/provider';
+import { createAgent, tool } from '@alpha/adk/standard';
+import { bridge } from './alpha-model-bridge.js';
+import { providerConfig, orders, policy } from './app-deps.js';
+
+type App = { tenantId: string; orders: typeof orders };
+const getOrder = tool<App, { id: string }>({
+  name: 'orders.get',
+  description: '查询当前租户的订单',
+  effect: 'read',
+  input: {
+    jsonSchema: {
+      type: 'object', properties: { id: { type: 'string' } },
+      required: ['id'], additionalProperties: false,
+    },
+    parse(value: unknown) {
+      if (typeof value !== 'object' || value === null ||
+          !('id' in value) || typeof value.id !== 'string' ||
+          Object.keys(value).some(k => k !== 'id')) {
+        throw new Error('INVALID_TOOL_INPUT');
+      }
+      return { id: value.id };
+    },
+  },
+  async execute({ id }, { app, signal }) {
+    const order = await app.orders.get(app.tenantId, id, { signal });
+    return { content: JSON.stringify(order) };
+  },
+});
+
+const provider = createProvider(providerConfig);
+const agent = await createAgent<App>({
+  id: 'order-assistant',
+  instructions: '先查询订单，再回答；不要编造。',
+  model: bridge(provider.use('primary', 'chat')),
+  tools: [getOrder],
+  appContext: { tenantId: 't1', orders },
+  hooks: {
+    authorizeTool: [async (call, ctx) =>
+      await policy.canRead(ctx.app.tenantId, call.args)
+        ? { action: 'allow' }
+        : { action: 'deny', reason: '当前用户无权查询' }],
+  },
+  limits: { maxModelCalls: 8, timeoutMs: 30_000 },
+});
+
+const unsubscribe = agent.subscribe(event => {
+  if (event.type === 'model.delta') process.stdout.write(event.text);
+});
+try {
+  const result = await agent.prompt('查询订单 A123');
+  if (result.status === 'completed') console.log(result.text);
+  const followUp = await agent.prompt('它什么时候发货？');
+  console.log(followUp.status);
+} finally {
+  unsubscribe();
+  await agent.close();
+}`},
+core:{title:'02 / Agent、消息与工具',note:'readonly 为类型约束，运行时还需复制 / 冻结普通数据。AnyTool 由 tool() 完成泛型输入封装；不要求异构工具数组使用 any。辅助类型以注释说明。',code:`interface AgentOptions<C> {
+  id: string;
+  instructions: string;
+  model: ModelPort;
+  driver: Driver<C>;
+  tools?: readonly AnyTool<C>[];
+  hooks?: Hooks<C>;
+  appContext: C; // 不自动发给模型，不自动持久化
+  limits: { maxModelCalls: number; timeoutMs?: number };
+  onObserverError?: (error: unknown) => void;
+}
+
+declare class Agent<C> {
+  constructor(options: AgentOptions<C>);
+  readonly state: AgentState;
+  prompt(input: string, options?: { signal?: AbortSignal }): Promise<RunResult>;
+  subscribe(listener: (event: AgentEvent) => void): () => void;
+  abort(reason?: unknown): void;
+  waitForIdle(): Promise<void>;
+  replaceMessages(messages: readonly Message[]): void; // 仅 idle；重验配对
+  close(): Promise<void>;
+}
+interface AgentState {
+  readonly status: 'idle' | 'running' | 'cancelling' | 'closed';
+  readonly historyStatus: 'ready' | 'blocked';
+  readonly messages: readonly Message[];
+}
+type RunResult = {
+  runId: string;
+  status: 'completed' | 'refused' | 'incomplete' | 'unknown'
+    | 'limited' | 'cancelled' | 'failed';
+  text: string;
+  messages: readonly Message[]; // 仅本 run 新增并提交的消息
+  historyStatus: 'ready' | 'blocked';
+  error?: { code: string; message: string }; // 已清理的错误摘要
+  usage?: { inputTokens?: number; outputTokens?: number };
+};
+
+type Message =
+  | { id: string; role: 'user'; content: string }
+  | AssistantMessage
+  | { id: string; role: 'toolResult'; callId: string; content: string;
+      execution: 'succeeded' | 'failed' | 'denied'
+        | 'not_executed' | 'outcome_unknown'; isError: boolean }
+  | { id: string; role: 'custom'; kind: string; data: Json };
+
+interface ToolSpec<C, I> {
+  name: string;
+  description: string;
+  effect: 'read' | 'write' | 'unknown'; // 声明，不是权限证明
+  input: { jsonSchema: JsonObject; parse(value: unknown): I };
+  execute(input: I, ctx: {
+    app: C; signal: AbortSignal; runId: string; callId: string;
+  }): Promise<{ content: string; isError?: boolean }>;
+}
+// tool 封装 parse → I → execute；AnyTool 不暴露错误的泛型调用入口。
+declare function tool<C, I>(spec: ToolSpec<C, I>): AnyTool<C>;
+// Json / JsonObject 为标准 JSON 值递归类型；首版 content 只支持文本。
+
+// 公共事件带 runId + 递增 seq；关键事件类型：
+// run.start | model.delta | message.commit | tool.start | tool.end | run.end
+// 扩展事件必须使用 plugin.<id>.<event> 命名空间。`},
+driver:{title:'03 / 算法可替换，不变量仍归内核',note:'Driver 可直接注入，也可由插件提供。它不能直接修改状态或获得原始工具执行函数。下面 toolLoop 是拟议伪代码，不是已实现的运行器。',code:`type DriverEnd =
+  | { kind: 'model'; messageId: string }
+  | { kind: 'stopped'; reason: string };
+
+interface Driver<C> {
+  execute(ctx: DriverContext<C>): Promise<DriverEnd>;
+}
+interface DriverContext<C> {
+  readonly app: C;
+  readonly signal: AbortSignal;
+  readonly messages: readonly Message[]; // getter 返回最新只读快照
+  model(): Promise<AssistantMessage>;
+  tool(callId: string): Promise<Message & { role: 'toolResult' }>;
+}
+// model()：运行上下文 hooks → 校验投影 → 计数 → ModelPort
+// → 验证完整 finish → 提交 assistant → 返回已确认消息。
+// tool(id)：从当前 pending 表解析调用 → parse → authorize
+// → execute → mapToolResult → 提交结果；禁止任意伪造调用。
+// 网关负责取消、事件、终态收束；默认每 Agent 串行操作。
+
+function toolLoop<C>(): Driver<C> {
+  return {
+    async execute(ctx) {
+      while (true) {
+        const reply = await ctx.model();
+        if (reply.outcome !== 'tool_calls') {
+          return { kind: 'model', messageId: reply.id };
+        }
+        for (const call of reply.toolCalls) {
+          await ctx.tool(call.id);
+        }
+      }
+    },
+  };
+}
+
+// 内核从已提交的模型消息导出 completed / refused / incomplete / unknown。
+// Driver 不能把 tool_calls 或拒答伪装成 completed。
+// stopped 映射为 limited，带 reason；有 pending 时先收束再结束。
+// 替换 Driver 不改变工具校验、授权、预算、取消与消息提交语义。
+
+import { Agent } from '@alpha/adk/core';
+// 完全不使用预设或插件宿主：
+const agent = new Agent({
+  id: 'custom', instructions: '按事实回答',
+  model, driver: toolLoop(), tools, appContext,
+  limits: { maxModelCalls: 8 },
+}); // model / tools / appContext 为应用提供的变量`},
+plugin:{title:'04 / 插件是扩展与资源的组合单元',note:'requires 仅校验显式依赖与顺序，不隐式安装或注入服务。变换 hook 不允许修改工具执行事实；拒绝与异常有不同终态。',code:`type Awaitable<T> = T | Promise<T>;
+type Decision = { action: 'allow' } | { action: 'deny'; reason: string };
+interface HookContext<C> { readonly app: C; readonly signal: AbortSignal; readonly runId: string }
+interface ValidatedCall {
+  readonly id: string; readonly name: string;
+  readonly args: unknown; readonly effect: 'read' | 'write' | 'unknown';
+}
+interface HookMap<C> {
+  beforeModel: (messages: readonly Message[], ctx: HookContext<C>) =>
+    Awaitable<readonly Message[]>;
+  authorizeTool: (call: ValidatedCall, ctx: HookContext<C>) =>
+    Awaitable<Decision>;
+  mapToolResult: (result: Readonly<ToolResultMessage>, ctx: HookContext<C>) =>
+    Awaitable<{ content: string }>; // 只变换内容，不改执行状态
+}
+type Hooks<C> = { [K in keyof HookMap<C>]?: readonly HookMap<C>[K][] };
+
+interface Plugin<C> {
+  readonly id: string; // 例 acme.orders
+  readonly apiVersion: 1;
+  readonly requires?: readonly string[];
+  setup(api: PluginAPI<C>): void; // 同步、无资源副作用
+  start?(signal: AbortSignal): Promise<void>;
+  dispose?(): Awaitable<void>; // 必须能清理部分启动
+}
+interface PluginAPI<C> {
+  provideModel(model: ModelPort): void; // 单值；冲突即失败
+  provideDriver(driver: Driver<C>): void;
+  addTool(tool: AnyTool<C>): void;
+  hook<K extends keyof HookMap<C>>(name: K, fn: HookMap<C>[K]): void;
+  observe(listener: (event: AgentEvent) => void): void;
+}
+
+// 可复用的授权插件，不依赖具体执行算法：
+function authorizeTools<C>(canUse: (
+  app: C, call: ValidatedCall, signal: AbortSignal
+) => Promise<boolean>): Plugin<C> {
+  return {
+    id: 'acme.authorization', apiVersion: 1,
+    setup(api) {
+      api.hook('authorizeTool', async (call, ctx) =>
+        await canUse(ctx.app, call, ctx.signal)
+          ? { action: 'allow' }
+          : { action: 'deny', reason: '工具调用未获授权' });
+    },
+  };
+}
+
+// plugins: assembleAgent<C>(options) -> Promise<Agent<C>>
+// 无默认值，缺少 ModelPort 或 Driver 就失败。
+// standard: createAgent<C>(options) -> Promise<Agent<C>>
+// options 在 AgentOptions 基础上允许省略 driver，并接受 plugins。
+// model 可由插件提供；组装结束时 ModelPort 与 Driver 必须各一个。
+// 默认 toolLoop 只在没有显式 driver 或插件 driver 时安装。`},
+model:{title:'05 / ADK 独立于 Provider，桥接承担协议差异',note:'当前 Provider 是 Alpha 自有 LanguageModel，不是 AI SDK。bridge 起步放在 apps/example-agent 等应用层，避免破坏两包互不依赖的约定。',code:`interface ModelPort {
+  readonly id: string;
+  stream(request: {
+    instructions: string;
+    messages: readonly Message[];
+    tools: readonly ToolInfo[]; // name / description / jsonSchema
+    signal: AbortSignal;
+  }): AsyncIterable<
+    | { type: 'delta'; text: string }
+    | { type: 'finish'; result: ModelResult }
+  >;
+}
+interface ModelResult {
+  outcome: 'completed' | 'tool_calls' | 'refused' | 'incomplete' | 'unknown';
+  text: string;
+  toolCalls: readonly { id: string; name: string; arguments: JsonObject }[];
+  usage?: { inputTokens?: number; outputTokens?: number };
+  continuation?: { owner: string; data: unknown };
+}
+type AssistantMessage = Omit<ModelResult, 'text'> & {
+  id: string; role: 'assistant'; content: string;
+};
+// text → content 在内核提交时规范化；不保存重复 text 字段。
+
+// 应用层 bridge(providerModel: LanguageModel): ModelPort
+// 1. 将 ADK user / assistant / toolResult 显式映射到 Provider Message。
+//    custom 消息由配置的投影函数转换或过滤；不 JSON.stringify 后盲发。
+// 2. text-delta → delta；finish.result → 唯一完整结果。
+//    Provider 独立 tool-call 事件不执行，以 finish.toolCalls 为准。
+// 3. 透传 AbortSignal；只有恰好一个 finish 且流正常结束才提交。
+// 4. Anthropic continuation 关联对应 assistant，保持不透明、原样传递。
+//    owner 标记协议 / provider / model 身份，不跨模型重用。
+// 5. Responses previousResponseId 是显式可选的服务端续接策略：
+//    只发送新增消息，并重新提供必要指令；不与全部历史叠加发送。
+// 6. 换模型、裁剪、保存遇到无法转换的 continuation 时显式失败。
+//    不承诺所有模型可无损切换；无状态历史模式也须验证目标模型。
+
+// 公共快照不能直接作为可持久化格式：
+// continuation 可能含协议签名 / 推理块，不能写入普通日志。
+// Session codec 负责保留、加密或拒绝不支持的数据，不能静默丢弃。`},
+session:{title:'06 / Session 显式保存，不冒充检查点',note:'store、codec、agent、sessionId 和 input 由应用提供。租约在运行前获取，避免先执行副作用再发现并发写冲突；CAS 是最后一道版本检查。',code:`interface SessionStore {
+  load(id: string): Promise<{ version: string; data: Json }>;
+  save(id: string, data: Json, options: {
+    expectedVersion: string;
+  }): Promise<{ version: string }>;
+}
+
+// 下列均属于 session / 应用模块，不属于 core：
+await withSessionLease(sessionId, async () => {
+  const saved = await store.load(sessionId);
+  agent.replaceMessages(codec.decode(saved.data));
+
+  const run = await agent.prompt(input);
+  try {
+    await store.save(sessionId, codec.encode(agent.state), {
+      expectedVersion: saved.version,
+    });
+    return { run, persistence: 'saved' as const };
+  } catch (error) {
+    // 必须上报保存失败，并停止此 session 的后续请求。
+    // run 已经完成；不能为了修复 CAS 冲突而重新 prompt。
+    return { run, persistence: 'failed' as const, error };
+  }
+});
+
+// 约束：
+// - lease / fencing 是 session adapter 的责任；单进程可先用互斥锁。
+// - 多进程租约不能代替外部工具的幂等键与事务边界。
+// - schemaVersion / codec / migration 属于 session 插件格式。
+// - 不把 appContext、模型客户端、订阅函数直接序列化。
+// - historyStatus: blocked 也必须保存，恢复时拒绝盲目继续。
+// - Session 只保存已完成阶段的历史，不是运行中恢复 checkpoint。
+// - 进程在工具写入后、保存前崩溃，仍需业务核对；不承诺 exactly-once。`}
+};
+let currentApi='usage';
+Object.entries(api).forEach(([key,v])=>{const section=document.createElement('section');section.className='api-panel';section.id='api-'+key;section.setAttribute('aria-label',v.title);const p=document.createElement('p');p.textContent=v.note;const pre=document.createElement('pre');const code=document.createElement('code');code.textContent=v.code;pre.append(code);section.append(p,pre);$('api-panels').append(section);});
+function showApi(key){currentApi=key;$('api-title').textContent=api[key].title;Object.keys(api).forEach(k=>$('api-'+k).hidden=k!==key);document.querySelectorAll('[data-api]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.api===key));b.setAttribute('aria-controls','api-'+b.dataset.api)});$('copy-status').textContent='';}
+document.querySelectorAll('[data-api]').forEach(b=>b.addEventListener('click',()=>showApi(b.dataset.api)));showApi('usage');
+async function copyText(text,status){try{await navigator.clipboard.writeText(text);$(status).textContent='已复制。';}catch{$(status).textContent='浏览器不允许直接复制。可选中文本复制，或导出 Review 文件。';}}
+$('copy-api').addEventListener('click',()=>copyText(api[currentApi].code,'copy-status'));
+const step=(event,desc,status,calls,effects,history,conclusion)=>({event,desc,status,calls,effects,history,conclusion});
+const commonStart=step('run.start','校验 idle、配置与输入；提交用户消息。','running',0,0,'ready','Agent 是状态拥有者；Driver 尚未调用任何外部能力。');
+const scenarios={
+ happy:[commonStart,step('model.finish / message.commit','模型请求 orders.get；完成整批调用 ID 校验。','running',1,0,'ready · pending=1','流式参数不会触发执行，等待完整 finish。'),step('authorizeTool → tool.start','parse 成功；授权 allow；执行订单查询。','running',1,1,'ready · pending=1','计数表示工具执行已开始，不表示结果已确认。'),step('tool.end / message.commit','提交已完成的工具结果，清空 pending。','running',1,1,'ready · pending=0','只有受控提交能改变正式历史。'),step('model.finish → run.end','第二次模型调用生成最终回答。','completed',2,1,'ready','同一 Agent 可以继续下一轮 prompt。')],
+ deny:[commonStart,step('model.finish / message.commit','模型申请调用 orders.get。','running',1,0,'ready · pending=1','模型建议不是授权。'),step('authorizeTool: deny','首个 deny 终止授权链；不调用工具。','running',1,0,'ready · pending=0','提交 execution=denied 的安全工具结果；后续 allow 不能翻转。'),step('model.finish → run.end','模型解释权限限制，给出最终回答。','completed',2,0,'ready','run completed 表示回答完成，不代表被拒绝的业务操作成功。')],
+ cancel:[commonStart,step('model.finish → tool.start','模型请求写工具；校验与授权完成，写入已发出。','running',1,1,'ready · pending=1','外部副作用可能正在发生。'),step('abort requested','用户取消；signal 触发，禁止新调用。','cancelling',1,1,'ready · pending=1','不提前宣称工具已停。若工具不返回，此状态可能持续。'),step('tool.end: outcome_unknown','工具最终返回取消错误，但不能证明写入是否发生。','cancelled',1,1,'blocked','补 outcome_unknown；禁止直接续问或自动重试，交应用核对外部系统。')],
+ protocol:[commonStart,step('model.finish: invalid batch','完整结果出现两个相同 toolCallId。','running',1,0,'ready','在执行任何工具前验证整批；该 assistant 不提交。'),step('run.end: MODEL_PROTOCOL','拒绝协议损坏的模型结果，保留用户消息。','failed',1,0,'ready','没有工具副作用，模型消息没有污染正式历史。')],
+ persist:[commonStart,step('tool.end / message.commit','写工具成功；内存历史记录结果。','running',1,1,'ready · pending=0','外部写入与 session 存储不构成同一个事务。'),step('run.end','模型完成回答，内核运行已成功。','completed',2,1,'ready','运行结果与持久化结果是两个状态。'),step('session.save: CAS conflict','外层保存版本冲突；停止此 session 后续请求。','completed · persistence=failed',2,1,'ready / session blocked','保留待恢复快照并报告冲突；不能重新运行 Agent 来修复存储。')],
+ observer:[commonStart,step('observer error','trace exporter 抛错，由 onObserverError 接收。','running',0,0,'ready','观察者没有执行控制权，不能影响授权或状态提交。'),step('model.finish → run.end','模型调用完成，run 正常结束。','completed',1,0,'ready','可观测数据可能丢失，不能将 observe 用作必须成功的审计或持久化事务。')]
+};
+let scenarioKey='happy',stepIndex=0;
+function renderScenario(){const steps=scenarios[scenarioKey];$('trace').replaceChildren();steps.forEach((s,i)=>{const li=document.createElement('li');li.className=i===stepIndex?'current':i<stepIndex?'done':'';if(i===stepIndex)li.setAttribute('aria-current','step');const num=document.createElement('span');num.className='num';num.textContent=String(i+1).padStart(2,'0');const body=document.createElement('div');const strong=document.createElement('strong');strong.textContent=s.event;const small=document.createElement('small');small.textContent=s.desc;body.append(strong,small);li.append(num,body);$('trace').append(li);});const s=steps[stepIndex];$('snapshot').replaceChildren();const h=document.createElement('h3');h.textContent='状态快照';const sub=document.createElement('p');sub.textContent=`步骤 ${stepIndex+1} / ${steps.length} · 预定义契约演示`;const dl=document.createElement('dl');[['Run status',s.status],['模型调用 / 已开始的工具执行',`${s.calls} / ${s.effects}`],['历史与继续条件',s.history]].forEach(([k,v])=>{const dt=document.createElement('dt');dt.textContent=k;const dd=document.createElement('dd');dd.textContent=v;dl.append(dt,dd)});const conclusion=document.createElement('div');conclusion.className='explain';conclusion.textContent=s.conclusion;$('snapshot').append(h,sub,dl,conclusion);$('prev-step').disabled=stepIndex===0;$('next-step').disabled=stepIndex===steps.length-1;}
+$('scenario').addEventListener('change',e=>{scenarioKey=e.target.value;stepIndex=0;renderScenario()});$('next-step').addEventListener('click',()=>{stepIndex=Math.min(stepIndex+1,scenarios[scenarioKey].length-1);renderScenario()});$('prev-step').addEventListener('click',()=>{stepIndex=Math.max(0,stepIndex-1);renderScenario()});$('restart').addEventListener('click',()=>{stepIndex=0;renderScenario()});renderScenario();
+const decisionData=[
+ ['entry','Agent 作为主要入口','建议保留有状态 Agent；同一实例单 run。普通开发者使用 createAgent 预设，不接触 Runtime / Registry。'],
+ ['kernel','默认循环放在内核之外','建议 Driver 可替换，toolLoop 独立；状态提交、校验、预算与取消调用边界留在 core。代价是多一层小型端口契约。'],
+ ['plugins','插件是可选安装单元','建议明确端口 + 少量 hooks + 可选 Host。直接注入也能扩展；不建设通用 DI 或任意 next 中间件。'],
+ ['bridge','Provider 通过显式 bridge 接入','建议初版桥接放在应用层，ADK 与 Provider 仍互不依赖。协议续接不隐藏成自动兼容。'],
+ ['schema','schema 库不进入内核','建议 jsonSchema + parse 的二元契约，可在外层提供 Zod 等适配。代价是需要保证 schema 与 parser 一致。'],
+ ['persistence','Session 与执行恢复分开','建议首版只做外层显式历史保存，保留 CAS / 租约边界；checkpoint 与跨进程恢复后置。'],
+ ['scope','首轮只验证最小扩展闭环','建议先跑六项 spike，验证两种 Driver、模型桥接、插件冲突和异常收束，再扩展 MCP / 多 Agent / 审批。']
+];
+const storageKey='alpha-adk-architecture-review-v1';let review={};let storageAvailable=true;
+try{const saved=JSON.parse(localStorage.getItem(storageKey)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))review=saved;}catch{storageAvailable=false;}
+function reviewState(){return{document:'Alpha ADK Architecture Review',version:1,reviewedAt:new Date().toISOString(),decisions:decisionData.map(([id,title,recommendation])=>({id,title,recommendation,status:review[id]?.status||'pending',comment:review[id]?.comment||''}))};}
+function saveReview(){try{localStorage.setItem(storageKey,JSON.stringify(review));storageAvailable=true;}catch{storageAvailable=false;}const count=decisionData.filter(([id])=>review[id]?.status&&review[id].status!=='pending').length;$('review-status').textContent=`已评 ${count} / ${decisionData.length} · ${storageAvailable?'保存在本浏览器':'仅保留在当前页面，请导出'}`;}
+decisionData.forEach(([id,title,recommendation],index)=>{const row=document.createElement('div');row.className='decision';const body=document.createElement('div');const h=document.createElement('h3');h.textContent=`D${index+1} · ${title}`;const p=document.createElement('p');p.textContent=recommendation;body.append(h,p);const label=document.createElement('label');label.textContent='你的判断';label.htmlFor='decision-'+id;const select=document.createElement('select');select.id='decision-'+id;[['pending','尚未评审'],['accept','同意建议'],['change','需要修改'],['discuss','待讨论']].forEach(([v,t])=>{const option=document.createElement('option');option.value=v;option.textContent=t;select.append(option)});select.value=['pending','accept','change','discuss'].includes(review[id]?.status)?review[id].status:'pending';label.append(select);const textarea=document.createElement('textarea');textarea.setAttribute('aria-label',title+'的评审意见');textarea.placeholder='写下需要调整的边界、例子或约束…';textarea.value=typeof review[id]?.comment==='string'?review[id].comment:'';const update=()=>{review[id]={status:select.value,comment:textarea.value};saveReview()};select.addEventListener('change',update);textarea.addEventListener('input',update);row.append(body,label,textarea);$('decisions').append(row);});saveReview();
+$('export-review').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(reviewState(),null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='alpha-adk-review.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);$('review-status').textContent='已发起 JSON 下载。评审记录仍保存在页面中。';});
+$('copy-review').addEventListener('click',()=>{const labels={pending:'尚未评审',accept:'同意建议',change:'需要修改',discuss:'待讨论'};copyText(reviewState().decisions.map(d=>`${d.title}：${labels[d.status]||d.status}\n${d.comment||'（无备注）'}`).join('\n\n'),'review-status')});
+$('print').addEventListener('click',()=>window.print());
+if('IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){document.querySelectorAll('.sidebar nav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id));}})},{rootMargin:'-10% 0px -70% 0px'});document.querySelectorAll('main section[id]:not(.api-panel)').forEach(s=>observer.observe(s));}
+</script>
+</body>
+</html>
