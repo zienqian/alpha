@@ -1,10 +1,10 @@
-import type { Agent, AgentOptions } from './contracts.js';
-import { createAgentInstance } from './internal/agent.js';
-import { createLimits, validateOptions } from './internal/config.js';
-import { createRegistry } from './internal/plugin-registry.js';
-import { startPlugins } from './internal/plugin-lifecycle.js';
-import { createId } from './internal/json.js';
-import { Failure, error, errorData, safeError } from './internal/errors.js';
+import type { Agent, AgentOptions } from './contracts';
+import { createAgentInstance } from './internal/agent';
+import { createLimits, validateOptions } from './internal/config';
+import { createRegistry } from './internal/plugin-registry';
+import { startPlugins } from './internal/plugin-lifecycle';
+import { createId } from './internal/json';
+import { Failure, error, errorData, safeError } from './internal/errors';
 
 export async function createAgent<C = undefined>(options: AgentOptions<C>): Promise<Agent<C>> {
   let dispose: (() => Promise<void>) | undefined;

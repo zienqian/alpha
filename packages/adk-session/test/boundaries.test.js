@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { ESLint } from 'eslint';
 import * as session from '@alpha/adk-session';
@@ -33,8 +33,8 @@ test('Memory and SQLite work without external drivers in a fresh Bun process', a
   } };
   await cp(new URL('../dist/', import.meta.url), join(dir, 'dist'), { recursive: true });
   const script = `import assert from 'node:assert/strict';
-    import { createMemorySessionStore } from './dist/index.js';
-    import { createSqliteSessionStore } from './dist/sqlite/index.js';
+    import { createMemorySessionStore } from './dist/index';
+    import { createSqliteSessionStore } from './dist/sqlite/index';
     assert.ok(process.versions.bun);
     const store = createMemorySessionStore(); assert.equal(store.durability, 'memory'); await store.close();
     const sqlite = await createSqliteSessionStore({ filename: 'session.db' }); assert.equal(sqlite.durability, 'transactional'); await sqlite.close();`;
@@ -55,7 +55,7 @@ test('emitted root dependency graph has no external runtime imports or SQLite pa
       if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
         const specifier = node.moduleSpecifier.text;
         assert.ok(specifier.startsWith('.') || specifier.startsWith('node:'), specifier);
-        if (specifier.startsWith('.')) visitFile(new URL(specifier, url));
+        if (specifier.startsWith('.')) visitFile(pathToFileURL(Bun.resolveSync(specifier, dirname(fileURLToPath(url)))));
       }
       assert.ok(!(ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword), 'No hidden dynamic root dependencies');
       ts.forEachChild(node, visit);
@@ -82,7 +82,7 @@ test('Session lint allows public core types and rejects runtime/private/provider
   const filePath = fileURLToPath(new URL('../src/boundary-probe.ts', import.meta.url));
   const [valid] = await eslint.lintText('import type { Agent } from "@alpha/adk/core"; export type A = Agent;', { filePath });
   assert.equal(valid.messages.some(m => m.ruleId === 'no-restricted-imports'), false);
-  for (const name of ['@alpha/adk/core', '@alpha/adk', '@alpha/adk/src/core/contracts.js', '@alpha/provider', 'bun:sqlite', './sqlite/index.js']) {
+  for (const name of ['@alpha/adk/core', '@alpha/adk', '@alpha/adk/src/core/contracts.js', '@alpha/provider', 'bun:sqlite', './sqlite/index']) {
     const [invalid] = await eslint.lintText(`import * as value from '${name}'; export { value };`, { filePath });
     assert.ok(invalid.messages.some(m => m.ruleId === 'no-restricted-imports'), name);
   }

@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 const base = new URL('../', import.meta.url), docs = new URL('../../../docs/', import.meta.url);
 const contracts = (await readFile(new URL('src/contracts.ts', base), 'utf8'))
   .replaceAll('\r\n', '\n')
-  .replace("import type { Shell } from './process/shell.js';\n", '')
+  .replace("import type { Shell } from './process/shell';\n", '')
   .replace('AgentOptions, AppOption', 'Agent, Plugin, Tool, AgentOptions, AppOption')
   .replace('export interface CodingPlan', 'interface CodingPlan')
   .replace('export type CodingContextOptions', 'type CodingContextOptions');

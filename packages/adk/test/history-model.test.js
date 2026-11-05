@@ -1,11 +1,11 @@
 import { describe, test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createAgent } from '@alpha/adk/core';
-import { answer, call, request, fakeModel, tool, options } from './helpers.js';
-import { createHistory, HistoryCapacity, placeholder } from '../dist/core/internal/history.js';
-import { defaultLimits } from '../dist/core/internal/config.js';
-import { createAssistant } from '../dist/core/internal/messages.js';
-import { bytes } from '../dist/core/internal/json.js';
+import { answer, call, request, fakeModel, tool, options } from './helpers';
+import { createHistory, HistoryCapacity, placeholder } from '../dist/core/internal/history';
+import { defaultLimits } from '../dist/core/internal/config';
+import { createAssistant } from '../dist/core/internal/messages';
+import { bytes } from '../dist/core/internal/json';
 
 describe('malformed streams never commit an assistant or execute a hinted tool', () => {
   const finish = { type: 'finish', result: request(call()) };

@@ -2,9 +2,9 @@ import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { selectShell, shellArgs } from '../dist/process/shell.js';
-import { runCommand, runProcess } from '../dist/process/run-command.js';
-import { fixture, scriptCommand, waitFile, pause } from './helpers.js';
+import { selectShell, shellArgs } from '../dist/process/shell';
+import { runCommand, runProcess } from '../dist/process/run-command';
+import { fixture, scriptCommand, waitFile, pause } from './helpers';
 
 async function gone(pid) {
   for (let i = 0; i < 100; i++) { try { process.kill(pid, 0); } catch { return; } await pause(20); }

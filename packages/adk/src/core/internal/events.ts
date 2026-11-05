@@ -1,5 +1,5 @@
-import type { AdkError, AgentEvent } from '../contracts.js';
-import { error, errorData } from './errors.js';
+import type { AdkError, AgentEvent } from '../contracts';
+import { error, errorData } from './errors';
 
 export function createEvents(onError?: (error: AdkError) => void) {
   const listeners = new Set<(event: AgentEvent) => void>();

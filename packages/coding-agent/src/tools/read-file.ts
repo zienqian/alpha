@@ -1,9 +1,9 @@
 import { createTool, type ToolContext } from '@alpha/adk/core';
 import { z } from 'zod';
-import type { CodingContext } from '../contracts.js';
-import { readFile } from '../files.js';
-import { failure, relativePath } from '../internal.js';
-import { readResult, type Prepare } from './shared.js';
+import type { CodingContext } from '../contracts';
+import { readFile } from '../files';
+import { failure, relativePath } from '../internal';
+import { readResult, type Prepare } from './shared';
 
 export const prepareRead: Prepare = (_context, args) => ({ kind: 'read', args,
   preview: { type: 'path', path: relativePath(args.path as string) } });

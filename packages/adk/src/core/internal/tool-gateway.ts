@@ -1,10 +1,10 @@
-import type { Hooks, PreparedTool, Tool, ToolExecution, ToolResultMessage } from '../contracts.js';
-import type { Run } from './run-controller.js';
-import { Stop } from './run-controller.js';
-import { ensure, error, safeError } from './errors.js';
-import { freezeArguments, record, textBytes } from './json.js';
-import { callKey, createToolResult } from './messages.js';
-import { placeholder } from './history.js';
+import type { Hooks, PreparedTool, Tool, ToolExecution, ToolResultMessage } from '../contracts';
+import type { Run } from './run-controller';
+import { Stop } from './run-controller';
+import { ensure, error, safeError } from './errors';
+import { freezeArguments, record, textBytes } from './json';
+import { callKey, createToolResult } from './messages';
+import { placeholder } from './history';
 
 export function callTool<C>(run: Run<C>, tools: ReadonlyMap<string, Tool<C>>, hooks: Hooks<C>, assistantId: string, callId: string): Promise<ToolResultMessage> {
   run.check();

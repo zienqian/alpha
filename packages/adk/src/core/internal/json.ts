@@ -1,5 +1,5 @@
-import type { Json, JsonObject } from '../contracts.js';
-import { ensure, error } from './errors.js';
+import type { Json, JsonObject } from '../contracts';
+import { ensure, error } from './errors';
 
 export function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);

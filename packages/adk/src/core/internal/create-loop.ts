@@ -1,4 +1,4 @@
-import type { AssistantMessage, ToolResultMessage } from '../contracts.js';
+import type { AssistantMessage, ToolResultMessage } from '../contracts';
 
 interface LoopContext {
   callModel(): Promise<AssistantMessage>;

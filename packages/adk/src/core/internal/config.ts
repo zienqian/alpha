@@ -1,7 +1,7 @@
 import type { LanguageModel } from '@alpha/provider';
-import type { AgentOptions, HookMap, Hooks, Limits, Tool } from '../contracts.js';
-import { ensure, error } from './errors.js';
-import { copyObject, record, text } from './json.js';
+import type { AgentOptions, HookMap, Hooks, Limits, Tool } from '../contracts';
+import { ensure, error } from './errors';
+import { copyObject, record, text } from './json';
 
 export const defaultLimits: Readonly<Limits> = Object.freeze({
   maxModelCalls: 8, maxToolCalls: 32,

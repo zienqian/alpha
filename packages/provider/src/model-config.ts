@@ -1,4 +1,4 @@
-import { checkKeys, invalid, isNonEmptyString, isRecord } from './validation-helpers.js';
+import { checkKeys, invalid, isNonEmptyString, isRecord } from './validation-helpers';
 
 /** Validate descriptive metadata without using it to change a request. */
 export function validateModelConfig(model: Record<string, unknown>, path: string): void {

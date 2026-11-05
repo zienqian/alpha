@@ -1,8 +1,8 @@
-import type { AssistantMessage, Limits, Message, ToolExecution, ToolResultMessage } from '../contracts.js';
-import type { ModelCall } from './messages.js';
-import { copyMessages, callKey, createToolResult } from './messages.js';
-import { bytes, createId } from './json.js';
-import { ensure, error } from './errors.js';
+import type { AssistantMessage, Limits, Message, ToolExecution, ToolResultMessage } from '../contracts';
+import type { ModelCall } from './messages';
+import { copyMessages, callKey, createToolResult } from './messages';
+import { bytes, createId } from './json';
+import { ensure, error } from './errors';
 
 export const placeholder = '[Tool result unavailable.]';
 export interface PendingCall {

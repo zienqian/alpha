@@ -1,4 +1,4 @@
-import { createProvider, defineProviderConfig } from '../src/index.js';
+import { createProvider, defineProviderConfig } from '../src/index';
 
 const config = defineProviderConfig({ providers: {
   primary: { adapter: 'openai-responses', options: { apiKey: { env: 'API_KEY' } }, models: { chat: { id: 'id', input: ['text'], reasoning: true, thinkingLevelMap: { high: 'high' } } } },

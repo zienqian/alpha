@@ -1,8 +1,8 @@
 import { createTool, type ToolContext } from '@alpha/adk/core';
 import { z } from 'zod';
-import type { CodingContext } from '../contracts.js';
-import { searchFiles } from '../search.js';
-import { readResult, type Prepare } from './shared.js';
+import type { CodingContext } from '../contracts';
+import { searchFiles } from '../search';
+import { readResult, type Prepare } from './shared';
 
 export const prepareSearch: Prepare = (_context, args) => ({ kind: 'search', args, preview: { type: 'path', path: (args.glob ?? '.') as string } });
 export const searchTool = createTool({

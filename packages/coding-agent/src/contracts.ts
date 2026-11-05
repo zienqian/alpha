@@ -1,4 +1,4 @@
-import type { Shell } from './process/shell.js';
+import type { Shell } from './process/shell';
 import type { AgentOptions, AppOption, Awaitable, JsonObject, ToolContext, ValidatedCall } from '@alpha/adk/core';
 import type { LanguageModel } from '@alpha/provider';
 

@@ -1,6 +1,6 @@
 import { test } from 'bun:test';
 import assert from 'node:assert/strict';
-import { createProvider, defineProviderConfig, ProviderError } from '../dist/index.js';
+import { createProvider, defineProviderConfig, ProviderError } from '../dist/index';
 
 const config = () => defineProviderConfig({ providers: {
   local: { adapter: 'openai-completions', options: { baseURL: 'https://example.invalid/v1', apiKey: { env: 'KEY' } }, models: { chat: { id: 'model-chat' }, reasoning: { id: 'model-reason' } } },

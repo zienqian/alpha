@@ -1,7 +1,7 @@
 import type { JsonObject, Message, RunResult } from '@alpha/adk/core';
-import type { SessionData, SessionKey, SessionSnapshot, SessionSummary, SessionTurn } from '../contracts.js';
-import { ensure, safe } from './errors.js';
-import { bytes, copy, identifier, integer, keys, record, text } from './json.js';
+import type { SessionData, SessionKey, SessionSnapshot, SessionSummary, SessionTurn } from '../contracts';
+import { ensure, safe } from './errors';
+import { bytes, copy, identifier, integer, keys, record, text } from './json';
 
 const F = 'SESSION_FORMAT_INVALID';
 const outcomes = ['completed', 'tool_calls', 'refused', 'incomplete', 'unknown'];

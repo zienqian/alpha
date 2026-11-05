@@ -1,8 +1,8 @@
 import type { Plugin } from '@alpha/adk/core';
-import type { Session } from './contracts.js';
-import { sessionBinding } from './internal/session.js';
-import { ensure, safe } from './internal/errors.js';
-import { keys } from './internal/json.js';
+import type { Session } from './contracts';
+import { sessionBinding } from './internal/session';
+import { ensure, safe } from './internal/errors';
+import { keys } from './internal/json';
 
 export function createSessionPlugin<C = unknown>(options: { readonly session: Session }): Plugin<C> {
   try {

@@ -2,7 +2,7 @@ import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createAgent } from '@alpha/adk/core';
 import { createSession, createSessionPlugin, createMemorySessionStore, createSessionManager } from '@alpha/adk-session';
-import { fixture, answer, model, tool, request, key } from './helpers.js';
+import { fixture, answer, model, tool, request, key } from './helpers';
 
 test('Session is a data handle; only Agent executes, returns RunResult and owns cancellation', async () => {
   await assert.rejects(createSession({ get store() { throw Error('private config'); } }), e => e.code === 'SESSION_CONFIG_INVALID' && !e.message.includes('private'));

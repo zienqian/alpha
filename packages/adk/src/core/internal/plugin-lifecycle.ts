@@ -1,6 +1,6 @@
-import type { AdkError } from '../contracts.js';
-import type { PluginLifecycle } from './plugin-registry.js';
-import { Failure, error, errorData } from './errors.js';
+import type { AdkError } from '../contracts';
+import type { PluginLifecycle } from './plugin-registry';
+import { Failure, error, errorData } from './errors';
 
 export async function startPlugins(plugins: readonly PluginLifecycle[], signal?: AbortSignal): Promise<() => Promise<void>> {
   const controller = new AbortController(), started: PluginLifecycle[] = [];

@@ -1,5 +1,5 @@
-export { createAgent } from './create-agent.js';
-export { createTool } from './create-tool.js';
+export { createAgent } from './create-agent';
+export { createTool } from './create-tool';
 export type {
   AdkError, Agent, AgentEvent, AgentOptions, AgentState, AppOption,
   AssistantMessage, Awaitable, DeepReadonly, Effect, EventMeta,
@@ -7,4 +7,4 @@ export type {
   Plugin, PluginAPI, PreparedTool, PromptOptions, RunBoundary, RunHistory, RunPlan,
   RunRequest, RunSnapshot, RunContext, RunResult, RunStatus,
   Tool, ToolContext, ToolExecution, ToolInfo, ToolResultMessage, Usage, ValidatedCall,
-} from './contracts.js';
+} from './contracts';

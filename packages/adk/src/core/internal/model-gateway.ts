@@ -1,10 +1,10 @@
 import type { GenerateInput, LanguageModel, Message as ProviderMessage } from '@alpha/provider';
-import type { AssistantMessage, Hooks, Message, Tool } from '../contracts.js';
-import type { Run } from './run-controller.js';
-import { Stop } from './run-controller.js';
-import { ensure, error } from './errors.js';
-import { bytes, createId, equalJson, record, textBytes } from './json.js';
-import { copyMessages, createAssistant } from './messages.js';
+import type { AssistantMessage, Hooks, Message, Tool } from '../contracts';
+import type { Run } from './run-controller';
+import { Stop } from './run-controller';
+import { ensure, error } from './errors';
+import { bytes, createId, equalJson, record, textBytes } from './json';
+import { copyMessages, createAssistant } from './messages';
 
 function project(messages: readonly Message[], original: readonly Message[], runLimits: Run<unknown>['limits']): ProviderMessage[] {
   const normalized = copyMessages(messages, runLimits.maxToolCalls, 'MODEL_PROTOCOL');

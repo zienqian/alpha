@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createAgent, createTool } from '@alpha/adk/core';
 import { createProvider } from '@alpha/provider';
-import { createDemoFetch } from './demo-transport.js';
+import { createDemoFetch } from './demo-transport';
 
 const live = process.argv.includes('--live');
 const modelId = live ? process.env.ADK_MODEL : 'offline-demo';

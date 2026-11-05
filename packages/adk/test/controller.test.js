@@ -1,12 +1,12 @@
 import { test } from 'bun:test';
 import assert from 'node:assert/strict';
-import { createRun } from '../dist/core/internal/run-controller.js';
-import { createEvents } from '../dist/core/internal/events.js';
-import { createHistory } from '../dist/core/internal/history.js';
-import { createAssistant } from '../dist/core/internal/messages.js';
-import { defaultLimits } from '../dist/core/internal/config.js';
-import { callTool } from '../dist/core/internal/tool-gateway.js';
-import { request, call, tool, deferred, turn } from './helpers.js';
+import { createRun } from '../dist/core/internal/run-controller';
+import { createEvents } from '../dist/core/internal/events';
+import { createHistory } from '../dist/core/internal/history';
+import { createAssistant } from '../dist/core/internal/messages';
+import { defaultLimits } from '../dist/core/internal/config';
+import { callTool } from '../dist/core/internal/tool-gateway';
+import { request, call, tool, deferred, turn } from './helpers';
 
 function fixture() {
   const history = createHistory(defaultLimits), events = createEvents(), seen = [];

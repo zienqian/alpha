@@ -1,4 +1,4 @@
-import type { AdkError } from '../contracts.js';
+import type { AdkError } from '../contracts';
 
 const messages: Record<string, string> = {
   CONFIG_INVALID: 'Invalid agent configuration.',

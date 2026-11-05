@@ -1,7 +1,7 @@
-import type { GenerateInput, GenerateResult, Message, ToolCall } from '../types.js';
-import { bearerHeaders, parseArguments, responseError, responseFailed } from './shared.js';
-import type { Protocol } from './shared.js';
-import type { OpenAIChatCompletionRequest, OpenAIChatMessage } from './official-types.js';
+import type { GenerateInput, GenerateResult, Message, ToolCall } from '../types';
+import { bearerHeaders, parseArguments, responseError, responseFailed } from './shared';
+import type { Protocol } from './shared';
+import type { OpenAIChatCompletionRequest, OpenAIChatMessage } from './official-types';
 
 function messagesForChat(messages: Message[]): OpenAIChatMessage[] {
   return messages.map((message): OpenAIChatMessage => {

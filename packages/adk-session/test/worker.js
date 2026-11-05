@@ -2,7 +2,7 @@ import { appendFileSync } from 'node:fs';
 import { createAgent } from '@alpha/adk/core';
 import { createSessionManager, createSessionPlugin } from '@alpha/adk-session';
 import { createSqliteSessionStore } from '@alpha/adk-session/sqlite';
-import { answer, request, model, tool, deferred } from './helpers.js';
+import { answer, request, model, tool, deferred } from './helpers';
 
 const [filename, sessionId, mode, effectFile, requestId] = process.argv.slice(2);
 const gates = { go: deferred(), enter: deferred(), release: deferred() };

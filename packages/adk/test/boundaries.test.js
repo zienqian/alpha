@@ -43,3 +43,39 @@ test('lint boundary permits Provider types and rejects its runtime import', asyn
   const [valid] = await eslint.lintText('import type { LanguageModel } from "@alpha/provider"; export type Model = LanguageModel;', { filePath });
   assert.equal(valid.messages.some(m => m.ruleId === 'no-restricted-imports'), false);
 });
+
+test('lint requires extensionless relative modules and permits assets and public package paths', async () => {
+  const eslint = new ESLint({ cwd: fileURLToPath(new URL('../../../', import.meta.url)) });
+  const filePath = fileURLToPath(new URL('../src/core/import-probe.ts', import.meta.url));
+  const rejected = [
+    'import { value } from "./module.js"; export { value };',
+    'import type { Value } from "../module.ts"; export type { Value };',
+    'import "./setup.mjs";',
+    'export { value } from "./module.tsx";',
+    'export type { Value } from "./module.js";',
+    'export * from "../module.mts";',
+    'export const load = () => import("./module.js");',
+    'export type Value = import("./module.ts").Value;'
+  ];
+  const allowed = [
+    'import { value } from "./module"; export { value };',
+    'import type { Value } from "../module"; export type { Value };',
+    'import "./setup";',
+    'export { value } from "./module";',
+    'export type { Value } from "./module";',
+    'export * from "../module";',
+    'export const load = () => import("./module");',
+    'export type Value = import("./module").Value;',
+    'export { default as data } from "./data.json";',
+    'import "./theme.css";',
+    'export { value } from "external-package/module.js";',
+    'export const file = new URL("./module.js", import.meta.url);'
+  ];
+  for (const [sources, expected] of [[rejected, true], [allowed, false]]) {
+    for (const source of sources) {
+      const [result] = await eslint.lintText(source, { filePath });
+      assert.equal(result.fatalErrorCount, 0, source);
+      assert.equal(result.messages.some(m => m.ruleId === 'no-restricted-syntax'), expected, source);
+    }
+  }
+});

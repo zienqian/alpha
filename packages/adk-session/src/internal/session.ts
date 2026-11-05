@@ -1,10 +1,10 @@
 import type { Message, RunHistory, RunPlan, RunRequest, RunSnapshot } from '@alpha/adk/core';
-import type { SaveResult, Session, SessionEvent, SessionLimits, SessionManagerOptions, SessionSnapshot, SessionState, SessionTurn } from '../contracts.js';
-import type { Access } from './access.js';
-import type { Dispatch } from './events.js';
-import { health, snapshot, turnMessages } from './codec.js';
-import { Failure, ensure, safe } from './errors.js';
-import { bytes, copy, equal, id, identifier, inputHash, now } from './json.js';
+import type { SaveResult, Session, SessionEvent, SessionLimits, SessionManagerOptions, SessionSnapshot, SessionState, SessionTurn } from '../contracts';
+import type { Access } from './access';
+import type { Dispatch } from './events';
+import { health, snapshot, turnMessages } from './codec';
+import { Failure, ensure, safe } from './errors';
+import { bytes, copy, equal, id, identifier, inputHash, now } from './json';
 
 interface Commit { admission: SessionSnapshot; candidate: SessionSnapshot; turn: SessionTurn }
 interface SessionConfig {

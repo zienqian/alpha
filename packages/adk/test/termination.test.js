@@ -1,7 +1,7 @@
 import { describe, test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createAgent } from '@alpha/adk/core';
-import { answer, call, request, fakeModel, tool, deferred, options, turn } from './helpers.js';
+import { answer, call, request, fakeModel, tool, deferred, options, turn } from './helpers';
 
 test('already aborted input has a run but no user message or model request', async () => {
   const model = fakeModel(), agent = await createAgent(options(model)), events = [];

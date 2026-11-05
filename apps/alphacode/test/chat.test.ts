@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
-import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "./helpers.js";
+import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "./helpers";
 
 test("Provider → ADK → coding tools → streaming reply → SQLite; subsequent prompts retain context", async () => {
   const stream = controlledStream();

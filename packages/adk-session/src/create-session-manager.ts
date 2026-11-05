@@ -1,10 +1,10 @@
-import type { Session, SessionData, SessionLimits, SessionManager, SessionManagerOptions, SessionSnapshot } from './contracts.js';
-import { createAccess } from './internal/access.js';
-import { metadata, snapshot, title } from './internal/codec.js';
-import { createDispatch } from './internal/events.js';
-import { Failure, aggregate, ensure, safe } from './internal/errors.js';
-import { copy, equal, id, identifier, integer, keys, now } from './internal/json.js';
-import { createSessionHandle } from './internal/session.js';
+import type { Session, SessionData, SessionLimits, SessionManager, SessionManagerOptions, SessionSnapshot } from './contracts';
+import { createAccess } from './internal/access';
+import { metadata, snapshot, title } from './internal/codec';
+import { createDispatch } from './internal/events';
+import { Failure, aggregate, ensure, safe } from './internal/errors';
+import { copy, equal, id, identifier, integer, keys, now } from './internal/json';
+import { createSessionHandle } from './internal/session';
 
 export function createSessionManager(options: SessionManagerOptions): SessionManager {
   try {

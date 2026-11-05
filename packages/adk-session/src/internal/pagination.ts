@@ -1,7 +1,7 @@
-import type { ListOptions, Page, SessionSnapshot, SessionSummary } from '../contracts.js';
-import { summary } from './codec.js';
-import { ensure } from './errors.js';
-import { identifier, integer, keys } from './json.js';
+import type { ListOptions, Page, SessionSnapshot, SessionSummary } from '../contracts';
+import { summary } from './codec';
+import { ensure } from './errors';
+import { identifier, integer, keys } from './json';
 
 export function listOptions(namespace: string, options?: ListOptions) {
   const C = 'SESSION_INPUT_INVALID'; ensure(identifier(namespace), C);

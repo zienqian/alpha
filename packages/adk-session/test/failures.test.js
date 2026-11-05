@@ -1,7 +1,7 @@
 import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createMemorySessionStore } from '@alpha/adk-session';
-import { fixture, answer, model, tool, request, key, deferred, tick } from './helpers.js';
+import { fixture, answer, model, tool, request, key, deferred, tick } from './helpers';
 
 test('failed save preserves RunResult; flush retries only storage and emits one receipt', async () => {
   const backing = createMemorySessionStore(); let fail = true, effects = 0;

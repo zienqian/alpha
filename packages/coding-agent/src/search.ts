@@ -1,8 +1,8 @@
 import { isAbsolute } from 'node:path';
 import { minimatch } from 'minimatch';
-import { checkSignal, failure, positive } from './internal.js';
-import { resolvePath } from './files.js';
-import { runProcess } from './process/run-command.js';
+import { checkSignal, failure, positive } from './internal';
+import { resolvePath } from './files';
+import { runProcess } from './process/run-command';
 
 function locateRipgrep(): string {
   const path = Bun.which('rg', { PATH: process.env.PATH ?? process.env.Path ?? '' });

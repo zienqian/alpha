@@ -1,8 +1,8 @@
 import type { JsonObject, ToolContext } from '@alpha/adk/core';
-import type { CodingContext, CodingPlan, CodingToolResult } from '../contracts.js';
-import { callKey, emitCodingEvent } from '../context.js';
-import { codeOf, encode, failure } from '../internal.js';
-import { writeFile } from '../files.js';
+import type { CodingContext, CodingPlan, CodingToolResult } from '../contracts';
+import { callKey, emitCodingEvent } from '../context';
+import { codeOf, encode, failure } from '../internal';
+import { writeFile } from '../files';
 
 export type Prepare = (context: CodingContext, args: JsonObject, signal: AbortSignal) => Promise<CodingPlan> | CodingPlan;
 export const result = (ctx: ToolContext<CodingContext>, value: CodingToolResult) => encode(value, ctx.app.state.budget);

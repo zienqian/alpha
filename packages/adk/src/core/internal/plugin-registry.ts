@@ -1,8 +1,8 @@
 import type { LanguageModel } from '@alpha/provider';
-import type { AgentEvent, AgentOptions, Awaitable, HookMap, PluginAPI, RunBoundary, Tool } from '../contracts.js';
-import { copyModel, copyTool, createHooks, hookNames } from './config.js';
-import { ensure, error } from './errors.js';
-import { record, text } from './json.js';
+import type { AgentEvent, AgentOptions, Awaitable, HookMap, PluginAPI, RunBoundary, Tool } from '../contracts';
+import { copyModel, copyTool, createHooks, hookNames } from './config';
+import { ensure, error } from './errors';
+import { record, text } from './json';
 
 export interface PluginLifecycle {
   readonly id: string;

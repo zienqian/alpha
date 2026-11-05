@@ -1,10 +1,10 @@
-import type { AgentEvent, AssistantMessage, EventMeta, Limits, Message, RunContext, RunResult, ToolResultMessage, Usage } from '../contracts.js';
-import type { Events } from './events.js';
-import type { History } from './history.js';
-import { HistoryCapacity, placeholder } from './history.js';
-import { callKey } from './messages.js';
-import { createId } from './json.js';
-import { ensure, error, errorData, safeError } from './errors.js';
+import type { AgentEvent, AssistantMessage, EventMeta, Limits, Message, RunContext, RunResult, ToolResultMessage, Usage } from '../contracts';
+import type { Events } from './events';
+import type { History } from './history';
+import { HistoryCapacity, placeholder } from './history';
+import { callKey } from './messages';
+import { createId } from './json';
+import { ensure, error, errorData, safeError } from './errors';
 
 type EventPayload = AgentEvent extends infer E ? E extends AgentEvent ? Omit<E, keyof EventMeta> : never : never;
 type StopIntent = { status: 'cancelled' | 'limited'; reason: string } | { status: 'failed'; error: ReturnType<typeof error> };

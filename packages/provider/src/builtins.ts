@@ -1,7 +1,7 @@
-import { resolveCredential } from './credentials.js';
-import { createHttpModel } from './http.js';
-import { resolveConfiguredHeaders } from './http-headers.js';
-import type { AdapterContext, Credential, HeaderValue, Json, LanguageModel, ModelMetadata } from './types.js';
+import { resolveCredential } from './credentials';
+import { createHttpModel } from './http';
+import { resolveConfiguredHeaders } from './http-headers';
+import type { AdapterContext, Credential, HeaderValue, Json, LanguageModel, ModelMetadata } from './types';
 
 export function createBuiltinModel(adapter: string, providerName: string, modelId: string, options: Readonly<Record<string, Json>>, context: AdapterContext, metadata: ModelMetadata): LanguageModel {
   // Validated once when constructing the immutable configuration snapshot.

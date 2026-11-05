@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createSqliteSessionStore } from '@alpha/adk-session/sqlite';
-import { key, seed } from './helpers.js';
+import { key, seed } from './helpers';
 
 async function sandbox() {
   const dir = await mkdtemp(join(tmpdir(), 'alpha-session-process-')), filename = join(dir, 'sessions.db'), effectFile = join(dir, 'effects.txt');

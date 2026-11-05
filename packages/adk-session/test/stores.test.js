@@ -6,7 +6,7 @@ import { join, resolve, dirname, basename } from 'node:path';
 import { Database } from 'bun:sqlite';
 import { createMemorySessionStore } from '@alpha/adk-session';
 import { createSqliteSessionStore } from '@alpha/adk-session/sqlite';
-import { key, seed } from './helpers.js';
+import { key, seed } from './helpers';
 
 async function removeSandbox(dir) {
   assert.equal(dirname(resolve(dir)), resolve(tmpdir()));

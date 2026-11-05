@@ -1,8 +1,8 @@
 import type { Plugin } from '@alpha/adk/core';
-import type { CodingAction, CodingContext } from './contracts.js';
-import { callKey } from './context.js';
-import { checkSignal, digest, failure } from './internal.js';
-import { prepareCodingCall } from './tools/index.js';
+import type { CodingAction, CodingContext } from './contracts';
+import { callKey } from './context';
+import { checkSignal, digest, failure } from './internal';
+import { prepareCodingCall } from './tools/index';
 
 /** Internal permission hook. Tools are registered explicitly by createCodingAgent. */
 export function createCodingPlugin<C>(context: CodingContext<C>): Plugin<CodingContext<C>> {

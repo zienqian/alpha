@@ -1,4 +1,4 @@
-import type { JsonObject } from '../types.js';
+import type { JsonObject } from '../types';
 
 // Request fields implemented here, based on the vendors' official API
 // references. These are subsets, not complete official SDK types.

@@ -1,6 +1,6 @@
 import type { Plugin } from '@alpha/adk/core';
-import { readFile } from './files.js';
-import { byteLength, failure, positive, relativePath } from './internal.js';
+import { readFile } from './files';
+import { byteLength, failure, positive, relativePath } from './internal';
 
 export function createProjectInstructionsPlugin<C = undefined>(options: {
   readonly cwd: string; readonly file?: string; readonly maxBytes?: number;

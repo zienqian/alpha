@@ -1,7 +1,7 @@
 import type { ToolContext } from '@alpha/adk/core';
-import type { CodingContext, CodingContextOptions, CodingEvent } from './contracts.js';
-import { selectShell } from './process/shell.js';
-import { failure, positive } from './internal.js';
+import type { CodingContext, CodingContextOptions, CodingEvent } from './contracts';
+import { selectShell } from './process/shell';
+import { failure, positive } from './internal';
 
 export function createCodingContext<C = undefined>(options: CodingContextOptions<C>): CodingContext<C> {
   const budget = Math.min(48 * 1024, positive(options.maxResultBytes ?? 128 * 1024, 'RESULT_LIMIT'));

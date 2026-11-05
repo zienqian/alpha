@@ -1,7 +1,7 @@
 // Opt-in real-service test: bun run build, then bun run --filter @alpha/provider test:live.
 import { beforeAll, describe, test } from 'bun:test';
 import assert from 'node:assert/strict';
-import { createProvider } from '../dist/index.js';
+import { createProvider } from '../dist/index';
 
 const key = process.env.OPENROUTER_API_KEY;
 const modelId = process.env.OPENROUTER_TEST_MODEL ?? 'nvidia/nemotron-3-ultra-550b-a55b:free';

@@ -1,4 +1,4 @@
-import type { SessionError } from '../contracts.js';
+import type { SessionError } from '../contracts';
 
 export class Failure extends Error implements SessionError {
   readonly code: string;

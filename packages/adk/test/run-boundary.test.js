@@ -1,7 +1,7 @@
 import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createAgent } from '@alpha/adk/core';
-import { answer, fakeModel, options, deferred, turn } from './helpers.js';
+import { answer, fakeModel, options, deferred, turn } from './helpers';
 
 const plugin = boundary => ({ id: 'boundary', apiVersion: 1, setup(api) { api.provideRunBoundary(boundary); } });
 test('run boundary awaits prepare and complete; expired history capabilities cannot mutate the Agent', async () => {

@@ -1,14 +1,14 @@
-import { builtinNames } from './builtin-options.js';
-import { createBuiltinModel } from './builtins.js';
-import { ProviderError } from './errors.js';
-import { createConfigSnapshot } from './validation.js';
-import { invalid } from './validation-helpers.js';
-import type { CheckedConfig, CreateProviderOptions, LanguageModel, Provider, ProviderConfig } from './types.js';
+import { builtinNames } from './builtin-options';
+import { createBuiltinModel } from './builtins';
+import { ProviderError } from './errors';
+import { createConfigSnapshot } from './validation';
+import { invalid } from './validation-helpers';
+import type { CheckedConfig, CreateProviderOptions, LanguageModel, Provider, ProviderConfig } from './types';
 
-export { ProviderError } from './errors.js';
-export type { ProviderErrorCode } from './errors.js';
-export type { OpenAIChatCompletionRequest, OpenAIChatMessage, OpenAIResponseRequest, OpenAIResponseInput, AnthropicMessageRequest, AnthropicMessageBlock } from './protocols/official-types.js';
-export type { Fetch, AdapterContext, AnthropicContinuation, AnthropicOptions, CheckedConfig, CommonOptions, OpenAICompletionsOptions, OpenAIResponsesOptions, OpenAICodexResponsesOptions, CreateProviderOptions, Credential, HeaderValue, GenerateInput, GenerateResult, StreamEvent, Json, JsonObject, LanguageModel, Message, ModelConfig, ModelMetadata, ThinkingLevel, Provider, ProviderAdapter, ProviderConfig, ProviderEntry, ToolCall, ToolDefinition } from './types.js';
+export { ProviderError } from './errors';
+export type { ProviderErrorCode } from './errors';
+export type { OpenAIChatCompletionRequest, OpenAIChatMessage, OpenAIResponseRequest, OpenAIResponseInput, AnthropicMessageRequest, AnthropicMessageBlock } from './protocols/official-types';
+export type { Fetch, AdapterContext, AnthropicContinuation, AnthropicOptions, CheckedConfig, CommonOptions, OpenAICompletionsOptions, OpenAIResponsesOptions, OpenAICodexResponsesOptions, CreateProviderOptions, Credential, HeaderValue, GenerateInput, GenerateResult, StreamEvent, Json, JsonObject, LanguageModel, Message, ModelConfig, ModelMetadata, ThinkingLevel, Provider, ProviderAdapter, ProviderConfig, ProviderEntry, ToolCall, ToolDefinition } from './types';
 
 export function defineProviderConfig<const T extends ProviderConfig>(config: CheckedConfig<T>): T {
   return config;

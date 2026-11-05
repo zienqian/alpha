@@ -2,7 +2,7 @@ import { describe, test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createProvider } from '@alpha/provider';
 import { createAgent } from '@alpha/adk/core';
-import { tool, deferred } from './helpers.js';
+import { tool, deferred } from './helpers';
 
 const sse = events => new Response(events.map(e => 'data: ' + (typeof e === 'string' ? e : JSON.stringify(e)) + '\n\n').join(''), {
   headers: { 'content-type': 'text/event-stream' },

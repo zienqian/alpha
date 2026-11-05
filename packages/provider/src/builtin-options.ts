@@ -1,5 +1,5 @@
-import { checkKeys, invalid, isRecord } from './validation-helpers.js';
-import { validateConfiguredHeaders } from './http-headers.js';
+import { checkKeys, invalid, isRecord } from './validation-helpers';
+import { validateConfiguredHeaders } from './http-headers';
 
 export const builtinNames = new Set(['anthropic-messages', 'openai-completions', 'openai-responses', 'openai-codex-responses']);
 

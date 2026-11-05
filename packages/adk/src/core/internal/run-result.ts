@@ -1,6 +1,6 @@
-import type { RunResult } from '../contracts.js';
-import { ensure } from './errors.js';
-import { copyObject, record, text } from './json.js';
+import type { RunResult } from '../contracts';
+import { ensure } from './errors';
+import { copyObject, record, text } from './json';
 
 /** Replayed results are data from an extension, never a second execution path. */
 export function copyRunResult(input: unknown): RunResult {

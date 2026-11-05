@@ -5,7 +5,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { Database } from 'bun:sqlite';
 import { createSqliteSessionStore } from '@alpha/adk-session/sqlite';
-import { fixture, key } from './helpers.js';
+import { fixture, key } from './helpers';
 
 for (const [archive, driver] of [['session-v1.sqlite', 'better-sqlite3'], ['session-bun-v1.sqlite', 'bun:sqlite']]) {
   test(`Bun SQLite opens a ${driver} v1 archive, replays receipts and continues the conversation`, async () => {

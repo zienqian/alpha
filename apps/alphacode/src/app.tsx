@@ -1,7 +1,7 @@
 import { SyntaxStyle, type TextareaRenderable } from "@opentui/core";
 import { useKeyboard, useRenderer } from "@opentui/solid";
 import { createSignal, Index, onCleanup, Show } from "solid-js";
-import type { Chat } from "./chat.js";
+import type { Chat } from "./chat";
 
 export function App(props: { chat: Chat; onExit: () => void }) {
   const [state, setState] = createSignal(props.chat.state);

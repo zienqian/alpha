@@ -27,6 +27,8 @@ bun run dev
 
 全仓库开发使用 Bun 1.4.4（`.bun-version`），安装和任务执行统一使用 Bun。根目录 `workspaces` 管理应用与库包，`bun.lock` 固定依赖；Nx 继续负责任务依赖与缓存，ESLint 检查包边界，tsrs 负责库包构建与全仓类型检查，AlphaCode 使用 OpenTUI Solid 的 Bun 插件构建。
 
+相对模块的 `import` / `export` 统一省略代码扩展名（例如 `./config`、`../contracts`），类型导入和动态 `import()` 也遵循此约定，由 ESLint 检查。跨包使用公开入口（例如 `@alpha/adk/core`）；JSON 等资源导入、`package.json` 入口和文件系统路径保留实际扩展名。源码与构建产物均由 Bun 解析模块。
+
 ```sh
 bun install --frozen-lockfile
 bun run build

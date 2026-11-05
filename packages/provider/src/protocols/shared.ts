@@ -1,5 +1,5 @@
-import { ProviderError } from '../errors.js';
-import type { GenerateInput, GenerateResult, JsonObject } from '../types.js';
+import { ProviderError } from '../errors';
+import type { GenerateInput, GenerateResult, JsonObject } from '../types';
 
 export interface Protocol {
   readonly endpoint: string;

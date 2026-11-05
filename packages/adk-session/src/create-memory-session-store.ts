@@ -1,8 +1,8 @@
-import type { SessionSnapshot, SessionStore } from './contracts.js';
-import { snapshot, validateKey } from './internal/codec.js';
-import { ensure, safe } from './internal/errors.js';
-import { integer } from './internal/json.js';
-import { page } from './internal/pagination.js';
+import type { SessionSnapshot, SessionStore } from './contracts';
+import { snapshot, validateKey } from './internal/codec';
+import { ensure, safe } from './internal/errors';
+import { integer } from './internal/json';
+import { page } from './internal/pagination';
 
 export function createMemorySessionStore(): SessionStore {
   const rows = new Map<string, { namespace: string; revision: number; value: SessionSnapshot | null }>();

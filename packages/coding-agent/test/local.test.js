@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, readFile, mkdir, symlink, readdir, rm } from 'node:fs/promises';
 import { join, dirname, resolve, basename } from 'node:path';
 import { tmpdir } from 'node:os';
-import { readFile as readLocal, writeFile as writeLocal } from '../dist/files.js';
-import { listFiles, searchFiles } from '../dist/search.js';
-import { runCommand } from '../dist/process/run-command.js';
-import { selectShell } from '../dist/process/shell.js';
-import { fixture } from './helpers.js';
+import { readFile as readLocal, writeFile as writeLocal } from '../dist/files';
+import { listFiles, searchFiles } from '../dist/search';
+import { runCommand } from '../dist/process/run-command';
+import { selectShell } from '../dist/process/shell';
+import { fixture } from './helpers';
 const signal = () => new AbortController().signal;
 async function localFixture() { const f = await fixture(); return { ...f, root: f.cwd }; }
 

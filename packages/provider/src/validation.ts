@@ -1,8 +1,8 @@
-import { ProviderError } from './errors.js';
-import { builtinNames, validateBuiltinOptions } from './builtin-options.js';
-import { validateModelConfig } from './model-config.js';
-import type { ProviderAdapter, ProviderConfig } from './types.js';
-import { checkKeys, invalid, isNonEmptyString, isRecord } from './validation-helpers.js';
+import { ProviderError } from './errors';
+import { builtinNames, validateBuiltinOptions } from './builtin-options';
+import { validateModelConfig } from './model-config';
+import type { ProviderAdapter, ProviderConfig } from './types';
+import { checkKeys, invalid, isNonEmptyString, isRecord } from './validation-helpers';
 
 function isJson(value: unknown, ancestors = new Set<object>()): boolean {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;

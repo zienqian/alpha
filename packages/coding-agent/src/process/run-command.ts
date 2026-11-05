@@ -2,10 +2,10 @@ import spawn from 'cross-spawn';
 import { join } from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
 import type { ChildProcess } from 'node:child_process';
-import type { CommandInput, CommandOutcome } from '../contracts.js';
-import { byteLength, checkSignal, clip, codeOf, failure, positive } from '../internal.js';
-import { resolvePath } from '../files.js';
-import { commandEnv, shellArgs, type Shell } from './shell.js';
+import type { CommandInput, CommandOutcome } from '../contracts';
+import { byteLength, checkSignal, clip, codeOf, failure, positive } from '../internal';
+import { resolvePath } from '../files';
+import { commandEnv, shellArgs, type Shell } from './shell';
 
 interface ProcessOptions {
   cwd: string;

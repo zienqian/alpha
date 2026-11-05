@@ -2,7 +2,7 @@ import { describe, test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
 import { createAgent, createTool } from '@alpha/adk/core';
-import { answer, call, request, fakeModel, tool, deferred, options, turn } from './helpers.js';
+import { answer, call, request, fakeModel, tool, deferred, options, turn } from './helpers';
 
 test('core runs without plugins, projects full history, and preserves provider receiver', async () => {
   const model = fakeModel([{ type: 'text-delta', text: 'preview' }, { type: 'finish', result: answer('final') }], answer('second'));

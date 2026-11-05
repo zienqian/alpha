@@ -1,16 +1,16 @@
-import type { AdkError, Agent, AgentState, AssistantMessage, Limits, Message, PromptOptions, RunPlan, RunResult, RunSnapshot } from '../contracts.js';
-import type { Registry } from './plugin-registry.js';
-import type { Run } from './run-controller.js';
-import { createRun } from './run-controller.js';
-import { createLoop } from './create-loop.js';
-import { createHistory } from './history.js';
-import { createEvents } from './events.js';
-import { callModel } from './model-gateway.js';
-import { callTool } from './tool-gateway.js';
-import { assertNotReentrant, validateSignal } from './config.js';
-import { boundaryError, ensure, error, errorData, safeError } from './errors.js';
-import { createId, record, text, textBytes } from './json.js';
-import { copyRunResult } from './run-result.js';
+import type { AdkError, Agent, AgentState, AssistantMessage, Limits, Message, PromptOptions, RunPlan, RunResult, RunSnapshot } from '../contracts';
+import type { Registry } from './plugin-registry';
+import type { Run } from './run-controller';
+import { createRun } from './run-controller';
+import { createLoop } from './create-loop';
+import { createHistory } from './history';
+import { createEvents } from './events';
+import { callModel } from './model-gateway';
+import { callTool } from './tool-gateway';
+import { assertNotReentrant, validateSignal } from './config';
+import { boundaryError, ensure, error, errorData, safeError } from './errors';
+import { createId, record, text, textBytes } from './json';
+import { copyRunResult } from './run-result';
 
 export function createAgentInstance<C>(config: {
   id: string; instructions: string; app: C; limits: Readonly<Limits>;

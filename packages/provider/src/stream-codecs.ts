@@ -1,8 +1,8 @@
-import { anthropicProtocol } from './protocols/anthropic.js';
-import { completionsProtocol } from './protocols/completions.js';
-import { responsesProtocol } from './protocols/responses.js';
-import { responseError, responseFailed } from './protocols/shared.js';
-import type { GenerateResult } from './types.js';
+import { anthropicProtocol } from './protocols/anthropic';
+import { completionsProtocol } from './protocols/completions';
+import { responsesProtocol } from './protocols/responses';
+import { responseError, responseFailed } from './protocols/shared';
+import type { GenerateResult } from './types';
 
 // Wire events are untrusted and differ per protocol; validate accessed fields below.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

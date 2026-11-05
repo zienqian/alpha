@@ -1,4 +1,4 @@
-import { ProviderError } from './errors.js';
+import { ProviderError } from './errors';
 
 export function invalid(path?: string): never {
   throw new ProviderError('CONFIG_INVALID', 'Invalid provider configuration.', { path });

@@ -1,6 +1,6 @@
-import { ProviderError } from './errors.js';
-import type { AdapterContext, Credential } from './types.js';
-import { isNonEmptyString } from './validation-helpers.js';
+import { ProviderError } from './errors';
+import type { AdapterContext, Credential } from './types';
+import { isNonEmptyString } from './validation-helpers';
 
 export function resolveCredential(value: Credential, getEnv: AdapterContext['getEnv']): string | undefined {
   if ('none' in value) return undefined;

@@ -1,7 +1,7 @@
-import type { GenerateInput, GenerateResult, Json, Message, ToolCall } from '../types.js';
-import { inputError, parseArguments, responseError, responseFailed } from './shared.js';
-import type { Protocol } from './shared.js';
-import type { AnthropicMessageRequest, AnthropicMessageBlock } from './official-types.js';
+import type { GenerateInput, GenerateResult, Json, Message, ToolCall } from '../types';
+import { inputError, parseArguments, responseError, responseFailed } from './shared';
+import type { Protocol } from './shared';
+import type { AnthropicMessageRequest, AnthropicMessageBlock } from './official-types';
 
 function messagesForAnthropic(messages: Message[]): AnthropicMessageRequest['messages'] {
   const result: AnthropicMessageRequest['messages'] = [];

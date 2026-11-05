@@ -1,6 +1,6 @@
-import type { Awaitable, Effect, Infer, InputSchema, Tool, ToolContext } from './contracts.js';
-import { ensure, error } from './internal/errors.js';
-import { copyObject, record, text } from './internal/json.js';
+import type { Awaitable, Effect, Infer, InputSchema, Tool, ToolContext } from './contracts';
+import { ensure, error } from './internal/errors';
+import { copyObject, record, text } from './internal/json';
 
 export function createTool<S extends InputSchema, C = unknown>(spec: {
   name: string;

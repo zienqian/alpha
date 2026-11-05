@@ -1,7 +1,7 @@
-import { resolveCredential } from './credentials.js';
-import { ProviderError } from './errors.js';
-import type { AdapterContext, HeaderValue } from './types.js';
-import { invalid, isRecord } from './validation-helpers.js';
+import { resolveCredential } from './credentials';
+import { ProviderError } from './errors';
+import type { AdapterContext, HeaderValue } from './types';
+import { invalid, isRecord } from './validation-helpers';
 
 const reserved = /^(authorization|proxy-authorization|cookie|set-cookie|anthropic-version|content-type)$/i;
 const envName = /^[A-Za-z_][A-Za-z0-9_]*$/;

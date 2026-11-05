@@ -1,6 +1,6 @@
 import { accessSync, constants, realpathSync } from 'node:fs';
 import { basename, win32 } from 'node:path';
-import { failure } from '../internal.js';
+import { failure } from '../internal';
 
 export interface Shell {
   readonly path: string;

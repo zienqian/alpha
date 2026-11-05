@@ -1,7 +1,7 @@
 import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createAgent } from '@alpha/adk/core';
-import { answer, fakeModel, tool, deferred, options, turn } from './helpers.js';
+import { answer, fakeModel, tool, deferred, options, turn } from './helpers';
 
 test('static plugins provide a model and ordered hooks, then close registration', async () => {
   const order = [], model = fakeModel(answer());

@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { AgentEvent, RunStatus } from "@alpha/adk/core";
 import type { CodingAction, CodingApproval } from "@alpha/coding-agent";
 import type { CreateProviderOptions } from "@alpha/provider";
-import { errorCode, type AppConfig } from "./config.js";
-import { createRuntime, type Runtime } from "./runtime.js";
+import { errorCode, type AppConfig } from "./config";
+import { createRuntime, type Runtime } from "./runtime";
 
 export interface ChatMessage {
   id: string;

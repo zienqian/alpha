@@ -2,7 +2,7 @@ import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { getEventListeners } from 'node:events';
 import { createMemorySessionStore, createSessionManager } from '@alpha/adk-session';
-import { fixture, model, answer, request, tool, key, seed, deferred, tick } from './helpers.js';
+import { fixture, model, answer, request, tool, key, seed, deferred, tick } from './helpers';
 
 test('Agent close cancels preparation and waits for an uncooperative selector without admission', async () => {
   const entered = deferred(), release = deferred(); let signal;

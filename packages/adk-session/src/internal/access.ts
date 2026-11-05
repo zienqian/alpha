@@ -1,8 +1,8 @@
-import type { ListOptions, Page, SessionData, SessionStore, SessionSummary } from '../contracts.js';
-import { snapshot } from './codec.js';
-import { ensure, safe } from './errors.js';
-import { copy, identifier, integer, keys } from './json.js';
-import { listOptions } from './pagination.js';
+import type { ListOptions, Page, SessionData, SessionStore, SessionSummary } from '../contracts';
+import { snapshot } from './codec';
+import { ensure, safe } from './errors';
+import { copy, identifier, integer, keys } from './json';
+import { listOptions } from './pagination';
 
 export function createAccess(source: SessionStore, namespace: string) {
   const C = 'SESSION_CONFIG_INVALID';

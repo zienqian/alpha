@@ -1,11 +1,11 @@
-import { canonicalCwd } from './files.js';
+import { canonicalCwd } from './files';
 import { createAgent } from '@alpha/adk/core';
 import type { Agent } from '@alpha/adk/core';
-import type { CodingAgentOptions, CodingContext, CodingContextOptions } from './contracts.js';
-import { createCodingContext } from './context.js';
-import { createCodingPlugin } from './coding-plugin.js';
-import { codingTools } from './tools/index.js';
-import { createProjectInstructionsPlugin } from './instructions-plugin.js';
+import type { CodingAgentOptions, CodingContext, CodingContextOptions } from './contracts';
+import { createCodingContext } from './context';
+import { createCodingPlugin } from './coding-plugin';
+import { codingTools } from './tools/index';
+import { createProjectInstructionsPlugin } from './instructions-plugin';
 
 const instructions = `You are a coding agent. Read the relevant files and project instructions before making changes.
 Use the coding tools with relative paths. edit_file requires a prior read_file and a unique exact oldText; preserve unrelated changes.

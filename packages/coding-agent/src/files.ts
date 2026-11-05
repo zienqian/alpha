@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { lstat, realpath, open, rename, link, unlink } from 'node:fs/promises';
 import { dirname, join, relative, isAbsolute, sep } from 'node:path';
-import type { FileSnapshot, FileWrite, FileWriteOutcome } from './contracts.js';
-import { checkSignal, codeOf, failure, relativePath } from './internal.js';
+import type { FileSnapshot, FileWrite, FileWriteOutcome } from './contracts';
+import { checkSignal, codeOf, failure, relativePath } from './internal';
 
 const hash = (data: Uint8Array) => createHash('sha256').update(data).digest('hex');
 const errorCode = (cause: unknown) => (cause as { code?: string })?.code;

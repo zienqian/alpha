@@ -7,6 +7,10 @@ export default [
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.mjs', '**/*.mts'],
     rules: {
+      'no-restricted-syntax': ['error', {
+        selector: String.raw`:matches(ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration, ImportExpression, TSImportType) > Literal.source[value=/^[.]{1,2}\u002F.*[.][cm]?[jt]sx?$/]`,
+        message: 'Omit code file extensions in relative import/export paths.'
+      }],
       '@nx/enforce-module-boundaries': ['error', {
         depConstraints: [
           { sourceTag: 'layer:adk', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider'] },

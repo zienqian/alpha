@@ -1,5 +1,5 @@
-export { createSessionManager } from './create-session-manager.js';
-export { createSession } from './create-session.js';
-export { createSessionPlugin } from './create-session-plugin.js';
-export { createMemorySessionStore } from './create-memory-session-store.js';
-export type * from './contracts.js';
+export { createSessionManager } from './create-session-manager';
+export { createSession } from './create-session';
+export { createSessionPlugin } from './create-session-plugin';
+export { createMemorySessionStore } from './create-memory-session-store';
+export type * from './contracts';

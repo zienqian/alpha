@@ -1,8 +1,8 @@
 import { createCliRenderer } from "@opentui/core";
 import { render } from "@opentui/solid";
-import { App } from "./app.js";
-import { createChat } from "./chat.js";
-import { ConfigurationError, errorCode, readConfig } from "./config.js";
+import { App } from "./app";
+import { createChat } from "./chat";
+import { ConfigurationError, errorCode, readConfig } from "./config";
 
 try {
   const chat = await createChat(readConfig());

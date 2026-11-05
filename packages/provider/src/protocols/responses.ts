@@ -1,7 +1,7 @@
-import type { GenerateInput, GenerateResult, Message, ToolCall } from '../types.js';
-import { bearerHeaders, parseArguments, responseError, responseFailed } from './shared.js';
-import type { Protocol } from './shared.js';
-import type { OpenAIResponseRequest, OpenAIResponseInput } from './official-types.js';
+import type { GenerateInput, GenerateResult, Message, ToolCall } from '../types';
+import { bearerHeaders, parseArguments, responseError, responseFailed } from './shared';
+import type { Protocol } from './shared';
+import type { OpenAIResponseRequest, OpenAIResponseInput } from './official-types';
 
 function messagesForResponses(messages: Message[]): OpenAIResponseInput[] {
   return messages.flatMap((message): OpenAIResponseInput[] => {

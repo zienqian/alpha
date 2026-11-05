@@ -1,9 +1,9 @@
 import { createTool, type ToolContext } from '@alpha/adk/core';
 import { z } from 'zod';
-import type { CodingContext } from '../contracts.js';
-import { readFile } from '../files.js';
-import { byteLength, clip, failure, relativePath } from '../internal.js';
-import { executeWrite, type Prepare } from './shared.js';
+import type { CodingContext } from '../contracts';
+import { readFile } from '../files';
+import { byteLength, clip, failure, relativePath } from '../internal';
+import { executeWrite, type Prepare } from './shared';
 
 export const prepareEdit: Prepare = async (context, args, signal) => {
   const snapshot = await readFile(context.cwd, relativePath(args.path as string), signal);

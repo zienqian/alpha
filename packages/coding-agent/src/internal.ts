@@ -1,4 +1,4 @@
-import type { CodingToolResult } from './contracts.js';
+import type { CodingToolResult } from './contracts';
 
 export const byteLength = (text: string): number => new TextEncoder().encode(text).length;
 export function failure(code: string): Error & { code: string } { return Object.assign(new Error(code), { code }); }

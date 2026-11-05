@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve, basename } from 'node:path';
-import { selectShell } from '../dist/process/shell.js';
+import { selectShell } from '../dist/process/shell';
 export const answer = (text = 'done') => ({ outcome: 'completed', text, toolCalls: [], finishReason: 'stop' });
 export const call = (name, args = {}, id = 'c1') => ({ id, name, arguments: args });
 export const request = (...toolCalls) => ({ outcome: 'tool_calls', text: '', toolCalls, finishReason: 'tool_calls' });

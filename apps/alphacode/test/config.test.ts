@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import { resolve } from "node:path";
-import { errorCode, readConfig } from "../src/config.js";
+import { errorCode, readConfig } from "../src/config";
 import { createHash } from "node:crypto";
-import { sessionNamespace } from "../src/runtime.js";
+import { sessionNamespace } from "../src/runtime";
 
 test("session namespace preserves existing Windows identity and POSIX case", () => {
   const cwd = "C:\\Users\\Example\\Project";

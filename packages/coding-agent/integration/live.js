@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createProvider } from '@alpha/provider';
 import { createSession, createSessionPlugin, createMemorySessionStore } from '@alpha/adk-session';
-import { createCodingAgent } from '../dist/index.js';
+import { createCodingAgent } from '../dist/index';
 
 const baseURL = process.env.ADK_BASE_URL, modelId = process.env.ADK_MODEL;
 if (!baseURL || !modelId) throw Error('Set ADK_BASE_URL and ADK_MODEL (or load .env.local).');

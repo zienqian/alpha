@@ -1,6 +1,6 @@
-import type { AssistantMessage, JsonObject, Message, ToolExecution, ToolResultMessage } from '../contracts.js';
-import { ensure } from './errors.js';
-import { copyJson, copyObject, record, text } from './json.js';
+import type { AssistantMessage, JsonObject, Message, ToolExecution, ToolResultMessage } from '../contracts';
+import { ensure } from './errors';
+import { copyJson, copyObject, record, text } from './json';
 
 const outcomes = ['completed', 'tool_calls', 'refused', 'incomplete', 'unknown'];
 const executions: readonly ToolExecution[] = ['succeeded', 'failed', 'denied', 'not_executed', 'outcome_unknown'];

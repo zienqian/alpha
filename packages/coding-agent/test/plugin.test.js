@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { createTool } from '@alpha/adk/core';
 import { createSession, createMemorySessionStore, createSessionPlugin } from '@alpha/adk-session';
 import { z } from 'zod';
-import { createCodingAgent, codingTools, readFileTool, editFileTool } from '../dist/index.js';
-import { answer, call, request, fakeModel, deferred, results, fixture, scriptCommand } from './helpers.js';
-import { createCodingContext } from '../dist/context.js';
+import { createCodingAgent, codingTools, readFileTool, editFileTool } from '../dist/index';
+import { answer, call, request, fakeModel, deferred, results, fixture, scriptCommand } from './helpers';
+import { createCodingContext } from '../dist/context';
 
 test('read tool runs without a permission plan; write tool requires an approved call', async () => {
   await using f = await fixture({ a: 'independent' });

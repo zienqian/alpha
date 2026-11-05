@@ -1,6 +1,6 @@
 import type { AdkError } from '@alpha/adk/core';
-import type { SessionEvent } from '../contracts.js';
-import { ensure } from './errors.js';
+import type { SessionEvent } from '../contracts';
+import { ensure } from './errors';
 
 export function createDispatch(onError?: (error: Readonly<AdkError>) => void) {
   let depth = 0;

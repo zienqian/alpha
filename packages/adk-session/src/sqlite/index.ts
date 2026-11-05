@@ -1,9 +1,9 @@
 import { Database } from 'bun:sqlite';
-import type { SessionSnapshot, SessionStore } from '../contracts.js';
-import { snapshot, validateKey } from '../internal/codec.js';
-import { Failure, ensure, safe } from '../internal/errors.js';
-import { integer, keys, record, text } from '../internal/json.js';
-import { listOptions, page } from '../internal/pagination.js';
+import type { SessionSnapshot, SessionStore } from '../contracts';
+import { snapshot, validateKey } from '../internal/codec';
+import { Failure, ensure, safe } from '../internal/errors';
+import { integer, keys, record, text } from '../internal/json';
+import { listOptions, page } from '../internal/pagination';
 
 const schema = `CREATE TABLE sessions (
   namespace TEXT NOT NULL, id TEXT NOT NULL, revision INTEGER NOT NULL,

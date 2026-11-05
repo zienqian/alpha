@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { ensure } from './errors.js';
+import { ensure } from './errors';
 
 export const record = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 export const bytes = (v: unknown): number => Buffer.byteLength(JSON.stringify(v), 'utf8');

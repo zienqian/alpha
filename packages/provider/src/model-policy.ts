@@ -1,6 +1,6 @@
-import { ProviderError } from './errors.js';
-import type { ProtocolName } from './stream-codecs.js';
-import type { GenerateInput, ModelMetadata } from './types.js';
+import { ProviderError } from './errors';
+import type { ProtocolName } from './stream-codecs';
+import type { GenerateInput, ModelMetadata } from './types';
 
 /** Apply explicit model limits and protocol options without guessing model capabilities. */
 export function applyModelPolicy(body: Record<string, unknown>, input: GenerateInput, metadata: ModelMetadata, protocol: ProtocolName, defaultMaxOutputTokens?: number): void {

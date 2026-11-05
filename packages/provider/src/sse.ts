@@ -1,5 +1,5 @@
-import { ProviderError } from './errors.js';
-import { responseError } from './protocols/shared.js';
+import { ProviderError } from './errors';
+import { responseError } from './protocols/shared';
 
 /** Parse SSE incrementally, including split UTF-8 characters and CRLF boundaries. */
 export async function* readSse(body: ReadableStream<Uint8Array>, signal?: AbortSignal): AsyncGenerator<string> {

@@ -1,11 +1,11 @@
 import { createTool, type ToolContext } from '@alpha/adk/core';
 import { z } from 'zod';
-import type { CodingContext, CommandInput } from '../contracts.js';
-import { emitCodingEvent } from '../context.js';
-import { failure, relativePath } from '../internal.js';
-import { resolvePath } from '../files.js';
-import { runCommand } from '../process/run-command.js';
-import { rejected, result, takePlan, type Prepare } from './shared.js';
+import type { CodingContext, CommandInput } from '../contracts';
+import { emitCodingEvent } from '../context';
+import { failure, relativePath } from '../internal';
+import { resolvePath } from '../files';
+import { runCommand } from '../process/run-command';
+import { rejected, result, takePlan, type Prepare } from './shared';
 
 export const prepareCommand: Prepare = async (context, args) => {
   if (!context.shell) throw failure('SHELL_UNAVAILABLE');

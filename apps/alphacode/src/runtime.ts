@@ -6,7 +6,7 @@ import { createSession, createSessionPlugin, type Session, type SessionStore } f
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
 import { createCodingAgent, type CodingApproval } from "@alpha/coding-agent";
 import { createProvider, type CreateProviderOptions } from "@alpha/provider";
-import type { AppConfig } from "./config.js";
+import type { AppConfig } from "./config";
 
 export interface Runtime {
   agent: Agent;

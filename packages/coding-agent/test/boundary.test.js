@@ -1,6 +1,8 @@
 import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 test('published root exposes static tools without Workspace, Session or runtime Provider imports', async () => {
   const visited = new Set();
@@ -12,10 +14,10 @@ test('published root exposes static tools without Workspace, Session or runtime 
       assert.equal(specifier.includes('/node/'), false);
       assert.equal(specifier.startsWith('@alpha/adk-session'), false);
       assert.equal(specifier.startsWith('@alpha/provider'), false);
-      if (specifier.startsWith('.')) await inspect(new URL(specifier, url));
+      if (specifier.startsWith('.')) await inspect(pathToFileURL(Bun.resolveSync(specifier, dirname(fileURLToPath(url)))));
     }
   }
   await inspect(new URL('../dist/index.js', import.meta.url)); assert.ok(visited.size >= 5);
-  const root = await import('../dist/index.js');
+  const root = await import('../dist/index');
   assert.deepEqual(Object.keys(root).sort(), ['codingTools', 'createCodingAgent', 'createFileTool', 'createProjectInstructionsPlugin', 'editFileTool', 'listFilesTool', 'readFileTool', 'runCommandTool', 'searchTool']);
 });

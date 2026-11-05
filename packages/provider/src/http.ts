@@ -1,14 +1,14 @@
-import { ProviderError } from './errors.js';
-import { applyRequestHeaders } from './http-headers.js';
-import { anthropicProtocol } from './protocols/anthropic.js';
-import { completionsProtocol } from './protocols/completions.js';
-import { responsesProtocol } from './protocols/responses.js';
-import { inputError, responseError, validateInput } from './protocols/shared.js';
-import { readSse } from './sse.js';
-import { createStreamCodec } from './stream-codecs.js';
-import { applyModelPolicy } from './model-policy.js';
-import type { ProtocolName } from './stream-codecs.js';
-import type { Fetch, GenerateInput, LanguageModel, ModelMetadata } from './types.js';
+import { ProviderError } from './errors';
+import { applyRequestHeaders } from './http-headers';
+import { anthropicProtocol } from './protocols/anthropic';
+import { completionsProtocol } from './protocols/completions';
+import { responsesProtocol } from './protocols/responses';
+import { inputError, responseError, validateInput } from './protocols/shared';
+import { readSse } from './sse';
+import { createStreamCodec } from './stream-codecs';
+import { applyModelPolicy } from './model-policy';
+import type { ProtocolName } from './stream-codecs';
+import type { Fetch, GenerateInput, LanguageModel, ModelMetadata } from './types';
 
 type HttpOptions = {
   provider: string;
