@@ -1,24 +1,19 @@
 import { mkdir, realpath } from "node:fs/promises";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { dirname } from "node:path";
 import type { Agent } from "@alpha/adk/core";
 import { createSession, createSessionPlugin, type Session, type SessionStore } from "@alpha/adk-session";
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
-import { createCodingAgent, type CodingApproval } from "@alpha/coding-agent";
+import { createCodingAgent } from "@alpha/coding-agent";
 import { createProvider, type CreateProviderOptions } from "@alpha/provider";
-import type { AppConfig } from "./config";
-
-export interface Runtime {
-  agent: Agent;
-  session: Session;
-  readonly cwd: string;
-  close(): Promise<void>;
-}
+import type { AppConfig } from "../config";
+import type { ChatRuntime, RequestApproval } from "../chat/contracts";
+import { subscribeToAgent } from "./events";
 
 export async function createRuntime(config: AppConfig, options: {
-  approve?: CodingApproval;
+  approve?: RequestApproval;
   provider?: CreateProviderOptions;
-} = {}): Promise<Runtime> {
+} = {}): Promise<ChatRuntime> {
   const model = createProvider({ providers: { main: {
     adapter: "openai-completions",
     options: {
@@ -41,8 +36,16 @@ export async function createRuntime(config: AppConfig, options: {
       agentKey: `alphacode-v1:${config.modelId}`,
       title: "AlphaCode",
     });
+    const approve = options.approve;
     agent = await createCodingAgent({
-      model, cwd, approve: options.approve,
+      model, cwd,
+      approve: approve ? async (action, { signal }) => {
+        const allowed = await approve({
+          name: action.call.name,
+          preview: action.preview.type === "command" ? action.preview : { type: "tool" },
+        }, signal);
+        return allowed ? "allow" : "deny";
+      } : undefined,
       instructions: "You are AlphaCode. Respond in the user's language. Use Markdown for explanations and fenced blocks for code. Keep answers concise.",
       plugins: [createSessionPlugin({ session })],
     });
@@ -57,7 +60,17 @@ export async function createRuntime(config: AppConfig, options: {
   const activeAgent = agent, activeSession = session, activeStore = store;
   let closing: Promise<void> | undefined;
   return {
-    agent, session, cwd,
+    modelId: config.modelId,
+    workspaceRoot: cwd,
+    sessionId: activeSession.id,
+    get unsaved() { return activeSession.state.persistence?.status === "pending"; },
+    get blocked() { return activeAgent.state.historyStatus === "blocked" || activeAgent.state.boundaryStatus === "failed"; },
+    subscribe(listener) { return subscribeToAgent(activeAgent, listener); },
+    async send(input) {
+      const result = await activeAgent.prompt(input, { requestId: randomUUID() });
+      return { status: result.status, error: result.status === "failed" ? result.error.code : undefined };
+    },
+    cancel() { activeAgent.abort(); },
     close() {
       if (!closing) closing = (async () => {
         try {

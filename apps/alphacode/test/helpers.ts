@@ -1,7 +1,7 @@
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createChat } from "../src/chat";
+import { createApplication } from "../src/application";
 import type { Fetch } from "@alpha/provider";
 import type { AppConfig } from "../src/config";
 
@@ -79,7 +79,7 @@ export async function fixture(reply: (body: RequestBody, index: number) => Respo
     return reply(body, requests.length);
   };
   try {
-    const chat = await createChat(config, { provider: { fetch } });
+    const chat = await createApplication(config, { provider: { fetch } });
     return {
       chat, config, requests,
       async dispose() {

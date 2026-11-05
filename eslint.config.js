@@ -23,6 +23,33 @@ export default [
     }
   },
   {
+    files: ['apps/alphacode/src/chat/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [{
+        group: ['@alpha/**', '@opentui/**', 'solid-js', 'solid-js/**', 'bun:*', 'node:fs', 'node:fs/**', '**/runtime/**', '**/ui/**', '**/application', '**/config'],
+        message: 'Chat depends on its contracts; inject runtime capabilities from application.ts.'
+      }] }]
+    }
+  },
+  {
+    files: ['apps/alphacode/src/ui/**/*.ts', 'apps/alphacode/src/ui/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [{
+        group: ['@alpha/**', 'bun:*', '**/runtime/**', '**/application', '**/config', '**/chat/controller', '**/chat/approval', '**/chat/messages'],
+        message: 'UI consumes Chat contracts and callbacks; keep runtime and controller implementations outside components.'
+      }] }]
+    }
+  },
+  {
+    files: ['apps/alphacode/src/runtime/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [{
+        group: ['@opentui/**', 'solid-js', 'solid-js/**', '**/ui/**', '**/application', '**/chat/controller', '**/chat/approval', '**/chat/messages'],
+        message: 'Runtime implements Chat contracts; application.ts owns controller and UI composition.'
+      }] }]
+    }
+  },
+  {
     files: ['packages/coding-agent/src/**/*.ts'],
     rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/provider', allowTypeImports: true }], patterns: [{ group: ['@alpha/adk-session', '@alpha/adk-session/**', '@alpha/adk/src/**', '@alpha/provider/*'] }] }] }
   },

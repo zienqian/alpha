@@ -77,13 +77,18 @@ alphacode
 
 ## 结构与验证
 
-- `src/runtime.ts`：确定只读 cwd，组装 Provider、ADK Coding Agent 及 Session SQLite，管理资源关闭顺序。
-- `src/chat.ts`：将 ADK 增量事件、工具状态和最终结果映射到 UI，处理发送、取消、命令确认与保存状态。
-- `src/app.tsx`：Solid 输入区、滚动对话和 OpenTUI 原生 Markdown 渲染。
-- `src/config.ts` / `src/index.tsx`：环境配置、工作区定位、启动及退出。
+- `src/index.tsx` / `src/application.ts`：启动入口和依赖组装，将具体运行时注入对话控制器，再交给终端界面。
+- `src/config.ts`：读取环境配置和工作目录；`src/errors.ts`：提取可展示的错误代码。
+- `src/chat/contracts.ts`：Chat、消息、审批以及 ChatRuntime 接口，不依赖 UI、Provider、Agent 或 SQLite。
+- `src/chat/controller.ts`：发送、取消、关闭和保存状态；`messages.ts`：纯函数更新消息；`approval.ts`：单次审批与取消。
+- `src/runtime/`：组装 Provider、Coding Agent 和 Session SQLite，将 ADK 事件转为对话事件，管理保存与关闭顺序。
+- `src/ui/app.tsx`：订阅 Chat 状态并组合布局；`components/`：欢迎页、输入框、消息列表、审批面板；`theme.ts`：配色与 Markdown 样式。
+- `src/ui/keyboard.ts` / `src/ui/terminal.tsx`：快捷键、终端生命周期和进程信号。
 - `scripts/build.ts`：使用 OpenTUI Solid 的 Bun 插件构建；产物需 Bun 与已安装依赖。
 - `bin/alphacode.ts`：跨目录的开发版命令入口，指定源码条件、仓库配置和 Solid 转换，保持 cwd 并等待 TUI 退出。
 - `scripts/preload.ts`：为源码和构建产物加载 Solid 转换。
+
+依赖关系：`UI → Chat 接口`，`对话控制器 → ChatRuntime 接口`，`具体运行时实现 ChatRuntime`。只有 `application.ts` 负责把实现连接起来。UI 不读取 Agent 或数据库；对话模块不创建运行时，也不依赖 Solid/OpenTUI。ESLint 检查这些边界。扩展界面组件、调整对话策略或更换运行时，可以在各自模块内完成。
 
 ```powershell
 bun run build

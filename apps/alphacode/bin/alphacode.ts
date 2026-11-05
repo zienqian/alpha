@@ -23,7 +23,8 @@ if (args.includes("--help") || args.includes("-h")) {
   const child = Bun.spawn([
     process.execPath,
     "--no-env-file", `--env-file=${path("../../../.env.local")}`,
-    `--config=${path("../bunfig.toml")}`,
+    // The app config's package preload resolves against cwd; load Solid by absolute path below instead.
+    `--config=${path("../../../bunfig.toml")}`,
     `--tsconfig-override=${path("../tsconfig.json")}`,
     "--conditions=alpha-source",
     "--preload", path("../scripts/preload.ts"),

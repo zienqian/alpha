@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { testRender } from "@opentui/solid";
-import { App } from "../src/app";
+import { App } from "../src/ui/app";
 import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "./helpers";
 
 test("typing and Enter send a prompt; Markdown appears before completion and finishes after the stream", async () => {
