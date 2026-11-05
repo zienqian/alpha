@@ -1,0 +1,28 @@
+{
+  "name": "@alpha/alphacode",
+  "version": "0.0.0",
+  "module": "src/index.tsx",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --watch src/index.tsx",
+    "build": "bun run scripts/build.ts",
+    "start": "bun run dist/index.js",
+    "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit",
+    "lint": "bun --bun run eslint src scripts"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4"
+  },
+  "dependencies": {
+    "@opentui/core": "0.8.1",
+    "@opentui/solid": "0.8.1",
+    "solid-js": "1.9.18"
+  },
+  "engines": {
+    "bun": ">=1.4.4"
+  },
+  "nx": {
+    "tags": ["layer:app"]
+  }
+}

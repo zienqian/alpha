@@ -9,13 +9,14 @@ Agent 开发框架的 monorepo。Provider 提供模型配置与协议适配；AD
 - `packages/coding-agent`：编程能力插件、六工具和 Windows 本地工作区适配器。
 - `packages/provider`：模型提供商配置和适配。
 - `apps/example-agent`：组装 Provider 与 ADK 的示例，默认离线运行。
+- `apps/alphacode`：基于 OpenTUI 官方 Solid 模板的终端应用骨架。
 - `docs`：调研与技术方案。
 
 依赖方向：应用组装 Coding、Session、ADK 和 Provider；Coding 复用 core 工厂与插件，Session 仅引用 core 公开类型，两者不互相依赖。ADK 仅通过公开类型单向依赖 Provider，内核不反向依赖扩展。使用 Nx 标签、ESLint 与产物测试检查跨包和运行时边界。ADK 的唯一业务入口是 `@alpha/adk/core`。
 
 ## 本地开发
 
-全仓库开发使用 Bun 1.4.4（`.bun-version`），安装和任务执行统一使用 Bun。根目录 `workspaces` 管理应用与库包，`bun.lock` 固定依赖；Nx 继续负责任务依赖与缓存，ESLint 检查包边界，tsrs 负责构建与类型检查。
+全仓库开发使用 Bun 1.4.4（`.bun-version`），安装和任务执行统一使用 Bun。根目录 `workspaces` 管理应用与库包，`bun.lock` 固定依赖；Nx 继续负责任务依赖与缓存，ESLint 检查包边界，tsrs 负责库包构建与全仓类型检查，AlphaCode 使用 OpenTUI Solid 的 Bun 插件构建。
 
 ```sh
 bun install --frozen-lockfile
@@ -57,6 +58,10 @@ Session 使用 `better-sqlite3 13.0.3` 驱动，在 Bun 下运行；工作区通
 C1 已实现独立 `@alpha/coding-agent` 能力包，复用 core 与 Provider；Session 由应用通过插件组合，执行统一为 `agent.prompt()`。本地适配器当前支持 Windows + PowerShell 7 + ripgrep，提供三个读取工具、精确编辑、只创建文件、命令执行及 AGENTS.md 指令。HTML 可直接离线打开。
 
 显式真实修复验证：`bun --env-file=.env.local packages/coding-agent/integration/live.js`。探针在临时项目验证失败测试、最小源码修复、测试通过和 Session 重放零副作用。
+
+## AlphaCode
+
+[使用说明](apps/alphacode/README.md)。当前为 OpenTUI + SolidJS 模板骨架，从仓库根目录运行 `bun run dev` 即可启动欢迎页，按 `Ctrl+C` 退出。
 
 ## AlphaCode 历史资料
 

@@ -11,6 +11,7 @@
     "bun": ">=1.4.4"
   },
   "scripts": {
+    "dev": "bun run --cwd apps/alphacode dev",
     "build": "bun --bun run nx run-many -t build",
     "typecheck": "bun --bun run nx run-many -t typecheck",
     "lint": "bun --bun run nx run-many -t lint",
