@@ -12,11 +12,12 @@ export function positive(value: number, name: string, max = Number.MAX_SAFE_INTE
   return value;
 }
 export function relativePath(value: string, directory = false): string {
-  const path = value.replaceAll('\\', '/');
+  const windows = process.platform === 'win32';
+  const path = windows ? value.replaceAll('\\', '/') : value;
   if (directory && path === '.') return '.';
-  if (!path || path.startsWith('/') || /[:<>"|?*]/.test(path) || [...path].some(c => c.charCodeAt(0) < 32)) throw failure('INVALID_PATH');
+  if (!path || path.startsWith('/') || (windows && /[:<>"|?*]/.test(path)) || [...path].some(c => c.charCodeAt(0) < 32)) throw failure('INVALID_PATH');
   const parts = path.split('/');
-  if (parts.some(p => !p || p === '.' || p === '..' || /[. ]$/.test(p) || /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(p))) throw failure('INVALID_PATH');
+  if (parts.some(p => !p || p === '.' || p === '..' || (windows && (/[. ]$/.test(p) || /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(p))))) throw failure('INVALID_PATH');
   return parts.join('/');
 }
 export async function digest(value: string): Promise<string> {

@@ -20,8 +20,7 @@ export default [
   },
   {
     files: ['packages/coding-agent/src/**/*.ts'],
-    ignores: ['packages/coding-agent/src/node/**'],
-    rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/provider', allowTypeImports: true }], patterns: [{ group: ['node:*', 'bun:*', '@alpha/adk-session', '@alpha/adk-session/**', './node/**', '../node/**', '@alpha/adk/src/**', '@alpha/provider/*'] }] }] }
+    rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/provider', allowTypeImports: true }], patterns: [{ group: ['@alpha/adk-session', '@alpha/adk-session/**', '@alpha/adk/src/**', '@alpha/provider/*'] }] }] }
   },
   {
     files: ['packages/adk-session/src/**/*.ts'],
@@ -30,7 +29,7 @@ export default [
   {
     files: ['packages/adk-session/src/**/*.ts'],
     ignores: ['packages/adk-session/src/sqlite/**'],
-    rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/adk/core', allowTypeImports: true }, { name: '@alpha/adk' }], patterns: [{ group: ['@alpha/adk/*', '!@alpha/adk/core', '@alpha/adk/src/**', '@alpha/provider', '@alpha/provider/**', 'better-sqlite3', 'bun:*', '../sqlite/**', './sqlite/**'] }] }] }
+    rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/adk/core', allowTypeImports: true }, { name: '@alpha/adk' }], patterns: [{ group: ['@alpha/adk/*', '!@alpha/adk/core', '@alpha/adk/src/**', '@alpha/provider', '@alpha/provider/**', 'bun:*', '../sqlite/**', './sqlite/**'] }] }] }
   },
   {
     files: ['packages/adk/src/**/*.ts'],

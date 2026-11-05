@@ -1,3 +1,5 @@
+> 历史 C1 验收记录：以下 Workspace 租约、Job Object 与宿主死亡清理结论不适用于 R3。当前实现见 [R3 说明](../packages/coding-agent/README.md)及 [R3 验证记录](coding-agent-r3-validation.md)。
+
 # Coding Agent C1 验收记录
 
 日期：2026-11-04。本机 Windows、Node 20.20.2、PowerShell 7、ripgrep。

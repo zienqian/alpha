@@ -1,8 +1,7 @@
-import test from 'node:test';
+import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,29 +22,27 @@ test('exports expose only factories and private implementation entry points rema
   }
 });
 
-test('root import and Memory work without the optional SQLite driver in a fresh Bun process', async t => {
+test('Memory and SQLite work without external drivers in a fresh Bun process', async () => {
   // Copy the emitted package outside the workspace so dependency resolution
-  // cannot pick up the development driver from workspace node_modules.
+  // cannot pick up any dependencies from workspace node_modules.
   const dir = await mkdtemp(join(tmpdir(), 'alpha-session-boundary-'));
-  t.after(async () => {
+  await using cleanup = { async [Symbol.asyncDispose]() {
     assert.equal(dirname(resolve(dir)), resolve(tmpdir()));
     assert.ok(basename(dir).startsWith('alpha-session-boundary-'));
     await rm(dir, { recursive: true, force: true });
-  });
+  } };
   await cp(new URL('../dist/', import.meta.url), join(dir, 'dist'), { recursive: true });
   const script = `import assert from 'node:assert/strict';
     import { createMemorySessionStore } from './dist/index.js';
     import { createSqliteSessionStore } from './dist/sqlite/index.js';
     assert.ok(process.versions.bun);
-    await assert.rejects(import('better-sqlite3'), { code: 'ERR_MODULE_NOT_FOUND' });
     const store = createMemorySessionStore(); assert.equal(store.durability, 'memory'); await store.close();
-    await assert.rejects(createSqliteSessionStore({ filename: 'session.db' }), { code: 'SQLITE_DRIVER_UNAVAILABLE' });`;
+    const sqlite = await createSqliteSessionStore({ filename: 'session.db' }); assert.equal(sqlite.durability, 'transactional'); await sqlite.close();`;
   const probe = join(dir, 'probe.mjs');
   await writeFile(probe, script);
   // Disable Bun's automatic cache/registry installation for standalone scripts.
-  const result = spawnSync(process.execPath, ['--no-install', probe], { cwd: dir, env: { ...process.env, NODE_PATH: '' }, encoding: 'utf8', windowsHide: true, timeout: 10000 });
-  assert.ifError(result.error);
-  assert.equal(result.status, 0, result.stderr);
+  const result = Bun.spawnSync([process.execPath, '--no-install', probe], { cwd: dir, env: { ...process.env, NODE_PATH: '' }, windowsHide: true, timeout: 10000 });
+  assert.equal(result.exitCode, 0, result.stderr.toString());
 });
 
 test('emitted root dependency graph has no external runtime imports or SQLite path', () => {
@@ -85,7 +82,7 @@ test('Session lint allows public core types and rejects runtime/private/provider
   const filePath = fileURLToPath(new URL('../src/boundary-probe.ts', import.meta.url));
   const [valid] = await eslint.lintText('import type { Agent } from "@alpha/adk/core"; export type A = Agent;', { filePath });
   assert.equal(valid.messages.some(m => m.ruleId === 'no-restricted-imports'), false);
-  for (const name of ['@alpha/adk/core', '@alpha/adk', '@alpha/adk/src/core/contracts.js', '@alpha/provider', 'better-sqlite3', 'bun:sqlite', './sqlite/index.js']) {
+  for (const name of ['@alpha/adk/core', '@alpha/adk', '@alpha/adk/src/core/contracts.js', '@alpha/provider', 'bun:sqlite', './sqlite/index.js']) {
     const [invalid] = await eslint.lintText(`import * as value from '${name}'; export { value };`, { filePath });
     assert.ok(invalid.messages.some(m => m.ruleId === 'no-restricted-imports'), name);
   }

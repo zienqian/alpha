@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>AlphaCode R3 · 静态工具与 OpenCode 命令执行路线</title>
+  <style>
+    :root { --bg:#f6f6f3; --paper:#fff; --ink:#1d2926; --muted:#68756e; --line:#dfe5df; --green:#245b46; --green-soft:#e9f2eb; --amber:#88601c; --amber-soft:#fbf3df; --dark:#162b23; --mono:Consolas,"SFMono-Regular",monospace; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:30px; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.8 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; }
+    a { color:var(--green); text-underline-offset:4px; }
+    button,input,textarea { font:inherit; }
+    button,a,input,textarea { -webkit-tap-highlight-color:transparent; }
+    button { cursor:pointer; }
+    :focus-visible { outline:3px solid #7eac8e; outline-offset:4px; }
+    button { touch-action:manipulation; }
+    [hidden] { display:none !important; }
+    .rail { width:230px; position:fixed; inset:0 auto 0 0; padding:36px 25px; border-right:1px solid var(--line); background:#f0f2ed; display:flex; flex-direction:column; z-index:2; }
+    .brand { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:750; letter-spacing:-.6px; }
+    .brand-mark { background:var(--green); width:27px; height:27px; color:white; border-radius:7px; font:21px/27px var(--mono); text-align:center; }
+    .rail-caption { color:var(--muted); font:10px/1.8 var(--mono); letter-spacing:1.3px; margin:15px 0 36px; }
+    nav { display:grid; gap:8px; }
+    nav a { padding:9px 10px; border-radius:6px; color:var(--muted); text-decoration:none; font-size:13px; }
+    nav a span { font:11px var(--mono); margin-right:10px; opacity:.65; }
+    nav a:hover,nav a.active { color:var(--green); background:#e1e9df; }
+    .rail-bottom { margin-top:auto; color:var(--muted); font-size:11px; line-height:1.9; }
+    .status-dot { display:inline-block; width:6px; height:6px; background:#7c996b; border-radius:50%; margin-right:6px; }
+    main { margin-left:230px; max-width:1450px; padding:40px 58px 24px; }
+    .topline { display:flex; justify-content:space-between; gap:15px; align-items:center; margin-bottom:50px; }
+    .eyebrow { font:11px/1.6 var(--mono); letter-spacing:1.7px; color:var(--muted); text-transform:uppercase; }
+    .badge { font-size:11px; border:1px solid var(--line); border-radius:30px; padding:4px 11px; white-space:nowrap; }
+    h1 { margin:15px 0 20px; font-size:clamp(32px,3.4vw,49px); line-height:1.35; font-weight:650; letter-spacing:-1.8px; }
+    h1 em { color:var(--green); font-style:normal; }
+    .intro { max-width:740px; font-size:17px; color:#58665f; line-height:1.95; }
+    .hero-meta { display:flex; flex-wrap:wrap; gap:10px 24px; font-size:11px; color:var(--muted); margin:26px 0 32px; }
+    .hero-meta strong { font-weight:550; color:var(--ink); }
+    .summary { border-radius:12px; background:var(--dark); color:#e4eee7; padding:28px 30px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:26px; }
+    .summary .num { font:11px var(--mono); color:#98bd9e; }
+    .summary h3 { font-size:17px; color:#fff; margin:8px 0; }
+    .summary p { color:#b8cbc0; font-size:13px; margin:0; }
+    .summary code { color:#d9efc9; background:transparent; padding:0; }
+    section { margin-top:66px; scroll-margin-top:28px; }
+    .section-head { display:flex; gap:16px; align-items:baseline; border-top:1px solid var(--line); padding-top:25px; margin-bottom:20px; }
+    .section-no { font:12px var(--mono); color:var(--green); }
+    h2 { font-size:25px; line-height:1.45; font-weight:650; letter-spacing:-.6px; margin:0; }
+    h3 { font-size:16px; margin:0 0 10px; line-height:1.6; }
+    h4 { margin:0 0 8px; font-size:14px; }
+    p { margin:0 0 15px; }
+    .lede { color:var(--muted); max-width:830px; margin-bottom:24px; }
+    code { font-family:var(--mono); font-size:.88em; background:#edf0eb; padding:2px 5px; border-radius:4px; overflow-wrap:anywhere; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .card { padding:23px; border:1px solid var(--line); border-radius:10px; background:var(--paper); min-width:0; }
+    .card p:last-child { margin-bottom:0; }
+    .small { font-size:13px; color:var(--muted); }
+    .label { font:10px/1.6 var(--mono); color:var(--green); letter-spacing:1px; display:block; margin-bottom:9px; }
+    .callout { background:var(--green-soft); border-left:3px solid #6f9475; padding:17px 21px; border-radius:0 7px 7px 0; margin:20px 0; font-size:14px; }
+    .callout.amber { background:var(--amber-soft); border-color:#bd9d50; }
+    .callout p:last-child { margin:0; }
+    .fact-list { margin:0; padding-left:20px; }
+    .fact-list li { padding-left:3px; margin:8px 0; }
+    .code-card { border:1px solid #2b4036; background:#17281f; color:#d5e4d5; border-radius:10px; overflow:hidden; margin-top:20px; }
+    .code-head { background:#203329; padding:10px 17px; font:11px/1.6 var(--mono); display:flex; justify-content:space-between; gap:10px; align-items:center; color:#abc1b0; }
+    .copy { color:inherit; background:transparent; border:1px solid #526756; border-radius:4px; padding:2px 9px; font:11px/1.8 inherit; }
+    pre { margin:0; padding:21px; overflow:auto; font:12px/1.95 var(--mono); tab-size:2; }
+    pre code { font:inherit; padding:0; background:transparent; color:inherit; overflow-wrap:normal; }
+    .comment { color:#8fa891; }
+    .key { color:#b8d799; }
+    .str { color:#e6d29c; }
+    .segmented { display:inline-flex; padding:4px; background:#e9ede7; border:1px solid var(--line); border-radius:8px; gap:3px; flex-wrap:wrap; }
+    .segmented button { border:0; padding:7px 15px; font-size:12px; color:var(--muted); background:transparent; border-radius:5px; }
+    .segmented button[aria-pressed="true"] { background:white; color:var(--green); box-shadow:0 1px 4px #1b322414; }
+    .diagram { margin:18px 0; border:1px solid var(--line); border-radius:12px; padding:28px; background:var(--paper); }
+    .diagram-header { display:flex; justify-content:space-between; gap:16px; align-items:baseline; margin-bottom:24px; }
+    .diagram-header h3 { margin:0; }
+    .node { border:1px solid var(--line); background:#f8faf6; border-radius:8px; padding:15px 18px; min-width:0; }
+    .node strong { display:block; font-size:14px; font-weight:600; }
+    .node small { color:var(--muted); font-size:11px; display:block; margin-top:5px; }
+    .node.feature { border-color:#97b79a; background:#eaf2e8; }
+    .node.problem { background:#fbf6ed; border-color:#e0cda3; }
+    .arrow { text-align:center; color:#819484; font:11px/1.8 var(--mono); padding:10px; }
+    .arrow span { display:block; font-size:18px; line-height:1; }
+    .node-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    .diagram-foot { margin:20px 0 0; padding-top:15px; border-top:1px dashed var(--line); font-size:12px; color:var(--muted); }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:9px; background:white; margin:20px 0; }
+    table { width:100%; border-collapse:collapse; text-align:left; font-size:13px; }
+    th { font-weight:550; color:var(--muted); background:#eff2ec; font-size:11px; padding:12px 17px; letter-spacing:.3px; }
+    td { padding:17px; border-top:1px solid var(--line); vertical-align:top; }
+    td p { margin:6px 0 0; font-size:12px; color:var(--muted); }
+    .process-table { min-width:710px; }
+    .process-table th:first-child { width:19%; }
+    .process-table th:nth-child(2) { width:37%; }
+    .process-table th:nth-child(3) { width:44%; }
+    .tag { display:inline-block; font-size:10px; color:var(--green); background:var(--green-soft); padding:2px 8px; border-radius:4px; margin-top:8px; }
+    .tag.neutral { color:var(--muted); background:#edf0eb; }
+    .steps { display:grid; gap:0; }
+    .step { display:grid; grid-template-columns:44px 1fr; gap:15px; padding:20px 0; border-bottom:1px solid var(--line); }
+    .step .step-num { width:34px; height:34px; border:1px solid #c4d5c2; border-radius:50%; text-align:center; font:12px/32px var(--mono); color:var(--green); }
+    .step p { color:var(--muted); font-size:13px; margin:0; }
+    details { border:1px solid var(--line); background:white; padding:15px 20px; border-radius:8px; margin:14px 0; }
+    summary { cursor:pointer; font-size:13px; font-weight:600; }
+    details[open] summary { margin-bottom:15px; }
+    .file-tree { background:#f6f8f3; border-radius:6px; color:#425147; margin-top:16px; }
+    .review-box { background:white; border:1px solid var(--line); border-radius:12px; padding:27px; }
+    fieldset { border:0; padding:0 0 20px; margin:0 0 21px; border-bottom:1px solid var(--line); }
+    legend { font-size:14px; font-weight:600; margin-bottom:10px; }
+    .radio-line { display:flex; gap:10px; align-items:flex-start; font-size:13px; margin:8px 0; cursor:pointer; }
+    input[type="radio"] { accent-color:var(--green); margin-top:6px; flex:none; }
+    textarea { resize:vertical; width:100%; min-height:95px; padding:12px; border:1px solid #ccd6cc; border-radius:6px; background:#fafcf8; color:var(--ink); font-size:13px; }
+    .button-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:15px; }
+    .button { background:var(--green); border:1px solid var(--green); color:white; padding:8px 17px; border-radius:6px; font-size:12px; }
+    .button.secondary { color:var(--green); background:transparent; border-color:#c9d5c8; }
+    #save-status { font-size:11px; color:var(--muted); }
+    .sources { columns:2; column-gap:28px; margin:20px 0 0; padding-left:20px; font-size:12px; }
+    .sources li { margin-bottom:10px; break-inside:avoid; padding-left:4px; }
+    .sources small { display:block; color:var(--muted); }
+    footer { margin-top:48px; padding:22px 0 8px; border-top:1px solid var(--line); font:10px/1.8 var(--mono); color:var(--muted); display:flex; justify-content:space-between; gap:12px; }
+    .skip { position:fixed; top:-100px; left:20px; background:white; padding:10px; z-index:10; }
+    .skip:focus { top:10px; }
+    @media (min-width:1700px) { main { margin-right:auto; padding-left:75px; padding-right:75px; } }
+    @media (max-width:1150px) { .rail { width:195px; padding:30px 18px; } main { margin-left:195px; padding:30px; } .summary { gap:20px; padding:25px; } }
+    @media (max-width:850px) { .rail { position:static; width:auto; padding:18px 22px; border-right:0; border-bottom:1px solid var(--line); } .rail-caption,.rail-bottom { display:none; } nav { display:flex; flex-wrap:wrap; gap:0; margin-top:12px; } nav a { padding:6px 10px 6px 0; margin-right:9px; font-size:11px; } nav a span { margin-right:4px; } main { margin:0; padding:25px 22px; } .topline { margin-bottom:30px; } h1 { letter-spacing:-1px; } section { margin-top:48px; } }
+    @media (max-width:600px) { .grid2,.summary,.node-row { grid-template-columns:1fr; } .summary { gap:22px; } .summary h3 { margin:4px 0; } .summary p { max-width:420px; } .diagram { padding:20px; } .diagram-header { display:block; } .diagram-header .label { margin-top:9px; } .sources { columns:1; } .card,.review-box { padding:20px; } .intro { font-size:15px; } h2 { font-size:23px; } th,td { padding:12px; } footer { display:block; } .eyebrow { font-size:9px; letter-spacing:1px; } .topline .badge { font-size:10px; } }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+    @media print { body { background:white; font-size:11px; } .rail,.copy,.button-row,.segmented { display:none; } main { margin:0; padding:0; max-width:none; } .summary { print-color-adjust:exact; } section { margin-top:25px; } .review-box,.card,.diagram,.step { break-inside:avoid; } h1 { font-size:30px; } h2 { font-size:20px; } .topline { margin-bottom:15px; } a { text-decoration:none; } .table-wrap { overflow:visible; } pre { white-space:pre-wrap; } .process-table { min-width:0; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <aside class="rail">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">α</span> alphacode</div>
+    <div class="rail-caption">ENGINEERING NOTES<br>ARCHITECTURE / R3</div>
+    <nav aria-label="评审目录">
+      <a href="#decision" class="active"><span>01</span>设计结论</a>
+      <a href="#current"><span>02</span>当前的问题</a>
+      <a href="#target"><span>03</span>目标结构与 API</a>
+      <a href="#process"><span>04</span>跨平台命令执行</a>
+      <a href="#migration"><span>05</span>迁移与验证</a>
+      <a href="#review"><span>06</span>Review 决策</a>
+    </nav>
+    <div class="rail-bottom"><span class="status-dot"></span>设计提案 · 尚未实施<br>基于当前工作区源码<br>2026.11.05 / Bun 1.4.4</div>
+  </aside>
+  <main id="main">
+    <div class="topline"><span class="eyebrow">ALPHA / CODING AGENT / DESIGN REVIEW</span><span class="badge">R3 · OpenCode 路线</span></div>
+    <header id="decision">
+      <span class="eyebrow">01 — RECOMMENDATION</span>
+      <h1>让目录回到目录。<br><em>把工具和进程各自拆开。</em></h1>
+      <p class="intro">建议删除 <code>createLocalWorkspace</code>。当前 AlphaCode 只需要一份启动时确定的 <code>cwd</code>；工具以静态定义独立存在，执行时从调用上下文取得目录。文件版本、权限审批、命令回收各自保留明确的归属。</p>
+      <div class="hero-meta"><span>范围 <strong>coding-agent + AlphaCode 接入</strong></span><span>交付 <strong>设计评审 HTML · R3</strong></span><span>状态 <strong>源码对照完成 · 实现待实施</strong></span></div>
+      <div class="summary">
+        <div><span class="num">01 / DIRECTORY</span><h3>一个只读 cwd 就够了</h3><p>去掉 Workspace 对象、工厂和租约。目录没有启动、关闭或占用生命周期。</p></div>
+        <div><span class="num">02 / TOOLS</span><h3>静态定义，独立执行</h3><p>每个工具拥有自己的 schema、预检和执行函数。通过 <code>tools: [...]</code> 显式装配。</p></div>
+        <div><span class="num">03 / PROCESSES</span><h3>沿用 OpenCode 执行路线</h3><p>cross-spawn 启动、本机 shell 发现、集中取消与收尾。Windows 无需安装 Git Bash。</p></div>
+      </div>
+      <div class="callout"><strong>关于“静态 workspace”：这个方向成立。</strong> 在 CLI 入口保存 <code>const cwd</code> 即可。若保留 workspace 这个名字，它最多是 <code>Readonly&lt;{ cwd: string }&gt;</code>。本提案直接使用 <code>cwd</code>，连这个单字段包装也省掉。</div>
+      <div class="callout"><strong>已确认采用 OpenCode 路线：</strong> 直接使用 <code>cross-spawn@7.0.6</code>，参考固定版本的 shell 发现与进程管理代码，接入现有 ADK。删除旧 Windows bridge；Git Bash 为可选能力。第 04 节给出 pi、Grok CLI、Codex 和 OpenCode 的源码对照及复用边界。</div>
+    </header>
+
+    <section id="current">
+      <div class="section-head"><span class="section-no">02</span><h2>问题是职责堆在了一起</h2></div>
+      <p class="lede">当前对象已经超过“启动目录”的含义。它同时是文件系统入口、搜索器、命令执行器、目录独占锁和资源管理器。这些能力各有用途，但不需要由一个 Workspace 接口统一持有。</p>
+      <div class="grid2">
+        <article class="card"><span class="label">CURRENT / FACTORY</span><h3>构造目录，附带启动基础设施</h3><p class="small"><code>local/local-workspace.ts</code> 在创建时校验 Windows / PowerShell，查找并运行 <code>pwsh</code>、<code>rg</code>，构造环境变量和锁目录。只想读取文件也得经过这些步骤。</p></article>
+        <article class="card"><span class="label">CURRENT / LIFETIME</span><h3>Agent 生命周期绑着目录锁</h3><p class="small"><code>coding-plugin.ts</code> 在 start 时 acquire，在 dispose 时 release。bridge 的 BOOT → LOCK → LOCKED 握手把 Windows 进程管理和跨进程目录独占绑在一起。</p></article>
+        <article class="card"><span class="label">CURRENT / STATIC TOOLS</span><h3>上次只完成了定义层的解耦</h3><p class="small">六个 tool 已经是模块级常量，但执行仍进入 <code>tools.ts</code> 的统一分发函数。连 read / list / search 也先检查 <code>plan + lease</code>，静态工具还不能独立执行。</p></article>
+        <article class="card"><span class="label">CURRENT / CALLER</span><h3>应用负责不必要的资源收尾</h3><p class="small"><code>apps/alphacode/src/runtime.ts</code> 要依次创建、关闭 workspace，并借用 <code>workspace.id</code> 作为会话 namespace。目录身份本可直接从规范化路径计算。</p></article>
+      </div>
+      <div class="callout amber"><strong>为什么最初会长成这样？</strong> 从现有接口看，它试图用统一适配器承载本地执行、隔离等级和独占写入。对目前只有本地 Bun CLI 的范围，这层抽象偏重。未来如果真有远程执行需求，再为具体能力增加接口即可。</div>
+    </section>
+
+    <section id="target">
+      <div class="section-head"><span class="section-no">03</span><h2>一个目录值，三类独立职责</h2></div>
+      <p class="lede">只保留真正有状态的部分。工具定义可以静态共享；“这个 Agent 读过哪个版本”“这一次调用批准了什么”仍属于各自的 Agent 和调用。</p>
+      <div class="segmented" role="group" aria-label="架构对比">
+        <button type="button" data-diagram="after" aria-pressed="true" aria-controls="diagram-after">建议结构</button>
+        <button type="button" data-diagram="before" aria-pressed="false" aria-controls="diagram-before">当前结构</button>
+      </div>
+      <div class="diagram" id="diagram-after">
+        <div class="diagram-header"><h3>工具接收执行上下文，直接调用对应能力</h3><span class="label">PROPOSED</span></div>
+        <div class="node feature"><strong>CLI 入口 → cwd + createCodingAgent({ model, cwd, tools })</strong><small>启动时解析路径一次；构造内部上下文；不创建 Workspace，不启动命令进程</small></div>
+        <div class="arrow">ADK 传入 ToolContext · cwd / signal / 当前调用状态<span>↓</span></div>
+        <div class="node-row">
+          <div class="node"><strong>read / list / search</strong><small>独立静态工具 · 不需要 lease</small></div>
+          <div class="node"><strong>edit / create</strong><small>独立静态工具 · 版本与审批计划</small></div>
+          <div class="node"><strong>run_command</strong><small>独立静态工具 · 每次命令拥有进程</small></div>
+        </div>
+        <div class="arrow">普通函数调用，显式传 cwd 与 signal<span>↓</span></div>
+        <div class="node-row">
+          <div class="node"><strong>files.ts / search.ts</strong><small>文件读取 · 路径校验 · 固定 argv 运行 rg</small></div>
+          <div class="node"><strong>files.ts</strong><small>写入前复核 · 同目录临时文件替换</small></div>
+          <div class="node"><strong>process/run-command.ts → cross-spawn</strong><small>已选定的本机 shell · 输出流 · 取消</small></div>
+        </div>
+        <p class="diagram-foot">内部 permission hook 只协调 policy / approve，并保存本次写入或命令的预检结果。它不提供工具，不拥有目录，也不在 Agent 启动时创建 bridge。</p>
+      </div>
+      <div class="diagram" id="diagram-before" hidden>
+        <div class="diagram-header"><h3>读文件也经过目录租约与统一执行入口</h3><span class="label">CURRENT SOURCE</span></div>
+        <div class="node"><strong>createLocalWorkspace({ root, shell })</strong><small>校验目录 + pwsh / rg + env + locks</small></div>
+        <div class="arrow"><span>↓</span></div>
+        <div class="node problem"><strong>CodingWorkspace</strong><small>id · root · readFile · listFiles · search · acquire · close</small></div>
+        <div class="arrow">coding plugin start → acquire → Windows bridge + 独占锁<span>↓</span></div>
+        <div class="node problem"><strong>static tools → prepareCodingCall → plans → execute 分发</strong><small>所有内置工具执行前统一要求 lease；写入与命令经 lease 间接执行</small></div>
+        <p class="diagram-foot">现有代码事实来自 contracts.ts、tools.ts、coding-plugin.ts、local/local-workspace.ts 与 local/windows-bridge.ts。</p>
+      </div>
+
+      <div class="grid2">
+        <article class="card"><span class="label">IMMUTABLE / LAUNCH CONFIG</span><h3>cwd 固定，但不做可变全局单例</h3><p class="small">入口按“路径参数 → ALPHACODE_WORKSPACE → 启动时 process.cwd()”取值，再 realpath 并校验目录。传入 Agent 后保持不变。工具不会在每次执行时重新读取 <code>process.cwd()</code>，也不用 <code>process.chdir()</code> 改共享状态。</p></article>
+        <article class="card"><span class="label">MUTABLE / AGENT STATE</span><h3>状态与目录分开</h3><p class="small">每个 Agent 保留已读文件版本、待执行审批计划和结果预算；每次命令保留进程、输出计数和取消监听。不同 Agent 可复用相同 tool 对象，但这些状态不能跨 Agent 共享。</p></article>
+      </div>
+      <div class="code-card">
+        <div class="code-head"><span>建议调用方式 · API 草案，尚未实现</span><button class="copy" data-copy="code-api" type="button">复制</button></div>
+        <pre><code id="code-api"><span class="key">import</span> { createCodingAgent, codingTools } <span class="key">from</span> <span class="str">'@alpha/coding-agent'</span>;
+
+<span class="comment">// CLI 入口：解析参数后规范化一次。会话 namespace 仍由这个 cwd 派生。</span>
+<span class="key">const</span> cwd = <span class="key">await</span> realpath(config.workspaceRoot);
+<span class="key">const</span> agent = <span class="key">await</span> createCodingAgent({
+  model,
+  cwd,
+  tools: codingTools, <span class="comment">// 也可以只传 [readFileTool, searchTool]</span>
+  approve,
+  plugins: [createSessionPlugin({ session })],
+});
+
+<span class="key">await</span> agent.close(); <span class="comment">// 取消并等待当前工具结束；session/store 按现有方式收尾</span></code></pre>
+      </div>
+      <div class="code-card">
+        <div class="code-head"><span>read-file.ts · 职责示意，非可直接编译的完整实现</span><button class="copy" data-copy="code-tool" type="button">复制</button></div>
+        <pre><code id="code-tool"><span class="key">export const</span> readFileTool = createTool({
+  name: <span class="str">'read_file'</span>,
+  description: <span class="str">'Read a UTF-8 file before editing it.'</span>,
+  input: readFileSchema,
+  effect: <span class="str">'read'</span>,
+  <span class="key">async</span> execute(args, ctx: ToolContext&lt;CodingContext&gt;) {
+    <span class="key">const</span> snapshot = <span class="key">await</span> readSnapshot(ctx.app.cwd, args.path, ctx.signal);
+    <span class="key">if</span> (!snapshot) <span class="key">return</span> encodeFailure(<span class="str">'FILE_NOT_FOUND'</span>);
+    ctx.app.state.observations.set(snapshot.path, snapshot.revision);
+    <span class="key">return</span> encodeReadResult(snapshot, args, ctx.app.state.budget);
+  },
+});
+<span class="comment">// schema / 读取 / 版本记录 / 截断均由本工具负责，无 workspace 和 lease。</span></code></pre>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>职责</th><th>建议归属</th><th>约束</th></tr></thead><tbody>
+          <tr><td>目录与路径检查</td><td><code>cwd</code> + 普通函数</td><td>保留越界、符号链接和 Windows 特殊路径检查；命令可操作宿主机，cwd 本身不是沙箱。</td></tr>
+          <tr><td>工具定义与执行</td><td>六个独立 <code>tools/*.ts</code></td><td>直接导出常量；输入 schema、工具预检、execute 在各自模块；索引文件只聚合。</td></tr>
+          <tr><td>权限与预检</td><td>内部 <code>permissions.ts</code></td><td>沿用 ADK authorizeTool hook。按静态工具名表找预检函数，移除统一业务分支；本轮不改 ADK 工具协议。</td></tr>
+          <tr><td>调用状态</td><td>每个 Agent 的内部 context</td><td><code>cwd / shell / data / controls / state</code>；shell 是只读执行环境描述，原 app 字段改名 data。状态不作为稳定公共 API。</td></tr>
+          <tr><td>命令生命周期</td><td><code>process/run-command.ts</code> + cross-spawn</td><td>采用 OpenCode 的进程组 / taskkill 与输出截止策略；项目保留一个集中适配模块，对接 AbortSignal 和 ADK 关闭流程。</td></tr>
+          <tr><td>会话目录身份</td><td>AlphaCode 会话初始化</td><td>保留现有 Windows 规范路径小写后 SHA-256 的 <code>local:</code> namespace，避免会话看起来“丢失”。</td></tr>
+        </tbody></table>
+      </div>
+      <details>
+        <summary>预检和独立工具如何兼容？为什么不把所有状态一起删掉？</summary>
+        <p class="small">各工具模块同时导出自己的预检函数，permissions.ts 使用一张普通静态表按 name 查找。读操作生成权限描述后直接执行，不依赖计划缓存；edit / create / command 的预检产物以当前 call key 暂存，批准后由同一工具消费。拒绝、取消和 run.end 都清理对应记录。</p>
+        <p class="small">写入预检包含具体目标、预期版本和变更内容；执行前再次校验。审批不能只绑定工具名或一个可重新解释的参数。保留这小块调用状态，可以维持“看见的变更就是批准的变更”。未知副作用仍交给 ADK 按现有规则处理，不能改成普通成功结果。</p>
+        <p class="small">静态表只是内部函数查找，不增加新的注册器、依赖注入容器或远程文件系统接口。公共入口收敛到 createCodingAgent、静态 tools 和必要的选项类型；context / plugin 的组装留在包内。</p>
+      </details>
+    </section>
+
+    <section id="process">
+      <div class="section-head"><span class="section-no">04</span><h2>采用 OpenCode 的命令执行路线</h2></div>
+      <p class="lede">选择已经确认：发现本机可用 shell，通过 cross-spawn 启动，统一处理取消、超时与输出收尾。Windows 不要求用户安装 Git Bash；工具保持静态，执行环境来自 Agent 上下文。</p>
+      <div class="callout"><strong>本版依据：</strong> 核对 OpenCode <code>2f31b3d</code> 的实际调用链：<code>ShellSelect → Shell.create → Environment.spawner → CrossSpawnSpawner → cross-spawn</code>。仓库当时使用 Bun 1.4.4，cross-spawn 版本为 7.0.6。<a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/package.json" target="_blank" rel="noopener noreferrer">版本与依赖</a> · <a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/packages/core/src/shell.ts" target="_blank" rel="noopener noreferrer">执行入口</a></div>
+
+      <h3>社区源码对照：实现并不相同</h3>
+      <p class="small">下面结论只针对已核对的命令执行路径，链接固定到对应 commit。pi 原 badlogic/pi-mono 已迁至 earendil-works/pi；Grok CLI 指 superagent-ai/grok-cli，是社区项目。</p>
+      <div class="table-wrap"><table class="process-table"><thead><tr><th>项目 / 快照</th><th>实际执行与取消</th><th>没有 Git Bash 时，以及可借鉴的边界</th></tr></thead><tbody>
+        <tr><td><strong>pi</strong><p><code>55a5c69</code></p></td><td>Bash / PowerShell 共享 child_process.spawn 执行层；自有 killProcessTree 处理 Windows taskkill 与 Unix 进程组。<p><a href="https://github.com/earendil-works/pi/blob/55a5c6914570e2ae31ca36297654483bbbf46883/packages/coding-agent/src/core/tools/bash.ts" target="_blank" rel="noopener noreferrer">共享执行层</a> · <a href="https://github.com/earendil-works/pi/blob/55a5c6914570e2ae31ca36297654483bbbf46883/packages/coding-agent/src/utils/shell.ts" target="_blank" rel="noopener noreferrer">shell 与取消</a></p></td><td>默认 Bash 路径缺失会报错；可显式启用 powershell 工具，优先 pwsh 后回退 powershell。它的工具工厂绑定 cwd，不能原样搬进我们要求的静态 tools。<p><a href="https://github.com/earendil-works/pi/blob/55a5c6914570e2ae31ca36297654483bbbf46883/packages/coding-agent/docs/windows.md" target="_blank" rel="noopener noreferrer">Windows 配置</a> · <a href="https://github.com/earendil-works/pi/blob/55a5c6914570e2ae31ca36297654483bbbf46883/packages/coding-agent/src/core/tools/powershell.ts" target="_blank" rel="noopener noreferrer">PowerShell 工具</a></p></td></tr>
+        <tr><td><strong>Grok CLI</strong><p><code>fb97af8</code></p></td><td>前台使用 exec 且未显式选择 shell；后台直接 spawn("sh", ["-c", …])；取消主要调用 child.kill。<p><a href="https://github.com/superagent-ai/grok-cli/blob/fb97af83f06dca873281d60168430f06c8de6324/src/tools/bash.ts" target="_blank" rel="noopener noreferrer">BashTool 源码</a></p></td><td>这条路径没有统一的本机 shell 发现，也未实现完整进程树取消。不能把它当成已解决“原生 Windows 无 Bash”的模板；BashTool 还保存可变 cwd。</td></tr>
+        <tr><td><strong>Codex</strong><p><code>49f0c60</code></p></td><td>Rust 的 tokio::process::Command，另有 PTY / 平台进程管理代码；不是一个可直接替换进 Bun 的 npm runner。<p><a href="https://github.com/openai/codex/blob/49f0c6022596c361fe676a5c4738fb2be34e3a93/codex-rs/core/src/spawn.rs" target="_blank" rel="noopener noreferrer">进程启动</a> · <a href="https://github.com/openai/codex/blob/49f0c6022596c361fe676a5c4738fb2be34e3a93/codex-rs/utils/pty/Cargo.toml" target="_blank" rel="noopener noreferrer">PTY 依赖</a></p></td><td>Windows 默认发现 PowerShell，最终回退 cmd；Unix 识别用户 shell，再按平台回退。可借鉴 shell 发现，而非把它的 Rust 执行服务整体接入。<p><a href="https://github.com/openai/codex/blob/49f0c6022596c361fe676a5c4738fb2be34e3a93/codex-rs/shell-command/src/shell_detect.rs" target="_blank" rel="noopener noreferrer">shell 发现代码</a></p></td></tr>
+        <tr><td><strong>OpenCode</strong><br><span class="tag">采用这条路线</span><p><code>2f31b3d</code></p></td><td>cross-spawn + 自有 CrossSpawnSpawner，统一启动、信号升级与输出排空；框架层使用 Effect。<p><a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/packages/util/src/cross-spawn-spawner.ts" target="_blank" rel="noopener noreferrer">完整 spawner</a></p></td><td>优先有效配置 / 环境 shell；默认 Windows 候选为 pwsh → powershell → Git Bash → cmd。macOS / Linux 有系统 shell 回退。没有 Git Bash 仍有原生路径。<p><a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/packages/core/src/shell/select.ts" target="_blank" rel="noopener noreferrer">选择与启动参数</a></p></td></tr>
+      </tbody></table></div>
+
+      <h3>“走 OpenCode 路线”具体复用什么</h3>
+      <div class="grid2">
+        <article class="card"><span class="label">PACKAGE REUSE</span><h3>直接依赖 cross-spawn 7.0.6</h3><p class="small">复用与上游一致的跨平台启动包。它返回标准 ChildProcess；我们沿用现有 ADK 的 Promise、AbortSignal 和事件接口来接入。<a href="https://github.com/moxystudio/node-cross-spawn/tree/v7.0.6" target="_blank" rel="noopener noreferrer">cross-spawn 官方仓库</a></p></article>
+        <article class="card"><span class="label">SOURCE ADAPTATION</span><h3>移植 shell、取消与收尾策略</h3><p class="small">参考固定 commit 的 select.ts 和 cross-spawn-spawner.ts，保留上游出处、MIT 版权与许可，记录必要改动。它们依赖 OpenCode 的 Effect / 服务层，当前不直接导入整套 @opencode/core。</p></article>
+      </div>
+      <div class="callout amber"><strong>能力归属必须准确：</strong> cross-spawn 负责启动兼容；shell 发现、超时、进程树取消和输出截止仍由适配层负责。OpenCode 也维护这些代码。采用该路线意味着复用其策略并维护一个集中模块，不等于仅安装一个包就完成全部兼容。</div>
+
+      <h3>没有 Git Bash，也能使用本机 shell</h3>
+      <p class="small">参考 OpenCode 的选择顺序：宿主显式配置优先，其次使用有效且支持的环境 shell；两者均不可用时采用下表候选。能力解析在模型生成命令之前完成，形成当前 Agent 的只读 shell 描述。</p>
+      <div class="table-wrap"><table><thead><tr><th>平台</th><th>默认候选顺序</th><th>模型应知道什么</th></tr></thead><tbody>
+        <tr><td>Windows</td><td>pwsh → Windows PowerShell → 可用 Git Bash → COMSPEC / cmd.exe</td><td>实际选中的 family / 路径 / 可确认的版本。只有 PowerShell 5.1 时按其语法生成命令，不能套用 Bash 或 PowerShell 7 语法。</td></tr>
+        <tr><td>macOS</td><td>有效且支持的用户 shell → /bin/zsh → /bin/bash → /bin/sh</td><td>明确 zsh / bash / sh；不强制把系统默认 shell 换成 Bash。</td></tr>
+        <tr><td>Linux / WSL 内运行</td><td>有效且支持的用户 shell → bash → /bin/sh</td><td>精简环境无 Bash 时仍可使用 POSIX sh；不假设 Bash 扩展可用。</td></tr>
+      </tbody></table></div>
+      <p class="small">与上游的明确差异：AlphaCode 给 macOS 的 zsh 兜底再加可用性检查；自定义路径无效时直接报告配置错误。Windows 可补查系统目录以覆盖 PATH 不完整的安装。所有候选在生成命令前确定，不在一次已批准的执行中临时换 shell。</p>
+      <div class="callout"><strong>场景：</strong> 新 Windows 用户没有 Git、没有 PowerShell 7 → 使用系统 Windows PowerShell。传给模型的环境说明写明 <code>shell: Windows PowerShell 5.1</code>；模型生成 PowerShell 命令。Git Bash 是可选能力，不是启动门槛。所有 shell 都不可用时，只将命令工具标记为不可用，聊天与文件工具继续工作。</div>
+
+      <div class="code-card">
+        <div class="code-head"><span>固定 shell 描述 + 静态工具 · API 草案，未实现</span><button class="copy" data-copy="code-process" type="button">复制</button></div>
+        <pre><code id="code-process"><span class="key">type</span> ShellInfo = Readonly&lt;{
+  family: <span class="str">'powershell'</span> | <span class="str">'cmd'</span> | <span class="str">'bash'</span> | <span class="str">'zsh'</span> | <span class="str">'sh'</span>;
+  executable: string;
+}&gt;;
+
+<span class="comment">// Agent 组装时解析环境，并把实际 shell 注入模型环境说明。</span>
+<span class="key">const</span> shell = resolveShell(hostConfig);
+<span class="key">const</span> agent = <span class="key">await</span> createCodingAgent({ model, cwd, shell, tools: codingTools });
+
+<span class="comment">// runCommandTool 仍为模块级常量；执行时取 ctx.app.cwd / shell。</span>
+<span class="key">const</span> child = spawn(shell.executable, shellArgs(shell.family, command), {
+  cwd, env: commandEnv,
+  shell: <span class="key">false</span>,
+  detached: process.platform !== <span class="str">'win32'</span>,
+  windowsHide: <span class="key">true</span>,
+  stdio: [<span class="str">'ignore'</span>, <span class="str">'pipe'</span>, <span class="str">'pipe'</span>],
+});
+<span class="comment">// spawn 来自 cross-spawn。监听 error / exit / close，接入下述收尾流程。</span>
+<span class="comment">// 上游的 Windows overlapped stdio 适配需单独验证后决定是否照用。</span></code></pre>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>薄适配职责</th><th>采用的行为</th><th>上游证据 / 我们的边界</th></tr></thead><tbody>
+        <tr><td>参数</td><td>POSIX shell 用 -c；PowerShell 用 -NoLogo / -NoProfile / -NonInteractive / -Command；cmd 用 /c。</td><td>参考 ShellSelect.args。宿主选择解释器，模型只提供 command；仍需验证 Windows 引号与编码。</td></tr>
+        <tr><td>取消与超时</td><td>Windows 请求 taskkill /T /F；Unix 发送进程组信号，约 3 秒后升级 SIGKILL；失败回退单进程终止。</td><td>参考上游 killGroup / stop。退出码与取消原因分开记录，取消不是“未执行”。</td></tr>
+        <tr><td>输出结束</td><td>区分 exit 与 close；根进程退出后给管道有限收尾时间，上游采用 1 秒，避免后代一直持有管道导致挂起。</td><td>参考 CrossSpawnSpawner 的 stopOutput / discard。超过截止时间需标记输出可能不完整。</td></tr>
+        <tr><td>结果与事件</td><td>两路增量解码、有限缓存、持续排空；启动失败、退出、超时、取消、输出截断分别表达。</td><td>对接既有 command.output 与工具结果；不新增持久 shell 会话或后台任务系统。</td></tr>
+        <tr><td>审批</td><td>批准 cwd + 实际 shell + command 的组合。若 shell 失效，返回明确错误，重新选择和生成命令后再走审批。</td><td>这是 AlphaCode 对静态工具和现有权限机制的接入约束，避免批准 Bash 后执行 PowerShell。</td></tr>
+      </tbody></table></div>
+      <p class="small">正常取消采用上游的进程树 / 进程组策略，仍有宿主强杀、脱离进程组及 Windows 根 PID 已退出等边界；不承诺所有异常下清除全部后代。目录、工具和执行层的拆分也不因此恢复 Workspace 或自研 Job Object bridge。</p>
+
+      <h3>实施范围与验证门槛</h3>
+      <div class="grid2">
+        <article class="card"><span class="label">MINIMAL IMPLEMENTATION</span><h3>两个内部模块就够</h3><p class="small"><code>process/shell.ts</code> 保存发现与 argv 规则；<code>process/run-command.ts</code> 集中 cross-spawn、取消与输出收尾。执行器可接收 program + argv，供 shell 工具和固定 argv 的 rg 共用。上游来源记录在模块注释与许可说明中。</p></article>
+        <article class="card"><span class="label">EVIDENCE / NOT YET INTEGRATED</span><h3>源码已核对，集成尚未完成</h3><p class="small">本轮完成固定 commit 的实现分析与方案修订。R2 的 Execa 试验不作为当前路线的测试结果；没有宣称 cross-spawn 适配已通过本项目三端验证。</p></article>
+      </div>
+      <ul class="fact-list small" style="margin-top:18px">
+        <li>Windows：PATH 不含 Git Bash / pwsh 时使用系统 PowerShell；继续验证 cmd 最终兜底与无有效 shell 的降级。</li>
+        <li>PowerShell 5.1 / 7：中文 stdout、stderr、CLIXML、引号、空格路径、脚本错误与外部程序退出状态；不能只测 echo。</li>
+        <li>macOS / Linux：zsh / bash / sh 的选择与参数；无 Bash 的最小环境；同一取消契约的三端测试。</li>
+        <li>进程生命周期：启动失败、提前取消、超时、后代进程、根进程先退出但管道仍开、大输出、Escape / Agent close。</li>
+        <li>保留静态工具共享测试：两个 cwd 的 Agent 不串目录、已读版本或审批状态。</li>
+      </ul>
+      <details><summary>OpenCode 来源与适配记录</summary>
+        <p class="small">完整 commit：<code>2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e</code>。核查时间：2026-11-05。采用的是当前源码路线，不保证与更早版本 OpenCode 相同。</p>
+        <ul class="fact-list small">
+          <li><a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/packages/core/src/shell/select.ts" target="_blank" rel="noopener noreferrer">packages/core/src/shell/select.ts</a>：发现、兼容模式与参数。</li>
+          <li><a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/packages/core/src/shell.ts" target="_blank" rel="noopener noreferrer">packages/core/src/shell.ts</a>：执行服务与输出收尾的调用关系。</li>
+          <li><a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/packages/util/src/cross-spawn-spawner.ts" target="_blank" rel="noopener noreferrer">packages/util/src/cross-spawn-spawner.ts</a>：跨平台启动、终止与管道结束。</li>
+          <li><a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/LICENSE" target="_blank" rel="noopener noreferrer">MIT LICENSE</a>：实施时保留相应版权与许可；标明源文件、commit 和适配差异。</li>
+        </ul>
+        <p class="small">复用方式：npm 包负责通用启动兼容；OpenCode 源码策略适配到当前 ADK。Effect 生命周期、服务容器、全量输出存盘和后台任务并非本次最小需求。后续更新集中对比上述源文件，避免形成没有上游出处的分叉。</p>
+      </details>
+    </section>
+
+    <section id="migration">
+      <div class="section-head"><span class="section-no">05</span><h2>按职责迁移，不再加一层 Workspace</h2></div>
+      <p class="lede">本次提案不增加模型功能、不改 OpenTUI 的输入和 Markdown 渲染。代码实施在 review 后进行；已有未提交修改保持原样。</p>
+      <div class="table-wrap"><table><thead><tr><th>现有部分</th><th>处理方式</th><th>具体结果</th></tr></thead><tbody>
+        <tr><td><code>CodingWorkspace</code><br><code>WorkspaceLease</code><br><code>createLocalWorkspace</code></td><td>删除</td><td>移除公共对象协议、acquire / release / close 和对应构造参数。</td></tr>
+        <tr><td><code>local/local-workspace.ts</code></td><td>按能力拆开</td><td>文件 / 路径函数进 files.ts，rg 逻辑进 search.ts；固定 argv 与 shell 复用 cross-spawn 执行适配。不保留 local 聚合对象。</td></tr>
+        <tr><td><code>tools.ts</code></td><td>拆成独立模块</td><td>每个模块包含 schema、预检和 execute；tools/index.ts 只输出静态集合。</td></tr>
+        <tr><td><code>coding-plugin.ts</code><br><code>context.ts</code></td><td>缩小、内置</td><td>permissions.ts 仅协调授权；createCodingAgent 内部构造状态。移除 used / lease 等目录生命周期耦合。</td></tr>
+        <tr><td><code>instructions-plugin.ts</code></td><td>传 cwd</td><td>通过文件函数读取根目录 AGENTS.md；不依赖命令执行环境。</td></tr>
+        <tr><td><code>runtime.ts</code></td><td>减少组装与关闭步骤</td><td>规范化 cwd → 会话 → Agent；保留会话失败重试逻辑，移除 workspace 资源。</td></tr>
+        <tr><td><code>bridge.* / windows-bridge.ts</code></td><td>整体删除</td><td>移除 C# / PowerShell 桥、目录锁协议与桥接资产复制逻辑；采用 OpenCode 的命令执行路线。</td></tr>
+        <tr><td><code>package.json / bun.lock</code></td><td>实施时更新</td><td>coding-agent 增加 cross-spawn@7.0.6 及必要类型；Bun 仍为运行时。复用源码附上固定 commit 与许可说明。</td></tr>
+      </tbody></table></div>
+      <details>
+        <summary>建议目录（只列本轮相关模块）</summary>
+        <pre class="file-tree">packages/coding-agent/src/
+  index.ts                    # createCodingAgent + 静态 tools + 必要类型
+  create-coding-agent.ts       # 组装 cwd / shell 描述 / 内部状态 / 权限 hook
+  contracts.ts                # 公共选项、结果与事件
+  permissions.ts              # 内部授权协调，无工具业务分支
+  context.ts                  # 内部状态与 call key
+  files.ts                    # 路径、读写、版本检查
+  search.ts                   # 共用进程适配运行 rg 固定 argv，无 shell
+  instructions-plugin.ts      # cwd → AGENTS.md
+  tools/
+    index.ts                  # 静态导出与预检函数表
+    read-file.ts
+    list-files.ts
+    search.ts
+    edit-file.ts
+    create-file.ts
+    run-command.ts
+  process/
+    run-command.ts            # cross-spawn + 统一取消 / 超时 / 输出收尾
+    shell.ts                  # 参考 OpenCode 的 shell 发现与 argv 规则
+  # 适配源码附上游 commit、MIT 许可与修改说明</pre>
+      </details>
+      <div class="grid2" style="margin-top:22px">
+        <article class="card"><span class="label">PRESERVE</span><h3>应保留的行为</h3><ul class="fact-list small"><li>先读后改、版本冲突、唯一文本匹配、创建不覆盖。</li><li>审批绑定实际 shell、cwd 和命令，取消期间不继续写入。</li><li>输出上限、退出码、流式事件和未知副作用处理。</li><li>Windows 现有会话 namespace、配置优先级与历史记录。</li><li>命令取消与输出收尾采用 OpenCode 路线；如实标记输出不完整与已知回收边界。</li></ul></article>
+        <article class="card"><span class="label">INTENTIONAL CHANGE</span><h3>建议取消整个目录的长期独占</h3><p class="small">移除“一个 Agent 活着，整个目录就被占用”的跨进程锁。多实例可以读取同一项目，也可能同时编辑。</p><p class="small">版本复核能发现多数陈旧修改，但“检查后再替换”不是跨进程原子 compare-and-swap。此方案不承诺并发写入串行化；如果产品确实需要，再单独设计写入临界区锁。这个行为变化在下方单独 review。</p></article>
+      </div>
+      <div class="steps">
+        <div class="step"><span class="step-num">1</span><div><h4>保持已确认方向</h4><p>OpenCode 路线与 Git Bash 非必需已经确定；本轮保留源码证据和适配范围。目录命名与独占锁仍可在评审记录中调整。</p></div></div>
+        <div class="step"><span class="step-num">2</span><div><h4>完成目录与工具重构</h4><p>迁移所有调用方、类型导出、示例及文档。验证只装配 readFileTool 时无需 pwsh / rg / bridge；两个 cwd 共享静态工具时不串目录、不串版本记录。</p></div></div>
+        <div class="step"><span class="step-num">3</span><div><h4>移植 OpenCode 执行策略，做三端验证</h4><p>接入 cross-spawn，集中适配 shell 发现、取消与输出截止。先测无 Git Bash 的 Windows，再测 macOS / Linux；覆盖编码、引号、启动失败、输出和后代进程。</p></div></div>
+        <div class="step"><span class="step-num">4</span><div><h4>删除桥接与资产链路，完成集成回归</h4><p>执行 build、typecheck、lint 与受影响测试；验证 Escape、Agent close、审批拒绝、文件冲突、会话续接和保存失败重试。旧 Job Object 专属测试标明被替换的契约，再以跨平台用例覆盖新接口。</p></div></div>
+      </div>
+      <div class="callout amber"><strong>三端迁移还涉及文件与路径：</strong> Windows 的盘符、大小写、保留名称检查不能原样强加给 macOS / Linux。文件层保留通用越界 / 版本检查，并处理必要平台差异；会话 ID 在 Windows 保持旧格式，其他平台保留路径大小写。换执行库不会替代这些文件语义。</div>
+      <p class="small" style="margin-top:18px">验证状态：R3 完成固定版本源码核对与设计修订。业务实现、依赖锁文件和本路线的三端集成测试尚未修改或完成。</p>
+    </section>
+
+    <section id="review">
+      <div class="section-head"><span class="section-no">06</span><h2>评审记录与已确认方向</h2></div>
+      <p class="lede">命令执行采用 OpenCode 路线，不再作为待选项。以下两项记录目录相关选择；选择不会执行重构，也不自动提交。R3 使用独立本地记录。</p>
+      <form id="review-form" class="review-box">
+        <fieldset><legend>01 / 目录模型与工具</legend>
+          <label class="radio-line"><input type="radio" name="directory" value="cwd" checked><span>推荐：删除 createLocalWorkspace，只传固定 cwd；工具分别定义和执行。</span></label>
+          <label class="radio-line"><input type="radio" name="directory" value="descriptor"><span>保留 workspace 命名，但仅是只读 { cwd } 数据，不带方法或生命周期。</span></label>
+        </fieldset>
+        <fieldset><legend>02 / 整个目录的跨进程独占锁</legend>
+          <label class="radio-line"><input type="radio" name="locking" value="remove" checked><span>推荐：移除长期目录锁；保留版本校验，接受跨进程并发写竞争。</span></label>
+          <label class="radio-line"><input type="radio" name="locking" value="separate"><span>仍需要单实例占用：锁移到应用启动层单独处理，工具不依赖它。</span></label>
+        </fieldset>
+        <fieldset><legend>03 / 命令执行路线 · 对话中已确认</legend>
+          <input type="hidden" name="process" value="opencode">
+          <p class="small">OpenCode 路线：cross-spawn + 本机 shell 发现 + 集中取消与输出收尾。Git Bash 可选；实际 shell 在命令生成前告知模型。保留上游来源与许可，接入现有 ADK。</p>
+        </fieldset>
+        <label for="review-notes" style="display:block;font-size:14px;font-weight:600;margin-bottom:9px">补充意见</label>
+        <textarea id="review-notes" name="notes" placeholder="例如：workspace 命名也删掉；优先验证没有 Git Bash 的 Windows 环境……"></textarea>
+        <div class="button-row"><button type="button" class="button" id="export-review">导出评审记录</button><button type="button" class="button secondary" id="reset-review">恢复推荐选项</button><span id="save-status" role="status" aria-live="polite">选项仅保存在此浏览器</span></div>
+      </form>
+      <details style="margin-top:24px"><summary>资料与源码依据</summary>
+        <p class="small">资料核查日期：2026-11-05。第 04 节的社区实现链接均固定到已读取的 commit；推荐与适配差异单独说明。源码核对不等于本项目已完成集成验证。</p>
+        <ol class="sources">
+          <li><a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/packages/core/src/shell/select.ts" target="_blank" rel="noopener noreferrer">OpenCode · ShellSelect</a><small>固定版本的原生 shell 发现与启动参数。</small></li>
+          <li><a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/packages/util/src/cross-spawn-spawner.ts" target="_blank" rel="noopener noreferrer">OpenCode · CrossSpawnSpawner</a><small>cross-spawn 接入、终止、输出截止。</small></li>
+          <li><a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/packages/core/src/shell.ts" target="_blank" rel="noopener noreferrer">OpenCode · Shell service</a><small>服务调用链与生命周期；AlphaCode 适配到现有 ADK。</small></li>
+          <li><a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/package.json" target="_blank" rel="noopener noreferrer">OpenCode · 版本依赖</a> / <a href="https://github.com/anomalyco/opencode/blob/2f31b3d52c3ef8c7a2a338f368b1ba2e07b44e9e/LICENSE" target="_blank" rel="noopener noreferrer">MIT 许可</a><small>Bun 1.4.4、cross-spawn 7.0.6 与源码复用依据。</small></li>
+          <li><a href="https://github.com/earendil-works/pi/blob/55a5c6914570e2ae31ca36297654483bbbf46883/packages/coding-agent/src/utils/shell.ts" target="_blank" rel="noopener noreferrer">pi · Shell utilities</a> / <a href="https://github.com/earendil-works/pi/blob/55a5c6914570e2ae31ca36297654483bbbf46883/packages/coding-agent/src/core/tools/powershell.ts" target="_blank" rel="noopener noreferrer">PowerShell tool</a><small>独立 shell 工具与共享执行能力。</small></li>
+          <li><a href="https://github.com/superagent-ai/grok-cli/blob/fb97af83f06dca873281d60168430f06c8de6324/src/tools/bash.ts" target="_blank" rel="noopener noreferrer">Grok CLI · BashTool</a><small>前台 exec、后台 sh、取消与 cwd 状态。</small></li>
+          <li><a href="https://github.com/openai/codex/blob/49f0c6022596c361fe676a5c4738fb2be34e3a93/codex-rs/shell-command/src/shell_detect.rs" target="_blank" rel="noopener noreferrer">Codex · shell_detect</a> / <a href="https://github.com/openai/codex/blob/49f0c6022596c361fe676a5c4738fb2be34e3a93/codex-rs/core/src/spawn.rs" target="_blank" rel="noopener noreferrer">spawn</a><small>本机 shell 发现和 Rust 执行路径。</small></li>
+          <li><a href="https://github.com/moxystudio/node-cross-spawn/tree/v7.0.6" target="_blank" rel="noopener noreferrer">cross-spawn · v7.0.6</a><small>直接依赖的通用启动包。</small></li>
+        </ol>
+        <p class="small" style="margin-top:18px">源码核对：packages/coding-agent/src/{contracts,context,tools,coding-plugin,create-coding-agent,instructions-plugin}.ts；src/local/{local-workspace,windows-bridge}.ts、bridge.cs；apps/alphacode/src/{config,runtime}.ts。当前工作区尚有前序功能修改，本提案基于这些内容。</p>
+      </details>
+    </section>
+    <footer><span>ALPHACODE / ARCHITECTURE REVIEW / R3</span><span>单文件 · 离线可读 · 无外部脚本或字体</span></footer>
+  </main>
+  <script>
+    (() => {
+      'use strict';
+      const form = document.getElementById('review-form');
+      const status = document.getElementById('save-status');
+      const storageKey = 'alphacode-refactor-review-r3';
+      const labels = {
+        directory: { cwd: '删除 createLocalWorkspace；固定 cwd；静态独立工具', descriptor: '仅保留只读 workspace: { cwd } 数据，工具独立' },
+        locking: { remove: '移除长期目录锁，接受跨进程并发写竞争', separate: '单实例占用锁移到应用层，工具不依赖锁' },
+        process: { opencode: '已确认：OpenCode 路线；cross-spawn + 本机 shell 发现 + 取消与输出收尾；Git Bash 非必需' }
+      };
+      function readForm() {
+        return { directory: form.elements.directory.value, locking: form.elements.locking.value, process: form.elements.process.value, notes: form.elements.notes.value };
+      }
+      function save() {
+        try { localStorage.setItem(storageKey, JSON.stringify(readForm())); status.textContent = '已保存在此浏览器 · 尚未提交'; }
+        catch { status.textContent = '浏览器不支持本地保存，可导出记录'; }
+      }
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+        if (saved && typeof saved === 'object') {
+          for (const key of ['directory', 'locking', 'process']) {
+            if (Object.hasOwn(labels[key], saved[key])) form.elements[key].value = saved[key];
+          }
+          if (typeof saved.notes === 'string') form.elements.notes.value = saved.notes;
+          status.textContent = '已恢复本地记录 · 尚未提交';
+        }
+      } catch { status.textContent = '当前为默认选项，可导出记录'; }
+      form.addEventListener('submit', event => event.preventDefault());
+      form.addEventListener('input', save);
+      document.querySelectorAll('[data-diagram]').forEach(button => button.addEventListener('click', () => {
+        document.querySelectorAll('[data-diagram]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+        for (const name of ['before', 'after']) document.getElementById('diagram-' + name).hidden = name !== button.dataset.diagram;
+      }));
+      document.getElementById('reset-review').addEventListener('click', () => {
+        form.reset(); save(); status.textContent = '已恢复推荐选项 · 尚未提交';
+      });
+      document.getElementById('export-review').addEventListener('click', () => {
+        const value = readForm();
+        const content = '# AlphaCode 重构评审 R3\n\n设计日期：2026-11-05\n状态：本地评审记录，未自动提交或实施\n已确定：采用 OpenCode 命令执行路线，删除旧 Windows bridge；Git Bash 非必需。\n\n' +
+          '- 目录与工具：' + labels.directory[value.directory] + '\n' +
+          '- 目录锁：' + labels.locking[value.locking] + '\n' +
+          '- 命令执行：' + labels.process[value.process] + '\n\n补充意见：\n' + (value.notes || '（无）') + '\n';
+        const url = URL.createObjectURL(new Blob(['\ufeff', content], { type: 'text/markdown;charset=utf-8' }));
+        const link = document.createElement('a'); link.href = url; link.download = 'alphacode-refactor-review-r3.md';
+        document.body.append(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        status.textContent = '已导出评审记录 · 尚未提交';
+      });
+      document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
+        const content = document.getElementById(button.dataset.copy).textContent;
+        try {
+          if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(content);
+          else {
+            const box = document.createElement('textarea'); box.value = content; box.style.position = 'fixed'; box.style.left = '-9999px';
+            document.body.append(box); box.select(); const copied = document.execCommand('copy'); box.remove();
+            if (!copied) throw new Error('Copy unavailable');
+          }
+          button.textContent = '已复制';
+        } catch { button.textContent = '请选中代码复制'; }
+        setTimeout(() => { button.textContent = '复制'; }, 2000);
+      }));
+      if ('IntersectionObserver' in window) {
+        const links = [...document.querySelectorAll('nav a')];
+        const observer = new IntersectionObserver(entries => {
+          for (const entry of entries) if (entry.isIntersecting) {
+            links.forEach(link => link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id));
+          }
+        }, { rootMargin: '-10% 0px -65% 0px', threshold: 0 });
+        document.querySelectorAll('header[id], section[id]').forEach(section => observer.observe(section));
+      }
+    })();
+  </script>
+</body>
+</html>

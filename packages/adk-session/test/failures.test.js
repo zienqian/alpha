@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createMemorySessionStore } from '@alpha/adk-session';
 import { fixture, answer, model, tool, request, key, deferred, tick } from './helpers.js';

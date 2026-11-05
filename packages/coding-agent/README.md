@@ -1,95 +1,80 @@
 # @alpha/coding-agent
 
-C1 为现有 ADK 增加编程能力。`createCodingAgent` 返回普通 core Agent，只有一套 Loop；会话通过 `createSessionPlugin` 组合。
-
-## 使用
+为 ADK 增加六个静态编程工具。`createCodingAgent` 返回普通 core Agent，复用同一套 Loop；Session 通过插件组合。
 
 ```ts
 import { createCodingAgent } from '@alpha/coding-agent';
-import { createLocalWorkspace } from '@alpha/coding-agent/node';
 
-const workspace = await createLocalWorkspace({ root: process.cwd(), shell: 'powershell' });
-try {
-  const agent = await createCodingAgent({
-    model, // 已有 Provider 的 LanguageModel
-    workspace,
-    approve: async (action, context) => {
-      // 接入应用自己的审批 UI；展示 action.preview，取消后不执行。
-      return await askUser(action, context.signal) ? 'allow' : 'deny';
-    },
-  });
-  try { await agent.prompt('修复分页边界问题，并运行相关测试。'); }
-  finally { await agent.close(); }
-} finally { await workspace.close(); }
+const agent = await createCodingAgent({
+  model,
+  cwd: process.cwd(),
+  approve: async (action, context) =>
+    await askUser(action.preview, context.signal) ? 'allow' : 'deny',
+});
+try { await agent.prompt('修复问题并运行相关测试。'); }
+finally { await agent.close(); }
 ```
 
-本地适配器需要 Windows、PATH 中的 PowerShell 7 (`pwsh.exe`) 和 ripgrep (`rg.exe`)。C1 对 Bash / 其他平台返回 `PLATFORM_UNSUPPORTED`；可自行实现 `CodingWorkspace`。`isolation: 'none'` 表示命令拥有当前用户权限，路径检查和审批不提供 OS 沙箱。
+## 结构
 
-## API 与组合
+- `cwd` 是启动时规范化的目录字符串，不持有工具或资源。
+- `src/tools/` 中每个工具是模块常量，定义 schema、预检和执行；通过 `tools: [readFileTool, searchTool]` 选择，默认 `codingTools`，传 `[]` 可关闭全部工具。
+- 每个 Agent 独立持有 `CodingContext`：`cwd`、已选定 `shell`、业务 `data`、审批控制与文件读取版本。业务 `appContext` 在工具中通过 `ctx.app.data` 访问。
+- 内部审批插件只处理预检和许可。修改与命令的预检计划绑定同一次调用，批准后消费，拒绝、取消和运行结束清理；读取工具直接执行。
+- `files.ts`、`search.ts` 是显式接收 cwd 的普通函数；`process/` 处理 Shell 选择、启动、输出、取消和超时。
 
-| 入口 | 能力 |
+原 `createLocalWorkspace`、`CodingWorkspace`、`WorkspaceLease`、公开 `createCodingContext/createCodingPlugin`、长生命周期目录锁和 PowerShell/C# bridge 已移除。调用方只需关闭 Agent，不再创建或关闭 Workspace。
+
+## Shell 与进程
+
+采用 [OpenCode 路线及固定源码版本](THIRD_PARTY_NOTICES.md)，直接依赖 `cross-spawn@7.0.6`。Shell 在模型第一次调用之前选定，系统指令和审批预览显示实际解释器路径；执行批准的命令时不重新挑选 Shell。
+
+1. 宿主显式传入 `shell: '/path/to/bash'` 或 `shell: 'pwsh.exe'`，必须存在且属于支持的 Shell。`shell: false` 禁用命令。
+2. 自动选择优先使用有效、受支持的 `$SHELL`（fish/nu 不用于 POSIX 命令兼容模式）。
+3. Windows：pwsh → Windows PowerShell（包括系统路径）→ 可用的 Git Bash → COMSPEC/cmd。拒绝把 Windows 系统目录的 WSL bash 当成本地 Shell。
+4. macOS：zsh → bash → sh；Linux：bash → sh。候选程序必须存在。
+
+未找到 Shell 时，聊天和文件工具仍可用，命令返回 `SHELL_UNAVAILABLE`；显式无效配置报 `INVALID_SHELL`。文件工具不要求安装 PowerShell 7 或 Bash；只有列表/搜索运行时需要 PATH 上的 ripgrep。
+
+Windows 以 `taskkill /T /F` 终止进程树；Unix 使用 detached 进程组，先 SIGTERM，3 秒后 SIGKILL。根进程退出后最多再等 1 秒排空管道，超时会标记 `outputIncomplete`。持续读取 stdout/stderr，超过保留额度继续排空。取消或超时发生在启动之后返回未知副作用，交给 core 阻断继续执行。
+
+PowerShell 5.1/7 使用 UTF-8 和纯文本输出，不加载 profile。退出码是 **Shell 报告的退出码**；PowerShell 需要保留原生命令的具体退出码时使用 `exit $LASTEXITCODE`。命令环境沿用必要的系统变量白名单，不自动继承 Provider 密钥。
+
+当前没有 PTY、后台任务或永久 Shell。命令拥有当前用户权限；路径检查不是操作系统沙箱。已退出父进程的脱离子进程、主动脱离 Unix 进程组的后代、宿主被强杀时的清理不作完整保证。
+
+## 工具与审批
+
+| 工具 | 行为 |
 | --- | --- |
-| `createCodingAgent(options)` | preset 系统指令、工作区插件、项目指令插件与额外 core 插件 |
-| `createWorkspacePlugin({ workspace, policy?, approve?, onEvent?, maxResultBytes? })` | 六工具、预检计划、权限与工作区租约 |
-| `createProjectInstructionsPlugin({ workspace, file?, maxBytes? })` | 默认根目录 AGENTS.md，启动加载一次，临时 beforeModel 投影 |
-| `/node` 的 `createLocalWorkspace({ root, shell, env?, limits? })` | 本地文件、搜索、Windows 命令适配 |
+| `read_file` | UTF-8；默认 200 行，记录全文件版本 |
+| `list_files` | 稳定排序，尊重 ignore；默认 200 项 |
+| `search` | 单行字面搜索；默认 100 项，不算编辑前的读取 |
+| `edit_file` | 当前 Agent 必须先读，oldText 非空且唯一；校验读取版本 |
+| `create_file` | 只创建；父目录必须存在，不覆盖 |
+| `run_command` | 执行已选 Shell 的命令；参数 `command, cwd?, timeoutMs?` |
 
-`policy` 是静态对象：`{ decide(action, context) { return 'allow' | 'ask' | 'deny'; } }`。默认读取、搜索、编辑、创建允许，命令 ask，自定义工具 deny。没有 approve 回调的 ask 会拒绝。命令预览包含固定 shell / cwd / command；文件预览包含具体改动与预期版本。digest 绑定工作区、参数与版本；审批期间内容变化会返回 `FILE_CONFLICT`，不覆盖。
+默认读取、搜索、编辑、创建允许；命令询问、自定义工具拒绝。静态 `policy.decide(action, context)` 返回 allow/ask/deny；缺少 approve 回调时 ask 拒绝。`action.cwd` 标识根目录，digest 绑定参数、路径、Shell、预期文件版本和预览。审批期间文件变化返回 `FILE_CONFLICT`。
+
+结果为有界 JSON 字符串：`{ ok: true, data }` 或 `{ ok: false, code, detail? }`。非零退出返回 `COMMAND_EXIT_NONZERO`，保留退出码和日志，模型可继续修复。无法确认副作用则抛出并产生 `outcome_unknown`，不自动重试。命令执行后清除文件观察，写文件后清除该文件观察；再次修改需重新读取。
+
+## 限制与 Session
+
+文件上限 1 MiB，严格 UTF-8，保留 BOM/CRLF，拒绝链接路径。更新使用同目录临时文件和 rename，创建使用独占 link；写入前复查路径与版本。没有目录锁，也不保证对并发外部修改的原子 CAS、跨文件事务或 ACL 完整保留。
+
+命令上限 60 秒，模型可降低；stdout/stderr 合计保留 48 KiB。搜索原始输出上限 4 MiB；序列化 JSON 再按 core 工具结果预算截断，最低预算 4096 字节。preset 默认 24 次模型调用、64 次工具调用、180 秒。根目录 AGENTS.md 启动读取一次，默认最大 32 KiB，可通过 `projectInstructions: false` 禁用。
 
 ```ts
-import { createSession, createSessionPlugin } from '@alpha/adk-session';
-
-const session = await createSession({
-  store, namespace: 'my-app', agentKey: `coding-c1:${workspace.id}:v1`,
-});
-const agent = await createCodingAgent({
-  model, workspace, approve,
-  plugins: [createSessionPlugin({ session })],
-});
-const result = await agent.prompt('修复问题', { requestId: 'task-42' });
-// result 是 core RunResult；保存状态单独查看 session.state.persistence。
-// 同一 requestId + 相同输入重放旧结果，不重新执行工具。
-// 关闭顺序：agent.close() → session.close() → workspace.close() → store.close()。
+const session = await createSession({ store, namespace: 'my-app', agentKey: 'coding-r3:v1' });
+const agent = await createCodingAgent({ model, cwd, approve, plugins: [createSessionPlugin({ session })] });
+await agent.prompt('修复问题', { requestId: 'task-42' });
+// 保存状态：session.state.persistence；失败可重试 session.flush()，不会重新执行工具。
+// 关闭：agent.close() → session.close() → store.close()。
 ```
 
-Session 不拥有执行 API，Coding 包也不依赖 Session。关闭 Agent 如果归档失败，Session 仍可 flush；flush 不重复修改文件。工作区与 Store 都由应用持有。Workspace.close 会拒绝新操作并等待现有租约，不能在 Agent.close 前等待它完成。
-
-## 六个工具
-
-| 工具 | 参数 | 行为 |
-| --- | --- | --- |
-| `read_file` | `path, startLine?, lineCount?` | UTF-8，1-based 行号；默认 200 行；记录全文件版本 |
-| `list_files` | `glob?, limit?` | 默认 200 项，稳定排序，尊重 ignore |
-| `search` | `query, glob?, limit?` | 字面单行搜索，默认 100 项；不算编辑前的读取 |
-| `edit_file` | `path, oldText, newText` | 当前 Agent 先读文件，oldText 非空且唯一，精确替换 |
-| `create_file` | `path, content` | 只创建，父目录必须存在 |
-| `run_command` | `command, cwd?, timeoutMs?` | 固定 PowerShell 7，非交互，等待完整进程树 |
-
-结果是 core string 内的有界 JSON：`{ ok: true, data }` 或 `{ ok: false, code, detail? }`。`edit_file` 返回 beforeRevision / afterRevision / changed；`create_file` 返回 afterRevision / created。退出码 1 返回 `COMMAND_EXIT_NONZERO` 与日志摘要，模型可继续修复。只有副作用无法确认才抛出，触发 core 的 outcome_unknown / blocked；不会自动重试。
-
-写入、命令后清除相关文件观察缓存，再次编辑需要重新 read_file。新 Agent 不沿用历史中的文件观察。项目指令默认 32 KiB，缺失等于空，读取失败或过大则启动失败；不自动加载可执行技能或插件。
-
-## 限制与资源
-
-- preset 默认 24 次模型调用、64 次工具调用、180 秒；可通过 core `limits` 调整。
-- 文件默认 1 MiB，UTF-8 严格解码，保留 BOM / CRLF；拒绝二进制和链接路径。
-- 命令默认上限 60 秒，模型只能降低；输出合计默认 48 KiB，持续排空超出部分。JSON 转义后的结果再限额，保留退出码和写入版本。
-- 工具结果预算至少 4096 字节。preset 自动跟随 core `maxToolResultBytes`；手动装配插件时通过 `maxResultBytes` 与 core 的预算保持一致。
-- 搜索用 rg 参数数组，无 shell 插值；原始搜索输出上限 4 MiB，超出标记 truncated。glob 在 ignore 生效后使用 minimatch 筛选；不是访问权限。
-- 同一规范工作区在同一 Windows 用户的进程之间互斥。Agent 持有 OS 文件锁至关闭，锁文件位于用户临时目录并保留，句柄关闭释放锁。
-- PowerShell bridge 使用 Windows Job Object；进程以 suspended 状态创建、入 Job 后恢复，取消/超时终止并排空进程树。命令超时属于未知副作用，后续执行阻断。启动桥接需要本机 .NET Add-Type 编译，未预装原生二进制。
-- 文件使用同目录临时文件，更新 rename，创建独占 link。先复查版本和路径，再提交；不保证对恶意并发修改的原子 CAS，不提供多文件事务、磁盘断电恢复或 Git 回滚。NTFS 文件 ACL 等元数据不承诺完整保留。
+AlphaCode 保留既有 Windows `local:<sha256(canonical cwd lowercase)>` 会话命名、目录参数优先级和关闭时补写保存的行为。
 
 ## 验证
 
-```sh
-bun run --filter @alpha/coding-agent build
-bun run --filter @alpha/coding-agent typecheck
-bun run --filter @alpha/coding-agent lint
-bun run --filter @alpha/coding-agent test
-bun --env-file=.env.local packages/coding-agent/integration/live.js
-```
+仓库根目录运行 `bun run build`、`bun run typecheck`、`bun run lint`、`bun run test`。测试使用临时目录、真实子进程和离线模型；真实模型探针为显式执行的 `bun --env-file=.env.local packages/coding-agent/integration/live.js`。
 
-最后一条是显式真实模型探针，只修改它创建的临时 fixture，验证失败测试 → 源码修复 → 测试通过 → Session 重放零副作用。普通测试离线运行；Windows 适配测试在其他平台标记 skip。
-
-[实现规格](../../docs/coding-agent-c1-spec.md) · [验收记录](../../docs/coding-agent-c1-validation.md) · [交互文档](../../docs/coding-agent-design-c1.html) · [完整组合示例](../../docs/coding-agent-example-c1.ts)
+[完整组合示例](../../docs/coding-agent-example-c1.ts) · [API 快照](../../docs/coding-agent-api-c1.d.ts) · [R3 评审](../../docs/coding-agent-refactor-review.html) · [本轮验证](../../docs/coding-agent-r3-validation.md)

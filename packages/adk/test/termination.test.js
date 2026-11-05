@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { describe, test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createAgent } from '@alpha/adk/core';
 import { answer, call, request, fakeModel, tool, deferred, options, turn } from './helpers.js';
@@ -13,9 +13,9 @@ test('already aborted input has a run but no user message or model request', asy
   await agent.close();
 });
 
-test('abort from model.start or tool.start prevents the associated invocation', async t => {
+describe('abort from model.start or tool.start prevents the associated invocation', () => {
   for (const phase of ['model.start', 'tool.start']) {
-    await t.test(phase, async () => {
+    test(phase, async () => {
       let executed = 0;
       const model = fakeModel(request(call()));
       const agent = await createAgent({ ...options(model), tools: [tool(() => { executed++; return ''; })] });
@@ -29,9 +29,9 @@ test('abort from model.start or tool.start prevents the associated invocation', 
   }
 });
 
-test('uncooperative write is awaited: late success is preserved, late rejection blocks history', async t => {
+describe('uncooperative write is awaited: late success is preserved, late rejection blocks history', () => {
   for (const reject of [false, true]) {
-    await t.test(reject ? 'unknown' : 'success', async () => {
+    test(reject ? 'unknown' : 'success', async () => {
       const started = deferred(), pending = deferred();
       const agent = await createAgent({ ...options(fakeModel(request(call()))), tools: [tool(() => { started.resolve(); return pending.promise; }, 'write')] });
       let settled = false;
@@ -49,9 +49,9 @@ test('uncooperative write is awaited: late success is preserved, late rejection 
   }
 });
 
-test('beforeModel cancellation and model-stream cancellation do not commit late assistant output', async t => {
+describe('beforeModel cancellation and model-stream cancellation do not commit late assistant output', () => {
   for (const phase of ['hook', 'model']) {
-    await t.test(phase, async () => {
+    test(phase, async () => {
       const entered = deferred(), release = deferred();
       const model = fakeModel(phase === 'model' ? async () => { entered.resolve(); await release.promise; return answer('late'); } : answer());
       const agent = await createAgent({ ...options(model), hooks: phase === 'hook' ? { beforeModel: [async m => { entered.resolve(); await release.promise; return m; }] } : {} });
@@ -72,20 +72,20 @@ test('first failure wins even if a failure observer subsequently aborts', async 
   await agent.close();
 });
 
-test('limits distinguish malformed batch, spent model budget, and remaining tool budget', async t => {
-  await t.test('model budget', async () => {
+describe('limits distinguish malformed batch, spent model budget, and remaining tool budget', () => {
+  test('model budget', async () => {
     const agent = await createAgent({ ...options(fakeModel(request(call()))), tools: [tool()], limits: { maxModelCalls: 1 } });
     const result = await agent.prompt('go');
     assert.equal(result.status, 'limited'); assert.equal(result.reason, 'max_model_calls');
     assert.equal(agent.state.messages.at(-1).execution, 'succeeded'); await agent.close();
   });
-  await t.test('batch too large', async () => {
+  test('batch too large', async () => {
     const agent = await createAgent({ ...options(fakeModel(request(call(), call('c2')))), tools: [tool()], limits: { maxToolCalls: 1 } });
     const result = await agent.prompt('go');
     assert.equal(result.error.code, 'MODEL_TOOL_BATCH_TOO_LARGE');
     assert.equal(agent.state.messages.length, 1); await agent.close();
   });
-  await t.test('tool budget', async () => {
+  test('tool budget', async () => {
     const agent = await createAgent({ ...options(fakeModel(request(call()), request(call()))), tools: [tool()], limits: { maxToolCalls: 1 } });
     const result = await agent.prompt('go');
     assert.equal(result.status, 'limited'); assert.equal(result.reason, 'max_tool_calls');

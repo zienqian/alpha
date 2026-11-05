@@ -1,27 +1,27 @@
-import test from 'node:test';
+import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { copyFile, mkdtemp, rm } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import Database from 'better-sqlite3';
+import { Database } from 'bun:sqlite';
 import { createSqliteSessionStore } from '@alpha/adk-session/sqlite';
 import { fixture, key } from './helpers.js';
 
 for (const [archive, driver] of [['session-v1.sqlite', 'better-sqlite3'], ['session-bun-v1.sqlite', 'bun:sqlite']]) {
-  test(`Bun/better-sqlite3 opens a ${driver} v1 archive, replays receipts and continues the conversation`, async t => {
+  test(`Bun SQLite opens a ${driver} v1 archive, replays receipts and continues the conversation`, async () => {
     const dir = await mkdtemp(join(tmpdir(), 'alpha-session-legacy-'));
     const filename = join(dir, 'session.db');
     await copyFile(new URL(`./fixtures/${archive}`, import.meta.url), filename);
     const store = await createSqliteSessionStore({ filename });
     const f = fixture({ store });
-    t.after(async () => {
+    await using cleanup = { async [Symbol.asyncDispose]() {
       try { await f.close(); } finally {
         await store.close();
         assert.equal(dirname(resolve(dir)), resolve(tmpdir()));
         assert.ok(basename(dir).startsWith('alpha-session-legacy-'));
         await rm(dir, { recursive: true, force: true });
       }
-    });
+    } };
     const previous = await store.read(key('legacy'));
     assert.equal(previous.revision, 2);
     assert.equal(previous.data.formatVersion, 1);
@@ -46,8 +46,8 @@ for (const [archive, driver] of [['session-v1.sqlite', 'better-sqlite3'], ['sess
     } finally { await reopened.close(); }
     const db = new Database(filename, { readonly: true });
     try {
-      assert.equal(db.pragma('user_version', { simple: true }), 1);
-      assert.equal(db.pragma('integrity_check', { simple: true }), 'ok');
+      assert.equal(db.query('PRAGMA user_version').values()[0][0], 1);
+      assert.equal(db.query('PRAGMA integrity_check').values()[0][0], 'ok');
     } finally { db.close(); }
   });
 }

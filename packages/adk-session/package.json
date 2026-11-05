@@ -5,10 +5,12 @@
   "type": "module",
   "exports": {
     ".": {
+      "alpha-source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./sqlite": {
+      "alpha-source": "./src/sqlite/index.ts",
       "types": "./dist/sqlite/index.d.ts",
       "import": "./dist/sqlite/index.js"
     }
@@ -37,19 +39,6 @@
   },
   "dependencies": {
     "@alpha/adk": "workspace:*"
-  },
-  "peerDependencies": {
-    "better-sqlite3": ">=13.0.3 <14"
-  },
-  "peerDependenciesMeta": {
-    "better-sqlite3": {
-      "optional": true
-    }
-  },
-  "devDependencies": {
-    "@types/better-sqlite3": "9.6.0",
-    "@types/node": "20.19.43",
-    "better-sqlite3": "13.0.3"
   },
   "engines": {
     "bun": ">=1.4.4"

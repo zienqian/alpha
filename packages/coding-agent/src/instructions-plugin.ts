@@ -1,9 +1,9 @@
 import type { Plugin } from '@alpha/adk/core';
-import type { CodingWorkspace } from './contracts.js';
+import { readFile } from './files.js';
 import { byteLength, failure, positive, relativePath } from './internal.js';
 
 export function createProjectInstructionsPlugin<C = undefined>(options: {
-  readonly workspace: CodingWorkspace; readonly file?: string; readonly maxBytes?: number;
+  readonly cwd: string; readonly file?: string; readonly maxBytes?: number;
 }): Plugin<C> {
   const file = relativePath(options.file ?? 'AGENTS.md');
   const max = positive(options.maxBytes ?? 32768, 'INSTRUCTION_LIMIT', 1048576);
@@ -19,7 +19,7 @@ export function createProjectInstructionsPlugin<C = undefined>(options: {
       ] : messages);
     },
     async start(signal) {
-      const snapshot = await options.workspace.readFile(file, { signal });
+      const snapshot = await readFile(options.cwd, file, signal);
       content = snapshot?.content ?? '';
       if (byteLength(content) > max) throw failure('PROJECT_INSTRUCTIONS_TOO_LARGE');
     },

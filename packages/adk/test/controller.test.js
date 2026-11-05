@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createRun } from '../dist/core/internal/run-controller.js';
 import { createEvents } from '../dist/core/internal/events.js';

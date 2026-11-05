@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { describe, test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
 import { createAgent, createTool } from '@alpha/adk/core';
@@ -78,9 +78,9 @@ test('deny short-circuits authorization and returns fixed text without consuming
   await agent.close();
 });
 
-test('unknown tools and invalid inputs fail without effects, and finalize the whole batch', async t => {
+describe('unknown tools and invalid inputs fail without effects, and finalize the whole batch', () => {
   for (const first of [call('c1', 'missing'), call('c1', 'lookup', { id: 12 })]) {
-    await t.test(first.name + JSON.stringify(first.arguments), async () => {
+    test(first.name + JSON.stringify(first.arguments), async () => {
       let executions = 0;
       const agent = await createAgent({ ...options(fakeModel(request(first, call('c2')))), tools: [tool(() => { executions++; return ''; })] });
       const result = await agent.prompt('go');
@@ -94,9 +94,9 @@ test('unknown tools and invalid inputs fail without effects, and finalize the wh
   }
 });
 
-test('failed read/write tools preserve distinct execution facts; confirmed history can unblock', async t => {
+describe('failed read/write tools preserve distinct execution facts; confirmed history can unblock', () => {
   for (const effect of ['read', 'write', 'unknown']) {
-    await t.test(effect, async () => {
+    test(effect, async () => {
       const agent = await createAgent({ ...options(fakeModel(request(call()), answer())), tools: [tool(() => { throw new Error('secret token'); }, effect)] });
       const result = await agent.prompt('go');
       assert.equal(result.status, 'failed');
@@ -115,9 +115,9 @@ test('failed read/write tools preserve distinct execution facts; confirmed histo
   }
 });
 
-test('post-execution failures retain success without rerunning a tool', async t => {
+describe('post-execution failures retain success without rerunning a tool', () => {
   for (const scenario of ['invalid', 'too-large', 'hook']) {
-    await t.test(scenario, async () => {
+    test(scenario, async () => {
       let executions = 0;
       const agent = await createAgent({
         ...options(fakeModel(request(call()))),

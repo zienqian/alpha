@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { getEventListeners } from 'node:events';
 import { createMemorySessionStore, createSessionManager } from '@alpha/adk-session';

@@ -12,7 +12,7 @@ export async function* readSse(body: ReadableStream<Uint8Array>, signal?: AbortS
   try {
     for (;;) {
       if (signal?.aborted) throw signal.reason;
-      let chunk: ReadableStreamReadResult<Uint8Array>;
+      let chunk: Awaited<ReturnType<typeof reader.read>>;
       try { chunk = await reader.read(); }
       catch { if (signal?.aborted) throw signal.reason; throw new ProviderError('REQUEST_FAILED', 'Provider stream failed.'); }
       if (signal?.aborted) throw signal.reason;

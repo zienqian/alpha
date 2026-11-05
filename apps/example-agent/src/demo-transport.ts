@@ -1,5 +1,7 @@
+import type { Fetch } from '@alpha/provider';
+
 /** Offline HTTP fixture: exercises the real Provider parser without network access. */
-export function createDemoFetch(): typeof fetch {
+export function createDemoFetch(): Fetch {
   let calls = 0;
   return async (_input, init) => {
     init?.signal?.throwIfAborted();

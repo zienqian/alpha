@@ -8,7 +8,7 @@ import { readSse } from './sse.js';
 import { createStreamCodec } from './stream-codecs.js';
 import { applyModelPolicy } from './model-policy.js';
 import type { ProtocolName } from './stream-codecs.js';
-import type { GenerateInput, LanguageModel, ModelMetadata } from './types.js';
+import type { Fetch, GenerateInput, LanguageModel, ModelMetadata } from './types.js';
 
 type HttpOptions = {
   provider: string;
@@ -21,7 +21,7 @@ type HttpOptions = {
   maxOutputTokens?: number;
   maxTokensField?: 'max_tokens' | 'max_completion_tokens';
   metadata: ModelMetadata;
-  fetch: typeof fetch;
+  fetch: Fetch;
 };
 
 const protocols = { completions: completionsProtocol, responses: responsesProtocol, anthropic: anthropicProtocol };

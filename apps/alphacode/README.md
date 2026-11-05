@@ -1,30 +1,97 @@
 # AlphaCode
 
-基于 OpenTUI + SolidJS 的终端 Agent 应用骨架，使用仓库统一的 Bun 1.4.4。目前保留模板欢迎页，标题为 AlphaCode，尚未接入 Agent 功能。
+OpenTUI + SolidJS 终端编程 Agent。当前提供用户输入、Markdown 流式回复、多轮对话、简短工具状态与命令确认。
 
-从仓库根目录安装依赖并启动开发模式：
+## 运行
 
-```bash
+使用 Bun 1.4.4；命令自动选择系统可用的 Shell，列表与搜索需要 ripgrep。从仓库根目录执行：
+
+```powershell
 bun install --frozen-lockfile
+# 首次使用且尚无 .env.local 时：
+Copy-Item .env.example .env.local
 bun run dev
 ```
 
-单独构建、检查和运行 AlphaCode：
+`bun run dev` 直接运行应用和基础包源码，并监听变化自动重启，无需预先 build。构建产物仍可通过 `bun run build` 后执行 `bun run start` 体验。启动器通过绝对路径读取仓库的 `.env.local` 和 TUI 配置，保持调用者当前目录。终端环境变量优先于配置文件。
 
-```bash
-bun run --filter @alpha/alphacode typecheck
-bun run --filter @alpha/alphacode lint
-bun run --filter @alpha/alphacode build
-bun run --cwd apps/alphacode start
+复用现有模型配置：
+
+- `ADK_MODEL`：必填，模型 ID。
+- `ADK_BASE_URL`：Chat Completions 兼容端点，默认 `https://api.openai.com/v1`。
+- `ADK_AUTH=none`：显式使用无认证端点；需要密钥时移除此项。
+- `ADK_API_KEY_ENV`：凭证环境变量名，默认 `OPENAI_API_KEY`，实际凭证也需配置。
+- `ALPHACODE_DB`：可选 SQLite 路径，默认用户目录下的 `.alphacode/sessions.db`。
+
+根目录的 `dev` / `start` 默认以仓库根目录为工作区。指定其他工作区：
+
+```powershell
+bun run --cwd apps/alphacode start C:/path/to/project
 ```
 
-在交互式终端运行，按 `Ctrl+C` 关闭界面。开发模式监听源码变化并重启应用；如果关闭界面后 Bun 仍在监听，再按一次 `Ctrl+C` 结束监听。也可以进入 `apps/alphacode` 后运行 `bun run dev`。
+直接在应用目录运行时，可传入一个工作区路径，或设置 `ALPHACODE_WORKSPACE`；未指定则使用当前目录。路径参数优先于环境变量，界面顶部显示实际工作区。
 
-- `src/index.tsx`：SolidJS 入口与模板欢迎页。
-- `bunfig.toml`：加载 OpenTUI Solid 的 JSX 转换插件。
-- `tsconfig.json`：保留模板的 Solid JSX 与 Bundler 配置，继承仓库的基础配置。
-- `scripts/build.ts`：使用官方 Solid Bun 插件构建到 `dist/index.js`；产物仍需 Bun 与已安装的依赖。
+## 在其他项目中使用最新开发版
 
-模板来源：[create-tui 的 Solid 模板](https://github.com/msmps/create-tui/tree/main/packages/templates/solid)，适配了仓库的 Bun workspace、Nx 和 tsrs。依赖固定为模板版本：OpenTUI 0.8.1、SolidJS 1.9.18。
+在 Alpha 仓库根目录执行一次：
 
-构建方式参考 [OpenTUI Solid 官方说明](https://github.com/anomalyco/opentui/tree/main/packages/solid)。仓库根目录的 `build`、`typecheck` 和 `lint` 会通过 Nx 自动包含此应用。
+```powershell
+bun install
+bun run link:dev
+```
+
+它使用 `bun link` 将包的 `alphacode` 命令链接到本地仓库（Windows 由 Bun 创建命令启动器）。以后在任意终端、任意项目目录运行：
+
+```powershell
+cd C:\path\to\your-project
+alphacode
+```
+
+也可以直接执行 `alphacode C:/path/to/your-project`。无需在目标项目中安装 AlphaCode，也不会修改目标项目的 package.json。
+
+`alphacode` 每次启动都加载当前仓库源码，改动 TUI、ADK、Provider、Session、Coding Agent 后退出重开即可，无需重新 build 或 link。`alphacode --watch` 会在已加载的源码变化时自动重启；重启会创建新会话，因此日常体验推荐普通 `alphacode`。新增或升级依赖后，在 Alpha 仓库执行 `bun install`。
+
+Windows 如果当前终端尚未刷新 PATH，可以重新打开终端，或执行：
+
+```powershell
+$env:Path = "$HOME\.bun\bin;$env:Path"
+alphacode
+```
+
+`alphacode --help` 查看用法，`alphacode --version` 查看版本。取消本地链接：`bun unlink --cwd apps/alphacode`（在仓库根目录执行）。仓库移动后重新运行 `bun run link:dev`。
+
+开发启动器使用 `--conditions=alpha-source` 选择基础包的源码导出；正常构建、测试和消费者继续使用 dist 导出。源码更新在下一次启动生效，不会在正在进行的任务中途替换模块。
+
+## 交互
+
+- `Enter` 发送；`Ctrl+J` 或终端支持的 `Shift+Enter` 换行；支持粘贴多行。
+- 回复增量显示 Markdown，包括列表、代码块和表格；滚动区跟随底部，可用鼠标回看。
+- 一次执行一个任务；生成期间可编辑下一条输入，结束后发送。
+- `Esc` 停止当前执行。运行时 `Ctrl+C` 也会停止，空闲时 `Ctrl+C` 保存并退出。
+- 命令执行前显示 shell、目录与命令，按 `y` 允许本次执行，`n` 拒绝。读取、搜索、编辑和创建沿用 Coding Agent 默认策略。
+- 开发模式关闭界面后若 Bun 仍在监听，再按一次 `Ctrl+C` 结束监听。
+
+流中断或取消后保留未完成的预览；实际对话历史由 ADK 管理。每轮等待 Session 保存后才允许发送下一条。保存失败和执行状态不明会显示错误；退出时会补写保存，保存仍失败则保留界面供再次退出重试。
+
+每次启动创建一个新会话，已完成轮次归档到 SQLite；本版没有历史会话选择、恢复、模型切换或其他复杂交互。命令权限沿用当前用户，工作区路径检查不提供操作系统沙箱。
+
+## 结构与验证
+
+- `src/runtime.ts`：确定只读 cwd，组装 Provider、ADK Coding Agent 及 Session SQLite，管理资源关闭顺序。
+- `src/chat.ts`：将 ADK 增量事件、工具状态和最终结果映射到 UI，处理发送、取消、命令确认与保存状态。
+- `src/app.tsx`：Solid 输入区、滚动对话和 OpenTUI 原生 Markdown 渲染。
+- `src/config.ts` / `src/index.tsx`：环境配置、工作区定位、启动及退出。
+- `scripts/build.ts`：使用 OpenTUI Solid 的 Bun 插件构建；产物需 Bun 与已安装依赖。
+- `bin/alphacode.ts`：跨目录的开发版命令入口，指定源码条件、仓库配置和 Solid 转换，保持 cwd 并等待 TUI 退出。
+- `scripts/preload.ts`：为源码和构建产物加载 Solid 转换。
+
+```powershell
+bun run build
+bun run typecheck
+bun run lint
+bun run test
+```
+
+AlphaCode 测试使用离线 SSE 夹具驱动真实 Provider、ADK、Coding Agent 和临时 SQLite，并用 OpenTUI 测试渲染器检查输入与增量显示；普通测试不会请求真实模型。
+
+工程基于 [create-tui Solid 模板](https://github.com/msmps/create-tui/tree/main/packages/templates/solid)，使用 OpenTUI 0.8.1 和 SolidJS 1.9.18。Markdown 行为参考 [OpenTUI 文档](https://opentui.com/docs/components/markdown/)。

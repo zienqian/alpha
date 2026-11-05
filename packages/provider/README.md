@@ -1,6 +1,6 @@
 # @alpha/provider
 
-Alpha 自己的 Provider 配置、模型接口和 HTTP 协议适配实现。运行时不依赖 AI SDK 或其他第三方库；Node.js 使用内置 `fetch`。
+Alpha 自己的 Provider 配置、模型接口和 HTTP 协议适配实现。运行时不依赖 AI SDK 或其他第三方库；Bun 使用内置 `fetch`。
 
 ```ts
 import { createProvider, defineProviderConfig } from '@alpha/provider';

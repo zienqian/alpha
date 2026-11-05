@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": {
+      "alpha-source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
@@ -23,9 +24,6 @@
     "tags": [
       "layer:provider"
     ]
-  },
-  "devDependencies": {
-    "@types/node": "20.19.43"
   },
   "engines": {
     "bun": ">=1.4.4"

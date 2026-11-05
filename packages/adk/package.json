@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./core": {
+      "alpha-source": "./src/core/index.ts",
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.js"
     }
@@ -36,7 +37,6 @@
     "@standard-schema/spec": "1.1.0"
   },
   "devDependencies": {
-    "@types/node": "20.19.43",
     "zod": "4.6.7"
   },
   "engines": {

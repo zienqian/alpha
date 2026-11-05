@@ -1,4 +1,4 @@
-import type { Database } from 'better-sqlite3';
+import { Database } from 'bun:sqlite';
 import type { SessionSnapshot, SessionStore } from '../contracts.js';
 import { snapshot, validateKey } from '../internal/codec.js';
 import { Failure, ensure, safe } from '../internal/errors.js';
@@ -19,27 +19,28 @@ export async function createSqliteSessionStore(options: { readonly filename: str
     keys(options, ['filename'], 'SESSION_CONFIG_INVALID');
     const filename = options.filename;
     ensure(text(filename) && filename !== ':memory:' && !filename.includes('\0'), 'SESSION_CONFIG_INVALID');
-    const { default: Database } = await import('better-sqlite3').catch(() => { throw new Failure('SQLITE_DRIVER_UNAVAILABLE'); });
     // Set the busy handler before the first read or schema transaction.
-    db = new Database(filename, { timeout: 5000 });
+    db = new Database(filename, { create: true, strict: true });
+    db.exec('PRAGMA busy_timeout = 5000');
     function versionCheck(connection: Database) {
-      const version = connection.pragma('user_version', { simple: true });
+      const version = connection.query('PRAGMA user_version').values()[0]?.[0];
       ensure(version === 0 || version === 1, 'SESSION_FORMAT_INVALID');
-      if (version === 0) ensure((connection.prepare("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'").all()).length === 0, 'SESSION_FORMAT_INVALID');
+      if (version === 0) ensure((connection.query("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'").all()).length === 0, 'SESSION_FORMAT_INVALID');
       return version;
     }
     versionCheck(db);
-    ensure(db.pragma('journal_mode = WAL', { simple: true }) === 'wal', 'STORE_UNAVAILABLE');
-    db.pragma('synchronous = FULL'); db.pragma('foreign_keys = ON');
-    ensure(db.pragma('synchronous', { simple: true }) === 2 && db.pragma('foreign_keys', { simple: true }) === 1 && db.pragma('busy_timeout', { simple: true }) === 5000, 'STORE_UNAVAILABLE');
+    ensure(db.query('PRAGMA journal_mode = WAL').values()[0]?.[0] === 'wal', 'STORE_UNAVAILABLE');
+    db.exec('PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON');
+    ensure(db.query('PRAGMA synchronous').values()[0]?.[0] === 2 && db.query('PRAGMA foreign_keys').values()[0]?.[0] === 1 && db.query('PRAGMA busy_timeout').values()[0]?.[0] === 5000, 'STORE_UNAVAILABLE');
     const connection = db;
     connection.transaction(() => { if (versionCheck(connection) === 0) connection.exec(schema); }).immediate();
-    const columns = connection.prepare('PRAGMA table_info(sessions)').all() as { name: string }[];
+    // query() owns cached statements and finalizes them on close, releasing Windows file handles.
+    const columns = connection.query('PRAGMA table_info(sessions)').all() as { name: string }[];
     ensure(['namespace', 'id', 'revision', 'deleted', 'created_at', 'updated_at', 'body'].every(name => columns.some(c => c.name === name)), 'SESSION_FORMAT_INVALID');
-    const get = connection.prepare('SELECT id,revision,body FROM sessions WHERE namespace=? AND id=? AND deleted=0');
-    const insert = connection.prepare('INSERT INTO sessions(namespace,id,revision,created_at,updated_at,body) VALUES(?,?,0,?,?,?)');
-    const update = connection.prepare('UPDATE sessions SET revision=revision+1,body=?,updated_at=? WHERE namespace=? AND id=? AND revision=? AND deleted=0');
-    const remove = connection.prepare('UPDATE sessions SET revision=revision+1,deleted=1,body=NULL WHERE namespace=? AND id=? AND revision=? AND deleted=0');
+    const get = connection.query('SELECT id,revision,body FROM sessions WHERE namespace=? AND id=? AND deleted=0');
+    const insert = connection.query('INSERT INTO sessions(namespace,id,revision,created_at,updated_at,body) VALUES(?,?,0,?,?,?)');
+    const update = connection.query('UPDATE sessions SET revision=revision+1,body=?,updated_at=? WHERE namespace=? AND id=? AND revision=? AND deleted=0');
+    const remove = connection.query('UPDATE sessions SET revision=revision+1,deleted=1,body=NULL WHERE namespace=? AND id=? AND revision=? AND deleted=0');
     let closed = false, closePromise: Promise<void> | undefined;
     const guard = () => ensure(!closed, 'STORE_CLOSED');
     function decode(row: unknown): SessionSnapshot {
@@ -60,11 +61,11 @@ export async function createSqliteSessionStore(options: { readonly filename: str
           throw safe(cause);
         }
       },
-      async read(key) { try { guard(); validateKey(key); const row = get.get(key.namespace, key.id); return row === undefined ? undefined : decode(row); } catch (e) { throw safe(e); } },
+      async read(key) { try { guard(); validateKey(key); const row = get.get(key.namespace, key.id); return row === null ? undefined : decode(row); } catch (e) { throw safe(e); } },
       async list(namespace, options) {
         try {
           guard(); const { after, limit } = listOptions(namespace, options);
-          const query = connection.prepare('SELECT id,revision,body FROM sessions WHERE namespace=? AND deleted=0' +
+          const query = connection.query('SELECT id,revision,body FROM sessions WHERE namespace=? AND deleted=0' +
             (after ? ' AND (created_at < ? OR (created_at = ? AND id < ? COLLATE BINARY))' : '') + ' ORDER BY created_at DESC,id DESC LIMIT ?');
           const rows = after ? query.all(namespace, after.createdAt, after.createdAt, after.id, limit + 1) : query.all(namespace, limit + 1);
           return page(namespace, rows.map(decode), options);

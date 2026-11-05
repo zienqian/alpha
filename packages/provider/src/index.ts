@@ -8,7 +8,7 @@ import type { CheckedConfig, CreateProviderOptions, LanguageModel, Provider, Pro
 export { ProviderError } from './errors.js';
 export type { ProviderErrorCode } from './errors.js';
 export type { OpenAIChatCompletionRequest, OpenAIChatMessage, OpenAIResponseRequest, OpenAIResponseInput, AnthropicMessageRequest, AnthropicMessageBlock } from './protocols/official-types.js';
-export type { AdapterContext, AnthropicContinuation, AnthropicOptions, CheckedConfig, CommonOptions, OpenAICompletionsOptions, OpenAIResponsesOptions, OpenAICodexResponsesOptions, CreateProviderOptions, Credential, HeaderValue, GenerateInput, GenerateResult, StreamEvent, Json, JsonObject, LanguageModel, Message, ModelConfig, ModelMetadata, ThinkingLevel, Provider, ProviderAdapter, ProviderConfig, ProviderEntry, ToolCall, ToolDefinition } from './types.js';
+export type { Fetch, AdapterContext, AnthropicContinuation, AnthropicOptions, CheckedConfig, CommonOptions, OpenAICompletionsOptions, OpenAIResponsesOptions, OpenAICodexResponsesOptions, CreateProviderOptions, Credential, HeaderValue, GenerateInput, GenerateResult, StreamEvent, Json, JsonObject, LanguageModel, Message, ModelConfig, ModelMetadata, ThinkingLevel, Provider, ProviderAdapter, ProviderConfig, ProviderEntry, ToolCall, ToolDefinition } from './types.js';
 
 export function defineProviderConfig<const T extends ProviderConfig>(config: CheckedConfig<T>): T {
   return config;

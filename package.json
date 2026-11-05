@@ -11,7 +11,9 @@
     "bun": ">=1.4.4"
   },
   "scripts": {
-    "dev": "bun run --cwd apps/alphacode dev",
+    "dev": "bun --no-env-file ./apps/alphacode/bin/alphacode.ts --watch",
+    "link:dev": "bun link --cwd apps/alphacode",
+    "start": "bun --env-file=.env.local --preload ./apps/alphacode/scripts/preload.ts ./apps/alphacode/dist/index.js",
     "build": "bun --bun run nx run-many -t build",
     "typecheck": "bun --bun run nx run-many -t typecheck",
     "lint": "bun --bun run nx run-many -t lint",
@@ -25,6 +27,7 @@
     "nx": "24.0.4",
     "tsrs": "0.20.1-ts7.1.0-beta",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.1"
+    "typescript-eslint": "8.72.1",
+    "@types/bun": "1.4.4"
   }
 }

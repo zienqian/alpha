@@ -85,7 +85,7 @@ Manager 保留 createSession、openSession、getSession、listSessions、updateS
 
 ## SQLite 与验证
 
-根入口不加载 SQLite，也没有 core 或 Provider 运行时导入。SQLite 是独立的 `@alpha/adk-session/sqlite` 入口，使用 `better-sqlite3 13.0.3`，在 Bun 1.4.4 下运行。驱动声明为可选 peer dependency（`>=13.0.3 <14`）；工作区开发依赖固定为 13.0.3，仅使用 Memory 的消费者无需安装驱动，SQLite 消费者需要安装它。驱动在创建 SQLite Store 时延迟加载，缺失时返回 `SQLITE_DRIVER_UNAVAILABLE`。事务、WAL、synchronous=FULL、busy_timeout=5000、墓碑及版本校验沿用 S1；表结构、user_version=1 和归档 formatVersion=1 不变。测试使用迁移前 Node / better-sqlite3 和 Bun 内置 SQLite 生成的数据库验证旧历史恢复、请求重放与继续保存。
+根入口不加载 SQLite，也没有 core 或 Provider 运行时导入。SQLite 使用独立的 `@alpha/adk-session/sqlite` 入口，直接调用 Bun 内置 `bun:sqlite`，无需安装可选驱动。事务、WAL、synchronous=FULL、busy_timeout=5000、墓碑及版本校验沿用 S1；表结构、user_version=1 和归档 formatVersion=1 不变。测试使用迁移前 Node / better-sqlite3 和 Bun 内置 SQLite 生成的数据库验证旧历史恢复、请求重放与继续保存。
 
 ```ts
 import { createSqliteSessionStore } from '@alpha/adk-session/sqlite';

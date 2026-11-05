@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createAgent } from '@alpha/adk/core';
 import { createSession, createSessionPlugin, createMemorySessionStore, createSessionManager } from '@alpha/adk-session';

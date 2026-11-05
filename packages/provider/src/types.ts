@@ -105,7 +105,9 @@ type CheckedEntry<T extends ProviderEntry> = T & (
 export type CheckedConfig<T extends ProviderConfig> = T & {
   readonly providers: { readonly [K in keyof T['providers']]: CheckedEntry<T['providers'][K]> };
 };
-export interface AdapterContext { getEnv(name: string): string | undefined; fetch: typeof fetch }
+/** Injectable HTTP call; does not require Bun-specific static fetch helpers. */
+export type Fetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+export interface AdapterContext { getEnv(name: string): string | undefined; fetch: Fetch }
 export interface ProviderAdapter {
   validate(options: Readonly<Record<string, Json>>): void;
   createModel(options: Readonly<Record<string, Json>>, modelId: string, context: AdapterContext): LanguageModel;
@@ -113,7 +115,7 @@ export interface ProviderAdapter {
 export interface CreateProviderOptions {
   readonly adapters?: Readonly<Record<string, ProviderAdapter>>;
   readonly getEnv?: (name: string) => string | undefined;
-  readonly fetch?: typeof fetch;
+  readonly fetch?: Fetch;
 }
 export interface Provider<T extends ProviderConfig> {
   use<P extends keyof T['providers'] & string>(providerName: P, modelAlias: keyof T['providers'][P]['models'] & string): LanguageModel;

@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { describe, test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createAgent } from '@alpha/adk/core';
 import { answer, call, request, fakeModel, tool, options } from './helpers.js';
@@ -7,7 +7,7 @@ import { defaultLimits } from '../dist/core/internal/config.js';
 import { createAssistant } from '../dist/core/internal/messages.js';
 import { bytes } from '../dist/core/internal/json.js';
 
-test('malformed streams never commit an assistant or execute a hinted tool', async t => {
+describe('malformed streams never commit an assistant or execute a hinted tool', () => {
   const finish = { type: 'finish', result: request(call()) };
   const cases = [
     ['missing finish', [{ type: 'tool-call', toolCall: call() }]],
@@ -19,7 +19,7 @@ test('malformed streams never commit an assistant or execute a hinted tool', asy
     ['stream throw', async function*() { yield finish; throw new Error('secret'); }],
   ];
   for (const [name, events] of cases) {
-    await t.test(name, async () => {
+    test(name, async () => {
       let count = 0;
       const agent = await createAgent({ ...options(fakeModel(events)), tools: [tool(() => { count++; return ''; })] });
       assert.equal((await agent.prompt('go')).status, 'failed');
@@ -29,9 +29,9 @@ test('malformed streams never commit an assistant or execute a hinted tool', asy
   }
 });
 
-test('legal non-completed model outcomes retain full result metadata', async t => {
+describe('legal non-completed model outcomes retain full result metadata', () => {
   for (const outcome of ['refused', 'incomplete', 'unknown']) {
-    await t.test(outcome, async () => {
+    test(outcome, async () => {
       const result = { ...answer('partial'), outcome, responseId: 'r1', refusal: 'no', usage: { inputTokens: 3, outputTokens: 2 } };
       const agent = await createAgent(options(fakeModel(result)));
       const final = await agent.prompt('go');
@@ -42,13 +42,13 @@ test('legal non-completed model outcomes retain full result metadata', async t =
   }
 });
 
-test('model output byte limits check UTF-8 deltas and the final result independently', async t => {
+describe('model output byte limits check UTF-8 deltas and the final result independently', () => {
   const cases = [
     ['delta', [{ type: 'text-delta', text: '你你' }, { type: 'finish', result: answer() }], 5],
     ['result', [{ type: 'finish', result: answer('long'.repeat(100)) }], 150],
   ];
   for (const [name, events, limit] of cases) {
-    await t.test(name, async () => {
+    test(name, async () => {
       const agent = await createAgent({ ...options(fakeModel(events)), limits: { maxModelOutputBytes: limit } });
       assert.equal((await agent.prompt('go')).error.code, 'MODEL_OUTPUT_TOO_LARGE');
       assert.equal(agent.state.messages.length, 1); await agent.close();

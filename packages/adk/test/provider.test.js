@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { describe, test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createProvider } from '@alpha/provider';
 import { createAgent } from '@alpha/adk/core';
@@ -38,9 +38,9 @@ const cases = {
   ],
 };
 
-test('existing Provider implementations drive the complete ADK loop without a bridge', async t => {
+describe('existing Provider implementations drive the complete ADK loop without a bridge', () => {
   for (const [adapter, replies] of Object.entries(cases)) {
-    await t.test(adapter, async () => {
+    test(adapter, async () => {
       const bodies = [], signals = []; let executions = 0;
       const provider = createProvider({ providers: { main: {
         adapter, options: { baseURL: 'https://fixture.invalid/v1', apiKey: { env: 'FIXTURE_KEY' }, ...(adapter === 'anthropic-messages' ? { maxOutputTokens: 100 } : {}) },

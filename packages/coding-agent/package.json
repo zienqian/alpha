@@ -5,19 +5,17 @@
   "type": "module",
   "exports": {
     ".": {
+      "alpha-source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./node": {
-      "types": "./dist/node/index.d.ts",
-      "import": "./dist/node/index.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
-    "build": "bun --bun run tsrs -p tsconfig.json && bun scripts/copy-assets.js",
+    "build": "bun --bun run tsrs -p tsconfig.json",
     "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit && bun --bun run tsrs -p test/tsconfig.json",
     "lint": "bun --bun run eslint src",
     "test": "bun test ./test --timeout 30000"
@@ -38,11 +36,12 @@
     "@alpha/adk": "workspace:*",
     "@alpha/provider": "workspace:*",
     "zod": "4.6.7",
-    "minimatch": "10.2.6"
+    "minimatch": "10.2.6",
+    "cross-spawn": "7.0.6"
   },
   "devDependencies": {
     "@alpha/adk-session": "workspace:*",
-    "@types/node": "20.19.43"
+    "@types/cross-spawn": "6.0.6"
   },
   "engines": {
     "bun": ">=1.4.4"
