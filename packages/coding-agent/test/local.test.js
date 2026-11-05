@@ -126,7 +126,7 @@ async function tree(root) {
 for (const reason of ['cancel', 'timeout']) test(`${reason} drains child and grandchild even after the main shell exits`, windows, async t => {
   const { root, acquire } = await fixture(t), lease = await acquire(); await tree(root);
   const controller = new AbortController();
-  const command = lease.runCommand({ command: 'node tree.cjs', timeoutMs: reason === 'timeout' ? 2500 : 10000 }, { signal: controller.signal });
+  const command = lease.runCommand({ command: 'bun tree.cjs', timeoutMs: reason === 'timeout' ? 2500 : 10000 }, { signal: controller.signal });
   const pids = [Number(await waitFile(join(root, 'child.pid'))), Number(await waitFile(join(root, 'grand.pid')))];
   for (const pid of pids) process.kill(pid, 0);
   if (reason === 'cancel') controller.abort();
@@ -138,7 +138,7 @@ test('normal completion and release wait for a child that outlives its parent', 
   const { root, workspace, acquire } = await fixture(t), lease = await acquire();
   const child = `setTimeout(() => require('node:fs').writeFileSync('finished', 'done'), 700);`;
   await writeFile(join(root, 'orphan.cjs'), `require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(child)}], {stdio:'ignore', windowsHide:true, detached:true}); process.exit(0);`);
-  const run = lease.runCommand({ command: 'node orphan.cjs' }, { signal: signal() }); let released = false;
+  const run = lease.runCommand({ command: 'bun orphan.cjs' }, { signal: signal() }); let released = false;
   const release = lease.release().then(() => { released = true; });
   await pause(100); assert.equal(released, false);
   assert.equal((await run).status, 'exited'); await release; assert.equal(await readFile(join(root, 'finished'), 'utf8'), 'done');

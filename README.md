@@ -15,36 +15,40 @@ Agent 开发框架的 monorepo。Provider 提供模型配置与协议适配；AD
 
 ## 本地开发
 
-需要 Node.js 20.19+（20.x）、22.13+（22.x）或 24 及以上版本，以及 pnpm 9.15.1。Nx 22 LTS 用于兼容当前 Node.js 20 环境；Node 升级后应评估 Nx 升级。
+全仓库开发使用 Bun 1.4.4（`.bun-version`），安装和任务执行统一使用 Bun。根目录 `workspaces` 管理应用与库包，`bun.lock` 固定依赖；Nx 继续负责任务依赖与缓存，ESLint 检查包边界，tsrs 负责构建与类型检查。
 
 ```sh
-pnpm install --frozen-lockfile
-pnpm build
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm graph
+bun install --frozen-lockfile
+bun run build
+bun run typecheck
+bun run lint
+bun run test
+bun run graph
 ```
 
-`pnpm graph` 打开 Nx 项目依赖图。Provider 使用方法见 [Provider README](packages/provider/README.md)。包名为内部占位名称，目前均为 private；尚未配置发布或 CI。
+`bun run graph` 打开 Nx 项目依赖图。Provider 使用方法见 [Provider README](packages/provider/README.md)。包名为内部占位名称，目前均为 private；尚未配置发布或 CI。
 
-构建和类型检查使用 Rust 实现的 `tsrs`（当前为 TypeScript 7.1 beta 对应的实验版本），版本固定在锁文件中。根依赖中的 TypeScript 6.0 供 ESLint TypeScript 工具使用，与 tsrs 使用的编译器版本不同；应留意两者兼容性。遇到 tsrs 编译问题时，可先用 `pnpm exec tsc -p packages/adk/tsconfig.json --noEmit` 等命令辅助排查，但两者诊断不保证一致。
+使用 `bun run test` 执行 Nx 的完整测试任务（先构建依赖）。测试保留 `node:test` / `node:assert` 的兼容 API，由 Bun 测试运行器执行；运行环境无需单独安装 Node。真实模型测试通过各包的 `test:live` 或显式脚本运行，不在普通测试中自动请求模型。
+
+Session 使用 `better-sqlite3 13.0.3` 驱动，在 Bun 下运行；工作区通过 `bun install` 安装驱动及其原生二进制。数据库表结构与归档 `formatVersion=1` 保持不变；迁移前 Node / better-sqlite3 和 Bun 内置 SQLite 生成的数据库作为测试夹具验证历史恢复、请求重放及续写。`docs` 中原有验收文档记录当时的运行环境，当前开发命令以这里和各包 README 为准。
+
+构建和类型检查使用 Rust 实现的 `tsrs`（当前为 TypeScript 7.1 beta 对应的实验版本），版本固定在锁文件中。根依赖中的 TypeScript 6.0 供 ESLint TypeScript 工具使用，与 tsrs 使用的编译器版本不同；应留意两者兼容性。遇到 tsrs 编译问题时，可先用 `bun --bun run tsc -p packages/adk/tsconfig.json --noEmit` 等命令辅助排查，但两者诊断不保证一致。
 
 ## ADK
 
 [ADK 使用说明](packages/adk/README.md) · [P0 Spec](docs/adk-p0-spec.md) · [P0 TODO](docs/adk-p0-todo.md) · [验收记录](docs/adk-p0-validation.md)
 
-构建后执行 `pnpm --filter @alpha/example-agent start` 可离线演示 Provider → Agent → 工具 → 最终回答。真实端点联调需单独配置并显式运行，结果见验收记录。
+构建后执行 `bun run --filter @alpha/example-agent start` 可离线演示 Provider → Agent → 工具 → 最终回答。真实端点联调需单独配置并显式运行，结果见验收记录。
 
-本机后续真实联调使用 `http://127.0.0.1:3425/v1` 与 `codex/gpt-6.1-sol`，配置见 [.env.example](.env.example)；本地副本 `.env.local` 已忽略提交。从仓库根目录执行 `node --env-file=.env.local packages/adk/integration/live.js` 可运行受控工具闭环探针，默认自动化测试仍使用离线夹具。
+本机后续真实联调使用 `http://127.0.0.1:3425/v1` 与 `codex/gpt-6.1-sol`，配置见 [.env.example](.env.example)；本地副本 `.env.local` 已忽略提交。从仓库根目录执行 `bun --env-file=.env.local packages/adk/integration/live.js` 可运行受控工具闭环探针，默认自动化测试仍使用离线夹具。
 
 ## Session
 
 [使用说明](packages/adk-session/README.md) · [S2 Spec](docs/adk-session-s2-spec.md) · [S2 示例](docs/adk-session-example-s2.ts) · [验收记录](docs/adk-session-s2-validation.md)
 
-构建后执行 `pnpm --filter @alpha/adk-session example` 或追加 `--sqlite`，演示会话创建、关闭、重开、历史恢复与重复请求。Session S2 通过 `createSessionPlugin({ session })` 接入 core 的通用运行边界；执行始终使用 `agent.prompt()`，Session 不再代理执行或创建 Agent。S1 归档格式保持兼容。
+构建后执行 `bun run --filter @alpha/adk-session example` 或追加 `--sqlite`，演示会话创建、关闭、重开、历史恢复与重复请求。Session S2 通过 `createSessionPlugin({ session })` 接入 core 的通用运行边界；执行始终使用 `agent.prompt()`，Session 不再代理执行或创建 Agent。S1 归档格式保持兼容。
 
-显式真实模型验证：`node --env-file=.env.local apps/example-agent/integration/session-live.js`，检查工具调用、SQLite 重开和重复请求零执行。
+显式真实模型验证：`bun --env-file=.env.local apps/example-agent/integration/session-live.js`，检查工具调用、SQLite 重开和重复请求零执行。
 
 ## Coding Agent
 
@@ -52,4 +56,10 @@ pnpm graph
 
 C1 已实现独立 `@alpha/coding-agent` 能力包，复用 core 与 Provider；Session 由应用通过插件组合，执行统一为 `agent.prompt()`。本地适配器当前支持 Windows + PowerShell 7 + ripgrep，提供三个读取工具、精确编辑、只创建文件、命令执行及 AGENTS.md 指令。HTML 可直接离线打开。
 
-显式真实修复验证：`node --env-file=.env.local packages/coding-agent/integration/live.js`。探针在临时项目验证失败测试、最小源码修复、测试通过和 Session 重放零副作用。
+显式真实修复验证：`bun --env-file=.env.local packages/coding-agent/integration/live.js`。探针在临时项目验证失败测试、最小源码修复、测试通过和 Session 重放零副作用。
+
+## AlphaCode 历史资料
+
+AlphaCode 旧实现已移除，以下文档保留为重做时的历史参考，其中的实现状态和启动命令不再代表当前仓库。
+
+[交互文档](docs/alphacode-design-a1.html) · [P0 规格](docs/alphacode-p0-spec.md) · [实施 TODO](docs/alphacode-p0-todo.md) · [验收记录](docs/alphacode-p0-validation.md)

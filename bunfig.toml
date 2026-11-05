@@ -1,0 +1,6 @@
+[run]
+# Run Node-shebang tools (Nx, ESLint, compiler launchers) with Bun too.
+bun = true
+
+[test]
+timeout = 30000

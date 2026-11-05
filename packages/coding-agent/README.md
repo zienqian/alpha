@@ -83,11 +83,11 @@ Session 不拥有执行 API，Coding 包也不依赖 Session。关闭 Agent 如�
 ## 验证
 
 ```sh
-pnpm --filter @alpha/coding-agent build
-pnpm --filter @alpha/coding-agent typecheck
-pnpm --filter @alpha/coding-agent lint
-pnpm --filter @alpha/coding-agent test
-node --env-file=.env.local packages/coding-agent/integration/live.js
+bun run --filter @alpha/coding-agent build
+bun run --filter @alpha/coding-agent typecheck
+bun run --filter @alpha/coding-agent lint
+bun run --filter @alpha/coding-agent test
+bun --env-file=.env.local packages/coding-agent/integration/live.js
 ```
 
 最后一条是显式真实模型探针，只修改它创建的临时 fixture，验证失败测试 → 源码修复 → 测试通过 → Session 重放零副作用。普通测试离线运行；Windows 适配测试在其他平台标记 skip。

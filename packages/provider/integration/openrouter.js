@@ -1,4 +1,4 @@
-// Opt-in real-service test: pnpm build, then node --env-file=.env.local --test packages/provider/test/openrouter.integration.test.js
+// Opt-in real-service test: bun run build, then bun run --filter @alpha/provider test:live.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createProvider } from '../dist/index.js';

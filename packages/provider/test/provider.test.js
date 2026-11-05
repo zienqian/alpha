@@ -10,6 +10,26 @@ const config = () => defineProviderConfig({ providers: {
 const reply = (data) => new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
 const collect = async (iterable) => { const values = []; for await (const value of iterable) values.push(value); return values; };
 
+test('literal credentials authenticate without any environment lookup and remain absent from metadata/errors', async () => {
+  for (const [adapter, options, header, expected, body] of [
+    ['openai-completions', { apiKey: { value: 'direct-secret' } }, 'authorization', 'Bearer direct-secret', { choices: [{ finish_reason: 'stop', message: { content: 'ok' } }] }],
+    ['openai-responses', { apiKey: { value: 'direct-secret' } }, 'authorization', 'Bearer direct-secret', { status: 'completed', output: [] }],
+    ['anthropic-messages', { apiKey: { value: 'direct-secret' } }, 'x-api-key', 'direct-secret', { stop_reason: 'end_turn', content: [] }],
+    ['openai-codex-responses', { accessToken: { value: 'direct-secret' } }, 'authorization', 'Bearer direct-secret', { status: 'completed', output: [] }],
+  ]) {
+    let sent;
+    const provider = createProvider({ providers: { p: { adapter, options, models: { m: { id: 'id' } } } } }, {
+      getEnv() { throw Error('Environment must not be read'); },
+      fetch: async (_url, init) => { sent = init.headers.get(header); return reply(body); },
+    });
+    await provider.use('p', 'm').generate({ messages: [{ role: 'user', content: 'hi' }], maxOutputTokens: 100 });
+    assert.equal(sent, expected); assert.ok(!JSON.stringify(provider.list()).includes('direct-secret'));
+  }
+  for (const apiKey of [{ value: '' }, { value: 'direct-secret\r\nheader' }, { value: 'direct-secret', none: true }, { value: 'direct-secret', env: 'KEY' }]) {
+    assert.throws(() => createProvider({ providers: { p: { adapter: 'openai-completions', options: { apiKey }, models: { m: { id: 'id' } } } } }), error => error.code === 'CONFIG_INVALID' && !error.message.includes('direct-secret'));
+  }
+});
+
 test('static config snapshot, aliases, validation, and safe metadata', () => {
   const source = config();
   const provider = createProvider(source, { getEnv: () => 'super-secret' });

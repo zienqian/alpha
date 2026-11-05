@@ -14,7 +14,9 @@ export function validateBuiltinOptions(adapter: string, options: Record<string, 
   const credentialField = codex ? 'accessToken' : 'apiKey';
   const key = options[credentialField];
   if (!isRecord(key)) invalid(`${path}.${credentialField}`);
-  if (Object.keys(key).length !== 1 || !((typeof key.env === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(key.env)) || (!codex && adapter !== 'anthropic-messages' && key.none === true))) invalid(`${path}.${credentialField}`);
+  if (Object.keys(key).length !== 1 || !((typeof key.env === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(key.env)) ||
+      (typeof key.value === 'string' && key.value.trim().length > 0 && !/[\r\n]/.test(key.value)) ||
+      (!codex && adapter !== 'anthropic-messages' && key.none === true))) invalid(`${path}.${credentialField}`);
   if (options.baseURL !== undefined) {
     try {
       if (typeof options.baseURL !== 'string') invalid(`${path}.baseURL`);

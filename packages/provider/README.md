@@ -79,7 +79,7 @@ const result = await model.generate({
 - `anthropic-messages`：使用 Messages API；需要在 Provider 配置或每次 `generate` 中指定 `maxOutputTokens`。
 - `openai-codex-responses`：使用应用通过官方 Sign in with ChatGPT 流程获得的 OAuth access token，调用公开 Responses API；由应用负责获取和刷新 token。
 
-前三种适配器使用 `apiKey: { env: 'ENV_NAME' }`；`openai-codex-responses` 使用 `accessToken: { env: 'ENV_NAME' }`，不接受无认证。内置适配器的 `headers` 支持静态字符串或环境变量引用；`openai-completions` 和 `openai-responses` 额外支持 `queryParams`，无认证端点可使用 `apiKey: { none: true }`。三个 OpenAI 适配器的 `baseURL` 默认为 `https://api.openai.com/v1`，接第三方或本地服务时须显式指定。URL 不接受内嵌凭证、查询参数或 fragment；敏感值通过环境变量引用，不放在静态配置或 query 中。自定义端点的网络访问策略由应用部署方管理。
+前三种适配器使用 `apiKey: { env: 'ENV_NAME' }` 或 `apiKey: { value: '实际密钥' }`；`openai-codex-responses` 使用相同形式的 `accessToken`，不接受无认证。凭证对象只能有一个字段；`value` 直接注入且不读取环境变量，适用于由宿主读取的用户配置文件。密钥不出现在 `list()` 或错误诊断中；宿主负责配置文件权限。内置适配器的 `headers` 支持静态字符串或环境变量引用；`openai-completions` 和 `openai-responses` 额外支持 `queryParams`，无认证端点可使用 `apiKey: { none: true }`。三个 OpenAI 适配器的 `baseURL` 默认为 `https://api.openai.com/v1`，接第三方或本地服务时须显式指定。URL 不接受内嵌凭证、查询参数或 fragment；不要将密钥放入 query。自定义端点的网络访问策略由应用部署方管理。
 
 `openai-completions` 默认把 `maxOutputTokens` 映射为兼容服务常用的 `max_tokens`。如果目标服务使用 `max_completion_tokens`，在该 Provider 的 `options` 中配置 `maxTokensField: 'max_completion_tokens'`；是否支持由目标模型和服务决定。
 

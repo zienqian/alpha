@@ -4,6 +4,7 @@ import { isNonEmptyString } from './validation-helpers.js';
 
 export function resolveCredential(value: Credential, getEnv: AdapterContext['getEnv']): string | undefined {
   if ('none' in value) return undefined;
+  if ('value' in value) return value.value;
   let result: string | undefined;
   try {
     result = getEnv(value.env);

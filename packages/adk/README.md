@@ -71,11 +71,11 @@ input 同时提供 Standard Schema 校验和 Standard JSON Schema 输入描述�
 在仓库根目录执行：
 
 ```sh
-pnpm build
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm --filter @alpha/example-agent start
+bun run build
+bun run typecheck
+bun run lint
+bun run test
+bun run --filter @alpha/example-agent start
 ```
 
 示例默认使用真实 Provider 实现与离线 HTTP 夹具，无网络请求。协议联调用例覆盖 Chat Completions、Responses 和 Anthropic Messages。
@@ -83,9 +83,9 @@ pnpm --filter @alpha/example-agent start
 真实端点验证独立显式运行，先在本机环境或忽略提交的 .env.local 中配置 ADK_MODEL、可选 ADK_BASE_URL、可选 ADK_API_KEY_ENV（默认 OPENAI_API_KEY），以及该变量名对应的凭证。无认证端点显式设置 `ADK_AUTH=none`。本机已使用 `http://127.0.0.1:3425/v1` 与 `codex/gpt-6.1-sol` 完成工具闭环；可复用根目录 [.env.example](../../.env.example) 的非敏感配置。然后从仓库根目录运行：
 
 ```sh
-node --env-file=.env.local packages/adk/integration/live.js
+bun --env-file=.env.local packages/adk/integration/live.js
 ```
 
-若环境已经由外部注入，可运行 `pnpm --filter @alpha/adk test:live`。此项会访问所配置的模型服务，不在默认测试或 Nx 缓存中执行；未配置返回状态 not_configured 和退出码 2，不算通过。只有真实模型调用工具并返回工具生成的随机值才算验证成功。
+若环境已经由外部注入，可运行 `bun run --filter @alpha/adk test:live`。此项会访问所配置的模型服务，不在默认测试或 Nx 缓存中执行；未配置返回状态 not_configured 和退出码 2，不算通过。只有真实模型调用工具并返回工具生成的随机值才算验证成功。
 
 [Spec](../../docs/adk-p0-spec.md) · [TODO](../../docs/adk-p0-todo.md) · [验收记录](../../docs/adk-p0-validation.md)

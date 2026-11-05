@@ -20,6 +20,7 @@ export async function createSqliteSessionStore(options: { readonly filename: str
     const filename = options.filename;
     ensure(text(filename) && filename !== ':memory:' && !filename.includes('\0'), 'SESSION_CONFIG_INVALID');
     const { default: Database } = await import('better-sqlite3').catch(() => { throw new Failure('SQLITE_DRIVER_UNAVAILABLE'); });
+    // Set the busy handler before the first read or schema transaction.
     db = new Database(filename, { timeout: 5000 });
     function versionCheck(connection: Database) {
       const version = connection.pragma('user_version', { simple: true });
@@ -29,7 +30,7 @@ export async function createSqliteSessionStore(options: { readonly filename: str
     }
     versionCheck(db);
     ensure(db.pragma('journal_mode = WAL', { simple: true }) === 'wal', 'STORE_UNAVAILABLE');
-    db.pragma('synchronous = FULL'); db.pragma('foreign_keys = ON'); db.pragma('busy_timeout = 5000');
+    db.pragma('synchronous = FULL'); db.pragma('foreign_keys = ON');
     ensure(db.pragma('synchronous', { simple: true }) === 2 && db.pragma('foreign_keys', { simple: true }) === 1 && db.pragma('busy_timeout', { simple: true }) === 5000, 'STORE_UNAVAILABLE');
     const connection = db;
     connection.transaction(() => { if (versionCheck(connection) === 0) connection.exec(schema); }).immediate();

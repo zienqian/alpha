@@ -2,22 +2,26 @@
   "name": "alpha-workspace",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@9.15.1",
+  "packageManager": "bun@1.4.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "engines": {
-    "node": "^20.19.0 || ^22.13.0 || >=24"
+    "bun": ">=1.4.4"
   },
   "scripts": {
-    "build": "nx run-many -t build",
-    "typecheck": "nx run-many -t typecheck",
-    "lint": "nx run-many -t lint",
-    "test": "nx run-many -t test",
-    "graph": "nx graph"
+    "build": "bun --bun run nx run-many -t build",
+    "typecheck": "bun --bun run nx run-many -t typecheck",
+    "lint": "bun --bun run nx run-many -t lint",
+    "test": "bun --bun run nx run-many -t test",
+    "graph": "bun --bun run nx graph"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@nx/eslint-plugin": "22.7.12",
+    "@nx/eslint-plugin": "24.0.4",
     "eslint": "10.14.0",
-    "nx": "22.7.12",
+    "nx": "24.0.4",
     "tsrs": "0.20.1-ts7.1.0-beta",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.1"

@@ -9,7 +9,7 @@ import * as core from '@alpha/adk/core';
 test('only core factories are exported and internal entry points are inaccessible', async () => {
   assert.deepEqual(Object.keys(core).sort(), ['createAgent', 'createTool']);
   for (const name of ['@alpha/adk', '@alpha/adk/standard', '@alpha/adk/loops', '@alpha/adk/core/internal/create-loop.js']) {
-    await assert.rejects(import(name), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
+    await assert.rejects(import(name), { code: 'ERR_MODULE_NOT_FOUND' });
   }
 });
 

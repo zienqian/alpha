@@ -13,11 +13,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsrs -p tsconfig.json",
-    "typecheck": "tsrs -p tsconfig.json --noEmit && tsrs -p test/tsconfig.json",
-    "lint": "eslint src",
-    "test": "node test/run.js",
-    "test:live": "node integration/live.js"
+    "build": "bun --bun run tsrs -p tsconfig.json",
+    "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit && bun --bun run tsrs -p test/tsconfig.json",
+    "lint": "bun --bun run eslint src",
+    "test": "bun test ./test --timeout 30000",
+    "test:live": "bun integration/live.js"
   },
   "nx": {
     "tags": [
@@ -38,5 +38,8 @@
   "devDependencies": {
     "@types/node": "20.19.43",
     "zod": "4.6.7"
+  },
+  "engines": {
+    "bun": ">=1.4.4"
   }
 }

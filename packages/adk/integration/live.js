@@ -1,4 +1,4 @@
-// Explicit opt-in integration probe. Never included by test/run.js or Nx's cached test target.
+// Explicit opt-in integration probe. Never included by bun test or Nx's cached test target.
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { createAgent, createTool } from '@alpha/adk/core';

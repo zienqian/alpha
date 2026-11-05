@@ -5,7 +5,7 @@ export default [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
   {
-    files: ['**/*.ts', '**/*.js', '**/*.mjs', '**/*.mts'],
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.mjs', '**/*.mts'],
     rules: {
       '@nx/enforce-module-boundaries': ['error', {
         depConstraints: [
@@ -21,7 +21,7 @@ export default [
   {
     files: ['packages/coding-agent/src/**/*.ts'],
     ignores: ['packages/coding-agent/src/node/**'],
-    rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/provider', allowTypeImports: true }], patterns: [{ group: ['node:*', '@alpha/adk-session', '@alpha/adk-session/**', './node/**', '../node/**', '@alpha/adk/src/**', '@alpha/provider/*'] }] }] }
+    rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/provider', allowTypeImports: true }], patterns: [{ group: ['node:*', 'bun:*', '@alpha/adk-session', '@alpha/adk-session/**', './node/**', '../node/**', '@alpha/adk/src/**', '@alpha/provider/*'] }] }] }
   },
   {
     files: ['packages/adk-session/src/**/*.ts'],
@@ -30,7 +30,7 @@ export default [
   {
     files: ['packages/adk-session/src/**/*.ts'],
     ignores: ['packages/adk-session/src/sqlite/**'],
-    rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/adk/core', allowTypeImports: true }, { name: '@alpha/adk' }], patterns: [{ group: ['@alpha/adk/*', '!@alpha/adk/core', '@alpha/adk/src/**', '@alpha/provider', '@alpha/provider/**', 'better-sqlite3', '../sqlite/**', './sqlite/**'] }] }] }
+    rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/adk/core', allowTypeImports: true }, { name: '@alpha/adk' }], patterns: [{ group: ['@alpha/adk/*', '!@alpha/adk/core', '@alpha/adk/src/**', '@alpha/provider', '@alpha/provider/**', 'better-sqlite3', 'bun:*', '../sqlite/**', './sqlite/**'] }] }] }
   },
   {
     files: ['packages/adk/src/**/*.ts'],

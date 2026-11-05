@@ -1,9 +1,58 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "targetDefaults": {
-    "build": { "dependsOn": ["^build"], "cache": true, "outputs": ["{projectRoot}/dist"] },
-    "typecheck": { "dependsOn": ["^build"], "cache": true },
-    "lint": { "cache": true },
-    "test": { "dependsOn": ["build"], "cache": true }
-  }
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": true,
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
+      "inputs": [
+        "default",
+        "^default",
+        {
+          "runtime": "bun --version"
+        }
+      ]
+    },
+    "typecheck": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        {
+          "runtime": "bun --version"
+        }
+      ]
+    },
+    "lint": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        {
+          "runtime": "bun --version"
+        }
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "build"
+      ],
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        {
+          "runtime": "bun --version"
+        }
+      ]
+    }
+  },
+  "analytics": true
 }

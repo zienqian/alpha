@@ -1,0 +1,52 @@
+{
+  "title": "alphacode A1 research and design decisions",
+  "reviewedAt": "2026-11-04",
+  "status": "proposal",
+  "implemented": false,
+  "currentScope": "P0 terminal application only. No public SDK, JSONL or server protocol. Earlier A1 API proposal withdrawn; app server will be planned separately.",
+  "stack": ["OpenTUI", "SolidJS"],
+  "scope": "Public documentation plus existing Alpha source; no claim about private Claude Code implementation. No star counts or unverified package release versions.",
+  "projects": [
+    {
+      "id": "codex",
+      "name": "Codex",
+      "fact": "Official documentation separates a reusable harness from CLI, SDK and app-server integration surfaces; CLI includes noninteractive structured output.",
+      "adopt": "One execution engine, terminal application built on existing Alpha capabilities; future server protocol designed separately.",
+      "defer": "Server/RPC/daemon until there is an actual remote client requirement.",
+      "sources": ["https://developers.openai.com/blog/codex-as-a-platform", "https://learn.chatgpt.com/docs/cli/reference"]
+    },
+    {
+      "id": "claude",
+      "name": "Claude Code",
+      "fact": "Public docs describe model/tool/context execution, action-specific permission prompts and a noninteractive CLI entry.",
+      "adopt": "Show exact commands and directories at approval time, visible tool outcomes and real exit codes.",
+      "defer": "Complex permission DSL, auto classifiers, checkpoint and other capabilities not supplied by current Alpha packages.",
+      "sources": ["https://code.claude.com/docs/en/how-claude-code-works", "https://code.claude.com/docs/en/permissions", "https://code.claude.com/docs/en/headless"]
+    },
+    {
+      "id": "pi",
+      "name": "Pi",
+      "fact": "Terminal layout includes transcript, editor and footer; UI guidance prioritizes existing dialogs/widgets and a single renderer.",
+      "adopt": "Small composable UI regions, progressive tool details, use existing Alpha extension contracts.",
+      "defer": "Pi runtime/TUI adoption, new universal plugin registry and unimplemented steering or branching.",
+      "sources": ["https://pi.dev/docs/latest/usage", "https://pi.dev/docs/latest/tui"]
+    }
+  ],
+  "runtime": {
+    "preferred": "single-process Node, conditional on A0 validation",
+    "documentedNode": ">=26.4.0, ESM, --experimental-ffi",
+    "documentedBun": ">=1.3.14; Windows arm64 >=1.4.0",
+    "solidCompile": "babel-preset-solid universal transform targeting @opentui/solid; published Solid client runtime resolution",
+    "currentAlphaValidatedRuntime": "Node 20, Windows x64",
+    "gates": ["Published package version pinning", "Windows Solid rendering", "better-sqlite3 native ABI and CAS", "Workspace child-process cancellation", "Chinese IME and terminal restoration"],
+    "sources": ["https://opentui.com/docs/getting-started/runtime-support/", "https://opentui.com/docs/bindings/solid/"]
+  },
+  "localEvidence": [
+    "packages/adk/src/core/contracts.ts",
+    "packages/coding-agent/src/contracts.ts",
+    "packages/adk-session/src/contracts.ts",
+    "packages/provider/src/types.ts",
+    "docs/coding-agent-c1-spec.md",
+    "docs/adk-session-s2-spec.md"
+  ]
+}

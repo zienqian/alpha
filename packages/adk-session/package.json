@@ -4,24 +4,54 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./sqlite": { "types": "./dist/sqlite/index.d.ts", "import": "./dist/sqlite/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sqlite": {
+      "types": "./dist/sqlite/index.d.ts",
+      "import": "./dist/sqlite/index.js"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsrs -p tsconfig.json",
-    "typecheck": "tsrs -p tsconfig.json --noEmit && tsrs -p test/tsconfig.json",
-    "lint": "eslint src",
-    "test": "node test/run.js",
-    "example": "node examples/conversation.js"
+    "build": "bun --bun run tsrs -p tsconfig.json",
+    "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit && bun --bun run tsrs -p test/tsconfig.json",
+    "lint": "bun --bun run eslint src",
+    "test": "bun test ./test --timeout 30000",
+    "example": "bun examples/conversation.js"
   },
-  "nx": { "tags": ["layer:session"], "targets": { "typecheck": { "dependsOn": ["build"] } } },
-  "dependencies": { "@alpha/adk": "workspace:*" },
-  "peerDependencies": { "better-sqlite3": ">=12.4.1 <14" },
-  "peerDependenciesMeta": { "better-sqlite3": { "optional": true } },
+  "nx": {
+    "tags": [
+      "layer:session"
+    ],
+    "targets": {
+      "typecheck": {
+        "dependsOn": [
+          "build"
+        ]
+      }
+    }
+  },
+  "dependencies": {
+    "@alpha/adk": "workspace:*"
+  },
+  "peerDependencies": {
+    "better-sqlite3": ">=13.0.3 <14"
+  },
+  "peerDependenciesMeta": {
+    "better-sqlite3": {
+      "optional": true
+    }
+  },
   "devDependencies": {
-    "better-sqlite3": "12.4.1",
     "@types/better-sqlite3": "9.6.0",
-    "@types/node": "20.19.43"
+    "@types/node": "20.19.43",
+    "better-sqlite3": "13.0.3"
+  },
+  "engines": {
+    "bun": ">=1.4.4"
   }
 }

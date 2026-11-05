@@ -22,7 +22,8 @@ defineProviderConfig({ providers: { p: { adapter: 'openai-responses', options: {
 provider.use('missing', 'chat');
 // @ts-expect-error Model aliases belong to a specific provider.
 provider.use('primary', 'reasoning');
-// @ts-expect-error Anthropic requires a named environment credential.
+defineProviderConfig({ providers: { direct: { adapter: 'anthropic-messages', options: { apiKey: { value: 'from-host-config' }, maxOutputTokens: 100 }, models: { chat: { id: 'id' } } } } });
+// @ts-expect-error Anthropic requires an explicit credential.
 defineProviderConfig({ providers: { invalid: { adapter: 'anthropic-messages', options: { apiKey: { none: true } }, models: { chat: { id: 'id' } } } } });
 // @ts-expect-error Codex authentication requires an access token reference.
 defineProviderConfig({ providers: { codex: { adapter: 'openai-codex-responses', options: { apiKey: { env: 'KEY' } }, models: { main: { id: 'id' } } } } });

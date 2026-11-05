@@ -55,14 +55,14 @@ export interface LanguageModel {
   generate(input: GenerateInput): Promise<GenerateResult>;
   stream(input: GenerateInput): AsyncIterable<StreamEvent>;
 }
-export type Credential = { readonly env: string } | { readonly none: true };
+export type Credential = { readonly env: string } | { readonly value: string } | { readonly none: true };
 export type HeaderValue = string | { readonly env: string };
 export interface CommonOptions {
   readonly apiKey: Credential;
   readonly baseURL?: string;
   readonly headers?: Readonly<Record<string, HeaderValue>>;
 }
-export interface AnthropicOptions extends CommonOptions { readonly apiKey: { readonly env: string }; readonly maxOutputTokens?: number }
+export interface AnthropicOptions extends CommonOptions { readonly apiKey: Exclude<Credential, { readonly none: true }>; readonly maxOutputTokens?: number }
 export interface OpenAICompletionsOptions extends CommonOptions {
   readonly queryParams?: Readonly<Record<string, string>>;
   /** Select the output-token field expected by the endpoint. Defaults to max_tokens for compatibility. */
@@ -73,7 +73,7 @@ export interface OpenAIResponsesOptions extends CommonOptions {
 }
 /** A user-authorized OAuth access token; the application owns login and renewal. */
 export interface OpenAICodexResponsesOptions {
-  readonly accessToken: { readonly env: string };
+  readonly accessToken: Exclude<Credential, { readonly none: true }>;
   readonly baseURL?: string;
   readonly headers?: Readonly<Record<string, HeaderValue>>;
 }

@@ -19,7 +19,7 @@ const store = createMemorySessionStore();
 try {
   await writeFile(join(root, 'pagination.cjs'), source); await writeFile(join(root, 'pagination.test.cjs'), tests);
   await writeFile(join(root, 'AGENTS.md'), 'Use node:test. Preserve the tests. Make the smallest source fix. Shell is PowerShell 7.');
-  const before = spawnSync(process.execPath, ['--test', 'pagination.test.cjs'], { cwd: root, windowsHide: true, encoding: 'utf8' }); assert.equal(before.status, 1);
+  const before = spawnSync(process.execPath, ['test', './pagination.test.cjs'], { cwd: root, windowsHide: true, encoding: 'utf8' }); assert.equal(before.status, 1);
   workspace = await createLocalWorkspace({ root, shell: 'powershell' });
   const model = createProvider({ providers: { local: {
     adapter: 'openai-completions', options: { baseURL, apiKey: process.env.ADK_AUTH === 'none' ? { none: true } : { env: process.env.ADK_API_KEY_ENV ?? 'OPENAI_API_KEY' } },
@@ -27,15 +27,15 @@ try {
   } } }).use('local', 'coding');
   session = await createSession({ store, namespace: 'coding-live', agentKey: `coding-c1:${workspace.id}` });
   agent = await createCodingAgent({ model, workspace, plugins: [createSessionPlugin({ session })],
-    approve(action) { if (action.preview.type === 'command' && action.preview.command.trim() === 'node --test pagination.test.cjs') { approved++; return 'allow'; } return 'deny'; },
+    approve(action) { if (action.preview.type === 'command' && action.preview.command.trim() === 'bun test ./pagination.test.cjs') { approved++; return 'allow'; } return 'deny'; },
     onEvent(event) { if (event.type === 'file.changed') changes++; },
   });
   agent.subscribe(event => { if (event.type === 'model.start') modelCalls++; if (event.type === 'tool.end') console.log(JSON.stringify({ event: 'tool.end', name: event.name, execution: event.execution })); });
-  const input = '修复 pagination.cjs 中 nextCursor 的边界错误。先用 run_command 执行 node --test pagination.test.cjs 获取失败证据，然后用 read_file 读取源码和测试，用 edit_file 做最小修复，再运行同一测试命令确认通过。不要改测试文件，不要创建其他文件。最后简要说明修改和测试结果。';
+  const input = '修复 pagination.cjs 中 nextCursor 的边界错误。先用 run_command 执行 bun test ./pagination.test.cjs 获取失败证据，然后用 read_file 读取源码和测试，用 edit_file 做最小修复，再运行同一测试命令确认通过。不要改测试文件，不要创建其他文件。最后简要说明修改和测试结果。';
   const result = await agent.prompt(input, { requestId: 'fix-pagination' });
   assert.equal(result.status, 'completed', JSON.stringify(result));
   assert.equal(await readFile(join(root, 'pagination.test.cjs'), 'utf8'), tests);
-  const after = spawnSync(process.execPath, ['--test', 'pagination.test.cjs'], { cwd: root, windowsHide: true, encoding: 'utf8' }); assert.equal(after.status, 0, after.stdout + after.stderr);
+  const after = spawnSync(process.execPath, ['test', './pagination.test.cjs'], { cwd: root, windowsHide: true, encoding: 'utf8' }); assert.equal(after.status, 0, after.stdout + after.stderr);
   const toolResults = agent.state.messages.filter(m => m.role === 'toolResult' && m.execution === 'succeeded').map(m => JSON.parse(m.content));
   assert.ok(toolResults.some(r => r.code === 'COMMAND_EXIT_NONZERO' && r.detail.exitCode === 1));
   assert.ok(toolResults.some(r => r.ok && r.data.exitCode === 0));

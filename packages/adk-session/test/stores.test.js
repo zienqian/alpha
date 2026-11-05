@@ -69,7 +69,7 @@ test('SQLite: pragmas, unknown database versions, corrupt rows, transaction roll
   await assert.rejects(store.compareAndSet(key('id'), 0, seed('id')), { code: 'STORE_UNAVAILABLE' }); db.exec('ROLLBACK');
   db.prepare('UPDATE sessions SET body=? WHERE id=?').run('{broken', 'id');
   await assert.rejects(store.read(key('id')), { code: 'SESSION_FORMAT_INVALID' });
-  db.pragma('user_version=99');
+  db.exec('PRAGMA user_version=99');
   await assert.rejects(createSqliteSessionStore({ filename }), { code: 'SESSION_FORMAT_INVALID' });
   assert.equal(db.pragma('user_version', { simple: true }), 99);
 });

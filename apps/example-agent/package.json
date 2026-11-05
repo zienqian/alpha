@@ -10,10 +10,10 @@
     "zod": "4.6.7"
   },
   "scripts": {
-    "build": "tsrs -p tsconfig.json",
-    "typecheck": "tsrs -p tsconfig.json --noEmit",
-    "lint": "eslint src",
-    "start": "node dist/index.js"
+    "build": "bun --bun run tsrs -p tsconfig.json",
+    "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit",
+    "lint": "bun --bun run eslint src",
+    "start": "bun dist/index.js"
   },
   "nx": {
     "tags": [
@@ -22,5 +22,8 @@
   },
   "devDependencies": {
     "@types/node": "20.19.43"
+  },
+  "engines": {
+    "bun": ">=1.4.4"
   }
 }

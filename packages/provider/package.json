@@ -13,10 +13,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsrs -p tsconfig.json",
-    "typecheck": "tsrs -p tsconfig.json --noEmit && tsrs -p test/tsconfig.json",
-    "lint": "eslint src",
-    "test": "node --test test/provider.test.js"
+    "build": "bun --bun run tsrs -p tsconfig.json",
+    "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit && bun --bun run tsrs -p test/tsconfig.json",
+    "lint": "bun --bun run eslint src",
+    "test": "bun test ./test/provider.test.js --timeout 30000",
+    "test:live": "bun test ./integration/openrouter.js"
   },
   "nx": {
     "tags": [
@@ -25,5 +26,8 @@
   },
   "devDependencies": {
     "@types/node": "20.19.43"
+  },
+  "engines": {
+    "bun": ">=1.4.4"
   }
 }
