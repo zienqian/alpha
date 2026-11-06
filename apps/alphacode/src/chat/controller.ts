@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { errorCode } from "../errors";
 import type { Approvals } from "./approval";
-import type { Chat, ChatRuntime, ChatState } from "./contracts";
-import { applyChatEvent, statusLabels } from "./messages";
+import type { Chat, ChatMessage, ChatRunStatus, ChatRuntime, ChatState } from "./contracts";
+import { applyApproval, applyChatEvent, settlePendingTools, statusLabels } from "./messages";
 
 export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
   let state: ChatState = {
     messages: runtime.messages, busy: false, closing: false,
-    canSend: !runtime.unsaved && !runtime.blocked, status: "Ready",
+    canSend: !runtime.unsaved && !runtime.blocked, status: "Ready", phase: "idle",
     permissionMode: runtime.permissionMode, settingsSaving: false, approval: approvals.pending,
   };
   const listeners = new Set<(state: ChatState) => void>();
@@ -15,10 +15,11 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
     state = { ...state, ...patch };
     for (const listener of listeners) listener(state);
   };
-  const unsubscribe = runtime.subscribe(event => update(applyChatEvent(state, event)));
-  const unsubscribeApproval = approvals.subscribe(approval => update({
-    approval, ...(approval ? { status: "Awaiting command approval" } : {}),
-  }));
+  const unsubscribe = runtime.subscribe(event => {
+    const next = applyChatEvent(state, event);
+    update(state.phase === "stopping" && event.type !== "run.end" ? { ...next, phase: "stopping", status: "Stopping…" } : next);
+  });
+  const unsubscribeApproval = approvals.subscribe(approval => update(applyApproval(state, approval)));
   let closePromise: Promise<void> | undefined;
   return {
     get state() { return state; },
@@ -29,20 +30,32 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
     async send(input) {
       const text = input.trim();
       if (!text || state.busy || !state.canSend || state.closing) return;
+      const started = performance.now();
+      let outcome: ChatRunStatus = "failed";
+      let completion: ChatMessage["completion"];
       update({
-        busy: true, canSend: false, status: "Connecting…", error: undefined,
-        messages: [...state.messages, { id: randomUUID(), role: "user", text }],
+        busy: true, canSend: false, status: "Connecting…", phase: "thinking", error: undefined, activeRunStartedAt: started,
+        messages: [...state.messages.filter(message => message.role !== "tool")
+          .map(message => message.completion ? { ...message, completion: undefined } : message),
+          { id: randomUUID(), role: "user", text }],
       });
       try {
         const result = await runtime.send(text);
+        outcome = result.status;
+        completion = result.completion;
         update({ status: statusLabels[result.status], error: result.error });
       } catch (error) {
         update({ status: "Request failed", error: errorCode(error) });
       } finally {
         const { unsaved, blocked } = runtime;
+        const messages = settlePendingTools(state.messages).map(message => message.streaming ? { ...message, streaming: false } : message);
+        const last = messages.at(-1);
+        if (last) messages[messages.length - 1] = { ...last, completion: completion ?? {
+          durationMs: Math.max(0, Math.round(performance.now() - started)), completedAt: Date.now(), status: outcome,
+        } };
         update({
-          messages: state.messages.map(message => message.streaming ? { ...message, streaming: false } : message),
-          busy: false, canSend: !unsaved && !blocked && !state.closing,
+          messages,
+          busy: false, phase: "idle", activeRunStartedAt: undefined, canSend: !unsaved && !blocked && !state.closing,
           ...(unsaved ? { error: "Session not saved. Saving will be retried on exit." } : {}),
           ...(blocked ? { error: "Execution state could not be confirmed. Exit and start a new session." } : {}),
         });
@@ -50,7 +63,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
     },
     cancel() {
       if (!state.busy) return;
-      update({ status: "Stopping…" });
+      update({ status: "Stopping…", phase: "stopping" });
       approvals.answer(false);
       runtime.cancel();
     },

@@ -1,9 +1,45 @@
-import type { ChatEvent, ChatMessage, ChatRunStatus, ChatState } from "./contracts";
+import type { ApprovalRequest, ChatEvent, ChatMessage, ChatRunStatus, ChatState, ToolRecord } from "./contracts";
 
 export const statusLabels: Record<ChatRunStatus, string> = {
   completed: "Ready", refused: "Request refused by the model", incomplete: "Response incomplete",
   unknown: "Outcome unknown", limited: "Run limit reached", cancelled: "Stopped", failed: "Run failed",
 };
+
+const pending = (tool: ToolRecord) => tool.status === "queued" || tool.status === "running" || tool.status === "awaiting_approval";
+const toolMessage = (tool: ToolRecord): ChatMessage => ({
+  id: tool.id, role: "tool", text: tool.name, note: tool.status === "succeeded" ? "Completed" : tool.status, tool,
+});
+
+function upsertTools(messages: readonly ChatMessage[], tools: readonly ToolRecord[]): ChatMessage[] {
+  const updates = new Map(tools.map(tool => [tool.id, tool]));
+  const result = messages.map(message => {
+    const tool = updates.get(message.id);
+    if (!tool) return message;
+    updates.delete(message.id);
+    // Late/repeated starts and queued snapshots cannot resurrect a settled tool.
+    if (message.tool && !pending(message.tool) && pending(tool)) return message;
+    return toolMessage(tool);
+  });
+  return [...result, ...Array.from(updates.values(), toolMessage)];
+}
+
+export function settlePendingTools(messages: readonly ChatMessage[]): ChatMessage[] {
+  return messages.map(message => message.tool && pending(message.tool) ? toolMessage({
+    ...message.tool, status: message.tool.status === "running" ? "outcome_unknown" : "not_executed",
+  }) : message);
+}
+
+export function applyApproval(state: ChatState, approval: ApprovalRequest | undefined): Partial<ChatState> {
+  const old = state.approval;
+  const messages = state.messages.map(message => {
+    const tool = message.tool;
+    if (!tool || !pending(tool)) return message;
+    if (approval?.assistantId === tool.assistantId && approval.callId === tool.callId) return toolMessage({ ...tool, status: "awaiting_approval" });
+    if (!approval && old?.assistantId === tool.assistantId && old.callId === tool.callId && tool.status === "awaiting_approval") return toolMessage({ ...tool, status: "queued" });
+    return message;
+  });
+  return { approval, messages };
+}
 
 export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
   const append = (message: ChatMessage) => [...state.messages, message];
@@ -11,26 +47,30 @@ export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
     state.messages.map(message => message.id === id ? { ...message, ...patch(message) } : message);
   switch (event.type) {
     case "assistant.start":
-      return { ...state, status: "Generating…", messages: append({ id: event.id, role: "assistant", text: "", streaming: true }) };
+      return { ...state, phase: "thinking", status: "Generating…", messages: state.messages.some(message => message.id === event.id)
+        ? state.messages : append({ id: event.id, role: "assistant", text: "", streaming: true }) };
     case "assistant.delta":
       return { ...state, messages: change(event.id, message => ({ text: message.text + event.text })) };
     case "assistant.commit":
-      return { ...state, messages: change(event.id, () => ({ text: event.text })) };
+      return { ...state, ...(event.tools?.length ? { phase: "queued" as const, status: "Preparing tools…" } : {}),
+        messages: upsertTools(change(event.id, () => ({ text: event.text })), event.tools ?? []) };
     case "assistant.end":
       return { ...state, messages: change(event.id, () => ({
         streaming: false,
         note: event.outcome === "failed" || event.outcome === "cancelled" ? "Incomplete preview"
           : event.outcome === "completed" || event.outcome === "tool_calls" ? undefined : statusLabels[event.outcome],
       })) };
-    case "tool.start":
-      return { ...state, status: `Tool: ${event.name}`, messages: append({ id: event.id, role: "tool", text: event.name, note: "Running" }) };
+    case "tool.start": {
+      const previous = state.messages.find(message => message.id === event.tool.id)?.tool;
+      if (previous && !pending(previous)) return state;
+      return { ...state, phase: "running", status: event.tool.description, messages: upsertTools(state.messages, [event.tool]) };
+    }
     case "tool.end": {
-      const note = event.execution === "succeeded" ? "Completed" : event.execution;
-      return { ...state, messages: state.messages.some(message => message.id === event.id)
-        ? change(event.id, () => ({ note }))
-        : append({ id: event.id, role: "tool", text: event.name, note }) };
+      const messages = upsertTools(state.messages, [event.tool]);
+      const running = messages.find(message => message.tool?.status === "running")?.tool;
+      return { ...state, messages, phase: running ? "running" : "queued", status: running?.description ?? "Preparing next step…" };
     }
     case "run.end":
-      return { ...state, status: "Saving session…" };
+      return { ...state, phase: "saving", status: "Saving session…", messages: settlePendingTools(state.messages) };
   }
 }

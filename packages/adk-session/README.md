@@ -83,6 +83,8 @@ Manager 保留 createSession、openSession、getSession、listSessions、updateS
 
 默认准入阈值为 1000 轮 / 64 MiB，已执行的完整结果跨过阈值仍尝试保存。S2 保留 formatVersion=1 与已有 Memory / SQLite 数据，存储全快照的成本随归档增长。
 
+新轮次在 `SessionTurn.durationMs` 记录准入准备到执行收尾的单调时钟耗时（不含后续持久化等待），配合 `committedAt` 供界面展示运行时长和完成时间。旧归档允许缺少该字段；幂等重放和保存重试保留原耗时，不重新计时。
+
 ## SQLite 与验证
 
 根入口不加载 SQLite，也没有 core 或 Provider 运行时导入。SQLite 使用独立的 `@alpha/adk-session/sqlite` 入口，直接调用 Bun 内置 `bun:sqlite`，无需安装可选驱动。事务、WAL、synchronous=FULL、busy_timeout=5000、墓碑及版本校验沿用 S1；表结构、user_version=1 和归档 formatVersion=1 不变。测试使用迁移前 Node / better-sqlite3 和 Bun 内置 SQLite 生成的数据库验证旧历史恢复、请求重放与继续保存。

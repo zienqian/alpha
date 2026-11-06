@@ -71,11 +71,19 @@ test('malformed archives, incomplete batches and duplicate receipts fail before 
     x => { x.data.turns.push(x.data.turns[0]); },
     x => { x.data.turns[0].committedRevision = 100; },
     x => { x.data.turns[0].inputHash = 'bad'; },
+    x => { x.data.turns[0].durationMs = -1; },
+    x => { x.data.turns[0].durationMs = '11'; },
   ]) {
     const data = structuredClone(original); corrupt(data);
     const other = fixture({ store: { ...f.store, async read() { return data; } } });
     await assert.rejects(other.open(session.id), { code: 'SESSION_FORMAT_INVALID' }); assert.equal(other.agents.length, 0); await other.close();
   }
+  const legacy = structuredClone(original);
+  delete legacy.data.turns[0].durationMs;
+  const compatible = fixture({ store: { ...f.store, async read() { return legacy; } } });
+  const restored = await compatible.open(session.id);
+  assert.equal((await restored.session.getSnapshot()).data.turns[0].durationMs, undefined);
+  await compatible.close();
   await f.close(); await f.store.close();
 });
 

@@ -17,11 +17,16 @@ export const prepareCommand: Prepare = async (context, args) => {
 export const runCommandTool = createTool({
   name: 'run_command', effect: 'unknown',
   description: 'Execute a command in the configured host shell shown in the system instructions. Requires host permission. Check exitCode and outputIncomplete. Shell exit codes are returned as reported by that shell.',
-  input: z.strictObject({ command: z.string().min(1).max(16384), cwd: z.string().min(1).max(512).optional(), timeoutMs: z.int().positive().max(2_147_483_647).optional() }),
+  input: z.strictObject({
+    command: z.string().min(1).max(16384), cwd: z.string().min(1).max(512).optional(),
+    timeoutMs: z.int().positive().max(2_147_483_647).optional(),
+    description: z.string().trim().min(1).max(160).optional().describe('Briefly describe the purpose of this command in English, in one line. Describe the intended action, not a completed result. Display only; never part of the shell command.'),
+  }),
   async execute(_args, ctx: ToolContext<CodingContext>) {
     const plan = takePlan(ctx, 'command');
     if (plan.rejected) return rejected(ctx, plan.rejected);
-    const outcome = await runCommand(ctx.app.cwd, ctx.app.shell, plan.args as unknown as CommandInput, {
+    const input: CommandInput = { command: plan.args.command as string, cwd: plan.args.cwd as string, timeoutMs: plan.args.timeoutMs as number | undefined };
+    const outcome = await runCommand(ctx.app.cwd, ctx.app.shell, input, {
       signal: ctx.signal, timeoutMs: ctx.app.commandTimeoutMs,
       onOutput: (channel, text) => emitCodingEvent(ctx.app, { type: 'command.output', runId: ctx.runId, callId: ctx.callId, channel, text }),
     }, ctx.app.fileAccess);

@@ -9,6 +9,8 @@ export interface SessionTurn {
   readonly messages: readonly Message[];
   readonly historyStatus: 'ready' | 'blocked';
   readonly committedAt: string;
+  /** Elapsed execution time before persistence; absent in older archives. */
+  readonly durationMs?: number;
   /** Revision of this turn's atomic commit; reused in idempotent receipts. */
   readonly committedRevision: number;
 }

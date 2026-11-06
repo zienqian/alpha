@@ -79,6 +79,7 @@ export function createSessionHandle(config: SessionConfig, initial: SessionSnaps
     return persistence;
   }
   async function prepare(request: RunRequest<unknown>, history: RunHistory): Promise<RunPlan> {
+    const started = performance.now();
     const { signal, input } = request, currentId = request.requestId;
     ensure(!signal.aborted, 'SESSION_ABORTED'); const start = await read(); ensure(!signal.aborted, 'SESSION_ABORTED');
     ensure(start.data.agentKey === config.agentKey, 'AGENT_MISMATCH');
@@ -112,7 +113,7 @@ export function createSessionHandle(config: SessionConfig, initial: SessionSnaps
         if (!final) { quarantined = true; return; }
         ensure(final.messages.length >= baseline.length && equal(final.messages.slice(0, baseline.length), baseline), 'RECOVERY_REQUIRED');
         const turn: SessionTurn = { requestId: currentId, inputHash: digest, run: final.result, messages: final.messages.slice(baseline.length),
-          historyStatus: final.historyStatus, committedAt: now(), committedRevision: admission.revision + 1 };
+          historyStatus: final.historyStatus, committedAt: now(), durationMs: Math.max(0, Math.round(performance.now() - started)), committedRevision: admission.revision + 1 };
         const candidate = snapshot({ revision: admission.revision + 1, data: { ...admission.data, updatedAt: now(), turns: [...admission.data.turns, turn], pending: null } }, sessionId);
         const storedTurn = candidate.data.turns.at(-1); ensure(storedTurn, 'RECOVERY_REQUIRED');
         commit = { admission, candidate, turn: storedTurn }; status = 'saving'; await save();

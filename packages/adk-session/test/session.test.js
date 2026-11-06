@@ -16,6 +16,7 @@ test('Session is a data handle; only Agent executes, returns RunResult and owns 
   assert.equal(result.status, 'completed'); assert.equal(result.run, undefined);
   assert.match(session.state.requestId, /^request_/); assert.deepEqual(session.state.persistence, { status: 'saved', revision: 2 });
   assert.equal((await session.getSnapshot()).data.turns[0].run.runId, result.runId);
+  assert.ok(Number.isSafeInteger((await session.getSnapshot()).data.turns[0].durationMs));
   assert.throws(() => agent.replaceMessages([]), { code: 'HISTORY_MANAGED' });
   await assert.rejects(session.close(), { code: 'SESSION_BOUND' });
   await agent.close(); assert.equal(session.state.binding, 'unbound'); await session.close(); await store.close();
@@ -25,10 +26,12 @@ test('restores saved conversations; duplicate IDs return the old result without 
   const f = fixture(), first = await f.create({ id: 'one', title: 'conversation', metadata: { owner: 'A' } });
   const events = []; first.agent.subscribe(e => events.push(e.type)); first.session.subscribe(e => events.push(e.type));
   const result = await first.agent.prompt('hello', { requestId: 'r1' });
+  const durationMs = (await first.session.getSnapshot()).data.turns[0].durationMs;
   assert.deepEqual(events.slice(-2), ['run.end', 'session.saved']);
   await first.agent.close(); await first.session.close();
   const next = await f.open('one'), repeatedEvents = []; next.agent.subscribe(e => repeatedEvents.push(e)); next.session.subscribe(e => repeatedEvents.push(e));
   assert.deepEqual(await next.agent.prompt('hello', { requestId: 'r1' }), result);
+  assert.equal((await next.session.getSnapshot()).data.turns[0].durationMs, durationMs);
   assert.equal(f.model.inputs.length, 1); assert.equal(repeatedEvents.length, 0);
   await assert.rejects(next.agent.prompt('changed', { requestId: 'r1' }), { code: 'REQUEST_MISMATCH' });
   await next.agent.prompt('second', { requestId: 'r2' });

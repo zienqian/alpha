@@ -1,5 +1,29 @@
 export type ChatRunStatus = "completed" | "refused" | "incomplete" | "unknown" | "limited" | "cancelled" | "failed";
 export type PermissionMode = "ask" | "auto" | "full";
+export type ChatPhase = "idle" | "thinking" | "queued" | "running" | "saving" | "stopping";
+export type ToolStatus = "queued" | "running" | "awaiting_approval" | "succeeded" | "failed" | "denied" | "not_executed" | "outcome_unknown";
+
+export interface ToolRecord {
+  id: string;
+  assistantId: string;
+  callId: string;
+  name: string;
+  description: string;
+  descriptionSource: "model" | "fallback";
+  command?: string;
+  cwd?: string;
+  path?: string;
+  target: string;
+  status: ToolStatus;
+  output?: string;
+  error?: string;
+  exitCode?: number;
+  omittedLines?: number;
+  truncated?: boolean;
+  outputIncomplete?: boolean;
+  startedAt?: number;
+  finishedAt?: number;
+}
 
 export interface ChatMessage {
   id: string;
@@ -7,10 +31,14 @@ export interface ChatMessage {
   text: string;
   streaming?: boolean;
   note?: string;
+  tool?: ToolRecord;
+  completion?: { durationMs: number; completedAt: number; status: ChatRunStatus };
 }
 
 export interface ApprovalRequest {
   name: string;
+  assistantId?: string;
+  callId?: string;
   preview: { type: "command"; shell: string; cwd: string; command: string } | { type: "tool" };
 }
 
@@ -22,6 +50,9 @@ export interface ChatState {
   closing: boolean;
   canSend: boolean;
   status: string;
+  phase: ChatPhase;
+  /** Monotonic time for the active turn's elapsed indicator. */
+  activeRunStartedAt?: number;
   permissionMode: PermissionMode;
   settingsSaving: boolean;
   error?: string;
@@ -45,11 +76,11 @@ export interface Chat {
 export type ChatEvent =
   | { type: "assistant.start"; id: string }
   | { type: "assistant.delta"; id: string; text: string }
-  | { type: "assistant.commit"; id: string; text: string }
+  | { type: "assistant.commit"; id: string; text: string; tools?: readonly ToolRecord[] }
   | { type: "assistant.end"; id: string; outcome: ChatRunStatus | "tool_calls" }
-  | { type: "tool.start"; id: string; name: string }
-  | { type: "tool.end"; id: string; name: string; execution: string }
-  | { type: "run.end" };
+  | { type: "tool.start"; tool: ToolRecord }
+  | { type: "tool.end"; tool: ToolRecord }
+  | { type: "run.end"; status: ChatRunStatus };
 
 export interface ChatRuntime {
   readonly modelId: string;
@@ -61,7 +92,7 @@ export interface ChatRuntime {
   readonly blocked: boolean;
   setPermissionMode(mode: PermissionMode): Promise<void>;
   subscribe(listener: (event: ChatEvent) => void): () => void;
-  send(input: string): Promise<{ status: ChatRunStatus; error?: string }>;
+  send(input: string): Promise<{ status: ChatRunStatus; error?: string; completion?: ChatMessage["completion"] }>;
   cancel(): void;
   /** Drain execution and persist before resolving; a failed close may be retried. */
   close(): Promise<void>;

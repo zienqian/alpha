@@ -3,6 +3,7 @@ import { useTerminalDimensions } from "@opentui/solid";
 import type { ApprovalRequest, Chat } from "../chat/contracts";
 import { ApprovalPanel } from "./components/approval-panel";
 import { Composer } from "./components/composer";
+import { ComposerStatus } from "./components/composer-status";
 import { Conversation } from "./components/conversation";
 import { StatusBar } from "./components/status-bar";
 import { useChatKeyboard } from "./keyboard";
@@ -25,6 +26,7 @@ export function App(props: { chat: Chat; onExit: () => void }) {
         <Show when={state().error}>
           <text fg={colors.error} flexShrink={0} maxHeight={2}>{state().error}</text>
         </Show>
+        <ComposerStatus state={state()} />
         <Composer
           busy={state().busy} canSend={state().canSend}
           focused={!state().approval && !state().closing}
@@ -34,7 +36,7 @@ export function App(props: { chat: Chat; onExit: () => void }) {
           onCommandOpenChange={setCommandOpen}
           onSubmit={text => { void props.chat.send(text); }}
         />
-        <StatusBar modelId={props.chat.modelId} workspaceRoot={props.chat.workspaceRoot} />
+        <StatusBar modelId={props.chat.modelId} workspaceRoot={props.chat.workspaceRoot} permissionMode={state().permissionMode} />
       </box>
     </box>
   );

@@ -1,9 +1,11 @@
 import { SyntaxStyle } from "@opentui/core";
 import { useRenderer } from "@opentui/solid";
-import { Index, Show } from "solid-js";
-import type { ChatMessage } from "../../chat/contracts";
+import { Index, Show, type Accessor } from "solid-js";
+import type { ChatMessage, ToolRecord } from "../../chat/contracts";
 import { colors, markdownStyles } from "../theme";
 import { Welcome } from "./welcome";
+import { ToolRecordView } from "./tool-record";
+import { TurnCompletion } from "./turn-completion";
 
 export function Conversation(props: { messages: readonly ChatMessage[] }) {
   const syntaxStyle = SyntaxStyle.fromStyles(markdownStyles, useRenderer().nativeScene);
@@ -13,25 +15,34 @@ export function Conversation(props: { messages: readonly ChatMessage[] }) {
       scrollbarOptions={{ showArrows: false, trackOptions: { backgroundColor: colors.background, foregroundColor: colors.border } }}>
       <Welcome empty={props.messages.length === 0} />
       <Index each={props.messages}>{message => (
-        <Show when={message().text || message().streaming}>
-          <box flexDirection="row" flexShrink={0} paddingLeft={1} marginBottom={message().role === "tool" ? 0 : 1}>
-            <text fg={message().role === "user" ? colors.accent : colors.muted} width={3} flexShrink={0}>
-              {message().role === "user" ? "›" : message().role === "tool" ? "↳" : "●"}
-            </text>
-            <box flexDirection="column" flexGrow={1} minWidth={0}>
-              <Show when={message().role === "assistant"} fallback={
-                <text fg={message().role === "tool" ? colors.muted : colors.foreground}>
-                  {message().text}{message().role === "tool" && message().note ? ` · ${message().note}` : ""}
-                </text>
-              }>
-                <Show when={message().text} fallback={<text fg={colors.muted}>Thinking…</text>}>
-                  <markdown content={message().text} syntaxStyle={syntaxStyle} streaming={message().streaming ?? false} />
-                </Show>
-              </Show>
-              <Show when={message().note && message().role !== "tool"}>
-                <text fg={colors.muted} marginTop={1}>{message().note}</text>
-              </Show>
-            </box>
+        <Show when={message().text || message().completion}>
+          <box flexDirection="column" flexShrink={0} marginBottom={message().tool ? 0 : 1}>
+            <Show when={message().text}>
+              <Show when={message().tool} fallback={
+                <box id={`message-${message().id}`} flexDirection="row" flexShrink={0} paddingX={1}
+                  paddingY={message().role === "user" ? 1 : 0}
+                  backgroundColor={message().role === "user" ? colors.surface : undefined}>
+                  <text fg={colors.muted} width={2} flexShrink={0}>
+                    {message().role === "user" ? "›" : message().role === "tool" ? "↳" : "•"}
+                  </text>
+                  <box flexDirection="column" flexGrow={1} minWidth={0}>
+                    <Show when={message().role === "assistant"} fallback={
+                      <text fg={message().role === "tool" ? colors.muted : colors.foreground}>
+                        {message().text}{message().role === "tool" && message().note ? ` · ${message().note}` : ""}
+                      </text>
+                    }>
+                      <markdown content={message().text} syntaxStyle={syntaxStyle} streaming={message().streaming ?? false} />
+                    </Show>
+                    <Show when={message().note && message().role !== "tool"}>
+                      <text fg={colors.muted} marginTop={1}>{message().note}</text>
+                    </Show>
+                  </box>
+                </box>
+              }>{(tool: Accessor<ToolRecord>) => <ToolRecordView tool={tool()} />}</Show>
+            </Show>
+            <Show when={message().completion}>{(completion: Accessor<NonNullable<ChatMessage["completion"]>>) => (
+              <TurnCompletion id={message().id} completion={completion()} />
+            )}</Show>
           </box>
         </Show>
       )}</Index>

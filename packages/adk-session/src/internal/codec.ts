@@ -80,7 +80,8 @@ export function snapshot(value: unknown, expectedId?: string): SessionSnapshot {
     const requests = new Set<string>(), runs = new Set<string>(), ids = new Set<string>();
     let previousRevision = 0, blocked = false;
     for (const turn of d.turns) {
-      keys(turn, ['requestId', 'inputHash', 'run', 'messages', 'historyStatus', 'committedAt', 'committedRevision'], F);
+      keys(turn, ['requestId', 'inputHash', 'run', 'messages', 'historyStatus', 'committedAt', 'durationMs', 'committedRevision'], F);
+      ensure(turn.durationMs === undefined || integer(turn.durationMs), F);
       ensure(!blocked && identifier(turn.requestId) && !requests.has(turn.requestId) && hash(turn.inputHash) && timestamp(turn.committedAt), F);
       ensure(integer(turn.committedRevision) && turn.committedRevision >= previousRevision + 2 && turn.committedRevision <= result.revision, F);
       previousRevision = turn.committedRevision; requests.add(turn.requestId);

@@ -1,10 +1,21 @@
 import { createCliRenderer } from "@opentui/core";
 import { render } from "@opentui/solid";
+import { finished } from "node:stream/promises";
 import type { Chat } from "../chat/contracts";
 import { App } from "./app";
+import { VscodeImageOutput } from "./vscode-output";
 
 export async function runTerminal(chat: Chat): Promise<void> {
-  const renderer = await createCliRenderer({ exitOnCtrlC: false, exitSignals: [], targetFps: 30 });
+  const output = process.env.TERM_PROGRAM === "vscode" ? new VscodeImageOutput(process.stdout) : undefined;
+  const renderer = await createCliRenderer({
+    exitOnCtrlC: false, exitSignals: [], targetFps: 30,
+    ...(output ? { stdout: output as unknown as NodeJS.WriteStream, remote: false } : {}),
+  });
+  // OpenTUI only installs its automatic resize listener for process.stdout itself.
+  const resize = () => {
+    if (process.stdout.columns > 0 && process.stdout.rows > 0) renderer.resize(process.stdout.columns, process.stdout.rows);
+  };
+  if (output) process.stdout.on("resize", resize);
   const exit = () => {
     // A save failure stays visible in the TUI and can be retried with Ctrl+C.
     void chat.close().then(() => renderer.destroy()).catch(() => { /* Chat displays the save error. */ });
@@ -18,7 +29,9 @@ export async function runTerminal(chat: Chat): Promise<void> {
   } finally {
     process.off("SIGINT", interrupt);
     process.off("SIGTERM", exit);
+    if (output) process.stdout.off("resize", resize);
     renderer.destroy();
     await renderer.closed;
+    if (output) { output.end(); await finished(output); }
   }
 }

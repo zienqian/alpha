@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
+import { createApplication } from "../src/application";
 import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "./helpers";
 
 test("Provider → ADK → coding tools → streaming reply → SQLite; subsequent prompts retain context", async () => {
@@ -27,8 +28,21 @@ test("Provider → ADK → coding tools → streaming reply → SQLite; subseque
     expect(app.chat.state.messages.at(-1)?.streaming).toBe(false);
     expect(app.chat.state.canSend).toBe(true);
     expect(app.chat.state.error).toBeUndefined();
-    await app.chat.send("继续");
+    const completion = app.chat.state.messages.at(-1)?.completion;
+    expect(completion?.status).toBe("completed");
+    expect(app.chat.state.activeRunStartedAt).toBeUndefined();
+    expect(app.chat.state.messages.some(message => message.role === "tool")).toBe(true);
+    const nextRun = app.chat.send("继续");
+    expect(app.chat.state.busy).toBe(true);
+    expect(app.chat.state.messages.some(message => message.completion || message.role === "tool")).toBe(false);
+    expect(app.chat.state.messages.some(message => message.text.includes("const answer = 42"))).toBe(true);
+    await nextRun;
+    const completedTurns = app.chat.state.messages.filter(message => message.completion);
+    expect(completedTurns).toHaveLength(1);
+    expect(completedTurns[0]?.text).toBe("第二轮回复");
+    expect(completedTurns[0]?.completion).not.toBe(completion);
     expect(JSON.stringify(app.requests[2])).toContain("const answer = 42");
+    expect(JSON.stringify(app.requests[2])).toContain("hello-from-workspace");
     await app.chat.close();
     const db = new Database(app.config.databasePath, { readonly: true });
     try {
@@ -39,6 +53,13 @@ test("Provider → ADK → coding tools → streaming reply → SQLite; subseque
       expect(saved.turns[0].run.status).toBe("completed");
       expect(saved.turns[1].run.text).toBe("第二轮回复");
     } finally { db.close(); }
+    const restored = await createApplication({ ...app.config, sessionId: app.chat.sessionId }, { provider: { fetch: async () => textResponse("restored") } });
+    try {
+      expect(restored.state.messages.some(message => message.role === "tool")).toBe(false);
+      expect(restored.state.messages.filter(message => message.completion)).toHaveLength(1);
+      expect(restored.state.messages.at(-1)?.completion).toEqual(completedTurns[0]?.completion);
+      expect(restored.state.messages.some(message => message.text.includes("const answer = 42"))).toBe(true);
+    } finally { await restored.close(); }
   } finally { await app.dispose(); }
 });
 

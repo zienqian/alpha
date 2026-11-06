@@ -32,6 +32,9 @@ test("injected runtime supports streaming and a failed close retries persistence
   await chat.send("first");
   expect(chat.state.messages.at(-1)?.text).toBe("committed reply");
   expect(chat.state.messages.at(-1)?.streaming).toBe(false);
+  expect(chat.state.messages.at(-1)?.completion?.durationMs).toBeGreaterThanOrEqual(0);
+  expect(chat.state.messages.at(-1)?.completion?.status).toBe("completed");
+  expect(chat.state.activeRunStartedAt).toBeUndefined();
   await expect(chat.close()).rejects.toThrow("private storage detail");
   expect(chat.state.error).toBe("STORE_UNAVAILABLE");
   expect(chat.state.closing).toBe(false);

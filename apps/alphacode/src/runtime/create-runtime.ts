@@ -66,6 +66,7 @@ export async function createRuntime(config: AppConfig, options: {
       approve: approve ? async (action, { signal }) => {
         const allowed = await approve({
           name: action.call.name,
+          assistantId: action.call.assistantId, callId: action.call.callId,
           preview: action.preview.type === "command" ? action.preview : { type: "tool" },
         }, signal);
         return allowed ? "allow" : "deny";
@@ -133,7 +134,17 @@ export async function createRuntime(config: AppConfig, options: {
         if (cancelled || closing) return { status: "cancelled" };
         if (!sameSettings(readSessionSettings(snapshot.data), settings)) throw settingsError("SESSION_CONFLICT");
         const result = await activeAgent.prompt(input, { requestId: randomUUID() });
-        return { status: result.status, error: result.status === "failed" ? result.error.code : undefined };
+        let completion: ChatMessage["completion"];
+        if (activeSession.state.persistence?.status === "saved") {
+          try {
+            const saved = await activeSession.getSnapshot();
+            const turn = saved.data.turns.findLast(turn => turn.run.runId === result.runId);
+            if (turn?.durationMs !== undefined) completion = {
+              durationMs: turn.durationMs, completedAt: Date.parse(turn.committedAt), status: turn.run.status,
+            };
+          } catch { /* Optional display timing must not change a completed run's outcome. */ }
+        }
+        return { status: result.status, error: result.status === "failed" ? result.error.code : undefined, completion };
       } finally { running = false; }
     },
     cancel() { cancelled = true; activeAgent.abort(); },

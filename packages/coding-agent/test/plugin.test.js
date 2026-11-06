@@ -3,9 +3,23 @@ import assert from 'node:assert/strict';
 import { createTool } from '@alpha/adk/core';
 import { createSession, createMemorySessionStore, createSessionPlugin } from '@alpha/adk-session';
 import { z } from 'zod';
-import { createCodingAgent, codingTools, readFileTool, editFileTool } from '../dist/index';
+import { createCodingAgent, codingTools, readFileTool, editFileTool, runCommandTool } from '../dist/index';
 import { answer, call, request, fakeModel, deferred, results, fixture, scriptCommand } from './helpers';
 import { createCodingContext } from '../dist/context';
+
+test('command descriptions are optional bounded metadata and leave command text intact', async () => {
+  const signal = new AbortController().signal, command = 'echo first\necho second';
+  const legacy = await runCommandTool.prepare({ command }, signal);
+  assert.deepEqual(legacy.arguments, { command });
+  const described = await runCommandTool.prepare({ command, description: '  验证命令输出  ' }, signal);
+  assert.equal(described.arguments.description, '验证命令输出');
+  assert.equal(described.arguments.command, command);
+  assert.match(runCommandTool.info.inputSchema.properties.description.description, /purpose/);
+  await runCommandTool.prepare({ command, description: 'x'.repeat(160) }, signal);
+  for (const description of ['', '   ', 'x'.repeat(161), 123]) {
+    await assert.rejects(runCommandTool.prepare({ command, description }, signal), { code: 'TOOL_INPUT_INVALID' });
+  }
+});
 
 test('read tool runs without a permission plan; write tool requires an approved call', async () => {
   await using f = await fixture({ a: 'independent' });

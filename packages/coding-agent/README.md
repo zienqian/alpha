@@ -57,6 +57,8 @@ PowerShell 5.1/7 使用 UTF-8 和纯文本输出，不加载 profile。退出码
 
 结果为有界 JSON 字符串：`{ ok: true, data }` 或 `{ ok: false, code, detail? }`。非零退出返回 `COMMAND_EXIT_NONZERO`，保留退出码和日志，模型可继续修复。无法确认副作用则抛出并产生 `outcome_unknown`，不自动重试。命令执行后清除文件观察，写文件后清除该文件观察；再次修改需重新读取。
 
+`run_command` 接受可选 `description`（去首尾空白后 1–160 字符）：模型在同一次工具调用中用英文简述命令目的，供宿主执行前展示。该字段随调用参数进入历史，不拼入 shell；执行器只接收 `command`、`cwd`、`timeoutMs`。旧调用不带描述仍然有效。
+
 ## 限制与 Session
 
 文件上限 1 MiB，严格 UTF-8，保留 BOM/CRLF，拒绝链接路径。更新使用同目录临时文件和 rename，创建使用独占 link；写入前复查路径与版本。没有目录锁，也不保证对并发外部修改的原子 CAS、跨文件事务或 ACL 完整保留。

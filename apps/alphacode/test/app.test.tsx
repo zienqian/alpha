@@ -154,7 +154,7 @@ test("composer grows with wrapped text and newlines, caps tall drafts, and shrin
 });
 
 test("composer and context stay at the bottom across empty, overflowing, approval, error and resized layouts", async () => {
-  let state: ChatState = { messages: [], busy: false, closing: false, canSend: true, status: "Ready", permissionMode: "ask", settingsSaving: false };
+  let state: ChatState = { messages: [], busy: false, closing: false, canSend: true, status: "Ready", phase: "idle", permissionMode: "ask", settingsSaving: false };
   let listener: ((state: ChatState) => void) | undefined;
   const chat: Chat = {
     get state() { return state; },
