@@ -13,7 +13,8 @@ if (args.includes("--help") || args.includes("-h")) {
   alphacode --watch      源码修改后自动重启
   alphacode --version    显示版本
 
-模型配置默认读取 Alpha 仓库的 .env.local；终端环境变量优先。`);
+全局配置：~/.alphacode/config.yaml，全局指令：~/.alphacode/AGENTS.md。
+ALPHACODE_HOME 可指定其他配置目录。环境变量覆盖全局配置；开发启动器也读取仓库 .env.local。`);
 } else if (args.includes("--version") || args.includes("-v")) {
   console.log(`alphacode ${version} (local source)`);
 } else {

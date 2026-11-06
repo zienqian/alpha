@@ -29,6 +29,7 @@
         "@opentui/core": "0.8.1",
         "@opentui/solid": "0.8.1",
         "solid-js": "1.9.18",
+        "yaml": "2.9.0",
       },
     },
     "apps/example-agent": {

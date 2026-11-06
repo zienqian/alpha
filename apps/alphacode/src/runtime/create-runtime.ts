@@ -4,13 +4,14 @@ import { dirname } from "node:path";
 import type { Agent } from "@alpha/adk/core";
 import { createSessionManager, createSessionPlugin, type Session, type SessionManager, type SessionStore } from "@alpha/adk-session";
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
-import { createCodingAgent } from "@alpha/coding-agent";
+import { createCodingAgent, type CodingContext } from "@alpha/coding-agent";
 import { createProvider, type CreateProviderOptions } from "@alpha/provider";
 import type { AppConfig } from "../config";
 import type { ChatMessage, ChatRuntime, RequestApproval } from "../chat/contracts";
 import { subscribeToAgent } from "./events";
 import { permissionDecision } from "./permission-policy";
 import { restoreMessages } from "./history";
+import { globalInstructionsPlugin } from "./global-instructions";
 import { isPermissionMode, readSessionSettings, sameSettings, settingsError, type SessionSettings } from "./session-settings";
 
 export async function createRuntime(config: AppConfig, options: {
@@ -23,7 +24,7 @@ export async function createRuntime(config: AppConfig, options: {
   let session: Session | undefined;
   let agent: Agent | undefined;
   let messages: ChatMessage[];
-  let settings: SessionSettings = { version: 1, modelId: config.modelId, permissionMode: "ask" };
+  let settings: SessionSettings = { version: 1, modelId: config.modelId, permissionMode: config.permissionMode ?? "ask" };
   try {
     await mkdir(dirname(config.databasePath), { recursive: true });
     store = await createSqliteSessionStore({ filename: config.databasePath });
@@ -65,7 +66,10 @@ export async function createRuntime(config: AppConfig, options: {
         return allowed ? "allow" : "deny";
       } : undefined,
       instructions: "You are AlphaCode. Respond in the user's language. Use Markdown for explanations and fenced blocks for code. Keep answers concise.",
-      plugins: [createSessionPlugin({ session })],
+      plugins: [
+        ...(config.globalInstructions ? [globalInstructionsPlugin<CodingContext<undefined>>(config.globalInstructions, config.globalInstructionsPath ?? "~/.alphacode/AGENTS.md")] : []),
+        createSessionPlugin({ session }),
+      ],
     });
   } catch (error) {
     // Startup has not accepted a prompt; release only resources created here.

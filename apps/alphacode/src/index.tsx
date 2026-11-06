@@ -1,10 +1,10 @@
 import { createApplication } from "./application";
-import { ConfigurationError, readConfig } from "./config";
+import { ConfigurationError, loadConfig } from "./config";
 import { errorCode } from "./errors";
 import { runTerminal } from "./ui/terminal";
 
 try {
-  const chat = await createApplication(readConfig());
+  const chat = await createApplication(await loadConfig());
   try {
     await runTerminal(chat);
   } finally {

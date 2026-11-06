@@ -13,15 +13,52 @@ Copy-Item .env.example .env.local
 bun run dev
 ```
 
-`bun run dev` 直接运行应用和基础包源码，并监听变化自动重启，无需预先 build。构建产物仍可通过 `bun run build` 后执行 `bun run start` 体验。启动器通过绝对路径读取仓库的 `.env.local` 和 TUI 配置，保持调用者当前目录。终端环境变量优先于配置文件。
+`bun run dev` 直接运行应用和基础包源码，并监听变化自动重启，无需预先 build。构建产物仍可通过 `bun run build` 后执行 `bun run start` 体验。启动器通过绝对路径读取仓库的 `.env.local` 和 TUI 配置，保持调用者当前目录。终端环境变量优先于 `.env.local`，两者都覆盖全局 YAML 默认配置。
+
+## 全局配置目录
+
+默认使用用户主目录的 `~/.alphacode`（Windows 为 `%USERPROFILE%\.alphacode`）：
+
+```text
+~/.alphacode/
+  config.yaml    # 模型、服务端点、认证方式、默认权限和会话数据库路径
+  AGENTS.md      # 所有项目共用的 Agent 指令
+  sessions.db    # 默认会话数据库
+```
+
+首次启动自动创建目录、带注释的 `config.yaml` 模板和空的 `AGENTS.md`；已有文件不会被覆盖。使用 `ALPHACODE_HOME` 可切换整个全局配置目录，也会改变默认数据库位置。目录支持 `~`，相对路径基于启动目录。
+
+`config.yaml` 示例（将模型 ID 改为服务端支持的值）：
+
+```yaml
+provider:
+  adapter: openai-completions
+  options:
+    baseURL: https://api.openai.com/v1
+    apiKey:
+      env: OPENAI_API_KEY
+      # 无认证服务使用 apiKey: { none: true }
+model:
+  id: your-model-id
+permissionMode: ask # ask / auto / full
+databasePath: sessions.db
+```
+
+当前支持 `openai-completions` 适配器；`apiKey` 使用环境变量名或 `{ none: true }`，不在 YAML 中填写实际密钥。`databasePath` 的相对路径基于配置目录，`ALPHACODE_DB` 的相对路径仍基于启动目录；两者都支持 `~`。空文件和注释文件表示使用默认配置。无效字段、重复键、错误类型或 YAML 格式会在启动时明确报错。
+
+新会话配置优先级为：**环境变量 → 全局 config.yaml → 内置默认值**。恢复已有会话时，使用该会话保存的模型和权限；`/permission` 只修改当前 session，不改写全局配置。
+
+`AGENTS.md` 使用普通 Markdown 编写全局偏好。每次启动读取一次，和项目根目录 `AGENTS.md` 一起传给模型；更具体的项目指令与当前用户请求优先。这些指令不作为聊天消息写入 session，也不会修改程序的权限策略。修改后重启生效。配置文件上限 64 KiB，全局指令上限 32 KiB，均使用 UTF-8。
 
 复用现有模型配置：
 
-- `ADK_MODEL`：必填，模型 ID。
+- `ADK_MODEL`：覆盖全局 `model.id`；两者至少配置一项。
 - `ADK_BASE_URL`：Chat Completions 兼容端点，默认 `https://api.openai.com/v1`。
-- `ADK_AUTH=none`：显式使用无认证端点；需要密钥时移除此项。
+- `ADK_AUTH=none`：显式使用无认证端点；`ADK_AUTH=api_key` 显式启用密钥认证。
 - `ADK_API_KEY_ENV`：凭证环境变量名，默认 `OPENAI_API_KEY`，实际凭证也需配置。
-- `ALPHACODE_DB`：可选 SQLite 路径，默认用户目录下的 `.alphacode/sessions.db`。
+- `ALPHACODE_HOME`：可选全局配置目录，默认 `~/.alphacode`。
+- `ALPHACODE_PERMISSION`：新会话的默认权限，`ask` / `auto` / `full`，覆盖 YAML 的 `permissionMode`。
+- `ALPHACODE_DB`：可选 SQLite 路径，覆盖 YAML 的 `databasePath`，默认全局配置目录下的 `sessions.db`。
 - `ALPHACODE_SESSION`：可选，恢复当前工作区下的指定 session ID；未指定时创建新会话。恢复时使用会话保存的模型 ID 和权限模式，`ADK_MODEL` 作为新会话的默认模型。
 
 根目录的 `dev` / `start` 默认以仓库根目录为工作区。指定其他工作区：
@@ -76,14 +113,14 @@ alphacode
 
 流中断或取消后保留未完成的预览；实际对话历史由 ADK 管理。每轮等待 Session 保存后才允许发送下一条。保存失败和执行状态不明会显示错误；退出时会补写保存，保存仍失败则保留界面供再次退出重试。
 
-默认每次启动创建新会话，已完成轮次归档到 SQLite。模型 ID 和权限模式保存在同一条会话记录的 `metadata.alphacode` 中，包含配置版本；权限切换立即写入，即使还没有发送消息也会保存。不同会话互不影响，密钥和端点认证配置仍由环境提供。
+默认每次启动创建新会话，已完成轮次归档到 SQLite。模型 ID 和权限模式保存在同一条会话记录的 `metadata.alphacode` 中，包含配置版本；权限切换立即写入，即使还没有发送消息也会保存。不同会话互不影响。端点和认证方式由全局配置及环境变量提供，实际密钥仍从环境读取。
 
 通过 `ALPHACODE_SESSION` 恢复时，对话、模型和权限一起恢复；历史会话未保存配置时，从原有 `agentKey` 恢复模型，权限默认为 Ask for approval，并补写配置。损坏或不支持的配置会阻止恢复。本版尚无历史会话选择界面或会话内模型切换命令。命令权限沿用当前用户，工作区路径检查不提供操作系统沙箱。
 
 ## 结构与验证
 
 - `src/index.tsx` / `src/application.ts`：启动入口和依赖组装，将具体运行时注入对话控制器，再交给终端界面。
-- `src/config.ts`：读取环境配置和工作目录；`src/errors.ts`：提取可展示的错误代码。
+- `src/config.ts`：合并全局默认值、环境配置和工作目录；`src/global-config.ts`：初始化配置目录，读取并验证 YAML 和全局指令；`src/errors.ts`：配置错误与可展示的错误代码。
 - `src/chat/contracts.ts`：Chat、消息、审批以及 ChatRuntime 接口，不依赖 UI、Provider、Agent 或 SQLite。
 - `src/chat/controller.ts`：发送、取消、关闭和保存状态；`messages.ts`：纯函数更新消息；`approval.ts`：单次审批与取消。
 - `src/runtime/`：组装 Provider、Coding Agent 和 Session SQLite，将 ADK 事件转为对话事件，管理保存与关闭顺序。

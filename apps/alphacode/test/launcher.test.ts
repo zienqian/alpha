@@ -10,7 +10,7 @@ test("linked source entry resolves UI preloads outside the repository", async ()
     const config = fileURLToPath(new URL("../../../bunfig.toml", import.meta.url));
     const entry = fileURLToPath(new URL("../bin/alphacode.ts", import.meta.url));
     const child = Bun.spawn([process.execPath, "--no-env-file", `--config=${config}`, entry], {
-      cwd, env: { ...process.env, ADK_MODEL: "" }, stdin: "ignore", stdout: "pipe", stderr: "pipe",
+      cwd, env: { ...process.env, ADK_MODEL: "", ALPHACODE_HOME: join(cwd, "config") }, stdin: "ignore", stdout: "pipe", stderr: "pipe",
     });
     const [exitCode, stderr] = await Promise.all([child.exited, new Response(child.stderr).text()]);
     // Loading succeeds, then configuration validation exits before creating a session or calling a model.

@@ -1,5 +1,10 @@
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+import type { PermissionMode } from "./chat/contracts";
+import { ConfigurationError } from "./errors";
+import { readGlobalConfig, type GlobalDefaults } from "./global-config";
+
+export { ConfigurationError } from "./errors";
 
 export interface AppConfig {
   workspaceRoot: string;
@@ -9,30 +14,62 @@ export interface AppConfig {
   apiKeyEnv: string;
   noAuth: boolean;
   sessionId?: string;
+  permissionMode?: PermissionMode;
+  configDirectory?: string;
+  globalInstructions?: string;
+  globalInstructionsPath?: string;
 }
 
-export class ConfigurationError extends Error {}
+function expandHome(path: string): string {
+  return path === "~" ? homedir() : /^~[/\\]/.test(path) ? join(homedir(), path.slice(2)) : path;
+}
+
+function configDirectory(env: Record<string, string | undefined>, cwd: string): string {
+  return resolve(cwd, expandHome(env.ALPHACODE_HOME?.trim() || join(homedir(), ".alphacode")));
+}
+
+export async function loadConfig(
+  env: Record<string, string | undefined> = process.env,
+  args: readonly string[] = process.argv.slice(2),
+  cwd = process.cwd(),
+): Promise<AppConfig> {
+  const directory = configDirectory(env, cwd);
+  const global = await readGlobalConfig(directory);
+  return {
+    ...readConfig(env, args, cwd, global.defaults),
+    globalInstructions: global.instructions,
+    globalInstructionsPath: global.instructionsPath,
+  };
+}
 
 export function readConfig(
   env: Record<string, string | undefined> = process.env,
   args: readonly string[] = process.argv.slice(2),
   cwd = process.cwd(),
+  defaults: GlobalDefaults = {},
 ): AppConfig {
   if (args.length > 1 || args[0]?.startsWith("-")) {
     throw new ConfigurationError("用法：alphacode [工作区路径]");
   }
-  const modelId = env.ADK_MODEL?.trim();
-  if (!modelId) throw new ConfigurationError("请配置 ADK_MODEL；本地开发可从仓库根目录的 .env.example 创建 .env.local。");
-  if (env.ADK_AUTH && env.ADK_AUTH !== "none") {
-    throw new ConfigurationError("无认证端点使用 ADK_AUTH=none；需要密钥时请移除此变量并配置 ADK_API_KEY_ENV。");
+  const directory = configDirectory(env, cwd);
+  const modelId = env.ADK_MODEL?.trim() ?? defaults.modelId;
+  if (!modelId) throw new ConfigurationError(`请配置 ADK_MODEL 或 ${join(directory, "config.yaml")} 中的 model.id。`);
+  if (env.ADK_AUTH && env.ADK_AUTH !== "none" && env.ADK_AUTH !== "api_key") {
+    throw new ConfigurationError("ADK_AUTH 必须为 none 或 api_key；密钥通过 ADK_API_KEY_ENV 指定的环境变量提供。");
   }
+  const permissionMode = env.ALPHACODE_PERMISSION ?? defaults.permissionMode ?? "ask";
+  if (permissionMode !== "ask" && permissionMode !== "auto" && permissionMode !== "full") throw new ConfigurationError("ALPHACODE_PERMISSION 必须为 ask、auto 或 full。");
+  const noAuth = env.ADK_AUTH ? env.ADK_AUTH === "none" : env.ADK_API_KEY_ENV !== undefined ? false : defaults.noAuth ?? false;
   return {
-    workspaceRoot: resolve(cwd, args[0] ?? env.ALPHACODE_WORKSPACE ?? cwd),
-    databasePath: resolve(cwd, env.ALPHACODE_DB ?? join(homedir(), ".alphacode", "sessions.db")),
+    workspaceRoot: resolve(cwd, expandHome(args[0] ?? env.ALPHACODE_WORKSPACE ?? cwd)),
+    databasePath: env.ALPHACODE_DB !== undefined ? resolve(cwd, expandHome(env.ALPHACODE_DB))
+      : resolve(directory, expandHome(defaults.databasePath ?? "sessions.db")),
     modelId,
-    baseURL: env.ADK_BASE_URL ?? "https://api.openai.com/v1",
-    apiKeyEnv: env.ADK_API_KEY_ENV ?? "OPENAI_API_KEY",
-    noAuth: env.ADK_AUTH === "none",
+    baseURL: env.ADK_BASE_URL ?? defaults.baseURL ?? "https://api.openai.com/v1",
+    apiKeyEnv: env.ADK_API_KEY_ENV ?? defaults.apiKeyEnv ?? "OPENAI_API_KEY",
+    noAuth,
+    permissionMode,
+    configDirectory: directory,
     ...(env.ALPHACODE_SESSION?.trim() ? { sessionId: env.ALPHACODE_SESSION.trim() } : {}),
   };
 }
