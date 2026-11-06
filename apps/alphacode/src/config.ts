@@ -8,6 +8,7 @@ export interface AppConfig {
   baseURL: string;
   apiKeyEnv: string;
   noAuth: boolean;
+  sessionId?: string;
 }
 
 export class ConfigurationError extends Error {}
@@ -32,5 +33,6 @@ export function readConfig(
     baseURL: env.ADK_BASE_URL ?? "https://api.openai.com/v1",
     apiKeyEnv: env.ADK_API_KEY_ENV ?? "OPENAI_API_KEY",
     noAuth: env.ADK_AUTH === "none",
+    ...(env.ALPHACODE_SESSION?.trim() ? { sessionId: env.ALPHACODE_SESSION.trim() } : {}),
   };
 }

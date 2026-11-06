@@ -1,13 +1,13 @@
 import { useKeyboard } from "@opentui/solid";
 import type { Chat } from "../chat/contracts";
 
-export function useChatKeyboard(chat: Chat, onExit: () => void): void {
+export function useChatKeyboard(chat: Chat, onExit: () => void, commandOpen: () => boolean = () => false): void {
   useKeyboard(key => {
     if (key.ctrl && key.name === "c") {
       key.preventDefault();
       if (chat.state.busy) chat.cancel();
       else onExit();
-    } else if (key.name === "escape" && chat.state.busy) {
+    } else if (key.name === "escape" && chat.state.busy && !commandOpen()) {
       key.preventDefault();
       chat.cancel();
     } else if (chat.state.approval && (key.name === "y" || key.name === "n")) {

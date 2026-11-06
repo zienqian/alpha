@@ -1,4 +1,5 @@
 export type ChatRunStatus = "completed" | "refused" | "incomplete" | "unknown" | "limited" | "cancelled" | "failed";
+export type PermissionMode = "ask" | "auto" | "full";
 
 export interface ChatMessage {
   id: string;
@@ -21,6 +22,8 @@ export interface ChatState {
   closing: boolean;
   canSend: boolean;
   status: string;
+  permissionMode: PermissionMode;
+  settingsSaving: boolean;
   error?: string;
   approval?: ApprovalRequest;
 }
@@ -34,6 +37,7 @@ export interface Chat {
   send(input: string): Promise<void>;
   cancel(): void;
   answerApproval(allow: boolean): void;
+  setPermissionMode(mode: PermissionMode): Promise<boolean>;
   close(): Promise<void>;
 }
 
@@ -51,8 +55,11 @@ export interface ChatRuntime {
   readonly modelId: string;
   readonly workspaceRoot: string;
   readonly sessionId: string;
+  readonly permissionMode: PermissionMode;
+  readonly messages: readonly ChatMessage[];
   readonly unsaved: boolean;
   readonly blocked: boolean;
+  setPermissionMode(mode: PermissionMode): Promise<void>;
   subscribe(listener: (event: ChatEvent) => void): () => void;
   send(input: string): Promise<{ status: ChatRunStatus; error?: string }>;
   cancel(): void;

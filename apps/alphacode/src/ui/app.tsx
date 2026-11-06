@@ -11,8 +11,9 @@ import { colors } from "./theme";
 export function App(props: { chat: Chat; onExit: () => void }) {
   const [state, setState] = createSignal(props.chat.state);
   const dimensions = useTerminalDimensions();
+  const [commandOpen, setCommandOpen] = createSignal(false);
   onCleanup(props.chat.subscribe(setState));
-  useChatKeyboard(props.chat, props.onExit);
+  useChatKeyboard(props.chat, props.onExit, commandOpen);
   return (
     <box flexDirection="column" width="100%" height="100%" paddingX={1} paddingTop={1}
       backgroundColor={colors.background} overflow="hidden">
@@ -27,6 +28,10 @@ export function App(props: { chat: Chat; onExit: () => void }) {
         <Composer
           busy={state().busy} canSend={state().canSend}
           focused={!state().approval && !state().closing}
+          permissionMode={state().permissionMode}
+          settingsSaving={state().settingsSaving}
+          onPermissionChange={mode => props.chat.setPermissionMode(mode)}
+          onCommandOpenChange={setCommandOpen}
           onSubmit={text => { void props.chat.send(text); }}
         />
         <StatusBar modelId={props.chat.modelId} workspaceRoot={props.chat.workspaceRoot} />

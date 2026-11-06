@@ -5,6 +5,94 @@ import type { Chat, ChatState } from "../src/chat/contracts";
 import { App } from "../src/ui/app";
 import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "./helpers";
 
+test("slash commands filter, complete and select permissions locally, with Escape preserving the draft", async () => {
+  const app = await fixture(() => textResponse("普通消息回复"));
+  const ui = await testRender(() => <App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 32 });
+  const input = ui.renderer.root.findDescendantById("prompt") as TextareaRenderable;
+  try {
+    await ui.renderOnce();
+    await ui.mockInput.typeText("/");
+    await ui.renderOnce();
+    expect(ui.captureCharFrame()).toContain("/permission");
+    await ui.mockInput.typeText("per");
+    ui.mockInput.pressTab();
+    expect(input.plainText).toBe("/permission");
+    ui.mockInput.pressEnter();
+    await ui.renderOnce();
+    for (const label of ["Ask for approval", "Approve for me", "Full access"]) expect(ui.captureCharFrame()).toContain(label);
+    ui.mockInput.pressArrow("down");
+    ui.mockInput.pressEnter();
+    await waitFor(() => !app.chat.state.settingsSaving);
+    await ui.renderOnce();
+    expect(app.chat.state.permissionMode).toBe("auto");
+    expect(input.plainText).toBe("");
+    expect(Boolean(ui.renderer.root.findDescendantById("command-panel"))).toBe(false);
+    expect(app.requests).toHaveLength(0);
+    expect(app.chat.state.messages).toHaveLength(0);
+
+    await ui.mockInput.typeText("/permission");
+    ui.mockInput.pressEnter();
+    await ui.renderOnce();
+    expect(ui.captureCharFrame()).toContain("Approve for me ✓");
+    ui.mockInput.pressArrow("down");
+    ui.mockInput.pressEscape();
+    await waitFor(() => !ui.renderer.root.findDescendantById("command-panel"));
+    await ui.renderOnce();
+    expect(app.chat.state.permissionMode).toBe("auto");
+    expect(input.plainText).toBe("/permission");
+    expect(Boolean(ui.renderer.root.findDescendantById("command-panel"))).toBe(false);
+
+    ui.mockInput.pressEnter();
+    ui.mockInput.pressArrow("down");
+    ui.mockInput.pressEnter();
+    await waitFor(() => !app.chat.state.settingsSaving);
+    expect(app.chat.state.permissionMode).toBe("full");
+    await ui.mockInput.typeText("/permission");
+    ui.mockInput.pressEnter();
+    ui.mockInput.pressArrow("down");
+    ui.mockInput.pressEnter();
+    await waitFor(() => !app.chat.state.settingsSaving);
+    expect(app.chat.state.permissionMode).toBe("ask");
+
+    input.setText("/unknown");
+    ui.mockInput.pressEnter();
+    await ui.renderOnce();
+    expect(ui.captureCharFrame()).toContain("没有匹配的命令");
+    expect(app.requests).toHaveLength(0);
+    input.setText("hello");
+    ui.mockInput.pressEnter();
+    await waitFor(() => !app.chat.state.busy && app.requests.length === 1);
+    expect(app.requests[0]?.messages.at(-1)?.content).toBe("hello");
+  } finally { await app.dispose(); await ui.dispose(); }
+});
+
+test("Escape closes the command picker before cancelling a running task, and a busy task keeps its permission", async () => {
+  const stream = controlledStream();
+  const app = await fixture(() => stream.response);
+  const ui = await testRender(() => <App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 60, height: 20 });
+  try {
+    await ui.renderOnce();
+    await ui.mockInput.typeText("hello");
+    ui.mockInput.pressEnter();
+    await waitFor(() => app.requests.length === 1);
+    await ui.mockInput.typeText("/permission");
+    ui.mockInput.pressEnter();
+    ui.mockInput.pressArrow("down");
+    ui.mockInput.pressEnter();
+    await ui.renderOnce();
+    expect(app.chat.state.permissionMode).toBe("ask");
+    expect(ui.captureCharFrame()).toContain("任务结束后可切换");
+    ui.mockInput.pressEscape();
+    await waitFor(() => !ui.renderer.root.findDescendantById("command-panel"));
+    await ui.renderOnce();
+    expect(app.chat.state.busy).toBe(true);
+    expect(Boolean(ui.renderer.root.findDescendantById("command-panel"))).toBe(false);
+    ui.mockInput.pressEscape();
+    await waitFor(() => !app.chat.state.busy);
+    expect(app.chat.state.status).toBe("已停止");
+  } finally { await app.dispose(); await ui.dispose(); }
+});
+
 test("composer grows with wrapped text and newlines, caps tall drafts, and shrinks after deleting or sending", async () => {
   const app = await fixture(() => textResponse("收到"));
   const ui = await testRender(() => <App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 32 });
@@ -66,7 +154,7 @@ test("composer grows with wrapped text and newlines, caps tall drafts, and shrin
 });
 
 test("composer and context stay at the bottom across empty, overflowing, approval, error and resized layouts", async () => {
-  let state: ChatState = { messages: [], busy: false, closing: false, canSend: true, status: "就绪" };
+  let state: ChatState = { messages: [], busy: false, closing: false, canSend: true, status: "就绪", permissionMode: "ask", settingsSaving: false };
   let listener: ((state: ChatState) => void) | undefined;
   const chat: Chat = {
     get state() { return state; },
@@ -75,6 +163,7 @@ test("composer and context stay at the bottom across empty, overflowing, approva
     async send() { /* Layout-only fixture. */ },
     cancel() { /* Layout-only fixture. */ },
     answerApproval() { /* Layout-only fixture. */ },
+    async setPermissionMode() { return false; },
     async close() { /* Layout-only fixture. */ },
   };
   const ui = await testRender(() => <App chat={chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 32 });

@@ -18,6 +18,8 @@ test("workspace selection and existing ADK environment configuration", () => {
   expect(config.workspaceRoot).toBe(resolve(process.cwd(), "../.."));
   expect(config.noAuth).toBe(true);
   expect(readConfig({ ADK_MODEL: "model" }, []).apiKeyEnv).toBe("OPENAI_API_KEY");
+  expect(readConfig({ ADK_MODEL: "model", ALPHACODE_SESSION: " saved-session " }, []).sessionId).toBe("saved-session");
+  expect(readConfig({ ADK_MODEL: "model", ALPHACODE_SESSION: " " }, []).sessionId).toBeUndefined();
   expect(() => readConfig({}, [])).toThrow("ADK_MODEL");
   expect(() => readConfig({ ADK_MODEL: "model", ADK_AUTH: "typo" }, [])).toThrow("ADK_AUTH");
   expect(errorCode(new Error("secret"))).toBe("UNEXPECTED_ERROR");

@@ -6,6 +6,7 @@ import type { Fetch } from "@alpha/provider";
 import type { AppConfig } from "../src/config";
 
 export interface RequestBody {
+  model: string;
   messages: { role: string; content: string }[];
   tools: { function: { name: string } }[];
 }

@@ -5,7 +5,11 @@ import type { Chat, ChatRuntime, ChatState } from "./contracts";
 import { applyChatEvent, statusLabels } from "./messages";
 
 export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
-  let state: ChatState = { messages: [], busy: false, closing: false, canSend: true, status: "就绪", approval: approvals.pending };
+  let state: ChatState = {
+    messages: runtime.messages, busy: false, closing: false,
+    canSend: !runtime.unsaved && !runtime.blocked, status: "就绪",
+    permissionMode: runtime.permissionMode, settingsSaving: false, approval: approvals.pending,
+  };
   const listeners = new Set<(state: ChatState) => void>();
   const update = (patch: Partial<ChatState>) => {
     state = { ...state, ...patch };
@@ -51,6 +55,20 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
       runtime.cancel();
     },
     answerApproval(allow) { approvals.answer(allow); },
+    async setPermissionMode(mode) {
+      if (state.busy || state.closing || state.settingsSaving || !state.canSend || state.approval || !["ask", "auto", "full"].includes(mode)) return false;
+      update({ settingsSaving: true, canSend: false, error: undefined });
+      try {
+        await runtime.setPermissionMode(mode);
+        update({ permissionMode: runtime.permissionMode });
+        return true;
+      } catch (error) {
+        update({ error: `权限设置保存失败：${errorCode(error)}；仍使用原权限。` });
+        return false;
+      } finally {
+        update({ settingsSaving: false, canSend: !state.closing && !runtime.unsaved && !runtime.blocked });
+      }
+    },
     close() {
       if (!closePromise) {
         update({ closing: true, canSend: false, status: "正在保存并退出…" });
