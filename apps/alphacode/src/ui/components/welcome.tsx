@@ -7,12 +7,12 @@ export function Welcome(props: { empty: boolean }) {
       <box flexDirection="row" gap={1}>
         <text fg={colors.accent}><b>›_</b></text>
         <text fg={colors.foreground}><b>AlphaCode</b></text>
-        <text fg={colors.muted}>代码，从这里开始。</text>
+        <text fg={colors.muted}>Code starts here.</text>
       </box>
       <Show when={props.empty}>
         <box flexDirection="column" gap={1} paddingLeft={3}>
-          <text fg={colors.accent}>今天想一起构建什么？</text>
-          <text fg={colors.muted}>理解项目、修复问题，或实现你的下一个想法。</text>
+          <text fg={colors.accent}>What would you like to build?</text>
+          <text fg={colors.muted}>Explore a project, fix a bug, or build something new.</text>
         </box>
       </Show>
     </box>

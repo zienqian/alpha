@@ -15,7 +15,7 @@ test("linked source entry resolves UI preloads outside the repository", async ()
     const [exitCode, stderr] = await Promise.all([child.exited, new Response(child.stderr).text()]);
     // Loading succeeds, then configuration validation exits before creating a session or calling a model.
     expect(exitCode).toBe(1);
-    expect(stderr).toContain("请配置 ADK_MODEL");
+    expect(stderr).toContain("Set ADK_MODEL");
     expect(stderr).not.toContain("preload not found");
   } finally {
     await rm(cwd, { recursive: true, force: true });

@@ -19,7 +19,7 @@ export function CommandPanel(props: {
     <box id="command-panel" flexDirection="column" flexShrink={0} marginBottom={1}>
       <Show when={props.permission}>
         <text fg={colors.muted} paddingX={1} height={1} truncate wrapMode="none">
-          {props.settingsSaving ? "/permission · 正在保存…" : props.busy ? "/permission · 任务结束后可切换" : "/permission · 当前会话 · ↑↓ 选择 · Enter 确认 · Esc 返回"}
+          {props.settingsSaving ? "/permission · Saving…" : props.busy ? "/permission · Available after this task" : "/permission · Session · ↑↓ · Enter Apply · Esc Back"}
         </text>
       </Show>
       <For each={options()}>{(option, index) => (
@@ -35,7 +35,7 @@ export function CommandPanel(props: {
         </box>
       )}</For>
       <Show when={options().length === 0}>
-        <text fg={colors.muted} paddingX={1} height={1} truncate wrapMode="none">没有匹配的命令 · Esc 返回</text>
+        <text fg={colors.muted} paddingX={1} height={1} truncate wrapMode="none">No matching commands · Esc Back</text>
       </Show>
       <Show when={props.permission && compact()}>
         <text fg={colors.muted} paddingX={1} maxHeight={2}>

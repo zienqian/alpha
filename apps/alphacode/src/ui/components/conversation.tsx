@@ -24,7 +24,7 @@ export function Conversation(props: { messages: readonly ChatMessage[] }) {
                   {message().text}{message().role === "tool" && message().note ? ` · ${message().note}` : ""}
                 </text>
               }>
-                <Show when={message().text} fallback={<text fg={colors.muted}>思考中…</text>}>
+                <Show when={message().text} fallback={<text fg={colors.muted}>Thinking…</text>}>
                   <markdown content={message().text} syntaxStyle={syntaxStyle} streaming={message().streaming ?? false} />
                 </Show>
               </Show>

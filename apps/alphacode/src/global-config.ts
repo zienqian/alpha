@@ -28,7 +28,7 @@ permissionMode: ask
 `;
 
 function invalid(file: string, field: string): never {
-  throw new ConfigurationError(`${file}：${field} 配置无效，请检查字段名称、类型和可选值。`);
+  throw new ConfigurationError(`${file}: Invalid ${field} configuration. Check field names, types, and allowed values.`);
 }
 
 function object(value: unknown, file: string, field: string, allowed: readonly string[]): Record<string, unknown> {
@@ -51,10 +51,10 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     value = document.toJS({ maxAliasCount: 0 });
   } catch {
     // Parser diagnostics may contain credentials or source excerpts.
-    throw new ConfigurationError(`${file}：YAML 格式错误，请检查缩进、重复字段或不支持的标签/别名。`);
+    throw new ConfigurationError(`${file}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`);
   }
   if (value === null) return {};
-  const root = object(value, file, "根节点", ["provider", "model", "permissionMode", "databasePath"]);
+  const root = object(value, file, "root", ["provider", "model", "permissionMode", "databasePath"]);
   const defaults: GlobalDefaults = {};
   if (root.model !== undefined) {
     const model = object(root.model, file, "model", ["id"]);
@@ -62,7 +62,7 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
   }
   if (root.provider !== undefined) {
     const provider = object(root.provider, file, "provider", ["adapter", "options"]);
-    if (provider.adapter !== undefined && provider.adapter !== "openai-completions") invalid(file, "provider.adapter（目前支持 openai-completions）");
+    if (provider.adapter !== undefined && provider.adapter !== "openai-completions") invalid(file, "provider.adapter (supported: openai-completions)");
     if (provider.options !== undefined) {
       const options = object(provider.options, file, "provider.options", ["baseURL", "apiKey"]);
       if (options.baseURL !== undefined) {
@@ -87,7 +87,7 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     }
   }
   if (root.permissionMode !== undefined) {
-    if (root.permissionMode !== "ask" && root.permissionMode !== "auto" && root.permissionMode !== "full") invalid(file, "permissionMode（ask / auto / full）");
+    if (root.permissionMode !== "ask" && root.permissionMode !== "auto" && root.permissionMode !== "full") invalid(file, "permissionMode (ask / auto / full)");
     defaults.permissionMode = root.permissionMode;
   }
   if (root.databasePath !== undefined) defaults.databasePath = string(root.databasePath, file, "databasePath");
@@ -98,7 +98,7 @@ async function readBounded(file: string, limit: number): Promise<string> {
   try {
     const handle = await open(file, "r");
     try {
-      if (!(await handle.stat()).isFile()) throw new ConfigurationError(`${file}：必须是文件。`);
+      if (!(await handle.stat()).isFile()) throw new ConfigurationError(`${file}: Expected a regular file.`);
       const buffer = Buffer.alloc(limit + 1);
       let size = 0;
       while (size < buffer.length) {
@@ -106,12 +106,12 @@ async function readBounded(file: string, limit: number): Promise<string> {
         if (!bytesRead) break;
         size += bytesRead;
       }
-      if (size > limit) throw new ConfigurationError(`${file}：文件超过 ${limit / 1024} KiB 限制。`);
+      if (size > limit) throw new ConfigurationError(`${file}: File exceeds the ${limit / 1024} KiB limit.`);
       return new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(0, size));
     } finally { await handle.close(); }
   } catch (error) {
     if (error instanceof ConfigurationError) throw error;
-    throw new ConfigurationError(`${file}：无法读取，请检查文件权限和 UTF-8 编码。`);
+    throw new ConfigurationError(`${file}: Could not read file. Check file permissions and UTF-8 encoding.`);
   }
 }
 
@@ -126,7 +126,7 @@ export async function readGlobalConfig(directory: string): Promise<{
       try { await writeFile(file, content, { flag: "wx" }); }
       catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
     }
-  } catch { throw new ConfigurationError(`${directory}：无法初始化全局配置目录，请检查目录权限。`); }
+  } catch { throw new ConfigurationError(`${directory}: Could not initialize the global configuration directory. Check directory permissions.`); }
   const defaults = parseGlobalConfig(await readBounded(configPath, 64 * 1024), configPath);
   const instructions = (await readBounded(instructionsPath, 32 * 1024)).trim();
   return { defaults, instructions, instructionsPath };

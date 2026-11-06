@@ -11,6 +11,6 @@ try {
     await chat.close();
   }
 } catch (error) {
-  console.error(`AlphaCode：${error instanceof ConfigurationError ? error.message : errorCode(error)}`);
+  console.error(`AlphaCode: ${error instanceof ConfigurationError ? error.message : errorCode(error)}`);
   process.exitCode = 1;
 }

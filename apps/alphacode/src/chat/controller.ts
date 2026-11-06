@@ -7,7 +7,7 @@ import { applyChatEvent, statusLabels } from "./messages";
 export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
   let state: ChatState = {
     messages: runtime.messages, busy: false, closing: false,
-    canSend: !runtime.unsaved && !runtime.blocked, status: "就绪",
+    canSend: !runtime.unsaved && !runtime.blocked, status: "Ready",
     permissionMode: runtime.permissionMode, settingsSaving: false, approval: approvals.pending,
   };
   const listeners = new Set<(state: ChatState) => void>();
@@ -17,7 +17,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
   };
   const unsubscribe = runtime.subscribe(event => update(applyChatEvent(state, event)));
   const unsubscribeApproval = approvals.subscribe(approval => update({
-    approval, ...(approval ? { status: "等待命令确认" } : {}),
+    approval, ...(approval ? { status: "Awaiting command approval" } : {}),
   }));
   let closePromise: Promise<void> | undefined;
   return {
@@ -30,27 +30,27 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
       const text = input.trim();
       if (!text || state.busy || !state.canSend || state.closing) return;
       update({
-        busy: true, canSend: false, status: "正在连接…", error: undefined,
+        busy: true, canSend: false, status: "Connecting…", error: undefined,
         messages: [...state.messages, { id: randomUUID(), role: "user", text }],
       });
       try {
         const result = await runtime.send(text);
         update({ status: statusLabels[result.status], error: result.error });
       } catch (error) {
-        update({ status: "请求失败", error: errorCode(error) });
+        update({ status: "Request failed", error: errorCode(error) });
       } finally {
         const { unsaved, blocked } = runtime;
         update({
           messages: state.messages.map(message => message.streaming ? { ...message, streaming: false } : message),
           busy: false, canSend: !unsaved && !blocked && !state.closing,
-          ...(unsaved ? { error: "会话尚未保存；退出时会再次尝试保存。" } : {}),
-          ...(blocked ? { error: "本次执行状态无法确认，请退出后开启新会话。" } : {}),
+          ...(unsaved ? { error: "Session not saved. Saving will be retried on exit." } : {}),
+          ...(blocked ? { error: "Execution state could not be confirmed. Exit and start a new session." } : {}),
         });
       }
     },
     cancel() {
       if (!state.busy) return;
-      update({ status: "正在停止…" });
+      update({ status: "Stopping…" });
       approvals.answer(false);
       runtime.cancel();
     },
@@ -63,7 +63,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
         update({ permissionMode: runtime.permissionMode });
         return true;
       } catch (error) {
-        update({ error: `权限设置保存失败：${errorCode(error)}；仍使用原权限。` });
+        update({ error: `Could not save permissions: ${errorCode(error)}. Previous permissions remain active.` });
         return false;
       } finally {
         update({ settingsSaving: false, canSend: !state.closing && !runtime.unsaved && !runtime.blocked });
@@ -71,7 +71,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
     },
     close() {
       if (!closePromise) {
-        update({ closing: true, canSend: false, status: "正在保存并退出…" });
+        update({ closing: true, canSend: false, status: "Saving and exiting…" });
         approvals.answer(false);
         runtime.cancel();
         closePromise = runtime.close().then(() => {
@@ -80,7 +80,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
           listeners.clear();
         }).catch(error => {
           closePromise = undefined;
-          update({ closing: false, status: "退出未完成，请按 Ctrl+C 重试", error: errorCode(error) });
+          update({ closing: false, status: "Exit failed. Press Ctrl+C to retry.", error: errorCode(error) });
           throw error;
         });
       }

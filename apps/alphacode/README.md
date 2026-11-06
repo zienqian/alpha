@@ -1,6 +1,6 @@
 # AlphaCode
 
-OpenTUI + SolidJS 终端编程 Agent。当前提供用户输入、Markdown 流式回复、多轮对话、简短工具状态与命令确认。
+OpenTUI + SolidJS 终端编程 Agent。当前提供用户输入、Markdown 流式回复、多轮对话、简短工具状态与命令确认。应用界面、状态提示、错误信息和 CLI 帮助统一使用英文；模型根据用户请求和指令选择回复语言。
 
 ## 运行
 

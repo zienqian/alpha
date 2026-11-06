@@ -31,7 +31,7 @@ export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => v
         // Denied calls have no tool.start event; resolve their name from committed history.
         const assistant = agent.state.messages.find(message => message.id === event.assistantId);
         const name = assistant?.role === "assistant" ? assistant.toolCalls.find(call => call.id === event.callId)?.name : undefined;
-        listener({ type: "tool.end", id: `${event.assistantId}:${event.callId}`, name: name ?? "工具调用", execution: event.execution });
+        listener({ type: "tool.end", id: `${event.assistantId}:${event.callId}`, name: name ?? "Tool call", execution: event.execution });
         break;
       }
       case "run.end":

@@ -57,7 +57,7 @@ test("slash commands filter, complete and select permissions locally, with Escap
     input.setText("/unknown");
     ui.mockInput.pressEnter();
     await ui.renderOnce();
-    expect(ui.captureCharFrame()).toContain("没有匹配的命令");
+    expect(ui.captureCharFrame()).toContain("No matching commands");
     expect(app.requests).toHaveLength(0);
     input.setText("hello");
     ui.mockInput.pressEnter();
@@ -81,7 +81,7 @@ test("Escape closes the command picker before cancelling a running task, and a b
     ui.mockInput.pressEnter();
     await ui.renderOnce();
     expect(app.chat.state.permissionMode).toBe("ask");
-    expect(ui.captureCharFrame()).toContain("任务结束后可切换");
+    expect(ui.captureCharFrame()).toContain("Available after this task");
     ui.mockInput.pressEscape();
     await waitFor(() => !ui.renderer.root.findDescendantById("command-panel"));
     await ui.renderOnce();
@@ -89,7 +89,7 @@ test("Escape closes the command picker before cancelling a running task, and a b
     expect(Boolean(ui.renderer.root.findDescendantById("command-panel"))).toBe(false);
     ui.mockInput.pressEscape();
     await waitFor(() => !app.chat.state.busy);
-    expect(app.chat.state.status).toBe("已停止");
+    expect(app.chat.state.status).toBe("Stopped");
   } finally { await app.dispose(); await ui.dispose(); }
 });
 
@@ -154,7 +154,7 @@ test("composer grows with wrapped text and newlines, caps tall drafts, and shrin
 });
 
 test("composer and context stay at the bottom across empty, overflowing, approval, error and resized layouts", async () => {
-  let state: ChatState = { messages: [], busy: false, closing: false, canSend: true, status: "就绪", permissionMode: "ask", settingsSaving: false };
+  let state: ChatState = { messages: [], busy: false, closing: false, canSend: true, status: "Ready", permissionMode: "ask", settingsSaving: false };
   let listener: ((state: ChatState) => void) | undefined;
   const chat: Chat = {
     get state() { return state; },
@@ -188,9 +188,9 @@ test("composer and context stay at the bottom across empty, overflowing, approva
     expect(footerLine).toContain(" · ");
     expect(footerLine).not.toContain("model ");
     expect(footerLine).not.toContain("cwd ");
-    expect(footerLine).not.toContain("就绪");
-    expect(footerLine).not.toContain("发送");
-    expect(footerLine).not.toContain("换行");
+    expect(footerLine).not.toContain("Ready");
+    expect(footerLine).not.toContain("Send");
+    expect(footerLine).not.toContain("Newline");
   };
   const update = async (patch: Partial<ChatState>) => {
     state = { ...state, ...patch };
@@ -202,7 +202,7 @@ test("composer and context stay at the bottom across empty, overflowing, approva
     assertDock(32);
     const initialY = element("composer").y;
     await ui.mockInput.typeText("保留输入草稿");
-    await update({ busy: true, canSend: false, status: "正在生成…", messages: [
+    await update({ busy: true, canSend: false, status: "Generating…", messages: [
       { id: "user", role: "user", text: "检查这个项目" },
       { id: "assistant", role: "assistant", text: Array.from({ length: 60 }, (_, i) => `Line ${i}`).join("\n"), streaming: true },
     ] });
@@ -219,16 +219,16 @@ test("composer and context stay at the bottom across empty, overflowing, approva
     } } });
     assertDock(32);
     expect(element("composer").y).toBe(initialY);
-    expect(ui.captureCharFrame()).toContain("允许执行此命令");
+    expect(ui.captureCharFrame()).toContain("Run this command?");
     ui.resize(40, 16);
     await ui.renderOnce();
     assertDock(16);
-    expect(ui.captureCharFrame()).toContain("允许执行此命令");
+    expect(ui.captureCharFrame()).toContain("Run this command?");
     ui.resize(100, 32);
     await ui.renderOnce();
-    await update({ approval: undefined, busy: false, error: "会话保存失败，请重试。", status: "运行失败" });
+    await update({ approval: undefined, busy: false, error: "Could not save session. Please retry.", status: "Run failed" });
     assertDock(32);
-    expect(ui.captureCharFrame()).toContain("会话保存失败");
+    expect(ui.captureCharFrame()).toContain("Could not save session");
     for (const [width, height] of [[60, 24], [40, 16], [28, 14], [100, 32]] as const) {
       ui.resize(width, height);
       await ui.renderOnce();
@@ -277,7 +277,7 @@ test("typing and Enter send a prompt; Markdown appears before completion and fin
     ui.resize(60, 24);
     await ui.renderOnce();
     expect(ui.captureCharFrame()).toContain("test-model · ");
-    expect(ui.captureCharFrame()).not.toContain("Enter 发送");
+    expect(ui.captureCharFrame()).not.toContain("Enter Send");
     ui.mockInput.pressCtrlC();
     expect(exits).toBe(1);
   } finally {
@@ -311,8 +311,8 @@ test("approval keys do not leak into the input; Escape cancels an active stream"
     await waitFor(() => app.chat.state.messages.at(-1)?.text === "partial");
     ui.mockInput.pressEscape();
     await waitFor(() => !app.chat.state.busy);
-    expect(app.chat.state.status).toBe("已停止");
-    expect(app.chat.state.messages.at(-1)?.note).toBe("未完成的预览");
+    expect(app.chat.state.status).toBe("Stopped");
+    expect(app.chat.state.messages.at(-1)?.note).toBe("Incomplete preview");
   } finally {
     await app.dispose();
     await ui?.dispose();

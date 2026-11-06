@@ -52,7 +52,7 @@ test("a failed stream keeps an incomplete preview and accepts a later prompt wit
     await waitFor(() => app.chat.state.messages.at(-1)?.text === "暂存中的半句");
     stream.fail();
     await running;
-    expect(app.chat.state.messages.at(-1)?.note).toBe("未完成的预览");
+    expect(app.chat.state.messages.at(-1)?.note).toBe("Incomplete preview");
     expect(app.chat.state.messages.at(-1)?.streaming).toBe(false);
     expect(app.chat.state.error).toBeDefined();
     expect(JSON.stringify(app.chat.state)).not.toContain("private upstream");
@@ -74,7 +74,7 @@ test("cancelling a response stops streaming and allows another prompt", async ()
     await waitFor(() => app.chat.state.messages.at(-1)?.text === "还在生成");
     app.chat.cancel();
     await running;
-    expect(app.chat.state.status).toBe("已停止");
+    expect(app.chat.state.status).toBe("Stopped");
     expect(app.chat.state.busy).toBe(false);
     expect(app.chat.state.messages.at(-1)?.streaming).toBe(false);
     await app.chat.send("continue");
@@ -115,9 +115,9 @@ test("an incomplete model result remains labelled after a later successful turn"
   const app = await fixture((_body, index) => index === 1 ? stream.response : textResponse("继续完成"));
   try {
     await app.chat.send("first");
-    expect(app.chat.state.status).toBe("回复未完成");
+    expect(app.chat.state.status).toBe("Response incomplete");
     await app.chat.send("continue");
-    expect(app.chat.state.messages.find(message => message.text === "达到输出上限")?.note).toBe("回复未完成");
+    expect(app.chat.state.messages.find(message => message.text === "达到输出上限")?.note).toBe("Response incomplete");
   } finally { await app.dispose(); }
 });
 
@@ -132,7 +132,7 @@ test("a failed SQLite save blocks sending; shutdown retries only persistence", a
     stream.text("需要保存的结果");
     stream.end();
     await running;
-    expect(app.chat.state.error).toContain("尚未保存");
+    expect(app.chat.state.error).toContain("Session not saved");
     expect(app.chat.state.canSend).toBe(false);
     await app.chat.send("must not run");
     expect(app.requests).toHaveLength(1);

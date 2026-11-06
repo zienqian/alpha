@@ -64,7 +64,7 @@ test("failed settings writes keep the old permission active and persisted, then 
     expect(app.chat.state.permissionMode).toBe("ask");
     expect(app.chat.state.settingsSaving).toBe(false);
     expect(app.chat.state.canSend).toBe(true);
-    expect(app.chat.state.error).toContain("权限设置保存失败");
+    expect(app.chat.state.error).toContain("Could not save permissions");
     expect(app.chat.state.error).not.toContain("private storage detail");
     expect(archive(db, app.chat.sessionId).metadata.alphacode).toEqual({ version: 1, modelId: "test-model", permissionMode: "ask" });
     db.exec("DROP TRIGGER reject_settings");

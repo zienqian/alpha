@@ -6,15 +6,17 @@ const args = process.argv.slice(2);
 if (args.includes("--help") || args.includes("-h")) {
   console.log(`AlphaCode ${version} (local source)
 
-用法：alphacode [--watch] [项目目录]
+Usage: alphacode [--watch] [workspace path]
 
-  alphacode              在当前目录启动最新源码
-  alphacode C:/project   指定要操作的项目目录
-  alphacode --watch      源码修改后自动重启
-  alphacode --version    显示版本
+  alphacode              Run the latest source in the current directory
+  alphacode C:/project   Use the specified workspace
+  alphacode --watch      Restart when source files change
+  alphacode --version    Show the version
 
-全局配置：~/.alphacode/config.yaml，全局指令：~/.alphacode/AGENTS.md。
-ALPHACODE_HOME 可指定其他配置目录。环境变量覆盖全局配置；开发启动器也读取仓库 .env.local。`);
+Global configuration: ~/.alphacode/config.yaml
+Global instructions: ~/.alphacode/AGENTS.md
+Set ALPHACODE_HOME to use a different configuration directory.
+Environment variables override global configuration; the development launcher also loads the repository's .env.local.`);
 } else if (args.includes("--version") || args.includes("-v")) {
   console.log(`alphacode ${version} (local source)`);
 } else {

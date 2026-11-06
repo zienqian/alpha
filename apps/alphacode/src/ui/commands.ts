@@ -1,13 +1,13 @@
 import type { PermissionMode } from "../chat/contracts";
 
 export const commands = [
-  { name: "/permission", description: "选择工具与命令的审批方式" },
+  { name: "/permission", description: "Choose how tools and commands are approved" },
 ] as const;
 
 export const permissionOptions: readonly { value: PermissionMode; name: string; description: string }[] = [
-  { value: "ask", name: "Ask for approval", description: "执行命令前询问；工作区文件工具沿用默认权限" },
-  { value: "auto", name: "Approve for me", description: "自动批准常规低风险命令，其余仍询问" },
-  { value: "full", name: "Full access", description: "自动允许全部工具和命令，使用当前进程权限" },
+  { value: "ask", name: "Ask for approval", description: "Ask before commands; allow workspace file tools" },
+  { value: "auto", name: "Approve for me", description: "Approve routine commands; ask for everything else" },
+  { value: "full", name: "Full access", description: "Allow all tools and commands with current process permissions" },
 ];
 
 export function matchingCommands(text: string) {

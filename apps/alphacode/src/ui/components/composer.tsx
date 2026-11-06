@@ -98,7 +98,7 @@ export function Composer(props: {
         id="prompt" ref={value => { input = value; }} flexGrow={1} minWidth={0}
         height="auto" minHeight={1} maxHeight={maxInputHeight()} wrapMode="word"
         focused={props.focused && !permission()}
-        placeholder={props.busy ? "回复中，可继续编辑…" : "描述你的任务…"}
+        placeholder={props.busy ? "Working… draft your next message" : "Describe your task…"}
         placeholderColor={colors.muted}
         cursorColor={colors.foreground} selectionBg="#cddcff" selectionFg={colors.foreground}
         backgroundColor={colors.surface} focusedBackgroundColor={colors.surface}

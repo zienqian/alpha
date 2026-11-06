@@ -49,16 +49,16 @@ export function readConfig(
   defaults: GlobalDefaults = {},
 ): AppConfig {
   if (args.length > 1 || args[0]?.startsWith("-")) {
-    throw new ConfigurationError("用法：alphacode [工作区路径]");
+    throw new ConfigurationError("Usage: alphacode [workspace path]");
   }
   const directory = configDirectory(env, cwd);
   const modelId = env.ADK_MODEL?.trim() ?? defaults.modelId;
-  if (!modelId) throw new ConfigurationError(`请配置 ADK_MODEL 或 ${join(directory, "config.yaml")} 中的 model.id。`);
+  if (!modelId) throw new ConfigurationError(`Set ADK_MODEL or model.id in ${join(directory, "config.yaml")}.`);
   if (env.ADK_AUTH && env.ADK_AUTH !== "none" && env.ADK_AUTH !== "api_key") {
-    throw new ConfigurationError("ADK_AUTH 必须为 none 或 api_key；密钥通过 ADK_API_KEY_ENV 指定的环境变量提供。");
+    throw new ConfigurationError("ADK_AUTH must be none or api_key. Set the API key in the environment variable named by ADK_API_KEY_ENV.");
   }
   const permissionMode = env.ALPHACODE_PERMISSION ?? defaults.permissionMode ?? "ask";
-  if (permissionMode !== "ask" && permissionMode !== "auto" && permissionMode !== "full") throw new ConfigurationError("ALPHACODE_PERMISSION 必须为 ask、auto 或 full。");
+  if (permissionMode !== "ask" && permissionMode !== "auto" && permissionMode !== "full") throw new ConfigurationError("ALPHACODE_PERMISSION must be ask, auto, or full.");
   const noAuth = env.ADK_AUTH ? env.ADK_AUTH === "none" : env.ADK_API_KEY_ENV !== undefined ? false : defaults.noAuth ?? false;
   return {
     workspaceRoot: resolve(cwd, expandHome(args[0] ?? env.ALPHACODE_WORKSPACE ?? cwd)),
