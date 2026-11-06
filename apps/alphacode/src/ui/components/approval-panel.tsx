@@ -1,15 +1,18 @@
 import type { ApprovalRequest } from "../../chat/contracts";
 import { colors } from "../theme";
 
-export function ApprovalPanel(props: { request: ApprovalRequest }) {
+export function ApprovalPanel(props: { request: ApprovalRequest; maxHeight: number }) {
   const text = () => {
     const preview = props.request.preview;
     return preview.type === "command" ? `${preview.shell}\n${preview.cwd}\n${preview.command}` : props.request.name;
   };
   return (
-    <box border borderColor={colors.warning} flexDirection="column" paddingX={1} flexShrink={0} maxHeight={10}>
-      <text fg={colors.warning}>允许执行此命令？ [y] 允许 / [n] 拒绝 / Esc 停止</text>
-      <scrollbox maxHeight={6}><text>{text()}</text></scrollbox>
+    <box border borderStyle="rounded" borderColor={colors.border} flexDirection="column"
+      paddingX={1} flexShrink={0} maxHeight={props.maxHeight} marginBottom={1}>
+      <text fg={colors.warning} flexShrink={0}>允许执行此命令？ [y] / [n]</text>
+      <scrollbox minHeight={1} maxHeight={Math.max(1, props.maxHeight - 4)}>
+        <text fg={colors.foreground}>{text()}</text>
+      </scrollbox>
     </box>
   );
 }

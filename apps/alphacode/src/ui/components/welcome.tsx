@@ -1,17 +1,20 @@
-import { measureText } from "@opentui/core";
-import { useTerminalDimensions } from "@opentui/solid";
 import { Show } from "solid-js";
 import { colors } from "../theme";
 
-export function Welcome() {
-  const dimensions = useTerminalDimensions();
-  const logoWidth = measureText({ text: "AlphaCode", font: "tiny" }).width;
+export function Welcome(props: { empty: boolean }) {
   return (
-    <box flexDirection="column" alignItems="center" flexShrink={0} marginBottom={1}>
-      <Show when={dimensions().width >= logoWidth + 2} fallback={<text fg={colors.accent}><b>AlphaCode</b></text>}>
-        <ascii_font font="tiny" text="AlphaCode" color={colors.accent} />
+    <box flexDirection="column" flexShrink={0} gap={1} marginBottom={1} paddingLeft={1}>
+      <box flexDirection="row" gap={1}>
+        <text fg={colors.accent}><b>›_</b></text>
+        <text fg={colors.foreground}><b>AlphaCode</b></text>
+        <text fg={colors.muted}>代码，从这里开始。</text>
+      </box>
+      <Show when={props.empty}>
+        <box flexDirection="column" gap={1} paddingLeft={3}>
+          <text fg={colors.accent}>今天想一起构建什么？</text>
+          <text fg={colors.muted}>理解项目、修复问题，或实现你的下一个想法。</text>
+        </box>
       </Show>
-      <text fg={colors.muted}>What will you build?</text>
     </box>
   );
 }
