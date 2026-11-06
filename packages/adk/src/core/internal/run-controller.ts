@@ -66,12 +66,12 @@ export function createRun<C>(agentId: string, app: C, history: History, events: 
     },
     reserveModel() {
       check();
-      if (modelCalls >= limits.maxModelCalls) { stop({ status: 'limited', reason: 'max_model_calls' }); check(); }
+      if (limits.maxModelCalls !== null && modelCalls >= limits.maxModelCalls) { stop({ status: 'limited', reason: 'max_model_calls' }); check(); }
       modelCalls++;
     },
     reserveTool() {
       check();
-      if (toolCalls >= limits.maxToolCalls) { stop({ status: 'limited', reason: 'max_tool_calls' }); check(); }
+      if (limits.maxToolCalls !== null && toolCalls >= limits.maxToolCalls) { stop({ status: 'limited', reason: 'max_tool_calls' }); check(); }
       toolCalls++;
     },
     operate<T>(operation: () => Promise<T>): Promise<T> {

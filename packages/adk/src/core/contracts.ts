@@ -85,13 +85,13 @@ export type Hooks<C> = {
   readonly [K in keyof HookMap<C>]?: readonly HookMap<C>[K][];
 };
 export interface Limits {
-  maxModelCalls: number;        // 默认 8
-  maxToolCalls: number;         // 默认 32；同时限制单响应调用列表长度
+  maxModelCalls: number | null; // 默认 8；null 不限次数
+  maxToolCalls: number | null;  // 默认 32；null 不限次数及单响应调用列表长度
   timeoutMs?: number;           // 缺省无墙钟期限；不代表强制终止
   maxModelOutputBytes: number;  // 默认 1 MiB
   maxToolResultBytes: number;   // 默认 128 KiB
-  maxHistoryBytes: number;      // 默认 4 MiB
-  maxHistoryMessages: number;   // 默认 512
+  maxHistoryBytes: number | null;    // 默认 4 MiB；null 不限
+  maxHistoryMessages: number | null; // 默认 512；null 不限
 }
 export type RunStatus = 'completed' | 'refused' | 'incomplete' | 'unknown' |
   'limited' | 'cancelled' | 'failed';

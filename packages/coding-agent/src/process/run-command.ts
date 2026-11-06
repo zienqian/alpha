@@ -2,7 +2,7 @@ import spawn from 'cross-spawn';
 import { join } from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
 import type { ChildProcess } from 'node:child_process';
-import type { CommandInput, CommandOutcome } from '../contracts';
+import type { CommandInput, CommandOutcome, FileAccess } from '../contracts';
 import { byteLength, checkSignal, clip, codeOf, failure, positive } from '../internal';
 import { resolvePath } from '../files';
 import { commandEnv, shellArgs, type Shell } from './shell';
@@ -10,7 +10,7 @@ import { commandEnv, shellArgs, type Shell } from './shell';
 interface ProcessOptions {
   cwd: string;
   signal?: AbortSignal;
-  timeoutMs?: number;
+  timeoutMs?: number | null;
   maxOutputBytes?: number;
   env?: NodeJS.ProcessEnv;
   windowsVerbatimArguments?: boolean;
@@ -41,7 +41,7 @@ async function killTree(child: ChildProcess, signal: NodeJS.Signals): Promise<vo
 export async function runProcess(executable: string, args: readonly string[], options: ProcessOptions): Promise<CommandOutcome> {
   if (options.signal?.aborted) return { status: 'not_started', code: 'CANCELLED' };
   const max = positive(options.maxOutputBytes ?? 49152, 'OUTPUT_LIMIT', 4 * 1024 * 1024);
-  const timeoutMs = positive(options.timeoutMs ?? 60000, 'COMMAND_TIMEOUT', 3600000);
+  const timeoutMs = options.timeoutMs === null ? null : positive(options.timeoutMs ?? 60000, 'COMMAND_TIMEOUT', 2_147_483_647);
   return new Promise(resolve => {
     let child: ChildProcess;
     let spawned = false, spawnFailed = false, exited = false, settled = false, closeSeen = false;
@@ -118,22 +118,22 @@ export async function runProcess(executable: string, args: readonly string[], op
       if (!stop) closeTimer = setTimeout(() => { outputIncomplete = true; void finish(); }, 1000);
     });
     child.once('close', code => { closeSeen = true; if (!exited) exitCode = code; void finish(); });
-    const timeout = setTimeout(() => terminate('COMMAND_TIMEOUT'), timeoutMs);
+    const timeout = timeoutMs === null ? undefined : setTimeout(() => terminate('COMMAND_TIMEOUT'), timeoutMs);
     options.signal?.addEventListener('abort', abort, { once: true });
     if (options.signal?.aborted) abort();
   });
 }
 
-export async function runCommand(root: string, shell: Shell | null, input: CommandInput, options: Omit<ProcessOptions, 'cwd'>): Promise<CommandOutcome> {
+export async function runCommand(root: string, shell: Shell | null, input: CommandInput, options: Omit<ProcessOptions, 'cwd'>, access: FileAccess = 'workspace'): Promise<CommandOutcome> {
   let cwd: string;
   try {
     checkSignal(options.signal);
     if (!shell) throw failure('SHELL_UNAVAILABLE');
     if (!input.command || input.command.length > 16384 || input.command.includes('\0')) throw failure('INVALID_COMMAND');
-    if (input.timeoutMs !== undefined) positive(input.timeoutMs, 'COMMAND_TIMEOUT', 60000);
-    cwd = await resolvePath(root, input.cwd ?? '.', false, true);
+    if (input.timeoutMs !== undefined) positive(input.timeoutMs, 'COMMAND_TIMEOUT', options.timeoutMs === null ? 2_147_483_647 : options.timeoutMs ?? 60000);
+    cwd = await resolvePath(root, input.cwd ?? '.', false, true, access);
   } catch (cause) { return { status: 'not_started', code: codeOf(cause, 'COMMAND_PREFLIGHT_FAILED') }; }
   return runProcess(shell.path, shellArgs(shell, input.command), {
-    ...options, cwd, timeoutMs: input.timeoutMs, windowsVerbatimArguments: shell.family === 'cmd',
+    ...options, cwd, timeoutMs: options.timeoutMs === null ? null : input.timeoutMs ?? options.timeoutMs, windowsVerbatimArguments: shell.family === 'cmd',
   });
 }

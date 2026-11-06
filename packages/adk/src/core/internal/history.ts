@@ -21,7 +21,8 @@ export function createHistory(limits: Readonly<Limits>) {
   function fits(addBytes: number, addCount: number, reserveBytes = 0, reserveCount = 0) {
     const count = messages.length + pending.size + addCount + reserveCount;
     const reserved = [...pending.values()].reduce((sum, p) => sum + p.reservedBytes, 0);
-    return count <= limits.maxHistoryMessages && 2 + Math.max(0, count - 1) + committedBytes + reserved + addBytes + reserveBytes <= limits.maxHistoryBytes;
+    return (limits.maxHistoryMessages === null || count <= limits.maxHistoryMessages)
+      && (limits.maxHistoryBytes === null || 2 + Math.max(0, count - 1) + committedBytes + reserved + addBytes + reserveBytes <= limits.maxHistoryBytes);
   }
   function append(message: Message) {
     messages = Object.freeze([...messages, message]);
@@ -64,7 +65,8 @@ export function createHistory(limits: Readonly<Limits>) {
     },
     replace(input: readonly Message[]) {
       const replacement = copyMessages(input, limits.maxToolCalls);
-      ensure(replacement.length <= limits.maxHistoryMessages && bytes(replacement) <= limits.maxHistoryBytes, 'INPUT_INVALID');
+      ensure((limits.maxHistoryMessages === null || replacement.length <= limits.maxHistoryMessages)
+        && (limits.maxHistoryBytes === null || bytes(replacement) <= limits.maxHistoryBytes), 'INPUT_INVALID');
       ensure(pending.size === 0, 'INTERNAL_INVARIANT');
       messages = replacement;
       committedBytes = messages.reduce((n, m) => n + bytes(m), 0);

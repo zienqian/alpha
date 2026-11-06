@@ -32,6 +32,7 @@ export function createLimits(source?: Partial<Limits>): Readonly<Limits> {
   for (const key of Object.keys(output)) {
     ensure(Object.hasOwn(defaultLimits, key) || key === 'timeoutMs', 'CONFIG_INVALID');
     const value = output[key as keyof Limits];
+    if (value === null && ['maxModelCalls', 'maxToolCalls', 'maxHistoryBytes', 'maxHistoryMessages'].includes(key)) continue;
     if (key === 'timeoutMs' && value === undefined) continue;
     ensure(typeof value === 'number' && Number.isSafeInteger(value) && value >= 0, 'CONFIG_INVALID');
     if (key.endsWith('Bytes') || key === 'maxHistoryMessages') ensure(value > 0, 'CONFIG_INVALID');

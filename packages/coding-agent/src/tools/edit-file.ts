@@ -6,7 +6,7 @@ import { byteLength, clip, failure, relativePath } from '../internal';
 import { executeWrite, type Prepare } from './shared';
 
 export const prepareEdit: Prepare = async (context, args, signal) => {
-  const snapshot = await readFile(context.cwd, relativePath(args.path as string), signal);
+  const snapshot = await readFile(context.cwd, context.fileAccess === 'host' ? args.path as string : relativePath(args.path as string), signal, undefined, context.fileAccess);
   if (!snapshot) throw failure('FILE_NOT_FOUND');
   const { observations } = context.state;
   if (!observations.has(snapshot.path)) throw failure('FILE_NOT_READ');

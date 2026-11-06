@@ -52,6 +52,11 @@ export async function createRuntime(config: AppConfig, options: {
     const policySession = session;
     agent = await createCodingAgent({
       model, cwd,
+      fileAccess: "host", commandTimeoutMs: null,
+      limits: {
+        timeoutMs: undefined, maxModelCalls: null, maxToolCalls: null,
+        maxHistoryMessages: null, maxHistoryBytes: null,
+      },
       policy: { decide: async action => {
         // A second process may have changed metadata before this run's admission.
         const current = readSessionSettings((await policySession.getSnapshot()).data);

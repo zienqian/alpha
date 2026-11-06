@@ -3,6 +3,13 @@ import type { AgentOptions, AppOption, Awaitable, JsonObject, ToolContext, Valid
 import type { LanguageModel } from '@alpha/provider';
 
 export type CodingDecision = 'allow' | 'ask' | 'deny';
+export type FileAccess = 'workspace' | 'host';
+export interface CodingExecutionOptions {
+  /** Default workspace rejects paths outside cwd and symbolic links; host follows filesystem paths. */
+  readonly fileAccess?: FileAccess;
+  /** Default 60 seconds. null disables command deadlines, including model-requested timeouts. */
+  readonly commandTimeoutMs?: number | null;
+}
 export type CodingActionKind = 'read' | 'search' | 'edit' | 'create' | 'command' | 'custom';
 export type CodingCallContext = Pick<ToolContext<unknown>, 'agentId' | 'runId' | 'assistantId' | 'callId' | 'signal'>;
 export type CodingPreview =
@@ -42,6 +49,8 @@ export interface CodingControls {
 /** Per-agent execution context. Static tools receive it through ToolContext.app. */
 export interface CodingContext<C = unknown> {
   readonly cwd: string;
+  readonly fileAccess: FileAccess;
+  readonly commandTimeoutMs: number | null;
   readonly shell: Shell | null;
   /** Caller-owned application data, separate from coding execution state. */
   readonly data: C;
@@ -61,13 +70,13 @@ export interface CodingPlan {
   readonly write?: FileWrite;
   readonly rejected?: string;
 }
-export type CodingContextOptions<C = undefined> = CodingControls & AppOption<C> & {
+export type CodingContextOptions<C = undefined> = CodingControls & CodingExecutionOptions & AppOption<C> & {
   readonly cwd: string;
   /** Host-selected executable, false disables commands; omitted selects a supported shell. */
   readonly shell?: string | false;
   readonly maxResultBytes?: number;
 };
-export type CodingAgentOptions<C = undefined> = Omit<AgentOptions<CodingContext<C>>, 'model' | 'instructions' | 'appContext'> & AppOption<C> & CodingControls & {
+export type CodingAgentOptions<C = undefined> = Omit<AgentOptions<CodingContext<C>>, 'model' | 'instructions' | 'appContext'> & AppOption<C> & CodingControls & CodingExecutionOptions & {
   readonly cwd: string;
   /** Host-selected executable, false disables commands; omitted selects a supported shell. */
   readonly shell?: string | false;

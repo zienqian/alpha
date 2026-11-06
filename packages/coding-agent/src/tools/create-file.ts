@@ -1,13 +1,15 @@
 import { createTool, type ToolContext } from '@alpha/adk/core';
 import { z } from 'zod';
 import type { CodingContext } from '../contracts';
-import { readFile } from '../files';
+import { readFile, resolvePath } from '../files';
 import { byteLength, clip, failure, relativePath } from '../internal';
 import { executeWrite, type Prepare } from './shared';
 
 export const prepareCreate: Prepare = async (context, args, signal) => {
-  const path = relativePath(args.path as string), content = args.content as string;
-  if (await readFile(context.cwd, path, signal)) throw failure('FILE_EXISTS');
+  const path = context.fileAccess === 'host'
+    ? await resolvePath(context.cwd, args.path as string, true, false, context.fileAccess) : relativePath(args.path as string);
+  const content = args.content as string;
+  if (await readFile(context.cwd, path, signal, undefined, context.fileAccess)) throw failure('FILE_EXISTS');
   const diff = `+++ ${path}\n${content}`;
   return { kind: 'create', args: { ...args, path }, write: { path, content, expectedRevision: null },
     preview: { type: 'diff', path, beforeRevision: null, diff: clip(diff, 16384), truncated: byteLength(diff) > 16384 } };

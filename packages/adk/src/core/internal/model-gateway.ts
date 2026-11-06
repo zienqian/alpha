@@ -8,7 +8,8 @@ import { copyMessages, createAssistant } from './messages';
 
 function project(messages: readonly Message[], original: readonly Message[], runLimits: Run<unknown>['limits']): ProviderMessage[] {
   const normalized = copyMessages(messages, runLimits.maxToolCalls, 'MODEL_PROTOCOL');
-  ensure(normalized.length <= runLimits.maxHistoryMessages && bytes(normalized) <= runLimits.maxHistoryBytes, 'MODEL_PROTOCOL');
+  ensure((runLimits.maxHistoryMessages === null || normalized.length <= runLimits.maxHistoryMessages)
+    && (runLimits.maxHistoryBytes === null || bytes(normalized) <= runLimits.maxHistoryBytes), 'MODEL_PROTOCOL');
   const originals = new Map(original.map(m => [m.id, m]));
   const output: ProviderMessage[] = [];
   for (const message of normalized) {

@@ -6,11 +6,11 @@ const outcomes = ['completed', 'tool_calls', 'refused', 'incomplete', 'unknown']
 const executions: readonly ToolExecution[] = ['succeeded', 'failed', 'denied', 'not_executed', 'outcome_unknown'];
 export const callKey = (assistantId: string, callId: string) => JSON.stringify([assistantId, callId]);
 
-export function createAssistant(value: unknown, id: string, maxCalls: number, code = 'MODEL_PROTOCOL'): AssistantMessage {
+export function createAssistant(value: unknown, id: string, maxCalls: number | null, code = 'MODEL_PROTOCOL'): AssistantMessage {
   ensure(record(value) && outcomes.includes(value.outcome as string) && typeof value.text === 'string', code);
   ensure(value.finishReason === null || typeof value.finishReason === 'string', code);
   ensure(Array.isArray(value.toolCalls), code);
-  ensure(value.toolCalls.length <= maxCalls, code === 'MODEL_PROTOCOL' ? 'MODEL_TOOL_BATCH_TOO_LARGE' : code);
+  ensure(maxCalls === null || value.toolCalls.length <= maxCalls, code === 'MODEL_PROTOCOL' ? 'MODEL_TOOL_BATCH_TOO_LARGE' : code);
   const ids = new Set<string>();
   const toolCalls = value.toolCalls.map((call: unknown) => {
     ensure(record(call) && text(call.id) && text(call.name) && !ids.has(call.id), code);
@@ -43,7 +43,7 @@ export function createAssistant(value: unknown, id: string, maxCalls: number, co
   return copyJson(result, code) as unknown as AssistantMessage;
 }
 
-export function copyMessage(value: unknown, maxCalls: number, code = 'INPUT_INVALID'): Message {
+export function copyMessage(value: unknown, maxCalls: number | null, code = 'INPUT_INVALID'): Message {
   ensure(record(value) && text(value.id), code);
   if (value.role === 'assistant') return createAssistant(value, value.id, maxCalls, code);
   if (value.role === 'user') {
@@ -62,7 +62,7 @@ export function copyMessage(value: unknown, maxCalls: number, code = 'INPUT_INVA
 }
 
 /** A portable history contains only complete, contiguous tool batches. */
-export function copyMessages(value: unknown, maxCalls: number, code = 'INPUT_INVALID'): readonly Message[] {
+export function copyMessages(value: unknown, maxCalls: number | null, code = 'INPUT_INVALID'): readonly Message[] {
   ensure(Array.isArray(value), code);
   const ids = new Set<string>(), pending = new Set<string>();
   const messages = value.map(v => copyMessage(v, maxCalls, code));

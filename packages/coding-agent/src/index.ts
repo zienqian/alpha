@@ -3,7 +3,7 @@ export { codingTools, readFileTool, listFilesTool, searchTool, editFileTool, cre
 export { createProjectInstructionsPlugin } from './instructions-plugin';
 export type { Shell } from './process/shell';
 export type {
-  CodingDecision, CodingActionKind, CodingCallContext, CodingPreview, CodingAction,
+  CodingDecision, FileAccess, CodingExecutionOptions, CodingActionKind, CodingCallContext, CodingPreview, CodingAction,
   CodingPolicy, CodingApproval, CodingEvent, CodingControls, CodingAgentOptions, CodingContext,
   FileSnapshot, FileWrite, FileWriteOutcome, CommandInput, CommandOutcome, CodingToolResult,
 } from './contracts';

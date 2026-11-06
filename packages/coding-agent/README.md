@@ -63,6 +63,8 @@ PowerShell 5.1/7 使用 UTF-8 和纯文本输出，不加载 profile。退出码
 
 命令上限 60 秒，模型可降低；stdout/stderr 合计保留 48 KiB。搜索原始输出上限 4 MiB；序列化 JSON 再按 core 工具结果预算截断，最低预算 4096 字节。preset 默认 24 次模型调用、64 次工具调用、180 秒。根目录 AGENTS.md 启动读取一次，默认最大 32 KiB，可通过 `projectInstructions: false` 禁用。
 
+宿主可显式覆盖这些默认值：`fileAccess: 'host'` 允许绝对路径、父目录和符号链接，列表/搜索的 `path` 参数指定目录；`commandTimeoutMs: null` 关闭命令与搜索进程的执行期限，并忽略模型的 `timeoutMs`。数字值指定命令默认期限及模型可请求的最大期限。`limits.maxModelCalls`、`maxToolCalls`、`maxHistoryMessages`、`maxHistoryBytes` 支持 `null` 表示不限；`limits.timeoutMs: undefined` 关闭整轮期限。AlphaCode 使用这些覆盖项。
+
 ```ts
 const session = await createSession({ store, namespace: 'my-app', agentKey: 'coding-r3:v1' });
 const agent = await createCodingAgent({ model, cwd, approve, plugins: [createSessionPlugin({ session })] });

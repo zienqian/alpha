@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { lstat, realpath, open, rename, link, unlink } from 'node:fs/promises';
-import { dirname, join, relative, isAbsolute, sep } from 'node:path';
-import type { FileSnapshot, FileWrite, FileWriteOutcome } from './contracts';
+import { basename, dirname, join, relative, resolve, isAbsolute, sep } from 'node:path';
+import type { FileAccess, FileSnapshot, FileWrite, FileWriteOutcome } from './contracts';
 import { checkSignal, codeOf, failure, relativePath } from './internal';
 
 const hash = (data: Uint8Array) => createHash('sha256').update(data).digest('hex');
@@ -15,7 +15,24 @@ export async function canonicalCwd(cwd: string): Promise<string> {
   return root;
 }
 
-export async function resolvePath(root: string, path: string, missingLeaf = false, directory = false): Promise<string> {
+export async function resolvePath(root: string, path: string, missingLeaf = false, directory = false, access: FileAccess = 'workspace'): Promise<string> {
+  if (access === 'host') {
+    if (!path || path.includes('\0')) throw failure('INVALID_PATH');
+    const target = resolve(root, path);
+    try {
+      const resolved = await realpath(target);
+      if (directory && !(await lstat(resolved)).isDirectory()) throw failure('PARENT_NOT_DIRECTORY');
+      return resolved;
+    } catch (cause) {
+      if (errorCode(cause) !== 'ENOENT') throw cause;
+      if (missingLeaf) {
+        // Resolve the parent so creation through a directory link targets that directory.
+        try { return join(await realpath(dirname(target)), basename(target)); }
+        catch (parentCause) { if (errorCode(parentCause) !== 'ENOENT') throw parentCause; }
+      }
+      throw failure('FILE_NOT_FOUND');
+    }
+  }
   const rel = relativePath(path, directory);
   if (canonical(await realpath(root)) !== canonical(root)) throw failure('CWD_MOVED');
   if (rel === '.') return root;
@@ -38,10 +55,10 @@ export async function resolvePath(root: string, path: string, missingLeaf = fals
   }
   return target;
 }
-export async function readFile(root: string, path: string, signal?: AbortSignal, maxFile = 1048576): Promise<FileSnapshot | undefined> {
+export async function readFile(root: string, path: string, signal?: AbortSignal, maxFile = 1048576, access: FileAccess = 'workspace'): Promise<FileSnapshot | undefined> {
   checkSignal(signal);
   let target: string;
-  try { target = await resolvePath(root, path, true); }
+  try { target = await resolvePath(root, path, true, false, access); }
   catch (cause) { if (errorCode(cause) === 'FILE_NOT_FOUND') return undefined; throw cause; }
   let file;
   try { file = await open(target, 'r'); } catch (cause) { if (errorCode(cause) === 'ENOENT') return undefined; throw cause; }
@@ -54,27 +71,28 @@ export async function readFile(root: string, path: string, signal?: AbortSignal,
     if (bytes.includes(0)) throw failure('BINARY_FILE');
     let content: string;
     try { content = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes); } catch { throw failure('INVALID_UTF8'); }
-    return { path: process.platform === 'win32' ? relative(root, target).replaceAll('\\', '/') : relative(root, target), content, revision: hash(bytes) };
+    const filePath = access === 'host' ? target : relative(root, target);
+    return { path: process.platform === 'win32' ? filePath.replaceAll('\\', '/') : filePath, content, revision: hash(bytes) };
   } finally { await file.close(); }
 }
 
-export async function writeFile(root: string, input: FileWrite, signal?: AbortSignal, maxFile = 1048576): Promise<FileWriteOutcome> {
+export async function writeFile(root: string, input: FileWrite, signal?: AbortSignal, maxFile = 1048576, access: FileAccess = 'workspace'): Promise<FileWriteOutcome> {
   let temp: string | undefined, effectStarted = false;
   try {
     checkSignal(signal);
     const bytes = Buffer.from(input.content, 'utf8');
     if (bytes.length > maxFile) return { status: 'rejected', code: 'FILE_TOO_LARGE' };
     if (bytes.toString('utf8') !== input.content || bytes.includes(0)) return { status: 'rejected', code: 'INVALID_UTF8' };
-    const target = await resolvePath(root, input.path, true), snapshot = await readFile(root, input.path, signal);
+    const target = await resolvePath(root, input.path, true, false, access), snapshot = await readFile(root, input.path, signal, maxFile, access);
     if (input.expectedRevision === null ? snapshot !== undefined : snapshot?.revision !== input.expectedRevision) return { status: 'rejected', code: input.expectedRevision === null ? 'FILE_EXISTS' : snapshot ? 'FILE_CONFLICT' : 'FILE_NOT_FOUND' };
-    await resolvePath(root, input.path, true); checkSignal(signal);
+    await resolvePath(root, input.path, true, false, access); checkSignal(signal);
     temp = join(dirname(target), `.alpha-${randomUUID()}.tmp`);
     const handle = await open(temp, 'wx', snapshot ? (await lstat(target)).mode : 0o666);
     try { await handle.writeFile(bytes); await handle.sync(); } finally { await handle.close(); }
     // A cooperative external editor may have changed the file while the temp was written.
-    const current = await readFile(root, input.path, signal);
+    const current = await readFile(root, input.path, signal, maxFile, access);
     if ((current?.revision ?? null) !== input.expectedRevision) return { status: 'rejected', code: 'FILE_CONFLICT' };
-    await resolvePath(root, input.path, true); checkSignal(signal);
+    await resolvePath(root, input.path, true, false, access); checkSignal(signal);
     effectStarted = true;
     if (input.expectedRevision === null) await link(temp, target); else await rename(temp, target);
     return { status: 'applied', revision: hash(bytes) };

@@ -21,7 +21,7 @@ export async function executeWrite(ctx: ToolContext<CodingContext>, kind: 'creat
   const plan = takePlan(ctx, kind);
   if (plan.rejected) return rejected(ctx, plan.rejected);
   if (!plan.write) throw failure('PLAN_MISSING');
-  const outcome = await writeFile(ctx.app.cwd, plan.write, ctx.signal);
+  const outcome = await writeFile(ctx.app.cwd, plan.write, ctx.signal, undefined, ctx.app.fileAccess);
   if (outcome.status === 'unknown') throw failure(outcome.code);
   if (outcome.status === 'rejected') return rejected(ctx, outcome.code);
   ctx.app.state.observations.delete(plan.write.path);
