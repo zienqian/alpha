@@ -27,6 +27,7 @@ export async function createRuntime(config: AppConfig, options: {
   let session: Session | undefined;
   let agent: Agent | undefined;
   let messages: ChatMessage[];
+  let title: string;
   let loadedSkills: LoadSkillsResult = { skills: [], diagnostics: [] };
   let settings: SessionSettings = { version: 1, modelId: config.modelId, permissionMode: config.permissionMode ?? "ask" };
   try {
@@ -46,7 +47,9 @@ export async function createRuntime(config: AppConfig, options: {
     if (saved && saved.data.metadata.alphacode === undefined) {
       await manager.updateSession(session.id, { metadata: { ...saved.data.metadata, alphacode: { ...settings } } }, { expectedRevision: saved.revision });
     }
-    messages = restoreMessages((await session.getSnapshot()).data);
+    const snapshot = await session.getSnapshot();
+    messages = restoreMessages(snapshot.data);
+    title = displayText(snapshot.data.title, 80) || "AlphaCode";
     const model = createProvider({ providers: { main: {
       adapter: "openai-completions",
       options: {
@@ -105,6 +108,7 @@ export async function createRuntime(config: AppConfig, options: {
     modelId: settings.modelId,
     workspaceRoot: cwd,
     sessionId: activeSession.id,
+    sessionTitle: title,
     messages,
     get permissionMode() { return settings.permissionMode; },
     setPermissionMode(mode) {

@@ -5,6 +5,31 @@ import type { Chat, ChatState } from "../src/chat/contracts";
 import { App } from "../src/ui/app";
 import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "./helpers";
 
+test("composer uses a blinking line cursor and selects text between caret positions", async () => {
+  const app = await fixture(() => textResponse("done"));
+  const ui = await testRender(() => <App chat={app.chat} onExit={() => undefined} />, { width: 100, height: 32 });
+  const input = ui.renderer.root.findDescendantById("prompt") as TextareaRenderable;
+  try {
+    await ui.renderOnce();
+    expect(input.cursorStyle.style).toBe("line");
+    expect(input.cursorStyle.blinking).toBe(true);
+    expect(input.selectionOccupancy).toBe("boundary");
+    await ui.mockInput.pasteBracketedText("ab中🙂c");
+    ui.mockInput.pressArrow("left");
+    ui.mockInput.pressArrow("left", { shift: true });
+    expect(input.getSelectedText()).toBe("🙂");
+    ui.mockInput.pressBackspace();
+    expect(input.plainText).toBe("ab中c");
+    ui.resize(40, 16);
+    await ui.renderOnce();
+    expect(input.cursorStyle.style).toBe("line");
+    expect(app.requests).toHaveLength(0);
+  } finally {
+    await app.dispose();
+    await ui.dispose();
+  }
+});
+
 test("slash commands filter, complete and select permissions locally, with Escape preserving the draft", async () => {
   const app = await fixture(() => textResponse("普通消息回复"));
   const ui = await testRender(() => <App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 32 });
@@ -155,7 +180,7 @@ test("composer grows with wrapped text and newlines, caps tall drafts, and shrin
 });
 
 test("composer and context stay at the bottom across empty, overflowing, approval, error and resized layouts", async () => {
-  let state: ChatState = { messages: [], busy: false, closing: false, canSend: true, status: "Ready", phase: "idle", permissionMode: "ask", settingsSaving: false };
+  let state: ChatState = { sessionTitle: "Review layout", messages: [], busy: false, closing: false, canSend: true, status: "Ready", phase: "idle", permissionMode: "ask", settingsSaving: false };
   let listener: ((state: ChatState) => void) | undefined;
   const chat: Chat = {
     get state() { return state; },
@@ -181,10 +206,13 @@ test("composer and context stay at the bottom across empty, overflowing, approva
     expect(element("conversation").y + element("conversation").height).toBeLessThanOrEqual(composer.y);
     expect(element("model-info").height).toBe(1);
     expect(element("cwd-info").height).toBe(1);
+    expect(element("session-title").height).toBe(1);
+    expect(element("session-title").width).toBeGreaterThan(0);
+    expect(ui.renderer.root.findDescendantById("permission-info")).toBeFalsy();
     expect(footer.height).toBe(1);
     const frame = ui.captureCharFrame();
     expect(element("model-info").width).toBeGreaterThan(0);
-    expect(frame).toContain("C:/");
+    expect(element("cwd-info").width).toBeGreaterThan(0);
     const footerLine = frame.split("\n")[height - 1] ?? "";
     expect(footerLine).toContain(" · ");
     expect(footerLine).not.toContain("model ");
@@ -201,9 +229,10 @@ test("composer and context stay at the bottom across empty, overflowing, approva
   try {
     await ui.renderOnce();
     assertDock(32);
+    expect(ui.captureCharFrame()).toContain("Review layout");
     const initialY = element("composer").y;
     await ui.mockInput.typeText("保留输入草稿");
-    await update({ busy: true, canSend: false, status: "Generating…", messages: [
+    await update({ sessionTitle: "检查这个项目的输入框底部布局和会话标题".repeat(4), busy: true, canSend: false, status: "Generating…", messages: [
       { id: "user", role: "user", text: "检查这个项目" },
       { id: "assistant", role: "assistant", text: Array.from({ length: 60 }, (_, i) => `Line ${i}`).join("\n"), streaming: true },
     ] });

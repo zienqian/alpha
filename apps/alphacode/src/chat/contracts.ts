@@ -46,6 +46,7 @@ export interface ApprovalRequest {
 export type RequestApproval = (action: ApprovalRequest, signal: AbortSignal) => Promise<boolean>;
 
 export interface ChatState {
+  sessionTitle: string;
   messages: readonly ChatMessage[];
   busy: boolean;
   closing: boolean;
@@ -85,6 +86,7 @@ export type ChatEvent =
   | { type: "run.end"; status: ChatRunStatus };
 
 export interface ChatRuntime {
+  readonly sessionTitle: string;
   readonly skills?: readonly ChatSkill[];
   readonly modelId: string;
   readonly workspaceRoot: string;

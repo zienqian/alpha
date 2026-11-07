@@ -8,7 +8,7 @@ import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "
 const command = (args: Record<string, unknown> = {}) => createToolRecord("assistant", {
   id: "call", name: "run_command", arguments: { command: "bun test", ...args },
 });
-const initial = (): ChatState => ({ messages: [], busy: true, canSend: false, closing: false, status: "Generating…", phase: "thinking", permissionMode: "ask", settingsSaving: false });
+const initial = (): ChatState => ({ sessionTitle: "New session", messages: [], busy: true, canSend: false, closing: false, status: "Generating…", phase: "thinking", permissionMode: "ask", settingsSaving: false });
 
 test("display metadata is bounded plain text without changing the command or using another assistant's text", () => {
   const args = { command: "echo one\necho two", description: "\x1b[31m验证测试\x1b[0m\n完成前检查\x07" };

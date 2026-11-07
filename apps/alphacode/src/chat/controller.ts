@@ -6,6 +6,7 @@ import { applyApproval, applyChatEvent, settlePendingTools, statusLabels } from 
 
 export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
   let state: ChatState = {
+    sessionTitle: runtime.sessionTitle,
     messages: runtime.messages, busy: false, closing: false,
     canSend: !runtime.unsaved && !runtime.blocked, status: "Ready", phase: "idle",
     permissionMode: runtime.permissionMode, settingsSaving: false, approval: approvals.pending,

@@ -37,7 +37,7 @@ export function App(props: { chat: Chat; onExit: () => void }) {
           onCommandOpenChange={setCommandOpen}
           onSubmit={text => { void props.chat.send(text); }}
         />
-        <StatusBar modelId={props.chat.modelId} workspaceRoot={props.chat.workspaceRoot} permissionMode={state().permissionMode} />
+        <StatusBar modelId={props.chat.modelId} workspaceRoot={props.chat.workspaceRoot} sessionTitle={state().sessionTitle} />
       </box>
     </box>
   );

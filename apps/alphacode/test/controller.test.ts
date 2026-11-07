@@ -7,7 +7,7 @@ test("injected runtime supports streaming and a failed close retries persistence
   let listener: ((event: ChatEvent) => void) | undefined;
   let sends = 0, closes = 0, unsubscribes = 0;
   const runtime: ChatRuntime = {
-    modelId: "memory-model", workspaceRoot: "/project", sessionId: "memory-session",
+    modelId: "memory-model", workspaceRoot: "/project", sessionId: "memory-session", sessionTitle: "New session",
     unsaved: false, blocked: false,
     permissionMode: "ask", messages: [],
     async setPermissionMode() { /* This runtime does not execute tools. */ },

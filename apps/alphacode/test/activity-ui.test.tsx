@@ -16,7 +16,7 @@ import { shimmerFrame, shimmerGlyphs } from "../src/ui/shimmer";
 import { VscodeImageOutput } from "../src/ui/vscode-output";
 import { waitFor } from "./helpers";
 
-const stateFor = (): ChatState => ({ messages: [], busy: true, closing: false, canSend: false, status: "Generating…", phase: "thinking", permissionMode: "ask", settingsSaving: false });
+const stateFor = (): ChatState => ({ sessionTitle: "New session", messages: [], busy: true, closing: false, canSend: false, status: "Generating…", phase: "thinking", permissionMode: "ask", settingsSaving: false });
 
 test("composer status follows the active turn, approval, stopping and persistence instead of a previous tool result", () => {
   const tool = { ...createToolRecord("a", { id: "c", name: "read_file", arguments: { path: "a" } }), status: "succeeded" as const, finishedAt: 1 };

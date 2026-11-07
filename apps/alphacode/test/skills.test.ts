@@ -116,12 +116,15 @@ test("manual invocation preserves literal arguments and persists full determinis
   expect(encoded.arguments).toBe("  src/file.ts\n  $HOME !`echo nope`  ");
   expect(encoded.skill.content).toBe("Literal $ARGUMENTS and !`echo never`.\n");
   const saved = workspace.snapshot(runtime.sessionId);
+  expect(saved.title).toBe("AlphaCode");
+  expect(chat.state.sessionTitle).toBe(saved.title);
   expect(saved.agentKey).toBe("alphacode-v2:test-model");
   expect(saved.turns[0]?.messages[0]).toMatchObject({ role: "user", content: first });
   expect(saved.turns[0]?.messages.some(message => message.role === "toolResult")).toBe(false);
   await chat.close();
   await unlink(path);
   const resumed = await workspace.open({ sessionId: runtime.sessionId });
+  expect(resumed.sessionTitle).toBe(saved.title);
   expect(resumed.messages[0]?.text).toBe(command);
   expect(resumed.messages[0]?.rawText).toBe(first);
 });

@@ -109,6 +109,7 @@ export function Composer(props: {
         focused={props.focused && !permission()}
         placeholder={props.busy ? "Working… draft your next message" : "Describe your task…"}
         placeholderColor={colors.muted}
+        cursorStyle={{ style: "line", blinking: true }} selectionOccupancy="boundary"
         cursorColor={colors.foreground} selectionBg="#cddcff" selectionFg={colors.foreground}
         backgroundColor={colors.surface} focusedBackgroundColor={colors.surface}
         textColor={colors.foreground} focusedTextColor={colors.foreground}

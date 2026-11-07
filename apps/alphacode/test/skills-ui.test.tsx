@@ -7,7 +7,7 @@ import { App } from "../src/ui/app";
 test("skill completion, arguments, list command and slash escape reach the dispatcher", async () => {
   const sent: string[] = [];
   const chat: Chat = {
-    state: { messages: [], busy: false, closing: false, canSend: true, status: "Ready", phase: "idle", permissionMode: "ask", settingsSaving: false },
+    state: { sessionTitle: "New session", messages: [], busy: false, closing: false, canSend: true, status: "Ready", phase: "idle", permissionMode: "ask", settingsSaving: false },
     modelId: "test", workspaceRoot: "/project", sessionId: "test",
     skills: [{ name: "review", description: "Review changes", argumentHint: "[files]", userInvocable: true },
       { name: "review-private", description: "Model only", userInvocable: false }],
