@@ -1,10 +1,11 @@
 import { mkdir, open, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { parseDocument } from "yaml";
 import type { PermissionMode } from "./chat/contracts";
 import { ConfigurationError } from "./errors";
 
 export interface GlobalDefaults {
+  skills?: SkillsSettings;
   modelId?: string;
   baseURL?: string;
   apiKeyEnv?: string;
@@ -12,6 +13,18 @@ export interface GlobalDefaults {
   permissionMode?: PermissionMode;
   databasePath?: string;
 }
+
+export interface SkillsSettings {
+  sharedDirectories: boolean;
+  claudeDirectories: boolean;
+  trustedProjects: readonly string[];
+  disabledNames: readonly string[];
+}
+
+export const defaultSkillsSettings: SkillsSettings = Object.freeze({
+  sharedDirectories: true, claudeDirectories: false,
+  trustedProjects: Object.freeze([]), disabledNames: Object.freeze([]),
+});
 
 const template = `# AlphaCode global defaults. Environment variables override these settings.
 # model:
@@ -24,6 +37,11 @@ const template = `# AlphaCode global defaults. Environment variables override th
 #       env: OPENAI_API_KEY
 #       # For a local endpoint without authentication, use { none: true } instead.
 permissionMode: ask
+skills:
+  sharedDirectories: true
+  claudeDirectories: false
+  trustedProjects: []
+  disabledNames: []
 # databasePath: sessions.db
 `;
 
@@ -54,8 +72,25 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     throw new ConfigurationError(`${file}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`);
   }
   if (value === null) return {};
-  const root = object(value, file, "root", ["provider", "model", "permissionMode", "databasePath"]);
+  const root = object(value, file, "root", ["provider", "model", "permissionMode", "databasePath", "skills"]);
   const defaults: GlobalDefaults = {};
+  if (root.skills !== undefined) {
+    const skills = object(root.skills, file, "skills", ["sharedDirectories", "claudeDirectories", "trustedProjects", "disabledNames"]);
+    const settings = { ...defaultSkillsSettings };
+    for (const field of ["sharedDirectories", "claudeDirectories"] as const) {
+      if (skills[field] === undefined) continue;
+      if (typeof skills[field] !== "boolean") invalid(file, `skills.${field}`);
+      settings[field] = skills[field];
+    }
+    for (const field of ["trustedProjects", "disabledNames"] as const) {
+      const entries = skills[field];
+      if (entries === undefined) continue;
+      if (!Array.isArray(entries) || entries.some(entry => typeof entry !== "string" || (field === "trustedProjects"
+        ? !isAbsolute(entry) || entry.includes("\0") : entry.length > 64 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry)))) invalid(file, `skills.${field}`);
+      settings[field] = [...entries];
+    }
+    defaults.skills = settings;
+  }
   if (root.model !== undefined) {
     const model = object(root.model, file, "model", ["id"]);
     if (model.id !== undefined) defaults.modelId = string(model.id, file, "model.id");

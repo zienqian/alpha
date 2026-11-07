@@ -3,7 +3,7 @@ import type { ToolResultMessage } from "@alpha/adk/core";
 import type { ToolRecord } from "../chat/contracts";
 
 interface Call { id: string; name: string; arguments: Readonly<Record<string, unknown>> }
-const codingTools = new Set(["run_command", "read_file", "edit_file", "create_file", "search", "list_files"]);
+const codingTools = new Set(["run_command", "read_file", "edit_file", "create_file", "search", "list_files", "readSkill"]);
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 function plain(value: string): string {
@@ -24,9 +24,10 @@ export function createToolRecord(assistantId: string, call: Call): ToolRecord {
   const name = displayText(call.name, 80), args = call.arguments;
   const command = call.name === "run_command" ? displayText(args.command, 512) : undefined;
   const path = displayText(args.path, 256) || undefined;
-  const target = command || (call.name === "search" ? displayText(args.query, 256) : path) || name;
+  const target = command || (call.name === "search" ? displayText(args.query, 256) : call.name === "readSkill" ? displayText(args.name, 64) : path) || name;
   const fallback = call.name === "run_command" ? `Run command: ${command || name}`
     : call.name === "read_file" ? `Read file: ${path || "file"}`
+    : call.name === "readSkill" ? `Read skill: ${target}`
     : call.name === "edit_file" ? `Edit file: ${path || "file"}`
     : call.name === "create_file" ? `Create file: ${path || "file"}`
     : call.name === "search" ? `Search: ${target}`

@@ -1,7 +1,8 @@
-import type { PermissionMode } from "../chat/contracts";
+import type { ChatSkill, PermissionMode } from "../chat/contracts";
 
 export const commands = [
   { name: "/permission", description: "Choose how tools and commands are approved" },
+  { name: "/skills", description: "List available skills and loading diagnostics" },
 ] as const;
 
 export const permissionOptions: readonly { value: PermissionMode; name: string; description: string }[] = [
@@ -10,6 +11,8 @@ export const permissionOptions: readonly { value: PermissionMode; name: string; 
   { value: "full", name: "Full access", description: "Allow all tools and commands with current process permissions" },
 ];
 
-export function matchingCommands(text: string) {
-  return commands.filter(command => command.name.startsWith(text.trim()));
+export function matchingCommands(text: string, skills: readonly ChatSkill[] = []) {
+  return [...commands, ...skills.filter(skill => skill.userInvocable).map(skill => ({
+    name: `/${skill.name}`, description: `${skill.description}${skill.argumentHint ? ` · ${skill.argumentHint}` : ""}`,
+  }))].filter(command => command.name.startsWith(text.trim()));
 }

@@ -1,9 +1,16 @@
-import { createCodingAgent, codingTools, readFileTool } from '@alpha/coding-agent';
+import { createCodingAgent, codingTools, readFileTool, loadSkills, formatSkillsForPrompt, readSkill, readSkillTool } from '@alpha/coding-agent';
+import type { SkillMetadata, LoadSkillsResult, SkillContent } from '@alpha/coding-agent';
 import type { CodingPolicy, CodingApproval, CodingContext } from '@alpha/coding-agent';
 import type { LanguageModel } from '@alpha/provider';
 import { createAgent, createTool, type Agent, type ToolContext } from '@alpha/adk/core';
 import { z } from 'zod';
 declare const model: LanguageModel;
+declare const skills: readonly SkillMetadata[];
+const loaded: Promise<LoadSkillsResult> = loadSkills({ roots: [{ path: process.cwd(), source: 'project', trusted: true }] });
+const summary: string = formatSkillsForPrompt(skills);
+const content: Promise<SkillContent> = readSkill(skills[0]);
+void [loaded, summary, content];
+void createCodingAgent({ model, cwd: process.cwd(), skills, tools: [...codingTools, readSkillTool] });
 const cwd = process.cwd();
 const policy = { decide: () => 'ask' } satisfies CodingPolicy;
 const approve: CodingApproval = (action, context) => { action.digest satisfies string; action.cwd satisfies string; context.signal satisfies AbortSignal; return 'allow'; };

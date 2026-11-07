@@ -56,8 +56,9 @@ test("slash commands filter, complete and select permissions locally, with Escap
 
     input.setText("/unknown");
     ui.mockInput.pressEnter();
+    await waitFor(() => !app.chat.state.busy);
     await ui.renderOnce();
-    expect(ui.captureCharFrame()).toContain("No matching commands");
+    expect(app.chat.state.error).toBe("SKILL_NOT_FOUND");
     expect(app.requests).toHaveLength(0);
     input.setText("hello");
     ui.mockInput.pressEnter();

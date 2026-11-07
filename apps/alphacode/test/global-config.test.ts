@@ -33,6 +33,7 @@ test("first load creates editable global files without overwriting them on later
     expect(initial.globalInstructions).toBe("");
     expect(await readFile(join(directory, "AGENTS.md"), "utf8")).toBe("");
     expect(await readFile(join(directory, "config.yaml"), "utf8")).toContain("permissionMode: ask");
+    expect(await readFile(join(directory, "config.yaml"), "utf8")).not.toContain("enabled:");
     await writeFile(join(directory, "config.yaml"), yaml);
     await writeFile(join(directory, "AGENTS.md"), "使用中文回答。\n");
     const loaded = await loadConfig({ ALPHACODE_HOME: directory }, [], root);

@@ -69,6 +69,42 @@ bun run --cwd apps/alphacode start C:/path/to/project
 
 直接在应用目录运行时，可传入一个工作区路径，或设置 `ALPHACODE_WORKSPACE`；未指定则使用当前目录。路径参数优先于环境变量，输入框下方显示实际工作区。
 
+## Skills
+
+在 `<workspace>/.alphacode/skills/review/SKILL.md` 或 `<ALPHACODE_HOME>/skills/review/SKILL.md` 创建：
+
+```markdown
+---
+name: review
+description: 审查改动的正确性、回归风险和测试缺口。
+argument-hint: "[审查范围]"
+---
+
+阅读相关实现和测试，按严重程度报告问题；未获要求不要修改代码。
+```
+
+个人原生目录默认可信；**项目目录必须在全局 `config.yaml` 中显式信任**，即使会话使用 Full access 也不会自动信任：
+
+```yaml
+skills:
+  sharedDirectories: true
+  claudeDirectories: false
+  trustedProjects:
+    - 'C:\Users\you\project'
+  disabledNames: []
+```
+
+信任按真实工作目录精确匹配，不包含其子项目。搜索优先级：项目 `.alphacode/skills` → 项目 `.agents/skills` → 项目 `.claude/skills` → 个人配置目录 `skills` → `~/.agents/skills` → `~/.claude/skills`。共享目录默认开启，Claude 兼容默认关闭；均仅扫描直接子目录。
+
+- `/skills` 本地查看目录和诊断，不调用模型；`/review 原始参数` 显式读取完整正文后交给模型。命令名之后第一个空白是分隔符，其余参数空白与内容原样保留，不执行 Shell 展开或插值。
+- 普通请求由模型根据摘要选择 `readSkill({ name: "review" })`。`disable-model-invocation: true` 表示仅手动；`user-invocable: false` 表示仅模型可选。
+- `/` 看板补全可手动调用的 Skill；`//` 转义普通斜线输入。未知命令本地报错，不发送模型。
+- 修改文件后重启加载；当前 Agent 读取发现 revision 改变则拒绝，不使用缓存正文，也没有 `/skills refresh`。
+- 手动输入归档完整正文、版本、路径和原始参数；恢复界面显示原始命令，继续对话使用已归档内容，不重读旧文件。禁用 Skill 不会清除已经进入上下文的内容，需清空上下文时创建新会话。
+- Skills 始终启用，不提供 `skills.enabled` 总开关；已有配置应移除此字段。新会话使用 `alphacode-v2` 标识；恢复旧 `alphacode-v1` 会话时保留原标识，同样加载 Skills 并提供 `readSkill`。Session 格式和模型/权限元数据不变。
+
+Skills 不增加工具权限、不执行安装或脚本、不支持 hooks/subagent 语义。Skill 文件上限 32 KiB，手动参数 8 KiB，最终输入 48 KiB；模型读取每轮最多 8 次，成功结果累计 128 KiB。完整正文超预算会失败而非截断；Skills 本身拒绝 symlink/junction，普通文件工具的 host 访问行为不变。
+
 ## 在其他项目中使用最新开发版
 
 在 Alpha 仓库根目录执行一次：

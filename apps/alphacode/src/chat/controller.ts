@@ -26,13 +26,15 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
     modelId: runtime.modelId,
     workspaceRoot: runtime.workspaceRoot,
     sessionId: runtime.sessionId,
+    skills: runtime.skills,
     subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
     async send(input) {
-      const text = input.trim();
-      if (!text || state.busy || !state.canSend || state.closing) return;
+      const text = input.trimStart().startsWith("/") ? input : input.trim();
+      if (!text.trim() || state.busy || !state.canSend || state.closing) return;
       const started = performance.now();
       let outcome: ChatRunStatus = "failed";
       let completion: ChatMessage["completion"];
+      let local = false;
       update({
         busy: true, canSend: false, status: "Connecting…", phase: "thinking", error: undefined, activeRunStartedAt: started,
         messages: [...state.messages.filter(message => message.role !== "tool")
@@ -43,6 +45,10 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
         const result = await runtime.send(text);
         outcome = result.status;
         completion = result.completion;
+        if (result.localText !== undefined) {
+          local = true;
+          update({ messages: [...state.messages, { id: randomUUID(), role: "assistant", text: result.localText }] });
+        }
         update({ status: statusLabels[result.status], error: result.error });
       } catch (error) {
         update({ status: "Request failed", error: errorCode(error) });
@@ -50,7 +56,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
         const { unsaved, blocked } = runtime;
         const messages = settlePendingTools(state.messages).map(message => message.streaming ? { ...message, streaming: false } : message);
         const last = messages.at(-1);
-        if (last) messages[messages.length - 1] = { ...last, completion: completion ?? {
+        if (last && !local) messages[messages.length - 1] = { ...last, completion: completion ?? {
           durationMs: Math.max(0, Math.round(performance.now() - started)), completedAt: Date.now(), status: outcome,
         } };
         update({

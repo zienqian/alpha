@@ -1,6 +1,7 @@
 import type { SessionData } from "@alpha/adk-session";
 import type { ChatMessage } from "../chat/contracts";
 import { completeToolRecord, createToolRecord } from "./tool-records";
+import { skillInputDisplay } from "../input";
 
 export function restoreMessages(data: SessionData): ChatMessage[] {
   const messages: ChatMessage[] = [];
@@ -9,7 +10,7 @@ export function restoreMessages(data: SessionData): ChatMessage[] {
     const latest = turn === data.turns.at(-1);
     const turnStart = messages.length;
     for (const message of turn.messages) {
-      if (message.role === "user") messages.push({ id: message.id, role: "user", text: message.content });
+      if (message.role === "user") messages.push({ id: message.id, role: "user", text: skillInputDisplay(message.content), rawText: message.content });
       else if (message.role === "assistant") {
         messages.push({
           id: message.id, role: "assistant", text: message.text,

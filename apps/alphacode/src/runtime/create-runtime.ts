@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import type { Agent } from "@alpha/adk/core";
 import { createSessionManager, createSessionPlugin, type Session, type SessionManager, type SessionStore } from "@alpha/adk-session";
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
-import { createCodingAgent, type CodingContext } from "@alpha/coding-agent";
+import { createCodingAgent, type CodingContext, type LoadSkillsResult } from "@alpha/coding-agent";
 import { createProvider, type CreateProviderOptions } from "@alpha/provider";
 import type { AppConfig } from "../config";
 import type { ChatMessage, ChatRuntime, RequestApproval } from "../chat/contracts";
@@ -13,6 +13,9 @@ import { permissionDecision } from "./permission-policy";
 import { restoreMessages } from "./history";
 import { globalInstructionsPlugin } from "./global-instructions";
 import { isPermissionMode, readSessionSettings, sameSettings, settingsError, type SessionSettings } from "./session-settings";
+import { loadRuntimeSkills, prepareSkillInput, skillStatus } from "./skills";
+import { parseInput } from "../input";
+import { displayText } from "./tool-records";
 
 export async function createRuntime(config: AppConfig, options: {
   approve?: RequestApproval;
@@ -24,6 +27,7 @@ export async function createRuntime(config: AppConfig, options: {
   let session: Session | undefined;
   let agent: Agent | undefined;
   let messages: ChatMessage[];
+  let loadedSkills: LoadSkillsResult = { skills: [], diagnostics: [] };
   let settings: SessionSettings = { version: 1, modelId: config.modelId, permissionMode: config.permissionMode ?? "ask" };
   try {
     await mkdir(dirname(config.databasePath), { recursive: true });
@@ -32,7 +36,10 @@ export async function createRuntime(config: AppConfig, options: {
     const saved = config.sessionId ? await store.read({ namespace, id: config.sessionId }) : undefined;
     if (config.sessionId && !saved) throw settingsError("SESSION_NOT_FOUND");
     if (saved) settings = readSessionSettings(saved.data);
-    manager = createSessionManager({ store, namespace, agentKey: `alphacode-v1:${settings.modelId}` });
+    const agentKey = saved?.data.agentKey === `alphacode-v1:${settings.modelId}`
+      ? saved.data.agentKey : `alphacode-v2:${settings.modelId}`;
+    loadedSkills = await loadRuntimeSkills(config, cwd);
+    manager = createSessionManager({ store, namespace, agentKey });
     session = config.sessionId ? await manager.openSession(config.sessionId) : await manager.createSession({
       title: "AlphaCode", metadata: { alphacode: { ...settings } },
     });
@@ -52,6 +59,7 @@ export async function createRuntime(config: AppConfig, options: {
     const policySession = session;
     agent = await createCodingAgent({
       model, cwd,
+      skills: loadedSkills.skills,
       fileAccess: "host", commandTimeoutMs: null,
       limits: {
         timeoutMs: undefined, maxModelCalls: null, maxToolCalls: null,
@@ -90,7 +98,10 @@ export async function createRuntime(config: AppConfig, options: {
   let running = false;
   let cancelled = false;
   let closing: Promise<void> | undefined;
+  let preparation: AbortController | undefined;
+  let draining = Promise.resolve();
   return {
+    skills: Object.freeze(loadedSkills.skills.map(({ name, description, argumentHint, userInvocable }) => Object.freeze({ name, description: displayText(description, 1024), argumentHint: argumentHint === undefined ? undefined : displayText(argumentHint, 256), userInvocable }))),
     modelId: settings.modelId,
     workspaceRoot: cwd,
     sessionId: activeSession.id,
@@ -129,11 +140,22 @@ export async function createRuntime(config: AppConfig, options: {
       if (closing || running || changing) throw settingsError("SESSION_BUSY");
       running = true;
       cancelled = false;
+      preparation = new AbortController();
+      let finishRun!: () => void;
+      draining = new Promise<void>(resolve => { finishRun = resolve; });
       try {
+        const command = parseInput(input);
+        if (command.kind === "command" && command.name === "skills" && !command.arguments.trim()) {
+          return { status: "completed", localText: skillStatus(loadedSkills) };
+        }
+        if (command.kind === "command" && command.name === "permission") {
+          return { status: "completed", localText: "Use the /permission picker to change session permissions." };
+        }
+        const prepared = await prepareSkillInput(input, loadedSkills.skills, preparation.signal);
         const snapshot = await activeSession.getSnapshot();
         if (cancelled || closing) return { status: "cancelled" };
         if (!sameSettings(readSessionSettings(snapshot.data), settings)) throw settingsError("SESSION_CONFLICT");
-        const result = await activeAgent.prompt(input, { requestId: randomUUID() });
+        const result = await activeAgent.prompt(prepared, { requestId: randomUUID(), signal: preparation.signal });
         let completion: ChatMessage["completion"];
         if (activeSession.state.persistence?.status === "saved") {
           try {
@@ -145,12 +167,18 @@ export async function createRuntime(config: AppConfig, options: {
           } catch { /* Optional display timing must not change a completed run's outcome. */ }
         }
         return { status: result.status, error: result.status === "failed" ? result.error.code : undefined, completion };
-      } finally { running = false; }
+      } catch (error) {
+        if (cancelled || closing) return { status: "cancelled" };
+        throw error;
+      } finally { running = false; preparation = undefined; finishRun(); }
     },
-    cancel() { cancelled = true; activeAgent.abort(); },
+    cancel() { cancelled = true; preparation?.abort(); activeAgent.abort(); },
     close() {
       cancelled = true;
+      preparation?.abort();
+      activeAgent.abort();
       if (!closing) closing = (async () => {
+        await draining;
         await changing?.catch(() => { /* A failed settings change retains the previous mode. */ });
         try {
           await activeAgent.close();

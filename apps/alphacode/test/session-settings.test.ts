@@ -103,7 +103,7 @@ test("legacy sessions recover their recorded model, default to ask, and preserve
   try {
     await app.chat.close();
     const old = archive(db, app.chat.sessionId);
-    db.query("UPDATE sessions SET body = ? WHERE id = ?").run(JSON.stringify({ ...old, metadata: { note: "keep me" } }), app.chat.sessionId);
+    db.query("UPDATE sessions SET body = ? WHERE id = ?").run(JSON.stringify({ ...old, agentKey: "alphacode-v1:test-model", metadata: { note: "keep me" } }), app.chat.sessionId);
     resumed = await createApplication({ ...app.config, sessionId: app.chat.sessionId, modelId: "different-default" });
     expect(resumed.modelId).toBe("test-model");
     expect(resumed.state.permissionMode).toBe("ask");

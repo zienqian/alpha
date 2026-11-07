@@ -36,6 +36,7 @@
     "@alpha/adk": "workspace:*",
     "@alpha/provider": "workspace:*",
     "zod": "4.6.7",
+    "yaml": "2.9.0",
     "minimatch": "10.2.6",
     "cross-spawn": "7.0.6"
   },

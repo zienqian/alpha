@@ -1,10 +1,11 @@
 import { For, Show } from "solid-js";
 import { useTerminalDimensions } from "@opentui/solid";
-import type { PermissionMode } from "../../chat/contracts";
+import type { ChatSkill, PermissionMode } from "../../chat/contracts";
 import { matchingCommands, permissionOptions } from "../commands";
 import { colors } from "../theme";
 
 export function CommandPanel(props: {
+  skills?: readonly ChatSkill[];
   query: string;
   permission: boolean;
   selected: number;
@@ -14,7 +15,7 @@ export function CommandPanel(props: {
 }) {
   const dimensions = useTerminalDimensions();
   const compact = () => dimensions().width < 76;
-  const options = () => props.permission ? permissionOptions : matchingCommands(props.query);
+  const options = () => props.permission ? permissionOptions : matchingCommands(props.query, props.skills);
   return (
     <box id="command-panel" flexDirection="column" flexShrink={0} marginBottom={1}>
       <Show when={props.permission}>

@@ -37,7 +37,7 @@ test('ordinary Agent exposes strict tools and projects cwd, actual shell and cac
   const agent = await createCodingAgent({ model, cwd: f.cwd });
   assert.deepEqual(agent.state.messages, []);
   await agent.prompt('one'); await f.write('AGENTS.md', 'changed'); await agent.prompt('two');
-  const input = model.inputs[0]; assert.equal(input.tools.length, 6);
+  const input = model.inputs[0]; assert.equal(input.tools.length, 7);
   for (const tool of input.tools) { assert.equal(tool.inputSchema.type, 'object'); assert.equal(tool.inputSchema.additionalProperties, false); }
   assert.ok(input.messages[0].content.includes(f.cwd)); assert.match(input.messages[0].content, /Shell: (powershell|posix|cmd) \(/);
   assert.match(model.inputs[1].messages[1].content, /Use bun:test/);

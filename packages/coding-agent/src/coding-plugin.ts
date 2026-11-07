@@ -5,7 +5,7 @@ import { checkSignal, digest, failure } from './internal';
 import { prepareCodingCall } from './tools/index';
 
 /** Internal permission hook. Tools are registered explicitly by createCodingAgent. */
-export function createCodingPlugin<C>(context: CodingContext<C>): Plugin<CodingContext<C>> {
+export function createCodingPlugin<C>(context: CodingContext<C>, hasReadSkillTool = false): Plugin<CodingContext<C>> {
   const { cwd, shell, controls, state } = context;
   return {
     id: 'coding/runtime', apiVersion: 1,
@@ -18,7 +18,7 @@ export function createCodingPlugin<C>(context: CodingContext<C>): Plugin<CodingC
       });
       api.hook('authorizeTool', async (call, ctx) => {
         if (ctx.app !== context) throw failure('CODING_CONTEXT_MISMATCH');
-        const plan = await prepareCodingCall(ctx.app, call, ctx.signal);
+        const plan = await prepareCodingCall(ctx.app, call, ctx.signal, hasReadSkillTool);
         const invocation = Object.freeze({ ...ctx, assistantId: call.assistantId, callId: call.callId });
         checkSignal(ctx.signal);
         const key = callKey(invocation);
@@ -36,8 +36,8 @@ export function createCodingPlugin<C>(context: CodingContext<C>): Plugin<CodingC
         if (decision === 'allow') retain();
         return decision === 'allow' ? { action: 'allow' } : { action: 'deny', reason: 'Coding policy denied the action.' };
       });
-      api.observe(event => { if (event.type === 'run.end') state.plans.clear(); });
+      api.observe(event => { if (event.type === 'run.end') { state.plans.clear(); state.skillReads.clear(); } });
     },
-    dispose() { state.plans.clear(); state.observations.clear(); },
+    dispose() { state.plans.clear(); state.observations.clear(); state.skillReads.clear(); },
   };
 }

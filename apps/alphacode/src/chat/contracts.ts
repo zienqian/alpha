@@ -26,6 +26,7 @@ export interface ToolRecord {
 }
 
 export interface ChatMessage {
+  rawText?: string;
   id: string;
   role: "user" | "assistant" | "tool";
   text: string;
@@ -60,6 +61,7 @@ export interface ChatState {
 }
 
 export interface Chat {
+  readonly skills?: readonly ChatSkill[];
   readonly state: ChatState;
   readonly modelId: string;
   readonly workspaceRoot: string;
@@ -83,6 +85,7 @@ export type ChatEvent =
   | { type: "run.end"; status: ChatRunStatus };
 
 export interface ChatRuntime {
+  readonly skills?: readonly ChatSkill[];
   readonly modelId: string;
   readonly workspaceRoot: string;
   readonly sessionId: string;
@@ -92,8 +95,15 @@ export interface ChatRuntime {
   readonly blocked: boolean;
   setPermissionMode(mode: PermissionMode): Promise<void>;
   subscribe(listener: (event: ChatEvent) => void): () => void;
-  send(input: string): Promise<{ status: ChatRunStatus; error?: string; completion?: ChatMessage["completion"] }>;
+  send(input: string): Promise<{ status: ChatRunStatus; error?: string; localText?: string; completion?: ChatMessage["completion"] }>;
   cancel(): void;
   /** Drain execution and persist before resolving; a failed close may be retried. */
   close(): Promise<void>;
+}
+
+export interface ChatSkill {
+  readonly name: string;
+  readonly description: string;
+  readonly argumentHint?: string;
+  readonly userInvocable: boolean;
 }

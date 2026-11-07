@@ -1,6 +1,6 @@
 # @alpha/coding-agent
 
-为 ADK 增加六个静态编程工具。`createCodingAgent` 返回普通 core Agent，复用同一套 Loop；Session 通过插件组合。
+为 ADK 增加六个静态编程工具和 `readSkill` 工具。`createCodingAgent` 返回普通 core Agent，复用同一套 Loop；Session 通过插件组合。
 
 ```ts
 import { createCodingAgent } from '@alpha/coding-agent';
@@ -15,10 +15,39 @@ try { await agent.prompt('修复问题并运行相关测试。'); }
 finally { await agent.close(); }
 ```
 
-## 结构
+## Skills
+
+Skills 使用三个公开函数，不新增注册中心或独立执行循环：
+
+```ts
+import { loadSkills, formatSkillsForPrompt, readSkill, createCodingAgent } from '@alpha/coding-agent';
+
+const { skills, diagnostics } = await loadSkills({
+  roots: [{ path: '/repo/.alphacode/skills', source: 'project', trusted: true }],
+  disabledNames: [],
+});
+const agent = await createCodingAgent({ model, cwd: '/repo', skills });
+const summary = formatSkillsForPrompt(skills);
+const selected = skills.find(skill => skill.name === 'review');
+if (selected) await readSkill(selected);
+try { await agent.prompt('审查本次改动'); }
+finally { await agent.close(); }
+```
+
+- `loadSkills` 只扫描显式根的直接子目录 `SKILL.md`，返回冻结的元数据和诊断，不返回正文。根必须为规范化绝对路径，未信任根不读取正文；先出现的根优先，非法的高优先级入口阻止同名回退。
+- `formatSkillsForPrompt` 是无 I/O 的纯函数，输出名称、描述的 JSON 摘要，最多 16 KiB；被省略的完整条目通过 `omittedCount` 计数。
+- `readSkill(metadata, { signal? })` 返回 `name/filePath/baseDir/revision/content`，正文完整保留，不做模板展开；文件变更返回 `SKILL_CHANGED`，缺失返回 `FILE_NOT_FOUND`。
+- Skills 始终启用，无总开关；`skills` 未配置时使用空列表，不接受 `false`。默认工具为 `[...codingTools, readSkillTool]`，共七项。模型调用名为 **`readSkill`**，唯一参数 `{ name }`。空列表不生成摘要，读取未知名称返回 `SKILL_NOT_FOUND`。显式 `tools` 完全覆盖默认列表；`codingTools` 自身始终只有六项。
+- 只有选用内置 `readSkillTool` 才注入摘要，调用方不要重复拼接 `summary`。摘要不写入 Session；完整读取结果通过普通 toolResult 归档。该工具沿用 read 审批，不授予 edit_file 的读取凭据或更多文件权限。
+- `name`、`description` 必填；名称须与目录一致，1–64 个小写字母/数字/单连字符。支持 `argument-hint`、`disable-model-invocation`、`user-invocable`。两个入口均禁用则排除。`allowed-tools` 只诊断、不授权；`context/agent/hooks/model/effort` 拒绝。YAML 重复键、别名、显式标签及 merge 不支持。
+- 文件上限 32 KiB，frontmatter 8 KiB；扫描上限 16 根、2048 目录项、256 候选目录。工具每轮最多执行 8 次，成功 JSON 累计 128 KiB，并遵守单次结果预算；超限明确失败，绝不返回截断成功。
+
+SDK 不自动信任项目、不发现个人目录、不执行脚本、不热更新。Skills 路径拒绝符号链接/junction；路径校验不是 OS 沙箱，不保证防御恶意并发替换或硬链接。附属资源使用现有文件工具，脚本使用 `run_command`，权限不变；workspace 模式不会因为加载个人 Skill 而隐式开放其目录。
+
+## 编程运行时结构
 
 - `cwd` 是启动时规范化的目录字符串，不持有工具或资源。
-- `src/tools/` 中每个工具是模块常量，定义 schema、预检和执行；通过 `tools: [readFileTool, searchTool]` 选择，默认 `codingTools`，传 `[]` 可关闭全部工具。
+- `src/tools/` 中每个工具是模块常量，定义 schema、预检和执行；通过 `tools: [readFileTool, searchTool]` 选择，默认 `[...codingTools, readSkillTool]`，传 `[]` 可关闭全部工具。
 - 每个 Agent 独立持有 `CodingContext`：`cwd`、已选定 `shell`、业务 `data`、审批控制与文件读取版本。业务 `appContext` 在工具中通过 `ctx.app.data` 访问。
 - 内部审批插件只处理预检和许可。修改与命令的预检计划绑定同一次调用，批准后消费，拒绝、取消和运行结束清理；读取工具直接执行。
 - `files.ts`、`search.ts` 是显式接收 cwd 的普通函数；`process/` 处理 Shell 选择、启动、输出、取消和超时。

@@ -2,18 +2,28 @@ import type { ToolContext } from '@alpha/adk/core';
 import type { CodingContext, CodingContextOptions, CodingEvent } from './contracts';
 import { selectShell } from './process/shell';
 import { failure, positive } from './internal';
+import { validateSkillMetadata } from './skills/read';
 
 export function createCodingContext<C = undefined>(options: CodingContextOptions<C>): CodingContext<C> {
+  if (options.skills !== undefined && !Array.isArray(options.skills)) throw failure('SKILL_INVALID_METADATA');
+  const names = new Set<string>();
+  const skills = Object.freeze((options.skills ?? []).map(skill => {
+    validateSkillMetadata(skill);
+    if (names.has(skill.name)) throw failure('SKILL_DUPLICATE_NAME');
+    names.add(skill.name);
+    return Object.freeze({ ...skill });
+  }));
   const budget = Math.min(48 * 1024, positive(options.maxResultBytes ?? 128 * 1024, 'RESULT_LIMIT'));
   if (budget < 4096) throw failure('RESULT_BUDGET_TOO_SMALL');
   const fileAccess = options.fileAccess ?? 'workspace';
   if (fileAccess !== 'workspace' && fileAccess !== 'host') throw failure('INVALID_FILE_ACCESS');
   const commandTimeoutMs = options.commandTimeoutMs === null ? null : positive(options.commandTimeoutMs ?? 60000, 'COMMAND_TIMEOUT', 2_147_483_647);
   return Object.freeze({
+    skills,
     fileAccess, commandTimeoutMs,
     cwd: options.cwd, shell: selectShell({ configured: options.shell }), data: options.appContext as C,
     controls: Object.freeze({ policy: options.policy, approve: options.approve, onEvent: options.onEvent }),
-    state: { budget, plans: new Map(), observations: new Map(), used: false },
+    state: { budget, plans: new Map(), observations: new Map(), skillReads: new Map(), used: false },
   });
 }
 

@@ -28,6 +28,7 @@ export function App(props: { chat: Chat; onExit: () => void }) {
         </Show>
         <ComposerStatus state={state()} />
         <Composer
+          skills={props.chat.skills}
           busy={state().busy} canSend={state().canSend}
           focused={!state().approval && !state().closing}
           permissionMode={state().permissionMode}

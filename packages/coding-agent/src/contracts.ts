@@ -1,4 +1,5 @@
 import type { Shell } from './process/shell';
+import type { SkillMetadata } from './skills/contracts';
 import type { AgentOptions, AppOption, Awaitable, JsonObject, ToolContext, ValidatedCall } from '@alpha/adk/core';
 import type { LanguageModel } from '@alpha/provider';
 
@@ -48,6 +49,7 @@ export interface CodingControls {
 }
 /** Per-agent execution context. Static tools receive it through ToolContext.app. */
 export interface CodingContext<C = unknown> {
+  readonly skills: readonly SkillMetadata[];
   readonly cwd: string;
   readonly fileAccess: FileAccess;
   readonly commandTimeoutMs: number | null;
@@ -59,6 +61,7 @@ export interface CodingContext<C = unknown> {
     readonly budget: number;
     readonly plans: Map<string, CodingPlan>;
     readonly observations: Map<string, string>;
+    readonly skillReads: Map<string, { calls: number; bytes: number }>;
     used: boolean;
   };
 }
@@ -71,12 +74,14 @@ export interface CodingPlan {
   readonly rejected?: string;
 }
 export type CodingContextOptions<C = undefined> = CodingControls & CodingExecutionOptions & AppOption<C> & {
+  readonly skills?: readonly SkillMetadata[];
   readonly cwd: string;
   /** Host-selected executable, false disables commands; omitted selects a supported shell. */
   readonly shell?: string | false;
   readonly maxResultBytes?: number;
 };
 export type CodingAgentOptions<C = undefined> = Omit<AgentOptions<CodingContext<C>>, 'model' | 'instructions' | 'appContext'> & AppOption<C> & CodingControls & CodingExecutionOptions & {
+  readonly skills?: readonly SkillMetadata[];
   readonly cwd: string;
   /** Host-selected executable, false disables commands; omitted selects a supported shell. */
   readonly shell?: string | false;

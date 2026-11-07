@@ -2,11 +2,12 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import type { PermissionMode } from "./chat/contracts";
 import { ConfigurationError } from "./errors";
-import { readGlobalConfig, type GlobalDefaults } from "./global-config";
+import { readGlobalConfig, type GlobalDefaults, type SkillsSettings } from "./global-config";
 
 export { ConfigurationError } from "./errors";
 
 export interface AppConfig {
+  skills?: SkillsSettings;
   workspaceRoot: string;
   databasePath: string;
   modelId: string;
@@ -69,6 +70,7 @@ export function readConfig(
     apiKeyEnv: env.ADK_API_KEY_ENV ?? defaults.apiKeyEnv ?? "OPENAI_API_KEY",
     noAuth,
     permissionMode,
+    skills: defaults.skills,
     configDirectory: directory,
     ...(env.ALPHACODE_SESSION?.trim() ? { sessionId: env.ALPHACODE_SESSION.trim() } : {}),
   };

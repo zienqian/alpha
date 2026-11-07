@@ -4,7 +4,7 @@ export const byteLength = (text: string): number => new TextEncoder().encode(tex
 export function failure(code: string): Error & { code: string } { return Object.assign(new Error(code), { code }); }
 export function codeOf(cause: unknown, fallback: string): string {
   const code = (cause as { code?: unknown })?.code;
-  return typeof code === 'string' && /^[A-Z_]{1,64}$/.test(code) ? code : fallback;
+  return typeof code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(code) ? code : fallback;
 }
 export function checkSignal(signal?: AbortSignal): void { if (signal?.aborted) throw failure('CANCELLED'); }
 export function positive(value: number, name: string, max = Number.MAX_SAFE_INTEGER): number {

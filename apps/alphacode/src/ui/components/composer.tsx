@@ -1,12 +1,13 @@
 import type { TextareaRenderable } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
-import type { PermissionMode } from "../../chat/contracts";
+import type { ChatSkill, PermissionMode } from "../../chat/contracts";
 import { matchingCommands, permissionOptions } from "../commands";
 import { CommandPanel } from "./command-panel";
 import { colors } from "../theme";
 
 export function Composer(props: {
+  skills?: readonly ChatSkill[];
   busy: boolean;
   canSend: boolean;
   focused: boolean;
@@ -22,7 +23,8 @@ export function Composer(props: {
   const [permission, setPermission] = createSignal(false);
   const [dismissed, setDismissed] = createSignal(false);
   const [selected, setSelected] = createSignal(0);
-  const slash = () => draft().trimStart().startsWith("/");
+  const slash = () => /^\/[^\s/]*$/.test(draft().trimStart());
+  const matches = () => matchingCommands(draft(), props.skills);
   const panelOpen = () => props.focused && !dismissed() && (permission() || slash());
   const contentChanged = () => {
     const text = input?.plainText ?? "";
@@ -55,18 +57,27 @@ export function Composer(props: {
       setDismissed(true);
     } else if (key.name === "up" || key.name === "down") {
       key.preventDefault();
-      const count = permission() ? permissionOptions.length : matchingCommands(draft()).length;
+      const count = permission() ? permissionOptions.length : matches().length;
       if (count) setSelected(index => (index + (key.name === "up" ? -1 : 1) + count) % count);
     } else if ((key.name === "return" && !key.shift) || key.name === "tab") {
       key.preventDefault();
       if (permission()) {
         const option = permissionOptions[selected()];
         if (key.name === "return" && option) void choosePermission(option.value);
-      } else if (matchingCommands(draft())[selected()]) {
+      } else if (matches()[selected()]) {
+        const command = matches()[selected()];
+        if (!command) return;
         if (key.name === "tab") {
-          input?.setText("/permission");
+          input?.setText(command.name);
           input?.gotoBufferEnd();
-        } else openPermission();
+        } else if (command.name === "/permission") openPermission();
+        else if (props.canSend && !props.busy) {
+          input?.setText("");
+          setDraft("");
+          props.onSubmit(command.name);
+        }
+      } else if (key.name === "return") {
+        submit();
       }
     } else if (permission()) {
       // Keep the draft intact while the picker owns text input.
@@ -75,20 +86,18 @@ export function Composer(props: {
   });
   const maxInputHeight = () => Math.max(1, Math.min(6, Math.floor(dimensions().height / 4)));
   const submit = () => {
-    const text = input?.plainText.trim();
-    if (text?.startsWith("/")) {
-      setDismissed(false);
-      if (text === "/permission") openPermission();
-      return;
-    }
-    if (!text || !props.canSend || props.busy) return;
+    const text = input?.plainText;
+    if (text?.trim() === "/permission") { openPermission(); return; }
+    if (!text?.trim() || !props.canSend || props.busy) return;
     input?.setText("");
+    setDraft("");
     props.onSubmit(text);
   };
   return (
     <box flexDirection="column" flexShrink={0}>
     <Show when={panelOpen()}>
       <CommandPanel query={draft()} permission={permission()} selected={selected()}
+        skills={props.skills}
         currentMode={props.permissionMode} busy={props.busy} settingsSaving={props.settingsSaving} />
     </Show>
     <box id="composer" flexDirection="row" backgroundColor={colors.surface}

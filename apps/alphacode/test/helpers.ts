@@ -70,6 +70,8 @@ export async function fixture(reply: (body: RequestBody, index: number) => Respo
   await writeFile(join(workspaceRoot, "hello.txt"), "hello-from-workspace");
   const requests: RequestBody[] = [];
   const config: AppConfig = {
+    configDirectory: join(root, "config"),
+    skills: { sharedDirectories: false, claudeDirectories: false, trustedProjects: [], disabledNames: [] },
     workspaceRoot, databasePath: join(root, "sessions.db"),
     modelId: "test-model", baseURL: "https://offline.invalid/v1", apiKeyEnv: "UNUSED_KEY", noAuth: true,
   };
