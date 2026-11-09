@@ -1,0 +1,17 @@
+{
+  "usage": "用法：alphacode [--lang system|en|zh-CN] [工作区路径]",
+  "invalidLanguage": "{{source}} 必须为 system、en 或 zh-CN。",
+  "modelRequired": "请设置 ADK_MODEL 或 {{file}} 中的 model.id。",
+  "auth": "ADK_AUTH 必须为 none 或 api_key。请在 ADK_API_KEY_ENV 指定的环境变量中设置 API key。",
+  "permission": "ALPHACODE_PERMISSION 必须为 ask、auto 或 full。",
+  "invalidConfig": "{{file}}：{{field}} 配置无效，请检查字段名、类型和允许值。",
+  "invalidYaml": "{{file}}：YAML 无效，请检查缩进、重复键、不支持的标签和别名。",
+  "notFile": "{{file}}：应为普通文件。",
+  "tooLarge": "{{file}}：文件超过 {{limit}} KiB 限制。",
+  "readFailed": "{{file}}：无法读取文件，请检查权限和 UTF-8 编码。",
+  "initFailed": "{{file}}：无法初始化全局配置目录，请检查权限。",
+  "incompatible": "此数据库已有不兼容的 AlphaCode 服务正在运行。请关闭客户端，等待服务退出后重新启动。",
+  "serverStart": "无法启动本地 AlphaCode 服务。",
+  "serverTimeout": "本地服务尚未就绪。请检查 {{file}}；已有服务可能仍在启动。",
+  "help": "AlphaCode {{version}}\n\n用法：alphacode [--watch] [--lang system|en|zh-CN] [工作区路径]\n\n  alphacode              在当前目录运行最新源码\n  alphacode C:/project   使用指定工作区\n  alphacode --watch      源码变化时自动重启\n  alphacode --lang en    使用英文\n  alphacode --version    显示版本\n\n本地服务会自动启动，使用同一数据库的客户端共享服务。\n在终端输入 /web 可在浏览器打开当前会话。\n\n全局配置：~/.alphacode/config.yaml\n全局指令：~/.alphacode/AGENTS.md\n可通过 ALPHACODE_HOME 指定其他配置目录。\n语言优先级：--lang > ALPHACODE_LANG > 配置 language > 系统语言 > 英文。\n环境变量覆盖全局配置；开发启动器还会加载仓库的 .env.local。"
+}

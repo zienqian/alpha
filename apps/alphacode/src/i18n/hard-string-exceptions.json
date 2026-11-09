@@ -1,0 +1,129 @@
+{
+  "src/chat/controller.ts": {
+    "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
+    "messages": [
+      "Hard-coded string \"Stopping…\".",
+      "Hard-coded string \"Connecting…\".",
+      "Hard-coded string \"Request failed\".",
+      "Hard-coded string \"Session not saved. Saving will be retried on exit.\".",
+      "Hard-coded string \"Execution state could not be confirmed. Exit and start a new session.\".",
+      "Hard-coded string \"Stopping…\".",
+      "Hard-coded string \"Could not save permissions: {0}. Previous permissions remain active.\".",
+      "Hard-coded string \"Saving and exiting…\".",
+      "Hard-coded string \"Exit failed. Press Ctrl+C to retry.\"."
+    ]
+  },
+  "src/chat/messages.ts": {
+    "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
+    "messages": [
+      "Hard-coded string \"Request refused by the model\".",
+      "Hard-coded string \"Response incomplete\".",
+      "Hard-coded string \"Outcome unknown\".",
+      "Hard-coded string \"Run limit reached\".",
+      "Hard-coded string \"Run failed\".",
+      "Hard-coded string \"Generating…\".",
+      "Hard-coded string \"Preparing tools…\".",
+      "Hard-coded string \"Incomplete preview\".",
+      "Hard-coded string \"Preparing next step…\".",
+      "Hard-coded string \"Saving session…\"."
+    ]
+  },
+  "src/i18n/preferences.ts": {
+    "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
+    "messages": [
+      "Hard-coded string \"--lang must be system, en, or zh-CN.\".",
+      "Hard-coded string \"ALPHACODE_LANG must be system, en, or zh-CN.\"."
+    ]
+  },
+  "src/input.ts": {
+    "reason": "Model instruction envelope; UI locale must not change prompts.",
+    "messages": [
+      "Hard-coded string \"Alpha skill input v1. The selected instructions do not grant tool permissions.\n\"."
+    ]
+  },
+  "src/runtime/create-runtime.ts": {
+    "reason": "Model prompt and legacy local command response; clients translate structured localResult.",
+    "messages": [
+      "Hard-coded string \"You are AlphaCode. Respond in the user's language. Use Markdown for explanations and fenced blocks for code. Keep answers concise.\".",
+      "Hard-coded string \"Use the /permission picker to change session permissions.\"."
+    ]
+  },
+  "src/runtime/events.ts": {
+    "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
+    "messages": [
+      "Hard-coded string \"Tool call\"."
+    ]
+  },
+  "src/runtime/global-instructions.ts": {
+    "reason": "Model instruction envelope; UI locale must not change prompts.",
+    "messages": [
+      "Hard-coded string \"Global default instructions from {0}. More specific project instructions and the current user request take precedence:\n{1}\"."
+    ]
+  },
+  "src/runtime/history.ts": {
+    "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
+    "messages": [
+      "Hard-coded string \"Response incomplete\".",
+      "Hard-coded string \"Tool call\"."
+    ]
+  },
+  "src/runtime/skills.ts": {
+    "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
+    "messages": [
+      "Hard-coded string \"Available skills\".",
+      "Hard-coded string \" (model only)\".",
+      "Hard-coded string \" (manual only)\".",
+      "Hard-coded string \"No skills loaded.\".",
+      "Hard-coded string \"Configure skills in the global config.yaml. Project skills require an exact trustedProjects entry. Restart to reload.\"."
+    ]
+  },
+  "src/runtime/tool-records.ts": {
+    "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
+    "messages": [
+      "Hard-coded string \"Run command: {0}\".",
+      "Hard-coded string \"Read file: {0}\".",
+      "Hard-coded string \"Read skill: {0}\".",
+      "Hard-coded string \"Edit file: {0}\".",
+      "Hard-coded string \"Create file: {0}\".",
+      "Hard-coded string \"List files: {0}\".",
+      "Hard-coded string \"Run tool: {0}\".",
+      "Hard-coded string \"… {0} lines omitted …\".",
+      "Hard-coded string \"File updated.\".",
+      "Hard-coded string \"File created.\".",
+      "Hard-coded string \"Invalid tool result\".",
+      "Hard-coded string \"Tool reported failure\".",
+      "Hard-coded string \"Command exit code unavailable\"."
+    ]
+  },
+  "src/server/client.ts": {
+    "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
+    "messages": [
+      "Hard-coded string \"Reconnecting to local server…\".",
+      "Hard-coded string \"Open this URL in your browser: {0}\"."
+    ]
+  },
+  "src/server/lifecycle.ts": {
+    "reason": "SQLite statements and legacy ConfigurationError messages; clients translate code and params.",
+    "messages": [
+      "Hard-coded string \"PRAGMA busy_timeout = 10000; CREATE TABLE IF NOT EXISTS owner (id INTEGER PRIMARY KEY CHECK (id = 1), pid INTEGER NOT NULL, instance TEXT NOT NULL)\".",
+      "Hard-coded string \"SELECT pid FROM owner WHERE id = 1\".",
+      "Hard-coded string \"INSERT OR REPLACE INTO owner VALUES (1, ?, ?)\".",
+      "Hard-coded string \"DELETE FROM owner WHERE id = 1 AND instance = ?\".",
+      "Hard-coded string \"An incompatible AlphaCode server is running for this database. Close its clients and restart after it exits.\".",
+      "Hard-coded string \"Could not start the local AlphaCode server.\".",
+      "Hard-coded string \"Local server did not become ready. Inspect {0}; an existing owner may still be starting.\"."
+    ]
+  },
+  "src/server/web.ts": {
+    "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
+    "messages": [
+      "Hard-coded string \"Build the Web UI with bun run build:web before using /web.\"."
+    ]
+  },
+  "src/ui/components/welcome.tsx": {
+    "reason": "Product name.",
+    "messages": [
+      "Hard-coded string \"AlphaCode\"."
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "alphacode-web",
+  "sourceLocale": "en",
+  "locales": [
+    "en",
+    "zh-CN"
+  ],
+  "presets": [
+    "i18next"
+  ],
+  "resources": [
+    {
+      "pattern": "src/i18n/locales/{locale}/{namespace}.json"
+    }
+  ],
+  "usage": {
+    "include": [
+      "src/**/*.{ts,tsx}",
+      "bin/*.ts"
+    ],
+    "exclude": [
+      "src/i18n/resources.d.ts"
+    ]
+  },
+  "namespace": {
+    "separator": ":",
+    "default": "common"
+  },
+  "checks": {
+    "missing-translation": "error",
+    "empty-translation": "error",
+    "placeholder-mismatch": "error",
+    "unused-key": "warning",
+    "hard-string": "warning"
+  },
+  "extract": {
+    "ignoreCallees": [
+      "cn",
+      "cva",
+      "Error"
+    ]
+  }
+}

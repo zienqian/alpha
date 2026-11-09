@@ -1,3 +1,5 @@
+import { useTranslation } from "../../i18n/react";
+import { presentNote, presentLocalResult } from "../../i18n/presentation";
 import { SyntaxStyle } from "@opentui/core";
 import { useRenderer } from "@opentui/react";
 import { useLayoutEffect, useState } from "react";
@@ -8,6 +10,7 @@ import { ToolRecordView } from "./tool-record";
 import { TurnCompletion } from "./turn-completion";
 
 export function Conversation(props: { messages: readonly ChatMessage[] }) {
+  const { t } = useTranslation();
   const renderer = useRenderer();
   const [syntaxStyle, setSyntaxStyle] = useState<SyntaxStyle>();
   useLayoutEffect(() => {
@@ -31,13 +34,13 @@ export function Conversation(props: { messages: readonly ChatMessage[] }) {
               </text>
               <box flexDirection="column" flexGrow={1} minWidth={0}>
                 {message.role === "assistant" ? syntaxStyle && (
-                  <markdown content={message.text} syntaxStyle={syntaxStyle} streaming={message.streaming ?? false} />
+                  <markdown content={message.localResult ? presentLocalResult(t, message.localResult) : message.text} syntaxStyle={syntaxStyle} streaming={message.streaming ?? false} />
                 ) : (
                   <text fg={message.role === "tool" ? colors.muted : colors.foreground}>
-                    {message.text}{message.role === "tool" && message.note ? ` · ${message.note}` : ""}
+                    {message.text}{message.role === "tool" && message.note ? ` · ${presentNote(t, message)}` : ""}
                   </text>
                 )}
-                {message.note && message.role !== "tool" && <text fg={colors.muted} marginTop={1}>{message.note}</text>}
+                {message.note && message.role !== "tool" && <text fg={colors.muted} marginTop={1}>{presentNote(t, message)}</text>}
               </box>
             </box>
           ))}

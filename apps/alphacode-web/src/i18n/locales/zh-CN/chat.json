@@ -1,0 +1,15 @@
+{
+  "note": {
+    "incomplete": "回复不完整",
+    "preview": "不完整预览"
+  },
+  "outcome": {
+    "completed": "已完成",
+    "refused": "模型拒绝了请求",
+    "incomplete": "回复不完整",
+    "unknown": "结果未知",
+    "limited": "达到运行限制",
+    "cancelled": "已停止",
+    "failed": "运行失败"
+  }
+}

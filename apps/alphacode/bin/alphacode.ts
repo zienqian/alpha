@@ -1,25 +1,20 @@
 #!/usr/bin/env bun
 import { fileURLToPath } from "node:url";
+import { bootstrapTranslator, configurationMessage, startupLocale } from "../src/i18n/bootstrap";
+import { ConfigurationError } from "../src/errors";
+import { resolveLocale } from "../src/i18n/locale";
 import { version } from "../package.json";
 
 const args = process.argv.slice(2);
 if (args.includes("--help") || args.includes("-h")) {
-  console.log(`AlphaCode ${version} (local source)
-
-Usage: alphacode [--watch] [workspace path]
-
-  alphacode              Run the latest source in the current directory
-  alphacode C:/project   Use the specified workspace
-  alphacode --watch      Restart when source files change
-  alphacode --version    Show the version
-
-The local server starts automatically and is shared by clients using the same database.
-Type /web inside the terminal to open the current session in your browser.
-
-Global configuration: ~/.alphacode/config.yaml
-Global instructions: ~/.alphacode/AGENTS.md
-Set ALPHACODE_HOME to use a different configuration directory.
-Environment variables override global configuration; the development launcher also loads the repository's .env.local.`);
+  try {
+    const locale = await startupLocale(process.env, args);
+    console.log(bootstrapTranslator(locale)("help", { version }));
+  } catch (error) {
+    const locale = resolveLocale("system", [process.env.LC_ALL || process.env.LC_MESSAGES || process.env.LANG || Intl.DateTimeFormat().resolvedOptions().locale]);
+    console.error(`AlphaCode: ${error instanceof ConfigurationError ? configurationMessage(bootstrapTranslator(locale), error) : "UNEXPECTED_ERROR"}`);
+    process.exitCode = 1;
+  }
 } else if (args.includes("--version") || args.includes("-v")) {
   console.log(`alphacode ${version} (local source)`);
 } else {

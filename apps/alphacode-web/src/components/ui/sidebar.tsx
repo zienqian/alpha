@@ -1,8 +1,12 @@
+import { useTranslation } from "@/i18n/react";
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { PanelLeftIcon } from "lucide-react"
 import { Slot } from "radix-ui"
+import { useReducedMotion } from "motion/react"
+import * as m from "motion/react-m"
+import { sidebarTransition } from "@/lib/motion"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Button } from "@/components/ui/button"
@@ -154,7 +158,13 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
+  const { t } = useTranslation();
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const reducedMotion = useReducedMotion()
+  const offcanvas = state === "collapsed" && collapsible === "offcanvas"
+  const icon = state === "collapsed" && collapsible === "icon"
+  const compactWidth = variant === "floating" || variant === "inset" ? "calc(var(--sidebar-width-icon) + 1rem)" : "var(--sidebar-width-icon)"
+  const transition = reducedMotion ? { duration: 0 } : sidebarTransition
 
   if (collapsible === "none") {
     return (
@@ -185,10 +195,14 @@ function Sidebar({
             } as React.CSSProperties
           }
           side={side}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            document.querySelector<HTMLButtonElement>('[data-slot="sidebar-trigger"]')?.focus()
+          }}
         >
           <SheetHeader className="sr-only">
-            <SheetTitle>项目与会话</SheetTitle>
-            <SheetDescription>搜索项目，选择会话查看消息记录。</SheetDescription>
+            <SheetTitle>{t("workspace:mobileTitle")}</SheetTitle>
+            <SheetDescription>{t("workspace:mobileDescription")}</SheetDescription>
           </SheetHeader>
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
@@ -205,30 +219,37 @@ function Sidebar({
       data-side={side}
       data-slot="sidebar"
     >
-      <div
+      <m.div
         data-slot="sidebar-gap"
+        initial={false}
+        animate={{ width: offcanvas ? 0 : icon ? compactWidth : "var(--sidebar-width)" }}
+        transition={transition}
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
-          "group-data-[collapsible=offcanvas]:w-0",
+          "relative w-(--sidebar-width) bg-transparent",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
             ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
         )}
       />
-      <div
+      <Slot.Root {...props}>
+      <m.div
         data-slot="sidebar-container"
+        initial={false}
+        animate={{ x: offcanvas ? side === "left" ? "-100%" : "100%" : "0%" }}
+        transition={transition}
+        inert={offcanvas}
+        aria-hidden={offcanvas || undefined}
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) md:flex",
           side === "left"
-            ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-            : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
+            ? "left-0"
+            : "right-0",
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
           className
         )}
-        {...props}
       >
         <div
           data-sidebar="sidebar"
@@ -237,7 +258,8 @@ function Sidebar({
         >
           {children}
         </div>
-      </div>
+      </m.div>
+      </Slot.Root>
     </div>
   )
 }
@@ -247,6 +269,7 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
+  const { t } = useTranslation();
   const { toggleSidebar } = useSidebar()
 
   return (
@@ -263,22 +286,23 @@ function SidebarTrigger({
       {...props}
     >
       <PanelLeftIcon />
-      <span className="sr-only">Toggle Sidebar</span>
+      <span className="sr-only">{t("common:toggleSidebar")}</span>
     </Button>
   )
 }
 
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
+  const { t } = useTranslation();
   const { toggleSidebar } = useSidebar()
 
   return (
     <button
       data-sidebar="rail"
       data-slot="sidebar-rail"
-      aria-label="Toggle Sidebar"
+      aria-label={t("common:toggleSidebar")}
       tabIndex={-1}
       onClick={toggleSidebar}
-      title="Toggle Sidebar"
+      title={t("common:toggleSidebar")}
       className={cn(
         "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border sm:flex",
         "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",

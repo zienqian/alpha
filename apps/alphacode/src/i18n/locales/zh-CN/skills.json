@@ -1,0 +1,8 @@
+{
+  "title": "可用 Skills",
+  "none": "未加载任何 Skill。",
+  "modelOnly": "仅供模型调用",
+  "manualOnly": "仅供手动调用",
+  "configure": "在全局 config.yaml 中配置 Skills。项目 Skills 需要精确的 trustedProjects 条目。重启后重新加载。",
+  "permissionHint": "使用 /permission 菜单修改会话权限。"
+}

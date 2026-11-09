@@ -1,0 +1,47 @@
+{
+  "note": {
+    "incomplete": "回复不完整",
+    "preview": "不完整预览"
+  },
+  "outcome": {
+    "completed": "已完成",
+    "refused": "模型拒绝了请求",
+    "incomplete": "回复不完整",
+    "unknown": "结果未知",
+    "limited": "达到运行限制",
+    "cancelled": "已停止",
+    "failed": "运行失败"
+  },
+  "welcome": {
+    "tagline": "从这里开始编程。",
+    "title": "你想构建什么？",
+    "description": "探索项目、修复问题，或创造新事物。"
+  },
+  "composer": {
+    "busy": "处理中…可以起草下一条消息",
+    "placeholder": "描述任务…"
+  },
+  "commands": {
+    "empty": "无匹配命令 · Esc 返回",
+    "web": "在浏览器中打开当前实时会话",
+    "permission": "选择工具和命令的审批方式",
+    "skills": "列出可用 Skills 和加载诊断"
+  },
+  "activity": {
+    "closing": "正在保存并退出…",
+    "stopping": "正在停止…",
+    "approval": "等待审批",
+    "saving": "正在保存会话…",
+    "queued": "正在准备下一步…",
+    "reviewing": "正在检查结果…",
+    "working": "正在处理…",
+    "reconnecting": "正在重新连接本地服务…"
+  },
+  "interrupt": " · esc 中断",
+  "completion": {
+    "cancelled": "{{duration}} 后停止 · {{time}}",
+    "failed": "{{duration}} 后失败 · {{time}}",
+    "completed": "工作了 {{duration}} · {{time}}",
+    "other": "{{duration}} 后结束 · {{time}}"
+  }
+}

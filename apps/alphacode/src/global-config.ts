@@ -1,3 +1,4 @@
+import { isLanguagePreference, type LanguagePreference } from "./i18n/locale";
 import { mkdir, open, writeFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { parseDocument } from "yaml";
@@ -5,6 +6,7 @@ import type { PermissionMode } from "./chat/contracts";
 import { ConfigurationError } from "./errors";
 
 export interface GlobalDefaults {
+  language?: LanguagePreference;
   skills?: SkillsSettings;
   modelId?: string;
   baseURL?: string;
@@ -36,6 +38,7 @@ const template = `# AlphaCode global defaults. Environment variables override th
 #     apiKey:
 #       env: OPENAI_API_KEY
 #       # For a local endpoint without authentication, use { none: true } instead.
+language: system
 permissionMode: ask
 skills:
   sharedDirectories: true
@@ -46,7 +49,7 @@ skills:
 `;
 
 function invalid(file: string, field: string): never {
-  throw new ConfigurationError(`${file}: Invalid ${field} configuration. Check field names, types, and allowed values.`);
+  throw new ConfigurationError(`${file}: Invalid ${field} configuration. Check field names, types, and allowed values.`, { code: "INVALID_CONFIG", params: { file, field } });
 }
 
 function object(value: unknown, file: string, field: string, allowed: readonly string[]): Record<string, unknown> {
@@ -69,11 +72,15 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     value = document.toJS({ maxAliasCount: 0 });
   } catch {
     // Parser diagnostics may contain credentials or source excerpts.
-    throw new ConfigurationError(`${file}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`);
+    throw new ConfigurationError(`${file}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`, { code: "INVALID_YAML", params: { file } });
   }
   if (value === null) return {};
-  const root = object(value, file, "root", ["provider", "model", "permissionMode", "databasePath", "skills"]);
+  const root = object(value, file, "root", ["provider", "model", "permissionMode", "databasePath", "skills", "language"]);
   const defaults: GlobalDefaults = {};
+  if (root.language !== undefined) {
+    if (!isLanguagePreference(root.language)) invalid(file, "language (system / en / zh-CN)");
+    defaults.language = root.language;
+  }
   if (root.skills !== undefined) {
     const skills = object(root.skills, file, "skills", ["sharedDirectories", "claudeDirectories", "trustedProjects", "disabledNames"]);
     const settings = { ...defaultSkillsSettings };
@@ -133,7 +140,7 @@ async function readBounded(file: string, limit: number): Promise<string> {
   try {
     const handle = await open(file, "r");
     try {
-      if (!(await handle.stat()).isFile()) throw new ConfigurationError(`${file}: Expected a regular file.`);
+      if (!(await handle.stat()).isFile()) throw new ConfigurationError(`${file}: Expected a regular file.`, { code: "CONFIG_NOT_FILE", params: { file } });
       const buffer = Buffer.alloc(limit + 1);
       let size = 0;
       while (size < buffer.length) {
@@ -141,12 +148,12 @@ async function readBounded(file: string, limit: number): Promise<string> {
         if (!bytesRead) break;
         size += bytesRead;
       }
-      if (size > limit) throw new ConfigurationError(`${file}: File exceeds the ${limit / 1024} KiB limit.`);
+      if (size > limit) throw new ConfigurationError(`${file}: File exceeds the ${limit / 1024} KiB limit.`, { code: "CONFIG_TOO_LARGE", params: { file, limit: limit / 1024 } });
       return new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(0, size));
     } finally { await handle.close(); }
   } catch (error) {
     if (error instanceof ConfigurationError) throw error;
-    throw new ConfigurationError(`${file}: Could not read file. Check file permissions and UTF-8 encoding.`);
+    throw new ConfigurationError(`${file}: Could not read file. Check file permissions and UTF-8 encoding.`, { code: "CONFIG_READ_FAILED", params: { file } });
   }
 }
 
@@ -161,7 +168,7 @@ export async function readGlobalConfig(directory: string): Promise<{
       try { await writeFile(file, content, { flag: "wx" }); }
       catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
     }
-  } catch { throw new ConfigurationError(`${directory}: Could not initialize the global configuration directory. Check directory permissions.`); }
+  } catch { throw new ConfigurationError(`${directory}: Could not initialize the global configuration directory. Check directory permissions.`, { code: "CONFIG_INIT_FAILED", params: { file: directory } }); }
   const defaults = parseGlobalConfig(await readBounded(configPath, 64 * 1024), configPath);
   const instructions = (await readBounded(instructionsPath, 32 * 1024)).trim();
   return { defaults, instructions, instructionsPath };

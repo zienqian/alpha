@@ -1,3 +1,4 @@
+import { useTranslation } from "@/i18n/react";
 import { lazy, Suspense, type ComponentProps, type CSSProperties } from "react";
 import { FolderOpen } from "lucide-react";
 import { PromptInput } from "@/components/ai-elements/prompt-input";
@@ -10,6 +11,7 @@ import { SessionContext } from "@/features/sessions/session-context";
 import { SessionSidebar } from "@/features/sessions/session-sidebar";
 import { SessionApproval } from "@/features/sessions/session-approval";
 import { useSessionWorkspace } from "@/features/sessions/use-session-workspace";
+import { presentNotice } from "@/i18n/presentation";
 import { cn } from "@/lib/utils";
 
 const SessionContent = lazy(() => import("@/features/sessions/session-content").then((module) => ({ default: module.SessionContent })));
@@ -22,7 +24,8 @@ function HistoryColumn({ className, ...props }: ComponentProps<"div">) {
 }
 
 function HistoryLoading() {
-  return <HistoryColumn role="status" aria-label="正在加载会话历史" className="space-y-4 py-6">
+  const { t } = useTranslation();
+  return <HistoryColumn role="status" aria-label={t("sessions:loadingHistory")} className="space-y-4 py-6">
     <Skeleton className="ml-auto h-14 w-2/3 rounded-xl" />
     <Skeleton className="mt-10 h-4 w-24" />
     <Skeleton className="h-4 w-full" />
@@ -31,34 +34,34 @@ function HistoryLoading() {
 }
 
 export function App() {
+  const { t } = useTranslation();
   const workspace = useSessionWorkspace();
   const { folders, selectedFolder, selectedSession, selectedSessionId, draft } = workspace;
   const isWelcome = workspace.isLocal;
   const view = workspace.history.data;
-  const connectionLabel = workspace.connected ? "实时同步" : workspace.history.connection === "error" ? "连接失败" : workspace.history.connection === "reconnecting" ? "正在重连…" : "正在连接…";
+  const connectionLabel = workspace.connected ? t("sessions:connected") : workspace.history.connection === "error" ? t("sessions:connectionFailed") : workspace.history.connection === "reconnecting" ? t("sessions:reconnecting") : t("sessions:connecting");
   const composer = <>
     {workspace.actionError && <div role="alert" className="mb-3 space-y-2 text-xs text-destructive">
       <p>{workspace.actionError}</p>
-      {workspace.actions.pending?.status === "uncertain" && <Button size="sm" variant="outline" disabled={!workspace.connected} onClick={workspace.actions.retry}>重试发送</Button>}
+      {workspace.actions.pending?.status === "uncertain" && <Button size="sm" variant="outline" disabled={!workspace.connected} onClick={workspace.actions.retry}>{t("sessions:retrySend")}</Button>}
     </div>}
     {view?.state.approval && <SessionApproval approval={view.state.approval}
       disabled={!workspace.connected || workspace.actions.controlling || !view.approvalId} onAnswer={workspace.actions.approve} />}
     <PromptInput draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
       onSend={() => void workspace.send()} canSend={workspace.canSend} busy={workspace.busy} submitting={workspace.submitting}
       onCancel={workspace.actions.cancel} canCancel={workspace.connected && !workspace.actions.controlling && Boolean(view?.requestId) && view?.state.phase !== "stopping"}
-      status={isWelcome ? selectedFolder?.name ?? "请先在 CLI 登记项目" : !workspace.connected ? connectionLabel : workspace.busy ? view?.state.phase === "stopping" ? "正在停止…" : "正在运行…" : view?.state.canSend ? "Enter 发送 · Shift+Enter 换行" : "会话暂不可发送"} />
+      status={isWelcome ? selectedFolder?.name ?? t("workspace:registerProject") : !workspace.connected ? connectionLabel : workspace.busy ? view?.state.phase === "stopping" ? t("sessions:stopping") : t("sessions:running") : view?.state.canSend ? "" : t("sessions:unavailable")} />
   </>;
 
   return (
     <SidebarProvider className="h-dvh min-h-0 overflow-hidden" style={{ "--sidebar-width": "15rem" } as CSSProperties}>
       <a href="#session-content" className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
-        跳转到会话内容
-      </a>
+        {t("sessions:skip")}</a>
       <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={workspace.selectSession} onNewSession={workspace.newSession}
         loading={workspace.index.isPending} error={workspace.index.error} refreshing={workspace.index.isFetching} onRefresh={() => void workspace.index.refetch()} />
       <SidebarInset className="workspace-canvas min-h-0 min-w-0 overflow-hidden">
         <header className="flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
-          <SidebarTrigger aria-label="切换侧栏" title="切换侧栏 (Ctrl / ⌘ + B)" className="text-muted-foreground" />
+          <SidebarTrigger aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground" />
           <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px]">
             {!isWelcome && (
               <span className="hidden min-w-0 max-w-40 items-center gap-1.5 text-muted-foreground sm:flex" title={selectedFolder?.path}>
@@ -66,8 +69,8 @@ export function App() {
               </span>
             )}
             {!isWelcome && <span className="hidden text-border sm:inline" aria-hidden="true">/</span>}
-            {isWelcome ? <span className="truncate text-muted-foreground">新会话</span> : (
-              <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title ?? "会话记录"}</h1>
+            {isWelcome ? <span className="truncate text-muted-foreground">{t("sessions:new")}</span> : (
+              <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title ?? t("sessions:history")}</h1>
             )}
           </div>
           <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} />
@@ -76,7 +79,7 @@ export function App() {
           <section id="session-content" tabIndex={-1} aria-labelledby="welcome-title" className="welcome-stage min-h-0 flex-1 overflow-y-auto px-5 outline-none sm:px-8">
             <div className="task-entry mx-auto w-full max-w-[680px]">
               <div className="mb-6">
-                <h1 id="welcome-title" className="text-[22px] leading-8 font-medium tracking-tight text-balance">从这里，开始构建。</h1>
+                <h1 id="welcome-title" className="text-[22px] leading-8 font-medium tracking-tight text-balance">{t("workspace:welcome")}</h1>
               </div>
               {composer}
               <ContinueSessions folder={selectedFolder} onSelect={workspace.selectSession} />
@@ -86,12 +89,12 @@ export function App() {
           <>
             <div id="session-content" key={selectedSessionId} tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">
               {workspace.history.isError && <HistoryColumn role="alert" className="space-y-2 py-4 text-xs leading-5">
-                <p>{sessionErrorMessage(workspace.history.error, "history")}</p>
-                {workspace.history.data && <p className="text-xs text-muted-foreground">当前显示上次加载的记录。</p>}
-                <Button variant="outline" size="sm" disabled={workspace.history.isFetching} onClick={() => void workspace.history.refetch()}>重试加载历史</Button>
+                <p>{sessionErrorMessage(t, workspace.history.error, "history")}</p>
+                {workspace.history.data && <p className="text-xs text-muted-foreground">{t("sessions:cachedHistory")}</p>}
+                <Button variant="outline" size="sm" disabled={workspace.history.isFetching} onClick={() => void workspace.history.refetch()}>{t("sessions:retryHistory")}</Button>
               </HistoryColumn>}
-              {workspace.history.data?.state.error && <HistoryColumn role="status" className="py-2 text-xs leading-5 text-destructive">{workspace.history.data.state.error}</HistoryColumn>}
-              {!workspace.connected && workspace.history.data && <HistoryColumn role="status" className="py-2 text-xs leading-5 text-muted-foreground">{workspace.history.connection === "error" ? "无法订阅会话，请从 CLI 重新运行 /web。" : "正在连接实时会话，已有内容和草稿会保留。"}</HistoryColumn>}
+              {workspace.history.data?.state.error && <HistoryColumn role="status" className="py-2 text-xs leading-5 text-destructive">{presentNotice(t, workspace.history.data.state.notice, workspace.history.data.state.error)}</HistoryColumn>}
+              {!workspace.connected && workspace.history.data && <HistoryColumn role="status" className="py-2 text-xs leading-5 text-muted-foreground">{workspace.history.connection === "error" ? t("errors:subscribe") : t("sessions:connectingPreserved")}</HistoryColumn>}
               {workspace.history.isPending ? <HistoryLoading /> : selectedSession?.historyLoaded && (
                 <Suspense fallback={<HistoryLoading />}><SessionContent session={selectedSession} busy={workspace.busy} phase={view?.state.phase} connected={workspace.connected} /></Suspense>
               )}

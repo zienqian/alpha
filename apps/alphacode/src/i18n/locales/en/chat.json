@@ -1,0 +1,47 @@
+{
+  "note": {
+    "incomplete": "Response incomplete",
+    "preview": "Incomplete preview"
+  },
+  "outcome": {
+    "completed": "Completed",
+    "refused": "Request refused by the model",
+    "incomplete": "Response incomplete",
+    "unknown": "Outcome unknown",
+    "limited": "Run limit reached",
+    "cancelled": "Stopped",
+    "failed": "Run failed"
+  },
+  "welcome": {
+    "tagline": "Code starts here.",
+    "title": "What would you like to build?",
+    "description": "Explore a project, fix a bug, or build something new."
+  },
+  "composer": {
+    "busy": "Working… draft your next message",
+    "placeholder": "Describe your task…"
+  },
+  "commands": {
+    "empty": "No matching commands · Esc Back",
+    "web": "Open this live session in your browser",
+    "permission": "Choose how tools and commands are approved",
+    "skills": "List available skills and loading diagnostics"
+  },
+  "activity": {
+    "closing": "Saving and exiting…",
+    "stopping": "Stopping…",
+    "approval": "Waiting for approval",
+    "saving": "Saving session…",
+    "queued": "Preparing next step…",
+    "reviewing": "Reviewing results…",
+    "working": "Working…",
+    "reconnecting": "Reconnecting to local server…"
+  },
+  "interrupt": " · esc to interrupt",
+  "completion": {
+    "cancelled": "Stopped after {{duration}} · {{time}}",
+    "failed": "Failed after {{duration}} · {{time}}",
+    "completed": "Worked for {{duration}} · {{time}}",
+    "other": "Ended after {{duration}} · {{time}}"
+  }
+}

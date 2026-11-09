@@ -1,11 +1,13 @@
 import { createRoot, flushSync } from "@opentui/react";
 import { createTestRenderer, type TestRendererOptions } from "@opentui/core/testing";
 import type { ReactNode } from "react";
+import { TerminalLanguageProvider } from "../src/ui/i18n-provider";
+import type { Locale } from "../src/i18n/locale";
 
-export async function testRender(node: ReactNode, options: TestRendererOptions) {
+export async function testRender(node: ReactNode, options: TestRendererOptions, locale: Locale = { language: "en", formatLocale: "en-US" }) {
   const ui = await createTestRenderer(options);
   const root = createRoot(ui.renderer);
-  const rerender = (content: ReactNode) => flushSync(() => root.render(content));
+  const rerender = (content: ReactNode) => flushSync(() => root.render(<TerminalLanguageProvider locale={locale}>{content}</TerminalLanguageProvider>));
   try { rerender(node); }
   catch (error) { await ui.dispose(); throw error; }
   const mockInput = Object.fromEntries(Object.entries(ui.mockInput).map(([name, method]) => [

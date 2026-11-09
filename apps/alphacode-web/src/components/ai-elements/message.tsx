@@ -1,3 +1,4 @@
+import { useTranslation } from "@/i18n/react";
 import { memo } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { Markdown } from "@/components/markdown";
@@ -8,6 +9,7 @@ import { Message, MessageContent, MessageFooter } from "@/components/ui/message"
 export const ChatMessage = memo(function ChatMessage({ role, content, streaming = false, showCopy = true }: {
   role: "user" | "assistant"; content: string; streaming?: boolean; showCopy?: boolean;
 }) {
+  const { t } = useTranslation();
   if (!content.trim()) return null;
   const isUser = role === "user";
   return (
@@ -19,7 +21,7 @@ export const ChatMessage = memo(function ChatMessage({ role, content, streaming 
           </Bubble>
         ) : <Markdown>{content}</Markdown>}
         {showCopy && !streaming && <MessageFooter className="pointer-events-none px-0 opacity-0 transition-opacity group-hover/message:pointer-events-auto group-hover/message:opacity-100 group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100">
-          <CopyButton value={content} label={isUser ? "复制你的消息" : "复制回复"} />
+          <CopyButton value={content} label={isUser ? t("common:copyUser") : t("common:copyReply")} />
         </MessageFooter>}
       </MessageContent>
     </Message>

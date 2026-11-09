@@ -2,6 +2,8 @@ import { cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 
 beforeEach(() => {
+  localStorage.removeItem("alphacode-language-v1");
+  Object.defineProperty(navigator, "languages", { configurable: true, value: ["zh-CN"] });
   // Layout/scroll APIs used by cmdk are not implemented by jsdom.
   vi.stubGlobal("ResizeObserver", class {
     observe = vi.fn();

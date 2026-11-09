@@ -20,10 +20,11 @@ describe("full conversation search", () => {
     const input = await openSearch();
     fireEvent.change(input, { target: { value: "主题变量" } });
     const result = await screen.findByRole("option", { name: /项目说明与约定/ });
+    await waitFor(() => expect(result.getAttribute("aria-selected")).toBe("true"));
     expect(result.querySelector("mark")?.textContent).toBe("主题变量");
     expect(api.fetch.mock.calls.some(([path]) => path === "/api/sessions/project-notes")).toBe(false);
     fireEvent.keyDown(input, { key: "Enter" });
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(await screen.findByRole("heading", { name: "开发约定" })).toBeTruthy();
   });
 
@@ -36,7 +37,7 @@ describe("full conversation search", () => {
     expect(options[0]?.getAttribute("aria-selected")).toBe("true");
     fireEvent.change(input, { target: { value: "pending" } });
     fireEvent.keyDown(input, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect((screen.getByRole("combobox") as HTMLInputElement).value).toBe("");
     expect(screen.getByText("最近会话")).toBeTruthy();
@@ -56,7 +57,7 @@ describe("full conversation search", () => {
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     fireEvent.change(input, { target: { value: "主题变量" } });
     fireEvent.click(await screen.findByRole("option", { name: /项目说明与约定/ }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(await screen.findByRole("heading", { name: "开发约定" })).toBeTruthy();
   });
 
@@ -70,9 +71,28 @@ describe("full conversation search", () => {
     expect(document.activeElement).toBe(input);
     fireEvent.change(input, { target: { value: "主题变量" } });
     fireEvent.click(await screen.findByRole("option", { name: /项目说明与约定/ }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(await screen.findByRole("heading", { name: "开发约定" })).toBeTruthy();
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "切换侧栏" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "切换侧栏" })));
+  });
+
+  it("can interrupt search exit without duplicating the dialog or losing keyboard focus", async () => {
+    const input = await openSearch();
+    fireEvent.keyDown(input, { key: "Escape" });
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    expect(screen.getAllByRole("dialog", { name: "搜索会话" })).toHaveLength(1);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("combobox")));
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "搜索会话" })));
+  });
+
+  it("restores focus to the main trigger when the sidebar closes during search", async () => {
+    const input = await openSearch();
+    fireEvent.keyDown(window, { key: "b", ctrlKey: true });
+    fireEvent.keyDown(input, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "切换侧栏" })));
   });
 
   it("shows a retryable error rather than claiming there are no matches", async () => {

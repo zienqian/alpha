@@ -1,3 +1,4 @@
+import { useTranslation } from "@/i18n/react";
 import { useState, type ReactNode } from "react";
 import { Workflow, type LucideIcon } from "lucide-react";
 import { MorphingSpinner } from "@/components/ui/morphing-spinner";
@@ -36,7 +37,8 @@ export function ReplyProgress({ hasContent = false, phase, connected = true }: {
   phase?: string;
   connected?: boolean;
 }) {
-  const label = !connected ? "等待重新连接" : phase === "stopping" ? "正在停止"
-    : phase === "saving" ? "正在保存会话" : hasContent ? "正在回复" : "正在思考";
+  const { t } = useTranslation();
+  const label = !connected ? t("sessions:awaitConnection") : phase === "stopping" ? t("sessions:stoppingShort")
+    : phase === "saving" ? t("sessions:saving") : hasContent ? t("sessions:replying") : t("sessions:thinking");
   return <ChainOfThought label={label} running={connected} indicator={<MorphingSpinner active={connected} />} />;
 }

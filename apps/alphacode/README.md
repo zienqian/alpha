@@ -207,3 +207,10 @@ bun run test
 AlphaCode 测试使用离线 SSE 夹具驱动真实 Provider、ADK、Coding Agent 和临时 SQLite，并用 OpenTUI 测试渲染器检查输入与增量显示；普通测试不会请求真实模型。
 
 工程使用 OpenTUI Core/React 0.8.1 和 React 19.3.1，组件通过 `@opentui/react` 的 `createRoot` 挂载。Markdown 行为参考 [OpenTUI 文档](https://opentui.com/docs/components/markdown/)。
+
+
+## 界面语言
+
+CLI/TUI 支持简体中文与英文，默认跟随系统：`alphacode --lang zh-CN` 或 `alphacode --lang en`。也可设置 `ALPHACODE_LANG`，或在 `~/.alphacode/config.yaml` 设置 `language: system` / `en` / `zh-CN`。命令行优先于环境变量，环境变量优先于配置；`system` 使用系统语言。`alphacode --help --lang zh-CN` 可在未配置模型时查看帮助。
+
+Web 在侧栏底部选择界面语言，保存在当前浏览器。CLI 与 Web 可为同一会话选择不同语言，模型回复和消息正文保持原文。实现与词典维护流程见 [国际化设计](../../docs/alphacode-i18n-technical-design.md)。

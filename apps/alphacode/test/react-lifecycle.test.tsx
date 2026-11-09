@@ -1,3 +1,4 @@
+import { TerminalLanguageProvider } from "../src/ui/i18n-provider";
 import { expect, test } from "bun:test";
 import { StrictMode } from "react";
 import { createRoot, flushSync } from "@opentui/react";
@@ -124,7 +125,7 @@ test("native keyboard events keep menu selection and Escape priority before Reac
   source.chat.setPermissionMode = async value => { mode = value; return true; };
   const ui = await createTestRenderer({ width: 100, height: 24, kittyKeyboard: true });
   try {
-    flushSync(() => createRoot(ui.renderer).render(<App chat={source.chat} onExit={() => undefined} />));
+    flushSync(() => createRoot(ui.renderer).render(<TerminalLanguageProvider locale={{ language: "en", formatLocale: "en-US" }}><App chat={source.chat} onExit={() => undefined} /></TerminalLanguageProvider>));
     await ui.mockInput.typeText("/permission");
     ui.mockInput.pressEnter();
     ui.mockInput.pressArrow("down");

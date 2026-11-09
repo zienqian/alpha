@@ -12,6 +12,7 @@ export function remoteChat(client: AlphaClient, initial: SessionView, launch = o
   let connected = false;
   let closed = false;
   let notice: string | undefined;
+  let noticeData: ChatState["notice"];
   const listeners = new Set<(state: ChatState) => void>();
   const abort = new AbortController();
   const path = `/api/sessions/${encodeURIComponent(initial.session.id)}`;
@@ -23,14 +24,15 @@ export function remoteChat(client: AlphaClient, initial: SessionView, launch = o
     } }),
     canSend: connected && !closed && view.state.canSend,
     activeRunStartedAt: view.state.activeRunStartedAt === undefined ? undefined : view.state.activeRunStartedAt - performance.timeOrigin,
-    error: notice ?? view.state.error,
+    error: notice ?? view.state.error, notice: noticeData ?? view.state.notice,
+    connection: connected ? "connected" : "reconnecting",
     ...(!connected ? { status: "Reconnecting to local server…" } : {}),
   });
   const publish = () => { for (const listener of listeners) listener(state()); };
-  const report = (error: unknown) => { notice = error instanceof Error ? error.message : "SERVER_UNAVAILABLE"; publish(); };
+  const report = (error: unknown) => { notice = error instanceof Error ? error.message : "SERVER_UNAVAILABLE"; noticeData = { code: notice }; publish(); };
   const action = async <T>(suffix: string, body: unknown) => {
     if (!connected || closed) throw new Error("SERVER_DISCONNECTED");
-    notice = undefined;
+    notice = undefined; noticeData = undefined;
     return client.request<T>(`${path}/${suffix}`, body, AbortSignal.timeout(15000));
   };
   void client.subscribe<SessionView>(`${path}/events`, next => {
@@ -49,7 +51,7 @@ export function remoteChat(client: AlphaClient, initial: SessionView, launch = o
         if (input.trim() === "/web") {
           const result = await client.request<{ url: string }>("/api/web", { sessionId: view.session.id });
           try { await launch(result.url); }
-          catch { notice = `Open this URL in your browser: ${result.url}`; publish(); }
+          catch { notice = `Open this URL in your browser: ${result.url}`; noticeData = { code: "OPEN_BROWSER", params: { url: result.url } }; publish(); }
           return;
         }
         await action("requests", { requestId, input });
@@ -72,8 +74,10 @@ export function remoteChat(client: AlphaClient, initial: SessionView, launch = o
 export async function connectApplication(config: AppConfig): Promise<Chat> {
   const descriptor = await ensureServer(config.databasePath);
   const client = createNativeClient(descriptor);
+  const serverConfig = { ...config };
+  delete serverConfig.language;
   const view = await client.request<SessionView>("/api/connect", {
-    config: { ...config, databasePath: descriptor.databasePath },
+    config: { ...serverConfig, databasePath: descriptor.databasePath },
     credential: config.noAuth ? undefined : process.env[config.apiKeyEnv],
   }, AbortSignal.timeout(30000));
   return remoteChat(client, view);

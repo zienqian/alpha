@@ -1,16 +1,19 @@
+import { useTranslation } from "@/i18n/react";
 import { useEffect, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-export function CopyButton({ value, label = "复制消息" }: { value: string; label?: string }) {
+export function CopyButton({ value, label }: { value: string; label?: string }) {
+  const { t } = useTranslation();
+  label ??= t("common:copyMessage");
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
   useEffect(() => {
     if (status === "idle") return;
     const timer = window.setTimeout(() => setStatus("idle"), 2000);
     return () => window.clearTimeout(timer);
   }, [status]);
-  const feedback = status === "copied" ? "已复制" : status === "error" ? "复制失败，请选择文字后复制" : "";
+  const feedback = status === "copied" ? t("common:copied") : status === "error" ? t("common:copyFailed") : "";
   return (
     <>
       <Tooltip>

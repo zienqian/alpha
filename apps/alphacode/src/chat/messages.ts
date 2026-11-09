@@ -7,7 +7,7 @@ export const statusLabels: Record<ChatRunStatus, string> = {
 
 const pending = (tool: ToolRecord) => tool.status === "queued" || tool.status === "running" || tool.status === "awaiting_approval";
 const toolMessage = (tool: ToolRecord): ChatMessage => ({
-  id: tool.id, role: "tool", text: tool.name, note: tool.status === "succeeded" ? "Completed" : tool.status, tool,
+  id: tool.id, role: "tool", text: tool.name, note: tool.status === "succeeded" ? "Completed" : tool.status, noteCode: tool.status, tool,
 });
 
 function upsertTools(messages: readonly ChatMessage[], tools: readonly ToolRecord[]): ChatMessage[] {
@@ -57,6 +57,8 @@ export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
     case "assistant.end":
       return { ...state, messages: change(event.id, () => ({
         streaming: false,
+        noteCode: event.outcome === "failed" || event.outcome === "cancelled" ? "INCOMPLETE_PREVIEW"
+          : event.outcome === "completed" || event.outcome === "tool_calls" ? undefined : event.outcome,
         note: event.outcome === "failed" || event.outcome === "cancelled" ? "Incomplete preview"
           : event.outcome === "completed" || event.outcome === "tool_calls" ? undefined : statusLabels[event.outcome],
       })) };
@@ -71,6 +73,6 @@ export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
       return { ...state, messages, phase: running ? "running" : "queued", status: running?.description ?? "Preparing next step…" };
     }
     case "run.end":
-      return { ...state, phase: "saving", status: "Saving session…", messages: settlePendingTools(state.messages) };
+      return { ...state, phase: "saving", lastRunStatus: event.status, status: "Saving session…", messages: settlePendingTools(state.messages) };
   }
 }

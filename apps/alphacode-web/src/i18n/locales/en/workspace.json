@@ -1,0 +1,17 @@
+{
+  "registerProject": "Register a project in the CLI first",
+  "toggleSidebar": "Toggle sidebar",
+  "toggleSidebarHint": "Toggle sidebar (Ctrl / ⌘ + B)",
+  "welcome": "Start building here.",
+  "unselected": "No workspace selected",
+  "copyPath": "Copy workspace path",
+  "sidebar": "Workspace sidebar",
+  "closeSidebar": "Close sidebar",
+  "title": "Workspaces",
+  "folders": "Folders and conversations",
+  "local": "Local workspace",
+  "mobileTitle": "Projects and conversations",
+  "mobileDescription": "Search projects and select a conversation to view its history.",
+  "folder": "Folder {{name}}",
+  "createIn": "New conversation in {{name}}"
+}

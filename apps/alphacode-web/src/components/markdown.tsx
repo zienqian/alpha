@@ -1,3 +1,4 @@
+import { useTranslation } from "@/i18n/react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import { isValidElement, type ReactNode } from "react";
 import remarkGfm from "remark-gfm";
@@ -35,6 +36,7 @@ export function Markdown({ children, className }: MarkdownProps) {
 }
 
 function MarkdownCodeBlock({ children }: { children?: ReactNode }) {
+  const { t } = useTranslation();
   const code = isValidElement<{ children?: string; className?: string }>(children) ? children.props : undefined;
   const value = typeof code?.children === "string" ? code.children.replace(/\n$/, "") : "";
   const language = /language-(\S+)/.exec(code?.className ?? "")?.[1] ?? "text";
@@ -43,7 +45,7 @@ function MarkdownCodeBlock({ children }: { children?: ReactNode }) {
     <CodeBlock className="my-4 rounded-lg text-xs ring-0">
       <CodeBlockHeader className="border-b px-3 py-1.5">
         <CodeBlockTitle className="font-mono text-xs font-normal text-muted-foreground">{language}</CodeBlockTitle>
-        <CodeBlockActions><CopyButton value={value} label="复制代码" /></CodeBlockActions>
+        <CodeBlockActions><CopyButton value={value} label={t("common:copyCode")} /></CodeBlockActions>
       </CodeBlockHeader>
       <CodeBlockContent className="max-h-96 py-3 leading-5">
         {lines.map((line, index) => <CodeBlockLine key={index}>{line}</CodeBlockLine>)}

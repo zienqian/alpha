@@ -8,8 +8,11 @@ import { Conversation } from "./components/conversation";
 import { StatusBar } from "./components/status-bar";
 import { useChatKeyboard } from "./keyboard";
 import { colors } from "./theme";
+import { useTranslation } from "../i18n/react";
+import { presentNotice } from "../i18n/presentation";
 
 export function App(props: { chat: Chat; onExit: () => void }) {
+  const { t } = useTranslation();
   const chatStore = useMemo(() => {
     let snapshot = props.chat.state;
     return {
@@ -32,7 +35,7 @@ export function App(props: { chat: Chat; onExit: () => void }) {
       <Conversation messages={state.messages} />
       <box id="composer-dock" flexDirection="column" width="100%" flexShrink={0} paddingTop={1}>
         {state.approval && <ApprovalPanel request={state.approval} maxHeight={Math.max(4, Math.min(9, dimensions.height - 13))} />}
-        {state.error && <text fg={colors.error} flexShrink={0} maxHeight={2}>{state.error}</text>}
+        {state.error && <text fg={colors.error} flexShrink={0} maxHeight={2}>{presentNotice(t, state.notice, state.error)}</text>}
         <ComposerStatus state={state} />
         <Composer
           skills={props.chat.skills}

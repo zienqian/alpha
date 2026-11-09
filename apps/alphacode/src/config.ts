@@ -1,3 +1,5 @@
+import type { LanguagePreference } from "./i18n/locale";
+import { parseLanguageArgs, resolveCliLocale } from "./i18n/preferences";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import type { PermissionMode } from "./chat/contracts";
@@ -7,6 +9,7 @@ import { readGlobalConfig, type GlobalDefaults, type SkillsSettings } from "./gl
 export { ConfigurationError } from "./errors";
 
 export interface AppConfig {
+  language?: LanguagePreference;
   skills?: SkillsSettings;
   workspaceRoot: string;
   databasePath: string;
@@ -49,19 +52,22 @@ export function readConfig(
   cwd = process.cwd(),
   defaults: GlobalDefaults = {},
 ): AppConfig {
+  const locale = resolveCliLocale(env, args, defaults.language);
+  args = parseLanguageArgs(args).positional;
   if (args.length > 1 || args[0]?.startsWith("-")) {
-    throw new ConfigurationError("Usage: alphacode [workspace path]");
+    throw new ConfigurationError("Usage: alphacode [--lang system|en|zh-CN] [workspace path]", { code: "CLI_USAGE" });
   }
   const directory = configDirectory(env, cwd);
   const modelId = env.ADK_MODEL?.trim() ?? defaults.modelId;
-  if (!modelId) throw new ConfigurationError(`Set ADK_MODEL or model.id in ${join(directory, "config.yaml")}.`);
+  if (!modelId) throw new ConfigurationError(`Set ADK_MODEL or model.id in ${join(directory, "config.yaml")}.`, { code: "MODEL_REQUIRED", params: { file: join(directory, "config.yaml") } });
   if (env.ADK_AUTH && env.ADK_AUTH !== "none" && env.ADK_AUTH !== "api_key") {
-    throw new ConfigurationError("ADK_AUTH must be none or api_key. Set the API key in the environment variable named by ADK_API_KEY_ENV.");
+    throw new ConfigurationError("ADK_AUTH must be none or api_key. Set the API key in the environment variable named by ADK_API_KEY_ENV.", { code: "INVALID_AUTH" });
   }
   const permissionMode = env.ALPHACODE_PERMISSION ?? defaults.permissionMode ?? "ask";
-  if (permissionMode !== "ask" && permissionMode !== "auto" && permissionMode !== "full") throw new ConfigurationError("ALPHACODE_PERMISSION must be ask, auto, or full.");
+  if (permissionMode !== "ask" && permissionMode !== "auto" && permissionMode !== "full") throw new ConfigurationError("ALPHACODE_PERMISSION must be ask, auto, or full.", { code: "INVALID_PERMISSION" });
   const noAuth = env.ADK_AUTH ? env.ADK_AUTH === "none" : env.ADK_API_KEY_ENV !== undefined ? false : defaults.noAuth ?? false;
   return {
+    language: locale.preference,
     workspaceRoot: resolve(cwd, expandHome(args[0] ?? env.ALPHACODE_WORKSPACE ?? cwd)),
     databasePath: env.ALPHACODE_DB !== undefined ? resolve(cwd, expandHome(env.ALPHACODE_DB))
       : resolve(directory, expandHome(defaults.databasePath ?? "sessions.db")),

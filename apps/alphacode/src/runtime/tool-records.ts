@@ -40,7 +40,7 @@ export function createToolRecord(assistantId: string, call: Call): ToolRecord {
   };
 }
 
-function preview(text: string): Pick<ToolRecord, "output" | "omittedLines" | "truncated"> {
+function preview(text: string): Pick<ToolRecord, "output" | "outputLines" | "omittedLines" | "truncated"> {
   const lines = plain(text).trimEnd().split("\n");
   const omittedLines = lines.length > 8 ? lines.length - 7 : 0;
   const selected = omittedLines ? [...lines.slice(0, 4), `… ${omittedLines} lines omitted …`, ...lines.slice(-3)] : lines;
@@ -51,7 +51,9 @@ function preview(text: string): Pick<ToolRecord, "output" | "omittedLines" | "tr
     clipped = true;
     return `${chars.slice(0, 239).join("")}…`;
   }).join("\n");
-  return { output, omittedLines, truncated: clipped };
+  const outputLines = output.split("\n");
+  if (omittedLines) outputLines.splice(4, 1);
+  return { output, outputLines, omittedLines, truncated: clipped };
 }
 
 function codingOutput(name: string, data: Record<string, unknown>): string {
@@ -74,12 +76,15 @@ export function completeToolRecord(tool: ToolRecord, result: Pick<ToolResultMess
     if (!isObject(value) || typeof value.ok !== "boolean") {
       record.status = "outcome_unknown";
       record.error = "Invalid tool result";
+      record.errorCode = "INVALID_TOOL_RESULT";
     } else {
       const data = value.ok ? value.data : value.detail;
       record.status = value.ok ? "succeeded" : "failed";
-      if (!value.ok) record.error = displayText(value.code) || "Tool reported failure";
+      if (!value.ok) { record.error = displayText(value.code) || "Tool reported failure"; record.errorCode = displayText(value.code) || "TOOL_FAILED"; }
       if (isObject(data)) {
         output = codingOutput(tool.name, data);
+        if (value.ok && tool.name === "edit_file" && data.changed === true) record.summaryCode = "FILE_UPDATED";
+        if (value.ok && tool.name === "create_file" && data.created === true) record.summaryCode = "FILE_CREATED";
         record.truncated = data.truncated === true;
         record.outputIncomplete = data.outputIncomplete === true;
         if (typeof data.exitCode === "number" && Number.isInteger(data.exitCode)) {
@@ -90,6 +95,7 @@ export function completeToolRecord(tool: ToolRecord, result: Pick<ToolResultMess
       if (tool.name === "run_command" && value.ok && record.exitCode === undefined) {
         record.status = "outcome_unknown";
         record.error = "Command exit code unavailable";
+        record.errorCode = "COMMAND_EXIT_UNAVAILABLE";
       }
     }
   }

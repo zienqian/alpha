@@ -1,0 +1,61 @@
+{
+  "approval": "Tool execution approval",
+  "allowOnce": "Allow once",
+  "deny": "Deny",
+  "activity": "Tool activity",
+  "allow": "Allow {{toolName}} to run?",
+  "steps_one": "Execution · {{count}} step",
+  "steps_other": "Execution · {{count}} steps",
+  "records": "Tool execution records",
+  "call": "Tool call",
+  "details": "View details",
+  "exit": "Exit code {{code}}",
+  "incomplete": "Output incomplete.",
+  "omitted_one": "Output incomplete; {{count}} line omitted.",
+  "omitted_other": "Output incomplete; {{count}} lines omitted.",
+  "status": {
+    "queued": "Queued",
+    "running": "Running",
+    "awaiting_approval": "Awaiting approval",
+    "succeeded": "Completed",
+    "failed": "Failed",
+    "denied": "Denied",
+    "not_executed": "Not executed",
+    "outcome_unknown": "Result unconfirmed"
+  },
+  "description": {
+    "command": "Run command: {{target}}",
+    "read": "Read file: {{target}}",
+    "edit": "Edit file: {{target}}",
+    "create": "Create file: {{target}}",
+    "search": "Search: {{target}}",
+    "list": "List files: {{target}}",
+    "skill": "Read skill: {{target}}",
+    "other": "Run tool: {{target}}"
+  },
+  "result": {
+    "updated": "File updated.",
+    "created": "File created."
+  },
+  "omission_one": "… {{count}} line omitted …",
+  "omission_other": "… {{count}} lines omitted …",
+  "invalidResult": "Invalid tool result",
+  "missingExit": "Command exit code unavailable",
+  "reportedFailure": "Tool reported failure",
+  "counts": {
+    "awaiting_approval_one": "{{count}} action awaiting approval",
+    "awaiting_approval_other": "{{count}} actions awaiting approval",
+    "running_one": "{{count}} action running",
+    "running_other": "{{count}} actions running",
+    "queued_one": "{{count}} action queued",
+    "queued_other": "{{count}} actions queued",
+    "failed_one": "{{count}} action failed",
+    "failed_other": "{{count}} actions failed",
+    "denied_one": "{{count}} action denied",
+    "denied_other": "{{count}} actions denied",
+    "outcome_unknown_one": "{{count}} action unconfirmed",
+    "outcome_unknown_other": "{{count}} actions unconfirmed",
+    "not_executed_one": "{{count}} action not executed",
+    "not_executed_other": "{{count}} actions not executed"
+  }
+}

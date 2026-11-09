@@ -10,7 +10,11 @@
     "ui:add": "bun --bun run shadcn add",
     "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit && bun --bun run tsrs -p tsconfig.tools.json --noEmit",
     "lint": "bun --bun run eslint src test vite.config.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "i18n-check": "bun ../../scripts/check-i18n.ts",
+    "i18n-types": "bun --bun run i18next-cli types",
+    "i18n:report": "bun --bun run x18n check --root .",
+    "i18n:review": "bun ../../scripts/check-i18n.ts --record-review"
   },
   "dependencies": {
     "@shadcn/react": "0.3.1",
@@ -18,10 +22,13 @@
     "class-variance-authority": "0.7.1",
     "cmdk": "1.1.1",
     "cn": "0.5.2",
+    "i18next": "27.0.1",
     "lucide-react": "1.70.0",
+    "motion": "14.11.1",
     "radix-ui": "1.8.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "react-i18next": "18.0.1",
     "react-markdown": "10.1.0",
     "remark-gfm": "4.0.1",
     "shiki": "4.6.0"
@@ -46,6 +53,8 @@
     "node": ">=22.12.0"
   },
   "nx": {
-    "tags": ["layer:web"]
+    "tags": [
+      "layer:web"
+    ]
   }
 }

@@ -1,0 +1,46 @@
+{
+  "status": {
+    "queued": "Queued",
+    "running": "Running",
+    "awaiting_approval": "Awaiting approval",
+    "succeeded": "Completed",
+    "failed": "Failed",
+    "denied": "Denied",
+    "not_executed": "Not executed",
+    "outcome_unknown": "Result unconfirmed"
+  },
+  "description": {
+    "command": "Run command: {{target}}",
+    "read": "Read file: {{target}}",
+    "edit": "Edit file: {{target}}",
+    "create": "Create file: {{target}}",
+    "search": "Search: {{target}}",
+    "list": "List files: {{target}}",
+    "skill": "Read skill: {{target}}",
+    "other": "Run tool: {{target}}"
+  },
+  "result": {
+    "updated": "File updated.",
+    "created": "File created."
+  },
+  "omission_one": "… {{count}} line omitted …",
+  "omission_other": "… {{count}} lines omitted …",
+  "invalidResult": "Invalid tool result",
+  "missingExit": "Command exit code unavailable",
+  "reportedFailure": "Tool reported failure",
+  "verb": {
+    "run_command": "Ran",
+    "read_file": "Read",
+    "edit_file": "Edited",
+    "create_file": "Created",
+    "search": "Searched",
+    "list_files": "Listed",
+    "other": "Used"
+  },
+  "failedExit": "Failed (exit {{code}})",
+  "exit": "exit {{code}}",
+  "preview": "Output preview (up to 8 rows)",
+  "truncated": "Truncated",
+  "incomplete": "Output incomplete",
+  "cwd": "cwd: {{path}}"
+}

@@ -43,7 +43,7 @@ async function discover(path: string, databasePath: string): Promise<ServerDescr
   const descriptor = await readJson<ServerDescriptor>(path);
   if (!descriptor || !alive(descriptor.pid)) return undefined;
   if (descriptor.databasePath !== databasePath || descriptor.protocolVersion !== protocolVersion || !/^http:\/\/127\.0\.0\.1:\d+$/.test(descriptor.origin)) {
-    throw new ConfigurationError("An incompatible AlphaCode server is running for this database. Close its clients and restart after it exits.");
+    throw new ConfigurationError("An incompatible AlphaCode server is running for this database. Close its clients and restart after it exits.", { code: "SERVER_INCOMPATIBLE" });
   }
   try {
     const info = await createNativeClient(descriptor).request<{ instanceId: string; protocolVersion: number }>("/api/info", undefined, AbortSignal.timeout(1500));
@@ -72,7 +72,7 @@ export async function ensureServer(databasePath: string) {
   } finally { await log.close(); }
   const deadline = Date.now() + 20000;
   while (Date.now() < deadline) {
-    if (launchError) throw new ConfigurationError("Could not start the local AlphaCode server.", { cause: launchError });
+    if (launchError) throw new ConfigurationError("Could not start the local AlphaCode server.", { cause: launchError, code: "SERVER_START_FAILED" });
     const found = await discover(paths.descriptor, paths.database);
     if (found) {
       if (child.pid !== found.pid && child.exitCode === null) child.kill();
@@ -80,7 +80,7 @@ export async function ensureServer(databasePath: string) {
     }
     await Bun.sleep(100);
   }
-  throw new ConfigurationError(`Local server did not become ready. Inspect ${join(paths.directory, "server.log")}; an existing owner may still be starting.`);
+  throw new ConfigurationError(`Local server did not become ready. Inspect ${join(paths.directory, "server.log")}; an existing owner may still be starting.`, { code: "SERVER_START_TIMEOUT", params: { file: join(paths.directory, "server.log") } });
 }
 
 export async function removeDescriptor(path: string, instanceId: string) {

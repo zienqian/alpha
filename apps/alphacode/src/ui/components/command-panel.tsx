@@ -1,3 +1,4 @@
+import { useTranslation } from "../../i18n/react";
 import { useTerminalDimensions } from "@opentui/react";
 import type { ChatSkill, PermissionMode } from "../../chat/contracts";
 import { matchingCommands, permissionOptions } from "../commands";
@@ -12,14 +13,15 @@ export function CommandPanel(props: {
   busy: boolean;
   settingsSaving: boolean;
 }) {
+  const { t } = useTranslation();
   const dimensions = useTerminalDimensions();
   const compact = dimensions.width < 76;
-  const options = props.permission ? permissionOptions : matchingCommands(props.query, props.skills);
+  const options = props.permission ? permissionOptions.map(option => ({ ...option, name: t(option.name), description: t(option.description) })) : matchingCommands(props.query, props.skills, t);
   return (
     <box id="command-panel" flexDirection="column" flexShrink={0} marginBottom={1}>
       {props.permission && (
         <text fg={colors.muted} paddingX={1} height={1} truncate wrapMode="none">
-          {props.settingsSaving ? "/permission · Saving…" : props.busy ? "/permission · Available after this task" : "/permission · Session · ↑↓ · Enter Apply · Esc Back"}
+          {props.settingsSaving ? t("permissions:saving") : props.busy ? t("permissions:busy") : t("permissions:hint")}
         </text>
       )}
       {options.map((option, index) => (
@@ -35,11 +37,11 @@ export function CommandPanel(props: {
         </box>
       ))}
       {options.length === 0 && (
-        <text fg={colors.muted} paddingX={1} height={1} truncate wrapMode="none">No matching commands · Esc Back</text>
+        <text fg={colors.muted} paddingX={1} height={1} truncate wrapMode="none">{t("chat:commands.empty")}</text>
       )}
       {props.permission && compact && (
         <text fg={colors.muted} paddingX={1} maxHeight={2}>
-          {permissionOptions[props.selected]?.description}
+          {options[props.selected]?.description}
         </text>
       )}
     </box>

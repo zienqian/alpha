@@ -1,0 +1,9 @@
+{
+  "generic": "An error occurred ({{code}}).",
+  "unsaved": "Session not saved. Saving will be retried on exit.",
+  "blocked": "Execution state could not be confirmed. Exit and start a new session.",
+  "permissionSave": "Could not save permissions: {{code}}. Previous permissions remain active.",
+  "exit": "Exit failed. Press Ctrl+C to retry.",
+  "openBrowser": "Open this URL in your browser: {{url}}",
+  "disconnected": "Disconnected from the local server. Waiting to reconnect."
+}

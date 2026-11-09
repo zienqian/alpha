@@ -1,0 +1,14 @@
+{
+  "copyMessage": "复制消息",
+  "copied": "已复制",
+  "copyFailed": "复制失败，请选择文字后复制",
+  "copyCode": "复制代码",
+  "copyUser": "复制你的消息",
+  "copyReply": "复制回复",
+  "close": "关闭",
+  "toggleSidebar": "切换侧栏",
+  "more": "更多",
+  "breadcrumb": "导航路径",
+  "scrollEnd": "滚动到底部",
+  "scrollStart": "滚动到顶部"
+}

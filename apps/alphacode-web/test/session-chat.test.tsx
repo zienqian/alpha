@@ -11,7 +11,7 @@ const path = `/api/sessions/${id}`;
 beforeEach(() => { window.history.replaceState(null, "", `/?session=${id}`); api = mockSessionApi(); });
 async function open() {
   const app = render(<AppProviders><App /></AppProviders>);
-  await screen.findByText("Enter 发送 · Shift+Enter 换行");
+  await waitFor(() => expect(api.streams.get(`${path}/events`)?.size).toBe(1));
   return app;
 }
 const input = () => screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement;
@@ -80,16 +80,15 @@ describe("live conversation", () => {
     expect(input().value).toBe("保留后续草稿");
   });
 
-  it("does not submit on Shift+Enter, IME confirmation, or with unsupported attachments", async () => {
+  it("submits on Enter but not Shift+Enter or IME confirmation", async () => {
     await open();
     fireEvent.change(input(), { target: { value: "中文输入" } });
     fireEvent.keyDown(input(), { key: "Enter", shiftKey: true });
     fireEvent.keyDown(input(), { key: "Enter", isComposing: true });
     fireEvent.keyDown(input(), { key: "Enter", keyCode: 229 });
-    fireEvent.change(screen.getByLabelText("添加附件"), { target: { files: [new File(["text"], "draft.txt")] } });
-    fireEvent.keyDown(input(), { key: "Enter" });
     expect(sends()).toHaveLength(0);
-    expect(screen.getByText("附件暂不支持发送，请移除附件后发送文字。")).toBeTruthy();
+    fireEvent.keyDown(input(), { key: "Enter" });
+    await waitFor(() => expect(sends()).toHaveLength(1));
   });
 
   it("keeps a late send response attached to its original session after navigation", async () => {
@@ -138,7 +137,7 @@ describe("live conversation", () => {
     expect(screen.getByText("最新回复")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
     await waitFor(() => expect(api.streams.get(`${path}/events`)?.size).toBe(0));
-    await screen.findByText("Enter 发送 · Shift+Enter 换行");
+    await waitFor(() => expect(api.streams.get("/api/sessions/workspace-layout/events")?.size).toBe(1));
     app.unmount();
     await waitFor(() => expect([...api.streams.values()].every(set => set.size === 0)).toBe(true));
   });

@@ -51,7 +51,7 @@ export function TraceCollapsibleTrigger({ className, children, ...props }: Omit<
 
 export function TraceCollapsibleContent({ className, children, ...props }: Omit<ComponentProps<typeof CollapsibleContent>, "asChild">) {
   return <CollapsibleContent data-slot="trace-collapsible-content"
-    className="min-w-0 overflow-hidden duration-200 [--radix-accordion-content-height:var(--radix-collapsible-content-height)] data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up" {...props}>
+    className="min-w-0" {...props}>
     <div data-slot="trace-collapsible-content-inner" className={cn(
       "mt-1 mb-1 ml-1.5 min-w-0 border-l pr-1 pl-4 text-xs leading-relaxed wrap-break-word text-muted-foreground",
       className,

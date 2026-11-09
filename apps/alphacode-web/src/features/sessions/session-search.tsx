@@ -1,7 +1,11 @@
+import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
 import { Dialog } from "radix-ui";
+import { AnimatePresence } from "motion/react";
+import * as m from "motion/react-m";
+import { exitTransition, surfaceMotion, surfaceTransition } from "@/lib/motion";
 import { CornerDownLeft, MessageSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { searchSessions, type SessionSearchResult } from "@/features/sessions/api";
@@ -30,24 +34,36 @@ interface SessionSearchProps {
   onCloseFocus: () => void;
 }
 
-const roleLabels = { user: "你", assistant: "助手", tool: "工具" };
+const roleLabels = { user: "sessions:role.user", assistant: "sessions:role.assistant", tool: "sessions:role.tool" } as const;
 
 export function SessionSearch({ open, onOpenChange, folders, onSelectSession, onCloseFocus }: SessionSearchProps) {
+  const { t } = useTranslation();
+  // Presence retains the exiting subtree; restore focus using current sidebar state.
+  const closeFocusRef = useRef(onCloseFocus);
+  useEffect(() => { closeFocusRef.current = onCloseFocus; }, [onCloseFocus]);
   return <Dialog.Root open={open} onOpenChange={onOpenChange}>
-    <Dialog.Portal>
-      <Dialog.Overlay className="fixed inset-0 z-50 bg-black/20 motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:duration-150 dark:bg-black/45" />
-      <Dialog.Content aria-describedby="session-search-description"
-        onCloseAutoFocus={(event) => { event.preventDefault(); onCloseFocus(); }}
-        className="fixed top-[max(1rem,10dvh)] left-1/2 z-50 w-[calc(100%-2rem)] max-w-[640px] -translate-x-1/2 outline-none sm:top-[20dvh] motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:zoom-in-95 motion-safe:duration-150">
-        <Dialog.Title className="sr-only">搜索会话</Dialog.Title>
-        <Dialog.Description id="session-search-description" className="sr-only">搜索所有工作区的会话标题、路径和消息内容。使用上下方向键选择，Enter 打开，Esc 关闭。</Dialog.Description>
+    <AnimatePresence>
+    {open && <Dialog.Portal forceMount>
+      <Dialog.Overlay asChild forceMount>
+        <m.div className="fixed inset-0 z-50 bg-black/20 dark:bg-black/45"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: exitTransition }} transition={surfaceTransition} />
+      </Dialog.Overlay>
+      <Dialog.Content asChild forceMount aria-describedby="session-search-description"
+        onCloseAutoFocus={(event) => { event.preventDefault(); closeFocusRef.current(); }}
+        className="fixed top-[max(1rem,10dvh)] left-1/2 z-50 w-[calc(100%-2rem)] max-w-[640px] -translate-x-1/2 outline-none sm:top-[20dvh]">
+        <m.div {...surfaceMotion}>
+        <Dialog.Title className="sr-only">{t("sessions:search")}</Dialog.Title>
+        <Dialog.Description id="session-search-description" className="sr-only">{t("sessions:searchDescription")}</Dialog.Description>
         <SearchContent folders={folders} onSelect={(id) => { onOpenChange(false); onSelectSession(id); }} />
+        </m.div>
       </Dialog.Content>
-    </Dialog.Portal>
+    </Dialog.Portal>}
+    </AnimatePresence>
   </Dialog.Root>;
 }
 
 function SearchContent({ folders, onSelect }: { folders: SessionFolder[]; onSelect: (id: string) => void }) {
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [query, setQuery] = useState("");
   const [composing, setComposing] = useState(false);
@@ -78,43 +94,44 @@ function SearchContent({ folders, onSelect }: { folders: SessionFolder[]; onSele
 
   // Results are already matched against full history by the server. Let cmdk own
   // selection/accessibility without filtering or reordering those results again.
-  return <Command label="搜索会话内容" shouldFilter={false} loop vimBindings={false} className="session-search-command">
+  return <Command label={t("sessions:searchContent")} shouldFilter={false} loop vimBindings={false} className="session-search-command">
     <div className="search-input-row">
       <Command.Input ref={inputRef} maxLength={500}
-        placeholder="搜索所有会话内容…" value={input}
+        placeholder={t("sessions:searchPlaceholder")} value={input}
         onValueChange={setInput}
         onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} />
-      {input && <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="清除搜索" onClick={() => { setInput(""); setQuery(""); inputRef.current?.focus(); }}><X aria-hidden="true" /></Button>}
-      <Dialog.Close asChild><Button variant="ghost" size="sm" aria-label="关闭搜索" className="search-close"><kbd>Esc</kbd></Button></Dialog.Close>
+      {input && <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("sessions:clearSearch")} onClick={() => { setInput(""); setQuery(""); inputRef.current?.focus(); }}><X aria-hidden="true" /></Button>}
+      {/* i18next-instrument-ignore-next-line — Physical keyboard key. */}
+      <Dialog.Close asChild><Button variant="ghost" size="sm" aria-label={t("sessions:closeSearch")} className="search-close"><kbd>Esc</kbd></Button></Dialog.Close>
     </div>
-    <Command.List label="搜索结果" aria-busy={waiting}>
-      {waiting ? <Command.Loading label="正在搜索全部会话" className="search-state">正在搜索全部会话…</Command.Loading>
+    <Command.List label={t("sessions:searchResults")} aria-busy={waiting}>
+      {waiting ? <Command.Loading label={t("sessions:searchingLabel")} className="search-state">{t("sessions:searching")}</Command.Loading>
         : <div role="status" aria-live="polite" className="sr-only">
-          {search.isError ? "搜索未完成" : `找到 ${results.length} 个会话`}
+          {search.isError ? t("sessions:searchIncomplete") : t("sessions:found", { count: results.length })}
         </div>}
       {normalized && !waiting && search.isError && <div role="alert" className="search-state space-y-3">
-        <p>无法搜索会话，请确认本地服务仍在运行。</p>
-        <Button variant="outline" size="sm" onClick={() => void search.refetch()}>重试搜索</Button>
+        <p>{t("errors:search")}</p>
+        <Button variant="outline" size="sm" onClick={() => void search.refetch()}>{t("sessions:retrySearch")}</Button>
       </div>}
       {!waiting && !search.isError && <Command.Empty>
-        <p className="text-sm">{normalized ? "没有找到匹配的会话" : "暂无会话"}</p>
-        <p className="mt-2 text-xs text-muted-foreground">{normalized ? "试试其他关键词，也可以搜索消息中的代码或项目路径。" : "开始对话后，可以在这里搜索历史内容。"}</p>
+        <p className="text-sm">{normalized ? t("sessions:noMatches") : t("sessions:none")}</p>
+        <p className="mt-2 text-xs text-muted-foreground">{normalized ? t("sessions:searchSuggestion") : t("sessions:searchEmpty")}</p>
       </Command.Empty>}
-      {results.length > 0 && <Command.Group heading={normalized ? `搜索结果 · ${results.length}` : "最近会话"}>
+      {results.length > 0 && <Command.Group heading={normalized ? t("sessions:resultCount", { count: results.length }) : t("sessions:recent")}>
         {results.map((result) => <Command.Item key={result.session.id} value={result.session.id}
           onMouseDown={(event) => event.preventDefault()} onSelect={() => onSelect(result.session.id)}
           data-search-hit={Boolean(normalized)}>
           <MessageSquare className="search-result-icon" aria-hidden="true" />
           <div className="search-result-content">
             <div className="search-result-heading">
-              <span className="search-result-title" title={result.session.title}><Highlight text={result.session.title} query={normalized} /></span>
+              <span className="search-result-title" title={result.session.title || t("sessions:untitled")}><Highlight text={result.session.title || t("sessions:untitled")} query={normalized} /></span>
               {!normalized && <span className="search-project" title={result.session.workspaceRoot}>{result.session.workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1)}</span>}
-              {result.matchCount > 0 && <span className="search-result-count">{result.matchCount} 条匹配</span>}
-              {result.session.status === "local" && <span className="search-project">草稿</span>}
+              {result.matchCount > 0 && <span className="search-result-count">{t("sessions:matchCount", { count: result.matchCount })}</span>}
+              {result.session.status === "local" && <span className="search-project">{t("sessions:draftBadge")}</span>}
             </div>
             {normalized && <p className="search-result-path" title={result.session.workspaceRoot}><Highlight text={result.session.workspaceRoot} query={normalized} /></p>}
             {result.snippets.map(snippet => <p key={snippet.messageId} className="search-result-snippet">
-              <span className="mr-1.5">{roleLabels[snippet.role]}:</span><Highlight text={snippet.text} query={normalized} />
+              <span className="mr-1.5">{t(roleLabels[snippet.role])}:</span><Highlight text={snippet.text} query={normalized} />
             </p>)}
           </div>
           <span className="search-shortcuts search-result-shortcut" aria-hidden="true"><kbd><CornerDownLeft /></kbd></span>

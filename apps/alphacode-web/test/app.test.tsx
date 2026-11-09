@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "@/app";
 import { AppProviders } from "@/components/providers";
@@ -19,6 +19,8 @@ describe("Session workspace", () => {
     expect(screen.getByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
     expect(screen.queryByRole("list", { name: "会话消息" })).toBeNull();
     expect(screen.getByRole("textbox", { name: "消息草稿" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "添加上下文附件" })).toBeNull();
+    expect(screen.queryByLabelText("添加附件")).toBeNull();
     expect(screen.getByRole("button", { name: "新会话" }).getAttribute("aria-current")).toBe("page");
   });
 
@@ -28,7 +30,7 @@ describe("Session workspace", () => {
     expect(screen.getByRole("navigation", { name: "文件夹与会话" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("搭建前端工作区");
     expect(await screen.findByRole("table", {}, { timeout: 5000 })).toBeTruthy();
-    expect(await screen.findByText("Enter 发送 · Shift+Enter 换行")).toBeTruthy();
+    expect(screen.queryByText("Enter 发送 · Shift+Enter 换行")).toBeNull();
     expect(within(screen.getByRole("list", { name: "会话消息" })).getAllByRole("article")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "搭建前端工作区" }).getAttribute("aria-current")).toBe("page");
   });
@@ -75,7 +77,7 @@ describe("Session workspace", () => {
     const result = await screen.findByRole("option", { name: /Markdown 渲染预览/ });
     expect(result.querySelector("mark")?.textContent).toBe("Markdown");
     fireEvent.click(result);
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(await screen.findByRole("heading", { name: "Markdown 格式预览" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "文件夹 docs" })).toBeTruthy();
   });
@@ -96,6 +98,7 @@ describe("Session workspace", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "搜索会话内容" }), { target: { value: "not-found" } });
     expect(await screen.findByText("没有找到匹配的会话")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "关闭搜索" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("搭建前端工作区");
   });
 
@@ -121,25 +124,19 @@ describe("Session workspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "切换侧栏" }));
     const drawer = screen.getByRole("dialog");
     fireEvent.click(within(drawer).getByRole("button", { name: "项目说明与约定" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("项目说明与约定");
   });
 
-  it("creates a new local draft without losing the previous text or attachments", async () => {
+  it("creates a new local draft without losing the previous text", async () => {
     await renderWorkspace();
     const originalDraft = screen.getByRole("button", { name: "新会话" });
     fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "实现新的导航" } });
     expect(originalDraft.textContent).toBe("新会话");
-    fireEvent.change(screen.getByLabelText("添加附件"), { target: { files: [new File(["content"], "notes.txt", { type: "text/plain" })] } });
-    expect(screen.getByText("notes.txt")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("");
-    expect(screen.queryByText("notes.txt")).toBeNull();
     fireEvent.click(originalDraft);
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("实现新的导航");
-    expect(screen.getByText("notes.txt")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "移除附件 notes.txt" }));
-    expect(screen.queryByText("notes.txt")).toBeNull();
   });
 
   it("does not create duplicate empty drafts and focuses the composer", async () => {

@@ -1,0 +1,15 @@
+{
+  "note": {
+    "incomplete": "Response incomplete",
+    "preview": "Incomplete preview"
+  },
+  "outcome": {
+    "completed": "Completed",
+    "refused": "Request refused by the model",
+    "incomplete": "Response incomplete",
+    "unknown": "Outcome unknown",
+    "limited": "Run limit reached",
+    "cancelled": "Stopped",
+    "failed": "Run failed"
+  }
+}

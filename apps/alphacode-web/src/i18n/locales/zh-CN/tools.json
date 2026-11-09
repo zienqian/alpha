@@ -1,0 +1,51 @@
+{
+  "approval": "工具执行审批",
+  "allowOnce": "允许一次",
+  "deny": "拒绝",
+  "activity": "工具活动",
+  "allow": "允许执行 {{toolName}}？",
+  "steps_other": "执行过程 · {{count}} 步",
+  "records": "工具执行记录",
+  "call": "工具调用",
+  "details": "查看详情",
+  "exit": "退出码 {{code}}",
+  "incomplete": "输出不完整。",
+  "omitted_other": "输出不完整，省略 {{count}} 行。",
+  "status": {
+    "queued": "排队中",
+    "running": "执行中",
+    "awaiting_approval": "等待审批",
+    "succeeded": "已完成",
+    "failed": "失败",
+    "denied": "已拒绝",
+    "not_executed": "未执行",
+    "outcome_unknown": "结果未知"
+  },
+  "description": {
+    "command": "执行命令：{{target}}",
+    "read": "读取文件：{{target}}",
+    "edit": "编辑文件：{{target}}",
+    "create": "创建文件：{{target}}",
+    "search": "搜索：{{target}}",
+    "list": "列出文件：{{target}}",
+    "skill": "读取 Skill：{{target}}",
+    "other": "调用工具：{{target}}"
+  },
+  "result": {
+    "updated": "文件已更新。",
+    "created": "文件已创建。"
+  },
+  "omission_other": "… 省略 {{count}} 行 …",
+  "invalidResult": "工具返回了无效结果",
+  "missingExit": "命令退出码不可用",
+  "reportedFailure": "工具报告执行失败",
+  "counts": {
+    "awaiting_approval_other": "{{count}} 项待审批",
+    "running_other": "{{count}} 项执行中",
+    "queued_other": "{{count}} 项排队中",
+    "failed_other": "{{count}} 项失败",
+    "denied_other": "{{count}} 项已拒绝",
+    "outcome_unknown_other": "{{count}} 项结果未知",
+    "not_executed_other": "{{count}} 项未执行"
+  }
+}

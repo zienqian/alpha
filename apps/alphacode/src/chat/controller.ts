@@ -37,7 +37,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
       let completion: ChatMessage["completion"];
       let local = false;
       update({
-        busy: true, canSend: false, status: "Connecting…", phase: "thinking", error: undefined, activeRunStartedAt: started,
+        busy: true, canSend: false, status: "Connecting…", phase: "thinking", error: undefined, notice: undefined, activeRunStartedAt: started,
         // Tool results belong to the conversation, including earlier turns.
         // Clearing them here also removes them from every CLI/Web snapshot.
         messages: [...state.messages.map(message => message.completion ? { ...message, completion: undefined } : message),
@@ -49,11 +49,11 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
         completion = result.completion;
         if (result.localText !== undefined) {
           local = true;
-          update({ messages: [...state.messages, { id: randomUUID(), role: "assistant", text: result.localText }] });
+          update({ messages: [...state.messages, { id: randomUUID(), role: "assistant", text: result.localText, localResult: result.localResult }] });
         }
-        update({ status: statusLabels[result.status], error: result.error });
+        update({ status: statusLabels[result.status], lastRunStatus: result.status, error: result.error, notice: result.error ? { code: result.error } : undefined });
       } catch (error) {
-        update({ status: "Request failed", error: errorCode(error) });
+        update({ status: "Request failed", lastRunStatus: "failed", error: errorCode(error), notice: { code: errorCode(error) } });
       } finally {
         const { unsaved, blocked } = runtime;
         const messages = settlePendingTools(state.messages).map(message => message.streaming ? { ...message, streaming: false } : message);
@@ -64,8 +64,8 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
         update({
           messages,
           busy: false, phase: "idle", activeRunStartedAt: undefined, canSend: !unsaved && !blocked && !state.closing,
-          ...(unsaved ? { error: "Session not saved. Saving will be retried on exit." } : {}),
-          ...(blocked ? { error: "Execution state could not be confirmed. Exit and start a new session." } : {}),
+          ...(unsaved ? { error: "Session not saved. Saving will be retried on exit.", notice: { code: "SESSION_UNSAVED" } } : {}),
+          ...(blocked ? { error: "Execution state could not be confirmed. Exit and start a new session.", notice: { code: "EXECUTION_UNCONFIRMED" } } : {}),
         });
       }
     },
@@ -78,13 +78,13 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
     answerApproval(allow) { approvals.answer(allow); },
     async setPermissionMode(mode) {
       if (state.busy || state.closing || state.settingsSaving || !state.canSend || state.approval || !["ask", "auto", "full"].includes(mode)) return false;
-      update({ settingsSaving: true, canSend: false, error: undefined });
+      update({ settingsSaving: true, canSend: false, error: undefined, notice: undefined });
       try {
         await runtime.setPermissionMode(mode);
         update({ permissionMode: runtime.permissionMode });
         return true;
       } catch (error) {
-        update({ error: `Could not save permissions: ${errorCode(error)}. Previous permissions remain active.` });
+        update({ error: `Could not save permissions: ${errorCode(error)}. Previous permissions remain active.`, notice: { code: "PERMISSION_SAVE_FAILED", params: { cause: errorCode(error) } } });
         return false;
       } finally {
         update({ settingsSaving: false, canSend: !state.closing && !runtime.unsaved && !runtime.blocked });
@@ -101,7 +101,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
           listeners.clear();
         }).catch(error => {
           closePromise = undefined;
-          update({ closing: false, status: "Exit failed. Press Ctrl+C to retry.", error: errorCode(error) });
+          update({ closing: false, status: "Exit failed. Press Ctrl+C to retry.", error: errorCode(error), notice: { code: "EXIT_FAILED" } });
           throw error;
         });
       }

@@ -1,0 +1,19 @@
+{
+  "approveCommand": "执行这条命令？[y] / [n]",
+  "approveTool": "执行此工具？[y] / [n]",
+  "saving": "/permission · 正在保存…",
+  "busy": "/permission · 本次任务结束后可用",
+  "hint": "/permission · 会话 · ↑↓ · Enter 应用 · Esc 返回",
+  "ask": {
+    "name": "请求审批",
+    "description": "执行命令前询问；允许工作区文件工具"
+  },
+  "auto": {
+    "name": "自动审批",
+    "description": "自动批准常规命令；其他操作需询问"
+  },
+  "full": {
+    "name": "完全访问",
+    "description": "以当前进程权限允许全部工具和命令"
+  }
+}

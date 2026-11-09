@@ -170,10 +170,13 @@ export async function createRuntime(config: AppConfig, options: {
       try {
         const command = parseInput(input);
         if (command.kind === "command" && command.name === "skills" && !command.arguments.trim()) {
-          return { status: "completed", localText: skillStatus(loadedSkills) };
+          return { status: "completed", localText: skillStatus(loadedSkills), localResult: { kind: "skills",
+            skills: loadedSkills.skills.map(skill => ({ name: skill.name, description: displayText(skill.description, 1024),
+              argumentHint: displayText(skill.argumentHint, 256), userInvocable: skill.userInvocable, disableModelInvocation: skill.disableModelInvocation })),
+            diagnostics: loadedSkills.diagnostics.map(d => ({ severity: d.severity, code: d.code, path: displayText(d.path, 1024), field: displayText(d.field) })) } };
         }
         if (command.kind === "command" && command.name === "permission") {
-          return { status: "completed", localText: "Use the /permission picker to change session permissions." };
+          return { status: "completed", localText: "Use the /permission picker to change session permissions.", localResult: { kind: "permission" } };
         }
         const prepared = await prepareSkillInput(input, loadedSkills.skills, preparation.signal);
         if (!prepared.trim()) throw settingsError("SESSION_INPUT_INVALID");

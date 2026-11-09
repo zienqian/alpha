@@ -1,6 +1,7 @@
+import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { actionErrorMessage, createSession, type SessionInfo } from "@/features/sessions/api";
+import { createSession, type SessionInfo } from "@/features/sessions/api";
 import { useSessionActions } from "@/features/sessions/use-session-actions";
 import { useSessionQuery, useSessionsQuery } from "@/features/sessions/queries";
 import { groupSessions, sessionFromView, type Session } from "@/features/sessions/types";
@@ -19,10 +20,15 @@ const emptyDraft: SessionDraft = { text: "", attachments: [] };
 type LocalSession = Session & { folderId?: string };
 
 function createLocalSession(id: string, folderId?: string): LocalSession {
-  return { id, folderId, title: "新会话", description: "仅保存在当前页面的草稿", messages: [], local: true };
+  return { id, folderId, title: "", description: "", messages: [], local: true };
 }
 
 export function useSessionWorkspace() {
+  const { t } = useTranslation();
+  const displaySession = (session: Session): Session => ({ ...session,
+    title: session.title || t(session.local ? "sessions:new" : "sessions:untitled"),
+    description: t(session.local ? "sessions:draftDescription" : "sessions:savedDescription"),
+  });
   const client = useQueryClient();
   const index = useSessionsQuery();
   const [localSessions, setLocalSessions] = useState<LocalSession[]>(() => [createLocalSession("local-initial")]);
@@ -40,7 +46,7 @@ export function useSessionWorkspace() {
   const selection = useRef(selectedSessionId);
   const creating = useRef(new Set<string>());
   const [creatingIds, setCreatingIds] = useState<Record<string, boolean>>({});
-  const [creationErrors, setCreationErrors] = useState<Record<string, string | undefined>>({});
+  const [creationErrors, setCreationErrors] = useState<Record<string, boolean | undefined>>({});
   const actions = useSessionActions(history.data, selectedSessionId, (id, input) => {
     setDrafts(previous => previous[id]?.text === input
       ? { ...previous, [id]: { ...previous[id], text: "" } } : previous);
@@ -56,10 +62,10 @@ export function useSessionWorkspace() {
     sessions: [
       ...localSessions.filter((session) => (session.folderId ?? sourceFolders[0]?.id) === folder.id),
       ...folder.sessions,
-    ],
+    ].map(displaySession),
   }));
   const selectedFolder = folders.find((folder) => folder.sessions.some((session) => session.id === selectedSessionId));
-  const selectedSession = !isLocal && history.data ? sessionFromView(history.data)
+  const selectedSession = !isLocal && history.data ? displaySession(sessionFromView(history.data))
     : selectedFolder?.sessions.find((session) => session.id === selectedSessionId);
   const draft = drafts[selectedSessionId] ?? emptyDraft;
 
@@ -129,8 +135,8 @@ export function useSessionWorkspace() {
       setDrafts(previous => ({ ...previous, [id]: previous[localId] ?? draft, [localId]: emptyDraft }));
       if (selection.current === localId) selectSession(id, false);
       await actions.send(id, input);
-    } catch (cause) {
-      setCreationErrors(previous => ({ ...previous, [localId]: `${actionErrorMessage(cause)}草稿已保留，可稍后重试创建会话。` }));
+    } catch {
+      setCreationErrors(previous => ({ ...previous, [localId]: true }));
       void client.invalidateQueries({ queryKey: ["sessions"] });
     } finally {
       creating.current.delete(localId);
@@ -141,5 +147,5 @@ export function useSessionWorkspace() {
   return { folders, selectedFolder, selectedSession, selectedSessionId, selectSession, draft, updateDraft,
     newSession, focusRequest, isLocal, index, history, canSend, send, busy, connected, actions,
     submitting: creatingIds[selectedSessionId] || actions.pending?.status === "sending" || actions.pending?.status === "accepted",
-    actionError: actions.error ?? creationErrors[selectedSessionId] };
+    actionError: actions.error ?? (creationErrors[selectedSessionId] ? t("errors:create") : undefined) };
 }

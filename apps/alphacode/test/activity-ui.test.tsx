@@ -1,3 +1,4 @@
+import { createI18n, namespaces } from "../src/i18n/instance";
 import { expect, test } from "bun:test";
 import { flushSync } from "@opentui/react";
 import { Writable } from "node:stream";
@@ -16,18 +17,20 @@ import { shimmerFrame, shimmerGlyphs } from "../src/ui/shimmer";
 import { VscodeImageOutput } from "../src/ui/vscode-output";
 import { waitFor } from "./helpers";
 
+const t = createI18n("en").getFixedT(null, namespaces);
+
 const stateFor = (): ChatState => ({ sessionTitle: "New session", messages: [], busy: true, closing: false, canSend: false, status: "Generating…", phase: "thinking", permissionMode: "ask", settingsSaving: false });
 
 test("composer status follows the active turn, approval, stopping and persistence instead of a previous tool result", () => {
   const tool = { ...createToolRecord("a", { id: "c", name: "read_file", arguments: { path: "a" } }), status: "succeeded" as const, finishedAt: 1 };
   const state: ChatState = { ...stateFor(), messages: [{ id: tool.id, role: "tool", text: tool.name, tool }] };
-  expect(composerActivity(state).text).toBe("Reviewing results…");
+  expect(composerActivity(t, state).text).toBe("Reviewing results…");
   state.messages = [...state.messages, { id: "new", role: "user", text: "next" }];
-  expect(composerActivity(state).text).toBe("Working…");
-  expect(composerActivity({ ...state, approval: { name: "run_command", preview: { type: "tool" } } }).animated).toBe(false);
-  expect(composerActivity({ ...state, phase: "stopping", approval: { name: "run_command", preview: { type: "tool" } } }).text).toBe("Stopping…");
-  expect(composerActivity({ ...state, phase: "saving" }).text).toBe("Saving session…");
-  expect(composerActivity({ ...state, busy: false, phase: "idle", status: "Ready" }).animated).toBe(false);
+  expect(composerActivity(t, state).text).toBe("Working…");
+  expect(composerActivity(t, { ...state, approval: { name: "run_command", preview: { type: "tool" } } }).animated).toBe(false);
+  expect(composerActivity(t, { ...state, phase: "stopping", approval: { name: "run_command", preview: { type: "tool" } } }).text).toBe("Stopping…");
+  expect(composerActivity(t, { ...state, phase: "saving" }).text).toBe("Saving session…");
+  expect(composerActivity(t, { ...state, busy: false, phase: "idle", status: "Ready" }).animated).toBe(false);
 });
 
 test("shimmer keeps whole Chinese/emoji/combining graphemes, terminal widths and stable text", () => {

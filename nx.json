@@ -52,6 +52,17 @@
           "runtime": "bun --version"
         }
       ]
+    },
+    "i18n-check": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "{workspaceRoot}/scripts/check-i18n.ts",
+        "{workspaceRoot}/bun.lock",
+        {
+          "runtime": "bun --version"
+        }
+      ]
     }
   },
   "analytics": true

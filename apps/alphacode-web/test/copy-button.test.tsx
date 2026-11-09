@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "./render";
 import { describe, expect, it, vi } from "vitest";
 import { CopyButton } from "@/components/copy-button";
 import { TooltipProvider } from "@/components/ui/tooltip";

@@ -20,16 +20,20 @@
     "typecheck": "bun --bun run nx run-many -t typecheck",
     "lint": "bun --bun run nx run-many -t lint",
     "test": "bun --bun run nx run-many -t test",
-    "graph": "bun --bun run nx graph"
+    "graph": "bun --bun run nx graph",
+    "i18n:check": "bun --bun run tsrs -p scripts/tsconfig.json --noEmit && bun --bun run eslint scripts && bun test ./scripts/i18n-tools.test.ts && bun --bun run nx run-many -t i18n-check",
+    "i18n:types": "bun --bun run nx run-many -t i18n-types"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@nx/eslint-plugin": "24.0.4",
+    "@types/bun": "1.4.4",
+    "@x18n/cli": "0.1.13",
     "eslint": "10.14.0",
+    "i18next-cli": "1.87.0",
     "nx": "24.0.4",
     "tsrs": "0.20.1-ts7.1.0-beta",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.1",
-    "@types/bun": "1.4.4"
+    "typescript-eslint": "8.72.1"
   }
 }

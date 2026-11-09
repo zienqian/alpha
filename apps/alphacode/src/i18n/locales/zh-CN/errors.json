@@ -1,0 +1,9 @@
+{
+  "generic": "发生错误（{{code}}）。",
+  "unsaved": "会话尚未保存，退出时将重试保存。",
+  "blocked": "无法确认执行状态，请退出并新建会话。",
+  "permissionSave": "无法保存权限（{{code}}），原权限仍然有效。",
+  "exit": "退出失败，请按 Ctrl+C 重试。",
+  "openBrowser": "请在浏览器中打开：{{url}}",
+  "disconnected": "已与本地服务断开，请等待重新连接。"
+}

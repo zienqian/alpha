@@ -1,0 +1,19 @@
+{
+  "approveCommand": "Run this command? [y] / [n]",
+  "approveTool": "Run this tool? [y] / [n]",
+  "saving": "/permission · Saving…",
+  "busy": "/permission · Available after this task",
+  "hint": "/permission · Session · ↑↓ · Enter Apply · Esc Back",
+  "ask": {
+    "name": "Ask for approval",
+    "description": "Ask before commands; allow workspace file tools"
+  },
+  "auto": {
+    "name": "Approve for me",
+    "description": "Approve routine commands; ask for everything else"
+  },
+  "full": {
+    "name": "Full access",
+    "description": "Allow all tools and commands with current process permissions"
+  }
+}

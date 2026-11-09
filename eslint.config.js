@@ -36,7 +36,7 @@ export default [
     files: ['apps/alphacode/src/chat/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [{
-        group: ['@alpha/**', '@opentui/**', 'react', 'react/**', 'react-dom', 'react-dom/**', 'bun:*', 'node:fs', 'node:fs/**', '**/runtime/**', '**/ui/**', '**/application', '**/config'],
+        group: ['i18next', 'react-i18next', '**/i18n/instance', '**/i18n/bootstrap', '@alpha/**', '@opentui/**', 'react', 'react/**', 'react-dom', 'react-dom/**', 'bun:*', 'node:fs', 'node:fs/**', '**/runtime/**', '**/ui/**', '**/application', '**/config'],
         message: 'Chat depends on its contracts; inject runtime capabilities from application.ts.'
       }] }]
     }
@@ -54,10 +54,17 @@ export default [
     files: ['apps/alphacode/src/runtime/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [{
-        group: ['@opentui/**', 'react', 'react/**', 'react-dom', 'react-dom/**', '**/ui/**', '**/application', '**/chat/controller', '**/chat/approval', '**/chat/messages'],
+        group: ['i18next', 'react-i18next', '**/i18n/instance', '**/i18n/bootstrap', '@opentui/**', 'react', 'react/**', 'react-dom', 'react-dom/**', '**/ui/**', '**/application', '**/chat/controller', '**/chat/approval', '**/chat/messages'],
         message: 'Runtime implements Chat contracts; application.ts owns controller and UI composition.'
       }] }]
     }
+  },
+  {
+    files: ['apps/alphacode/src/server/**/*.ts'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [{
+      group: ['i18next', 'react-i18next', '**/i18n/instance', '**/i18n/bootstrap', '**/i18n/presentation'],
+      message: 'The server publishes language-independent state; clients translate it.'
+    }] }] }
   },
   {
     files: ['packages/coding-agent/src/**/*.ts'],

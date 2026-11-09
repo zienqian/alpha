@@ -1,3 +1,4 @@
+import { useTranslation } from "../../i18n/react";
 import type { TextareaRenderable } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -17,6 +18,7 @@ export function Composer(props: {
   onCommandOpenChange: (open: boolean) => void;
   onSubmit: (text: string) => void;
 }) {
+  const { t } = useTranslation();
   const input = useRef<TextareaRenderable>(null);
   const dimensions = useTerminalDimensions();
   const [draft, setDraft] = useState("");
@@ -115,7 +117,7 @@ export function Composer(props: {
         id="prompt" ref={input} flexGrow={1} minWidth={0}
         height="auto" minHeight={1} maxHeight={maxInputHeight} wrapMode="word"
         focused={props.focused && !menu.permission}
-        placeholder={props.busy ? "Working… draft your next message" : "Describe your task…"}
+        placeholder={props.busy ? t("chat:composer.busy") : t("chat:composer.placeholder")}
         placeholderColor={colors.muted}
         cursorStyle={{ style: "line", blinking: true }} selectionOccupancy="boundary"
         cursorColor={colors.foreground} selectionBg="#cddcff" selectionFg={colors.foreground}

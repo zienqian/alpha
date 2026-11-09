@@ -5,6 +5,8 @@ export interface SessionMessage {
   role: HistoryMessage["role"];
   content: string;
   note?: string;
+  noteCode?: string;
+  localResult?: HistoryMessage["localResult"];
   streaming?: boolean;
   tool?: ToolRecord;
   completion?: HistoryMessage["completion"];
@@ -20,7 +22,7 @@ export interface Session {
 }
 
 export function sessionSummary(info: SessionInfo): Session {
-  return { id: info.id, title: info.title.trim() || "未命名会话", description: "已保存的会话", messages: [] };
+  return { id: info.id, title: info.title.trim(), description: "", messages: [] };
 }
 
 export function sessionFromView(view: SessionView): Session {

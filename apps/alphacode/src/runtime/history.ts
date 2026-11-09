@@ -14,20 +14,20 @@ export function restoreMessages(data: SessionData): ChatMessage[] {
       else if (message.role === "assistant") {
         messages.push({
           id: message.id, role: "assistant", text: message.text,
-          ...(message.incompleteReason ? { note: "Response incomplete" } : {}),
+          ...(message.incompleteReason ? { note: "Response incomplete", noteCode: "RESPONSE_INCOMPLETE" } : {}),
         });
         for (const call of message.toolCalls) {
           const tool = createToolRecord(message.id, call);
           indices.set(tool.id, messages.length);
           // A historical call without a corresponding result is not still running.
-          messages.push({ id: tool.id, role: "tool", text: tool.name, note: "outcome_unknown", tool: { ...tool, status: "outcome_unknown" } });
+          messages.push({ id: tool.id, role: "tool", text: tool.name, note: "outcome_unknown", noteCode: "outcome_unknown", tool: { ...tool, status: "outcome_unknown" } });
         }
       }
       else if (message.role === "toolResult") {
         const assistant = turn.messages.find(item => item.id === message.assistantId);
         const call = assistant?.role === "assistant" ? assistant.toolCalls.find(call => call.id === message.callId) : undefined;
         const tool = completeToolRecord(createToolRecord(message.assistantId, call ?? { id: message.callId, name: "Tool call", arguments: {} }), message);
-        const restored: ChatMessage = { id: tool.id, role: "tool", text: tool.name, note: tool.status === "succeeded" ? "Completed" : tool.status, tool };
+        const restored: ChatMessage = { id: tool.id, role: "tool", text: tool.name, note: tool.status === "succeeded" ? "Completed" : tool.status, noteCode: tool.status, tool };
         const index = indices.get(tool.id);
         if (index !== undefined) messages[index] = restored;
         else { indices.set(tool.id, messages.length); messages.push(restored); }

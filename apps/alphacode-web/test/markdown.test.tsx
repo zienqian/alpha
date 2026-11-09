@@ -1,4 +1,4 @@
-import { render as renderUI, screen } from "@testing-library/react";
+import { render as renderUI, screen } from "./render";
 import type { ReactElement } from "react";
 import { describe, expect, it } from "vitest";
 import { Markdown } from "@/components/markdown";

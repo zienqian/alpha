@@ -3,6 +3,14 @@ export type PermissionMode = "ask" | "auto" | "full";
 export type ChatPhase = "idle" | "thinking" | "queued" | "running" | "saving" | "stopping";
 export type ToolStatus = "queued" | "running" | "awaiting_approval" | "succeeded" | "failed" | "denied" | "not_executed" | "outcome_unknown";
 
+// Optional presentation semantics preserve protocol v2's legacy text fields.
+export interface ChatNotice { code: string; params?: Record<string, string | number> }
+export interface LocalResult {
+  kind: "skills" | "permission";
+  skills?: readonly { name: string; description: string; argumentHint?: string; userInvocable: boolean; disableModelInvocation?: boolean }[];
+  diagnostics?: readonly { severity: string; code: string; path: string; field?: string }[];
+}
+
 export interface ToolRecord {
   id: string;
   assistantId: string;
@@ -16,6 +24,9 @@ export interface ToolRecord {
   target: string;
   status: ToolStatus;
   output?: string;
+  outputLines?: string[];
+  summaryCode?: "FILE_UPDATED" | "FILE_CREATED";
+  errorCode?: string;
   error?: string;
   exitCode?: number;
   omittedLines?: number;
@@ -32,6 +43,8 @@ export interface ChatMessage {
   text: string;
   streaming?: boolean;
   note?: string;
+  noteCode?: string;
+  localResult?: LocalResult;
   tool?: ToolRecord;
   completion?: { durationMs: number; completedAt: number; status: ChatRunStatus };
 }
@@ -53,6 +66,9 @@ export interface ChatState {
   canSend: boolean;
   status: string;
   phase: ChatPhase;
+  lastRunStatus?: ChatRunStatus;
+  connection?: "connected" | "reconnecting";
+  notice?: ChatNotice;
   /** Monotonic time for the active turn's elapsed indicator. */
   activeRunStartedAt?: number;
   permissionMode: PermissionMode;
@@ -97,7 +113,7 @@ export interface ChatRuntime {
   readonly blocked: boolean;
   setPermissionMode(mode: PermissionMode): Promise<void>;
   subscribe(listener: (event: ChatEvent) => void): () => void;
-  send(input: string, requestId?: string): Promise<{ status: ChatRunStatus; error?: string; localText?: string; completion?: ChatMessage["completion"] }>;
+  send(input: string, requestId?: string): Promise<{ status: ChatRunStatus; error?: string; localText?: string; localResult?: LocalResult; completion?: ChatMessage["completion"] }>;
   cancel(): void;
   /** Drain execution and persist before resolving; a failed close may be retried. */
   close(): Promise<void>;

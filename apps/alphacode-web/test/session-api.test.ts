@@ -18,6 +18,6 @@ describe("session API boundary", () => {
     ]);
     expect(folders.map((folder) => [folder.id, folder.name])).toEqual([["one", "alpha"], ["two", "alpha"]]);
     expect(folders[0]?.sessions.map((session) => session.id)).toEqual(["new", "old"]);
-    expect(folders[0]?.sessions[1]?.title).toBe("未命名会话");
+    expect(folders[0]?.sessions[1]?.title).toBe("");
   });
 });

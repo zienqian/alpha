@@ -1,0 +1,45 @@
+{
+  "status": {
+    "queued": "排队中",
+    "running": "执行中",
+    "awaiting_approval": "等待审批",
+    "succeeded": "已完成",
+    "failed": "失败",
+    "denied": "已拒绝",
+    "not_executed": "未执行",
+    "outcome_unknown": "结果未知"
+  },
+  "description": {
+    "command": "执行命令：{{target}}",
+    "read": "读取文件：{{target}}",
+    "edit": "编辑文件：{{target}}",
+    "create": "创建文件：{{target}}",
+    "search": "搜索：{{target}}",
+    "list": "列出文件：{{target}}",
+    "skill": "读取 Skill：{{target}}",
+    "other": "调用工具：{{target}}"
+  },
+  "result": {
+    "updated": "文件已更新。",
+    "created": "文件已创建。"
+  },
+  "omission_other": "… 省略 {{count}} 行 …",
+  "invalidResult": "工具返回了无效结果",
+  "missingExit": "命令退出码不可用",
+  "reportedFailure": "工具报告执行失败",
+  "verb": {
+    "run_command": "已执行",
+    "read_file": "已读取",
+    "edit_file": "已编辑",
+    "create_file": "已创建",
+    "search": "已搜索",
+    "list_files": "已列出",
+    "other": "已调用"
+  },
+  "failedExit": "失败（退出码 {{code}}）",
+  "exit": "退出码 {{code}}",
+  "preview": "输出预览（最多 8 行）",
+  "truncated": "已截断",
+  "incomplete": "输出不完整",
+  "cwd": "工作目录：{{path}}"
+}

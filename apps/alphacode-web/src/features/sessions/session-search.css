@@ -1,3 +1,5 @@
+@reference "../../styles.css";
+
 /*! Adapted from cmdk's official Vercel example (MIT):
  * https://github.com/dip/cmdk/blob/main/website/styles/cmdk/vercel.scss
  * Uses AlphaCode theme tokens; result rows expand to show full-text snippets.
@@ -73,7 +75,7 @@
   height: min(330px, var(--cmdk-list-height, 330px));
   min-height: 0;
   max-height: 400px;
-  overflow-y: auto;
+  @apply overflow-y-auto;
   overscroll-behavior: contain;
   scroll-padding-block: 8px;
   transition: height 100ms ease;

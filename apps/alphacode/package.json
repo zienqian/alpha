@@ -13,7 +13,11 @@
     "start": "bun --env-file=../../.env.local run dist/index.js",
     "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit",
     "lint": "bun --bun run eslint src scripts bin test",
-    "test": "bun test ./test --timeout 30000"
+    "test": "bun test ./test --timeout 30000",
+    "i18n-check": "bun ../../scripts/check-i18n.ts",
+    "i18n-types": "bun --bun run i18next-cli types",
+    "i18n:report": "bun --bun run x18n check --root .",
+    "i18n:review": "bun ../../scripts/check-i18n.ts --record-review"
   },
   "dependencies": {
     "@alpha/adk": "workspace:*",
@@ -22,7 +26,9 @@
     "@alpha/provider": "workspace:*",
     "@opentui/core": "0.8.1",
     "@opentui/react": "0.8.1",
+    "i18next": "27.0.1",
     "react": "19.3.1",
+    "react-i18next": "18.0.1",
     "yaml": "2.9.0"
   },
   "devDependencies": {

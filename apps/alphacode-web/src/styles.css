@@ -5,6 +5,26 @@
 @source "../index.html";
 @custom-variant dark (&:is(.dark *));
 
+/* Extend Tailwind's vertical scrolling utilities, including variants and @apply.
+ * Keep native scrollbar space when content grows/shrinks; clipping wrappers and
+ * horizontal-only scrollers must not acquire an extra vertical gutter.
+ */
+@utility overflow-auto {
+  scrollbar-gutter: stable;
+}
+
+@utility overflow-y-auto {
+  scrollbar-gutter: stable;
+}
+
+@utility overflow-scroll {
+  scrollbar-gutter: stable;
+}
+
+@utility overflow-y-scroll {
+  scrollbar-gutter: stable;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -143,6 +163,10 @@
 
   textarea, input {
     caret-color: var(--foreground);
+  }
+
+  textarea {
+    scrollbar-gutter: stable;
   }
 }
 

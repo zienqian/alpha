@@ -1,0 +1,17 @@
+{
+  "usage": "Usage: alphacode [--lang system|en|zh-CN] [workspace path]",
+  "invalidLanguage": "{{source}} must be system, en, or zh-CN.",
+  "modelRequired": "Set ADK_MODEL or model.id in {{file}}.",
+  "auth": "ADK_AUTH must be none or api_key. Set the API key in the environment variable named by ADK_API_KEY_ENV.",
+  "permission": "ALPHACODE_PERMISSION must be ask, auto, or full.",
+  "invalidConfig": "{{file}}: Invalid {{field}} configuration. Check field names, types, and allowed values.",
+  "invalidYaml": "{{file}}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.",
+  "notFile": "{{file}}: Expected a regular file.",
+  "tooLarge": "{{file}}: File exceeds the {{limit}} KiB limit.",
+  "readFailed": "{{file}}: Could not read file. Check file permissions and UTF-8 encoding.",
+  "initFailed": "{{file}}: Could not initialize the global configuration directory. Check directory permissions.",
+  "incompatible": "An incompatible AlphaCode server is running for this database. Close its clients and restart after it exits.",
+  "serverStart": "Could not start the local AlphaCode server.",
+  "serverTimeout": "Local server did not become ready. Inspect {{file}}; an existing owner may still be starting.",
+  "help": "AlphaCode {{version}}\n\nUsage: alphacode [--watch] [--lang system|en|zh-CN] [workspace path]\n\n  alphacode              Run the latest source in the current directory\n  alphacode C:/project   Use the specified workspace\n  alphacode --watch      Restart when source files change\n  alphacode --lang zh-CN Use Simplified Chinese\n  alphacode --version    Show the version\n\nThe local server starts automatically and is shared by clients using the same database.\nType /web inside the terminal to open the current session in your browser.\n\nGlobal configuration: ~/.alphacode/config.yaml\nGlobal instructions: ~/.alphacode/AGENTS.md\nSet ALPHACODE_HOME to use a different configuration directory.\nLanguage: --lang > ALPHACODE_LANG > config language > system locale > English.\nEnvironment variables override global configuration; the development launcher also loads the repository's .env.local."
+}

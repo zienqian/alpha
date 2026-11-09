@@ -4,8 +4,10 @@ import { finished } from "node:stream/promises";
 import type { Chat } from "../chat/contracts";
 import { App } from "./app";
 import { VscodeImageOutput } from "./vscode-output";
+import { TerminalLanguageProvider } from "./i18n-provider";
+import type { Locale } from "../i18n/locale";
 
-export async function runTerminal(chat: Chat): Promise<void> {
+export async function runTerminal(chat: Chat, locale: Locale): Promise<void> {
   const output = process.env.TERM_PROGRAM === "vscode" ? new VscodeImageOutput(process.stdout) : undefined;
   const renderer = await createCliRenderer({
     exitOnCtrlC: false, exitSignals: [], targetFps: 30,
@@ -24,7 +26,7 @@ export async function runTerminal(chat: Chat): Promise<void> {
   process.on("SIGINT", interrupt);
   process.on("SIGTERM", exit);
   try {
-    createRoot(renderer).render(<App chat={chat} onExit={exit} />);
+    createRoot(renderer).render(<TerminalLanguageProvider locale={locale}><App chat={chat} onExit={exit} /></TerminalLanguageProvider>);
     await renderer.closed;
   } finally {
     process.off("SIGINT", interrupt);

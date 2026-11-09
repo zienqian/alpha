@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "./render";
 import { describe, expect, it } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SessionContent } from "@/features/sessions/session-content";
@@ -44,22 +44,41 @@ describe("reply activity", () => {
       .toEqual(["上一轮已完成。", "构建通过。"]);
   });
 
-  it("shows immediate waiting feedback, moves to replying above the content, and clears after stopping", () => {
+  it("keeps one trailing indicator through first-token, streaming, saving and stopping transitions", () => {
     const view = render(<SessionContent session={session(user)} busy phase="thinking" />, { wrapper: TooltipProvider });
-    expect(screen.getByRole("status").textContent).toBe("正在思考");
-    expect(screen.getByRole("status").querySelector('[data-slot="morphing-spinner"]')?.getAttribute("data-active")).toBe("true");
+    const status = screen.getByRole("status");
+    const expectTrailingStatus = (label: string) => {
+      expect(screen.getAllByRole("status")).toHaveLength(1);
+      expect(screen.getByRole("status")).toBe(status);
+      expect(status.textContent).toBe(label);
+      const items = within(screen.getByRole("list", { name: "会话消息" })).getAllByRole("listitem");
+      expect(items.at(-1)?.contains(status)).toBe(true);
+      expect(status.closest("article")).toBeNull();
+    };
+    expectTrailingStatus("正在思考");
+    expect(status.querySelector('[data-slot="morphing-spinner"]')?.getAttribute("data-active")).toBe("true");
     expect(screen.queryByRole("button", { name: "复制回复" })).toBeNull();
 
     const reply: SessionMessage = { id: "reply", role: "assistant", content: "构建结果", streaming: true };
+    view.rerender(<SessionContent session={session(user, { ...reply, content: " \n " })} busy phase="thinking" />);
+    expectTrailingStatus("正在思考");
+    expect(screen.queryByRole("article", { name: "AlphaCode 的回复" })).toBeNull();
+
     view.rerender(<SessionContent session={session(user, reply)} busy phase="thinking" />);
-    expect(screen.getAllByRole("status")).toHaveLength(1);
-    expect(screen.getByRole("status").textContent).toBe("正在回复");
+    expectTrailingStatus("正在回复");
     const article = screen.getByRole("article", { name: "AlphaCode 的回复" });
-    expect(article.textContent).toBe("正在回复构建结果");
+    expect(article.textContent).toBe("构建结果");
     expect(within(article).queryByRole("button", { name: "复制回复" })).toBeNull();
 
+    view.rerender(<SessionContent session={session(user, { ...reply, content: "构建结果：全部通过。", note: "正在记录结果" })} busy phase="thinking" />);
+    expectTrailingStatus("正在回复");
+    expect(screen.getByText("正在记录结果").compareDocumentPosition(status) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    view.rerender(<SessionContent session={session(user, { ...reply, streaming: false })} busy phase="saving" />);
+    expectTrailingStatus("正在保存会话");
+    view.rerender(<SessionContent session={session(user, reply)} busy connected={false} phase="thinking" />);
+    expectTrailingStatus("等待重新连接");
     view.rerender(<SessionContent session={session(user, reply)} busy phase="stopping" />);
-    expect(screen.getByRole("status").textContent).toBe("正在停止");
+    expectTrailingStatus("正在停止");
     // A cached streaming flag must not resurrect an indicator after the run ends.
     view.rerender(<SessionContent session={session(user, reply)} busy={false} phase="idle" />);
     expect(screen.queryByRole("status")).toBeNull();
@@ -67,6 +86,25 @@ describe("reply activity", () => {
     expect(screen.getByRole("button", { name: "复制回复" })).toBeTruthy();
     view.rerender(<SessionContent session={session(user, { ...reply, content: "" })} phase="idle" />);
     expect(screen.queryByRole("article", { name: "AlphaCode 的回复" })).toBeNull();
+  });
+
+  it("resumes feedback below tools and the next reply without empty assistant placeholders", () => {
+    const plan: SessionMessage = { id: "plan", role: "assistant", content: "先检查构建。", streaming: true };
+    const reply: SessionMessage = { id: "reply", role: "assistant", content: "", streaming: true };
+    const view = render(<SessionContent session={session(user, plan)} busy phase="thinking" />, { wrapper: TooltipProvider });
+    view.rerender(<SessionContent session={session(user, { ...plan, streaming: false }, tool("running"))} busy phase="running" />);
+    expect(screen.queryByRole("status")).toBeNull();
+    view.rerender(<SessionContent session={session(user, plan, tool("succeeded"), reply)} busy phase="thinking" />);
+    const status = screen.getByRole("status");
+    expect(status.textContent).toBe("正在思考");
+    expect(screen.getAllByRole("article", { name: "AlphaCode 的回复" })).toHaveLength(1);
+    expect(screen.getByRole("article", { name: "工具活动" }).compareDocumentPosition(status) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    view.rerender(<SessionContent session={session(user, plan, tool("succeeded"), { ...reply, content: "构建通过。" })} busy phase="thinking" />);
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(screen.getByRole("status")).toBe(status);
+    expect(status.textContent).toBe("正在回复");
+    expect(screen.getByText("构建通过。").compareDocumentPosition(status) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(status.closest("article")).toBeNull();
   });
 
   it("opens live tool steps and collapses them when the reply starts without hiding the output controls", () => {
