@@ -48,7 +48,7 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -73,11 +73,11 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
+  --sidebar: oklch(0.978 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent: oklch(0.95 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
@@ -110,7 +110,7 @@
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.922 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
@@ -125,5 +125,143 @@
 
   body {
     @apply bg-background font-sans text-foreground antialiased;
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  ::selection {
+    background: var(--foreground);
+    color: var(--background);
+  }
+
+  textarea, input {
+    caret-color: var(--foreground);
+  }
+}
+
+@layer components {
+  .composer {
+    transition: border-color 160ms ease-out;
+  }
+
+  .welcome-stage {
+    display: grid;
+    grid-template-rows: minmax(40px, 1fr) auto minmax(64px, 1.35fr);
+  }
+
+  .task-entry {
+    grid-row: 2;
+  }
+
+  .markdown {
+    overflow-wrap: anywhere;
+  }
+
+  .markdown > :first-child {
+    margin-top: 0;
+  }
+
+  .markdown > :last-child {
+    margin-bottom: 0;
+  }
+
+  .markdown h1 {
+    @apply mt-5 mb-2.5 text-lg font-semibold tracking-tight;
+  }
+
+  .markdown h2 {
+    @apply mt-5 mb-2.5 text-base font-semibold tracking-tight;
+  }
+
+  .markdown h3 {
+    @apply mt-5 mb-2 text-sm font-semibold;
+  }
+
+  .markdown h4, .markdown h5, .markdown h6 {
+    @apply mt-5 mb-2 text-sm font-semibold;
+  }
+
+  .markdown p {
+    @apply my-3;
+  }
+
+  .markdown ul {
+    @apply my-3 list-disc pl-5;
+  }
+
+  .markdown ol {
+    @apply my-3 list-decimal pl-5;
+  }
+
+  .markdown li {
+    @apply mt-1 pl-1;
+  }
+
+  .markdown li > ul, .markdown li > ol {
+    @apply my-2;
+  }
+
+  .markdown blockquote {
+    @apply my-4 border-l pl-4 text-muted-foreground;
+  }
+
+  .markdown a {
+    @apply font-medium text-primary underline underline-offset-4;
+  }
+
+  .markdown :not(pre) > code {
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em];
+  }
+
+  .markdown pre {
+    overflow-wrap: normal;
+  }
+
+  .markdown table {
+    @apply w-full text-left text-sm;
+  }
+
+  .markdown th {
+    @apply bg-muted/50 font-medium;
+  }
+
+  .markdown th, .markdown td {
+    @apply border-b px-3 py-2;
+  }
+
+  .markdown tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .markdown hr {
+    @apply my-6 border-border;
+  }
+
+  .markdown img {
+    @apply my-4 h-auto max-w-full rounded-md;
+  }
+
+  .markdown .contains-task-list {
+    @apply list-none pl-0;
+  }
+
+  .markdown .task-list-item input {
+    @apply mr-2 accent-primary;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
