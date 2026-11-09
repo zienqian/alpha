@@ -1,4 +1,3 @@
-import { Show } from "solid-js";
 import { colors } from "../theme";
 
 export function Welcome(props: { empty: boolean }) {
@@ -9,12 +8,12 @@ export function Welcome(props: { empty: boolean }) {
         <text fg={colors.foreground}><b>AlphaCode</b></text>
         <text fg={colors.muted}>Code starts here.</text>
       </box>
-      <Show when={props.empty}>
+      {props.empty && (
         <box flexDirection="column" gap={1} paddingLeft={3}>
           <text fg={colors.accent}>What would you like to build?</text>
           <text fg={colors.muted}>Explore a project, fix a bug, or build something new.</text>
         </box>
-      </Show>
+      )}
     </box>
   );
 }

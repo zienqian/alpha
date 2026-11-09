@@ -13,6 +13,9 @@ Usage: alphacode [--watch] [workspace path]
   alphacode --watch      Restart when source files change
   alphacode --version    Show the version
 
+The local server starts automatically and is shared by clients using the same database.
+Type /web inside the terminal to open the current session in your browser.
+
 Global configuration: ~/.alphacode/config.yaml
 Global instructions: ~/.alphacode/AGENTS.md
 Set ALPHACODE_HOME to use a different configuration directory.
@@ -26,11 +29,9 @@ Environment variables override global configuration; the development launcher al
   const child = Bun.spawn([
     process.execPath,
     "--no-env-file", `--env-file=${path("../../../.env.local")}`,
-    // The app config's package preload resolves against cwd; load Solid by absolute path below instead.
     `--config=${path("../../../bunfig.toml")}`,
     `--tsconfig-override=${path("../tsconfig.json")}`,
     "--conditions=alpha-source",
-    "--preload", path("../scripts/preload.ts"),
     ...(watch ? ["--watch"] : []),
     path("../src/index.tsx"), ...args.filter(arg => arg !== "--watch"),
   ], { cwd: process.cwd(), stdin: "inherit", stdout: "inherit", stderr: "inherit" });

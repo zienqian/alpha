@@ -1,13 +1,10 @@
-import { useRenderer } from "@opentui/solid";
-import { createMemo, createSignal, onCleanup } from "solid-js";
+import { useBlur, useFocus } from "@opentui/react";
+import { useState } from "react";
 
-export function useMotion(enabled: () => boolean) {
-  const renderer = useRenderer();
-  const [focused, setFocused] = createSignal(true);
-  const focus = () => setFocused(true), blur = () => setFocused(false);
-  renderer.on("focus", focus);
-  renderer.on("blur", blur);
-  onCleanup(() => { renderer.off("focus", focus); renderer.off("blur", blur); });
+export function useMotion(enabled: boolean): boolean {
+  const [focused, setFocused] = useState(true);
+  useFocus(() => setFocused(true));
+  useBlur(() => setFocused(false));
   const reduced = process.env.ALPHACODE_REDUCED_MOTION === "1" || process.env.TERM === "dumb";
-  return createMemo(() => enabled() && focused() && !reduced);
+  return enabled && focused && !reduced;
 }

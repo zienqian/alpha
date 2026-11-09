@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>AlphaCode Web 前端技术设计 F1</title>
+<style>
+:root{--bg:#f7f8f4;--paper:#fff;--ink:#233027;--muted:#606e64;--line:#dce3da;--accent:#275f47;--wash:#edf5ee;--warn:#805717;--code:#f1f4ef;color-scheme:light dark;font:15px/1.85 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;color:var(--ink);background:var(--bg)}*{box-sizing:border-box}body{margin:0}a{color:var(--accent);text-underline-offset:4px}a:focus-visible{outline:2px solid var(--accent);outline-offset:4px}.layout{max-width:1400px;margin:auto;display:grid;grid-template-columns:250px minmax(0,1fr);gap:42px;padding:36px}nav{position:sticky;top:28px;align-self:start;max-height:calc(100vh - 56px);overflow:auto;font-size:12px}nav strong{display:block;margin-bottom:18px;font-size:15px}nav a{display:block;text-decoration:none;padding:5px 0;color:var(--muted)}main{min-width:0;max-width:1040px}header{padding:28px 0 40px;border-bottom:1px solid var(--line)}.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--accent)}h1{font-size:clamp(29px,4vw,44px);letter-spacing:-.04em;line-height:1.25;margin:18px 0}h2{font-size:26px;line-height:1.4;margin:0 0 20px;letter-spacing:-.025em}h3{font-size:18px;margin:26px 0 10px}p{margin:10px 0 16px}section{padding:38px 0;border-bottom:1px solid var(--line);scroll-margin-top:20px}.lead{font-size:17px;color:var(--muted);max-width:820px}.meta{font-size:12px;color:var(--muted)}.notice{padding:18px 22px;background:var(--wash);border-left:3px solid var(--accent);margin:22px 0}.warning{border-left-color:var(--warn)}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{border:1px solid var(--line);background:var(--paper);padding:20px;border-radius:8px}.card strong{display:block;font-size:17px;margin-bottom:8px}.card p{font-size:13px;color:var(--muted);margin:0}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin:18px 0}table{border-collapse:collapse;width:100%;background:var(--paper);font-size:13px;min-width:620px}th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}th{font-weight:600;background:var(--code)}tr:last-child td{border:0}code,pre{font-family:"Cascadia Code",Consolas,monospace}code{font-size:.88em;background:var(--code);padding:2px 4px;border-radius:3px;overflow-wrap:anywhere}pre{font-size:12px;line-height:1.85;background:var(--code);border:1px solid var(--line);border-radius:8px;padding:20px;overflow:auto}pre code{padding:0;background:none}ul,ol{padding-left:24px}li{margin:8px 0}.pill{display:inline-block;font-size:11px;color:var(--accent);border:1px solid var(--line);border-radius:99px;padding:2px 10px;margin-right:6px}.sources li{font-size:12px;overflow-wrap:anywhere}.small{font-size:12px;color:var(--muted)}.foot{padding:28px 0;font-size:12px;color:var(--muted)}@media(prefers-color-scheme:dark){:root{--bg:#171d19;--paper:#1e2721;--ink:#e2ebe2;--muted:#a7b7a9;--line:#354639;--accent:#a1d6b3;--wash:#20362a;--warn:#edc67a;--code:#202d24}}@media(max-width:900px){.layout{display:block;padding:24px}nav{position:static;max-height:none;display:flex;flex-wrap:wrap;gap:6px 18px;padding-bottom:24px}nav strong{width:100%;margin:0}.grid{grid-template-columns:1fr}section{padding:30px 0}}@media print{nav{display:none}.layout{display:block;padding:0}body{background:#fff;color:#000}section{break-inside:auto}pre,.card,tr{break-inside:avoid}a{color:inherit}h2,h3{break-after:avoid}table{min-width:0}main{max-width:none}}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav aria-label="文档目录">
+<strong>AlphaCode / Web F1</strong>
+<a href="#decision">01 结论与边界</a><a href="#baseline">02 TUI 能力基线</a><a href="#research">03 开源项目调研</a><a href="#starter">04 Starter 与依赖</a><a href="#architecture">05 分层和目录</a><a href="#experience">06 页面与交互</a><a href="#contract">07 API 缺口与契约</a><a href="#state">08 状态管理</a><a href="#transport">09 流式与并发</a><a href="#security">10 认证和安全</a><a href="#rendering">11 渲染与性能</a><a href="#delivery">12 工程和交付</a><a href="#tests">13 测试与验收</a><a href="#roadmap">14 实施计划</a><a href="#sources">15 依据与来源</a>
+</nav>
+<main>
+<header>
+<div class="eyebrow">FRONTEND TECHNICAL DESIGN · F1</div>
+<h1>AlphaCode Web 前端技术设计</h1>
+<div class="notice warning"><strong>现状更新（2026-11-09）：</strong>本文保留为历史设计，不代表当前实现。终端与 Web 已统一迁移到 React，Web 目前是空白 React + Vite 脚手架；独立客户端包已删除，CLI 所需的协议与 HTTP/SSE 实现保留在 <code>apps/alphacode/src/server/</code>，聊天契约位于 <code>apps/alphacode/src/chat/contracts.ts</code>。下文的旧技术栈、共享包拆分与 UI 方案不再作为当前实现约束。</div>
+<p class="lead">第一版是现有 TUI 的浏览器客户端，不是另一个 Agent，也不是浏览器 IDE。保留对话、工具、审批与保存语义，让 <code>/web</code> 打开同一会话。</p>
+<p class="meta">设计日期：2026-11-08 · 技术：SolidJS + Ark UI + Vite · 范围：本地单用户 · 状态：建议方案 + 最小 starter</p>
+<div class="notice"><strong>本轮交付：</strong>完整前端设计、参考项目分析、官方模板适配后的独立前端包。<strong>未交付：</strong>daemon、HTTP/SSE、真实会话、认证、<code>/web</code> 启动命令。现有 D1 文件是设计与离线模拟，不是已可调用的后端。</div>
+</header>
+<section id="decision">
+<h2>01 结论与边界</h2>
+<div class="grid"><div class="card"><strong>一个执行核心</strong><p>daemon 持有运行时、会话、权限与保存；TUI / Web 都是投影与命令入口。</p></div><div class="card"><strong>独立 DOM 构建</strong><p>新增 apps/alphacode-web；与 OpenTUI 共用 Solid 版本，但不共用 JSX renderer 或 UI 组件。</p></div><div class="card"><strong>先闭环再扩展</strong><p>优先保证同一会话、断线恢复、不重复执行；文件树、终端、diff 不挤进首版。</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>议题</th><th>选择</th><th>理由及代价</th></tr></thead><tbody>
+<tr><td>应用形态</td><td>Vite SPA，不用 SolidStart / SSR</td><td>本地受保护工具，无 SEO 或首屏服务端内容需求；复用 daemon 托管，避免再维护一套服务端。</td></tr>
+<tr><td>交互与样式</td><td>Ark UI Solid + 原生 CSS 变量；业务组件用 CSS Modules</td><td>Ark 管复杂交互，不是完整主题。自行维护少量语义 token；当前壳只有全局 CSS，按需演进。</td></tr>
+<tr><td>传输</td><td>HTTP 命令 + Fetch SSE 事件流</td><td>顺应 D1；首版没有终端双向字节流，不引入 WebSocket / tRPC / 通用事件总线。</td></tr>
+<tr><td>状态</td><td>框架无关投影 + Solid store 适配</td><td>唯一事件入口，命令回执和流状态分开。P0 不额外引入 Redux、Zustand 或 Query 缓存。</td></tr>
+<tr><td>路由</td><td>业务阶段使用 @solidjs/router</td><td>只在实现 session URL 时添加；starter 尚未安装或声称存在业务路由。</td></tr>
+<tr><td>会话入口</td><td>/web attach 当前会话，不新建 Agent</td><td>本轮仅规定交互合同；需要 daemon 和 TUI 的 RemoteChat 改造先完成。</td></tr>
+</tbody></table></div>
+<p><strong>非目标：</strong>公网/局域网服务、多用户、云同步、账号系统、移动原生应用、Monaco、PTY、文件树、编辑器级 diff、浏览器安装插件、任务队列、多 Agent、模型切换、后台定时任务、PWA 离线执行。不会为了 Web 重新实现权限判定、Skills 展开或 Session 落盘。</p>
+</section>
+<section id="baseline">
+<h2>02 以现有 TUI 为基线，而非想象功能</h2>
+<p>依据当前 <code>apps/alphacode/README.md</code>、<code>chat/contracts.ts</code>、<code>chat/controller.ts</code>、<code>runtime/history.ts</code> 与 <code>runtime/skills.ts</code>。产品 UI 延续英文，设计说明使用中文；模型回复语言不由 UI 限制。</p>
+<div class="table-wrap"><table><thead><tr><th>能力</th><th>TUI 当前事实</th><th>Web 首版承诺</th></tr></thead><tbody>
+<tr><td>输入与对话</td><td>多轮、Markdown、流式文字；同会话单轮执行</td><td>Enter 发送，Shift+Enter 换行；生成时可编辑草稿但不入队；刷新不自动发送。</td></tr>
+<tr><td>工具过程</td><td>状态、命令/路径、返回输出；没有实时 stdout；新轮会清除上一轮工具展示</td><td>首版展示当前/最近一轮工具，保留全部状态与截断提示；不冒充 terminal。跨所有历史轮工具树属于后续扩展。</td></tr>
+<tr><td>确认操作</td><td>命令预览 + 单次允许/拒绝</td><td>底部待审批卡片 + 明确按钮；展示 shell、cwd、command。不会用页面任意 y/n 按键授权。</td></tr>
+<tr><td>权限</td><td>ask / auto / full；保存后生效；忙碌时不能改</td><td>完全相同的服务端语义，修改期间禁用发送；Full access 额外确认 UI 不能替代权限校验。</td></tr>
+<tr><td>Skills</td><td>/skills 本地目录与诊断；/skill 参数保留原始空白；// 转义；未知命令本地拒绝</td><td>命令面板与只读 Skills 对话框；最终展开、信任校验、字节限制均在 daemon；不向浏览器分发 Skill 正文。</td></tr>
+<tr><td>取消</td><td>Esc / Ctrl+C；取消后保留不完整预览</td><td>Stop 按钮；Esc 先关闭浮层再考虑停止；不劫持浏览器 Ctrl+C。</td></tr>
+<tr><td>保存</td><td>落盘完成才能下一轮；保存失败和未知执行阻塞</td><td>Completed 与 Saved 分开；Unsaved 仅重试保存，不重跑模型/工具；Recovery required 禁止继续。</td></tr>
+<tr><td>会话元信息</td><td>模型、工作区、会话标题；ALPHACODE_SESSION 恢复；没有历史选择 UI 或模型切换</td><td>P0 显示当前会话；P1 增加已授权工作区内的历史选择与新建。不能把这些写成现成功能。</td></tr>
+</tbody></table></div>
+<div class="notice warning"><strong>重要差异：</strong>现有 <code>Chat.close()</code> 会取消并保存本地 runtime；它不是浏览器的 detach。页面关闭、路由切换或网络断开只能停止订阅，不能调用 close / stopDaemon。共享 daemon 前，不承诺 TUI 退出后执行仍继续。</div>
+</section>
+<section id="research">
+<h2>03 开源项目调研及取舍</h2>
+<p>这里将用户提到的 “deepharness” 按 <strong>DeepSeek Harness</strong> 理解。依据上游工程与架构文档，不把未运行的界面当成已完成视觉审计。以下链接的主分支内容会变化，结论是 2026-11-08 的读取快照。</p>
+<h3>DeepSeek Harness：借鉴状态与生命周期，不复制插件平台</h3>
+<p>它的 Web 架构是 React + Cordis 插件组合，明确分开 Host 权威状态、Remote 传输、框架无关 Client models、UI adapters 与呈现层。会话 follow 的开头给出完整基线，重连按 generation 替换投影；其物理传输是 WebSocket，不能据此声称它使用 D1 的 SSE。<a href="#source-dsh">[S1]</a></p>
+<p>共享 store 提供不依赖 React 的快照、订阅与按帧发布能力。<a href="#source-store">[S2]</a> <strong>本项目采用：</strong>服务端是唯一真相；组件不直接管重连；高频文字更新和 UI 发布分离。<strong>不采用：</strong>Cordis 容器、动态模块图、Slots 插件系统、通用 RPC 网关或浏览器插件加载器。AlphaCode 首版功能边界固定，复制平台机制只会扩大维护面。</p>
+<h3>OpenCode：最贴近本项目技术栈的工程参考</h3>
+<p>当前 <code>@opencode/app</code> 使用 Solid、Vite、Router，并拆出 client、schema、session-ui 和 ui 包；清单中也包含 Query、虚拟列表等较完整产品依赖。<a href="#source-opencode">[S3]</a> client 根入口是基于 fetch 的 Promise API，并通过边界测试隔离服务端/核心运行时。<a href="#source-client">[S4]</a></p>
+<p><strong>本项目采用：</strong>前端独立包、窄 browser-safe client、会话视图分组件、按需加载重型呈现器。<strong>不采用：</strong>整包 fork、其 Kobalte 组件体系或立即复制所有 UI 依赖；我们已确定 Ark UI。它的分包是规模化参考，不意味着首版也需要同样多的包。</p>
+<div class="table-wrap"><table><thead><tr><th>可借鉴设计</th><th>AlphaCode 落地</th><th>刻意删减</th></tr></thead><tbody>
+<tr><td>Client model 与 view 分离</td><td>SessionProjection + SessionProvider；TUI 可复用 reducer 测试</td><td>不共享 DOM/OpenTUI 组件，不强迁移全部旧控制器</td></tr>
+<tr><td>完整基线后接增量</td><td>state.snapshot / stream.reset + cursor</td><td>不做浏览器自己的第二套会话数据库</td></tr>
+<tr><td>对话与工具信息分层</td><td>主对话时间线 + 折叠工具卡 + 待审批操作区</td><td>不把所有诊断默认展开成 IDE 面板</td></tr>
+<tr><td>客户端资源有明确 owner</td><td>每个活动路由一个连接 owner，onCleanup 仅 detach</td><td>首版不搞跨标签页 leader election / BroadcastChannel</td></tr>
+</tbody></table></div>
+</section>
+<section id="starter">
+<h2>04 Starter 选择与版本策略</h2>
+<div class="table-wrap"><table><thead><tr><th>候选</th><th>判断</th><th>结果</th></tr></thead><tbody>
+<tr><td>Solid 官方 vanilla/bare</td><td>标准 Solid + TS + Vite SPA，项目内适配成本小。<a href="#source-template">[S5]</a></td><td><strong>选用工程结构，手动初始化</strong></td></tr>
+<tr><td>官方 vanilla/with-vitest</td><td>提供 jsdom 与 Solid 测试配置参考。<a href="#source-test-template">[S6]</a></td><td>借鉴测试布局，不照抄旧依赖版本</td></tr>
+<tr><td>Ark UI quickstart</td><td>Ark 是无样式组件；官方 quickstart 含 SolidStart。<a href="#source-ark">[S7]</a></td><td>直接加 @ark-ui/solid，不引入额外应用框架</td></tr>
+<tr><td>Park UI Solid starter</td><td>带视觉层，安装要求先配置 Panda；官方有 SolidStart quickstart。<a href="#source-park">[S8]</a></td><td>作为视觉系统参考，P0 不引入 Panda/codegen</td></tr>
+</tbody></table></div>
+<p>模板基准固定为 <code>solidjs/templates@84b83bf79fef2ae33c1d4511980042be9e118d09</code>。这是可追溯参考，不是宣称它是最新 commit。初始化保留 Vite 入口/构建方式，替换演示内容、版本、端口和 TS 配置，加入 Ark Dialog 与测试；不运行远程脚本，不复制上游产品源码。</p>
+<div class="table-wrap"><table><thead><tr><th>已安装到 starter 的选型</th><th>固定版本</th><th>说明</th></tr></thead><tbody>
+<tr><td>solid-js</td><td>1.9.18</td><td>与 TUI 保持一致，但 JSX 编译目标独立</td></tr>
+<tr><td>@ark-ui/solid</td><td>5.40.0</td><td>按子路径导入，实际验证 Dialog</td></tr>
+<tr><td>vite / vite-plugin-solid</td><td>8.3.6 / 2.11.15</td><td>使用 npm 元数据确认 peer 范围；以构建结果验证实际可用性</td></tr>
+<tr><td>vitest / jsdom</td><td>4.1.0 / 26.1.0</td><td>兼容当前 Node 20；不自动追最新主版本</td></tr>
+<tr><td>@solidjs/testing-library</td><td>0.8.10</td><td>组件交互冒烟测试</td></tr>
+<tr><td>Bun / TypeScript / ESLint</td><td>沿用工作区</td><td>单一 bun.lock，不另加 npm/pnpm 锁文件</td></tr>
+</tbody></table></div>
+<p><strong>按阶段再加：</strong>Router、SSE parser、Markdown parser/净化、代码高亮、Playwright。当前没有用到就不安装。建议 Markdown 采用 unified + remark-parse + remark-gfm + remark-rehype + rehype-sanitize，默认不开 raw HTML，再把白名单 AST 渲染成 Solid 节点；代码高亮与虚拟列表只在性能验收需要时引入。</p>
+</section>
+<section id="architecture">
+<h2>05 分层、复用边界与目录</h2>
+<pre><code>Solid DOM pages / feature components / Ark UI wrappers
+                         ↓ intents / selectors
+SessionProvider (Solid adapter) + local UI state
+                         ↓
+alphacode-client: HTTP / SSE / SessionProjection / errors
+                         ↓ JSON-only contract
+alphacode-protocol: schemas + DTOs + protocol fixtures
+                         ↕
+Daemon: sessions / approvals / idempotency / persistence
+                         ↓
+existing Coding Agent / ADK / Provider / Session SQLite
+
+TUI → RemoteChat adapter → same client / same daemon
+Browser disconnect ≠ request cancel ≠ daemon stop</code></pre>
+<p><strong>只复用合适的语义：</strong>权限枚举、展示状态、输入解析的纯函数、工具状态归并测试、协议与 client。现有 <code>chat/controller.ts</code> 直接控制 runtime、包含关闭和乐观插入逻辑，不能直接放到浏览器。历史投影由 daemon 从归档生成，前端不读取 SessionData 或原始模型消息。</p>
+<pre><code>apps/alphacode-web/                 当前新增的独立前端包
+  src/index.tsx                    DOM mount
+  src/app.tsx                      当前仅非连接态 shell
+  src/styles.css                   当前语义 token 与壳样式
+  test/                            当前 3 个 DOM 冒烟测试
+
+业务阶段按需演进，不是本轮已创建目录：
+  src/app/                         providers, router, error boundary
+  src/components/ui/               Dialog, Menu, Tooltip 等 Ark 包装
+  src/features/session/            route, header, status
+  src/features/conversation/       timeline, message, markdown
+  src/features/composer/           draft, commands, IME
+  src/features/tools/              tool card, output
+  src/features/approvals/          approval card
+  src/features/skills/             catalog, diagnostics
+  src/styles/                      tokens, reset, global
+packages/alphacode-protocol/        未来：schema + inferred types，无运行时依赖
+packages/alphacode-client/          未来：fetch client, stream, reducer
+apps/alphacode/src/daemon/          后端任务的落点建议，不在本轮实现</code></pre>
+<p>protocol 使用单一 schema 来源生成 DTO；建议用轻量 schema 库定义 wire validation，禁止前后端各写一套类型。client 只有平台标准 API，不依赖 Solid、OpenTUI、Node 文件系统或 Bun SQLite。Solid 适配器使用 <code>createStore</code> 进行按字段更新；UI 通过命令 callbacks 交互，不在每个组件内 fetch。</p>
+<p>先以两个共享包为上限，不预建 design-system、plugin、BFF、全局状态平台。代码可以先保留 app 内部实现，直到 TUI RemoteChat 接入时抽到 client；但协议 DTO 从一开始只有一个 owner。当前 ESLint 已禁止浏览器导入服务端包；后续只允许 protocol/client 白名单，并增加传递依赖 bundle 边界测试。</p>
+</section>
+<section id="experience">
+<h2>06 页面、信息架构与交互</h2>
+<p>P0 路由只需要 <code>/</code>（bootstrap / 未连接）和 <code>/w/:workspaceId/s/:sessionId</code>（当前会话）。<code>/web</code> 是 TUI 命令，不是必须存在的 HTTP 路由。URL 只使用不透明 ID，不把真实磁盘路径编码进路由。404、权限不足和 daemon 不可达分别展示，不能都跳回一个空白聊天页。</p>
+<pre><code>┌ Sessions (P1) ───┬ Workspace / session title ─── Model · connection ┐
+│ 当前会话          │                                                   │
+│ 历史与新建        │ User message                                      │
+│ 需要独立授权      │ Assistant markdown + incomplete indicator         │
+│                  │   Tool activity · collapsible output              │
+│                  │                                                   │
+│                  │ Pending approval: shell / cwd / exact command      │
+│                  │                                  Deny / Allow once│
+│                  │ Composer · slash commands             Send / Stop │
+│                  │ Permission · execution · persistence status        │
+└──────────────────┴───────────────────────────────────────────────────┘</code></pre>
+<p>桌面侧栏约 240px、阅读区最大约 860px；不默认添加第三个面板。窄屏侧栏变抽屉；工具详情在原位置折叠，审批保持可达。数值是设计起点，不是固定设备假设。使用 <code>100dvh</code>、独立消息滚动区，长命令只在代码块内横向滚动。</p>
+<div class="table-wrap"><table><thead><tr><th>区域</th><th>交互约束</th><th>组件选择</th></tr></thead><tbody>
+<tr><td>Composer</td><td>受控纯文本 textarea；4–8 行自增高；按会话内存草稿；断线可编辑不可提交；浏览器刷新不持久化正文</td><td>原生 textarea / button；不引入富文本编辑器</td></tr>
+<tr><td>命令面板</td><td>仅输入起始 / 时开启；箭头选择、Enter 确认、Esc 关闭；IME composing 不发送；只显示 userInvocable Skills</td><td>Ark Combobox，命令识别是纯函数，不由 UI 状态机授权</td></tr>
+<tr><td>审批卡片</td><td>非模态固定在 composer 上方；不覆盖用户正在读的文字；过期/另一端处理立即失效；仅按钮点击生效</td><td>原生 region + 按钮；详情用 Ark Collapsible</td></tr>
+<tr><td>权限与 Skills</td><td>/permission 打开设置；/skills 打开只读目录与诊断；full 提示当前用户权限范围，不称为沙箱</td><td>Ark Dialog + RadioGroup；沿用现有 ask/auto/full 文案</td></tr>
+<tr><td>工具输出</td><td>默认摘要，按需展开；区分失败、拒绝、未执行、结果未知；标出省略行与 outputIncomplete</td><td>Ark Collapsible；输出纯文本，不解释 ANSI/HTML</td></tr>
+<tr><td>滚动</td><td>仅用户本来在底部时自动跟随；离开底部后显示新内容按钮；历史分页保持首个可见消息锚点</td><td>浏览器滚动 API，初期不强行虚拟化</td></tr>
+</tbody></table></div>
+<p>快捷键优先级：IME → 活动 Dialog/命令面板 → 文本选择/输入 → 会话动作。Esc 关闭浮层时不再冒泡取消任务；无浮层且执行中才停止。Ctrl+C 保留复制。审批不抢焦点；Tab 顺序、focus restore、触屏目标、减少动画都要真实浏览器验收，不能仅因用了 Ark 就宣称可访问性已通过。</p>
+<p>消息区域可作为日志区域，但不逐 token 向读屏器播报。只礼貌播报“开始 / 等待确认 / 完成 / 保存失败”等状态；复制按钮有文字标签。主题跟随系统，后续可保存 light/dark/system 偏好；不在浏览器存储模型密钥、会话正文或工具输出。</p>
+</section>
+<section id="contract">
+<h2>07 D1 协议能支持什么，还缺什么</h2>
+<p>依赖基准：<a href="alphacode-daemon-api-d1.html">daemon D1 设计</a>、<a href="alphacode-daemon-api-d1.d.ts">D1 类型草案</a>。这些文件保持原样。本节是 <strong>F1 前端要求的后续协议修订建议</strong>，不能在实现时直接假定已存在。</p>
+<div class="table-wrap"><table><thead><tr><th>动作</th><th>D1 接口 / 路由</th><th>前端处理</th></tr></thead><tbody>
+<tr><td>启动认证</td><td>POST /api/v1/auth/exchange</td><td>一次性 launchCode 换 cookie + 内存 CSRF</td></tr>
+<tr><td>读取能力</td><td>GET /api/v1/daemon</td><td>校验 apiVersion、instanceId、capabilities</td></tr>
+<tr><td>会话基线</td><td>GET /api/v1/workspaces/{wid}/sessions/{sid}/events</td><td>首帧 state.snapshot；不用独立 GET 与订阅拼凑无竞态启动</td></tr>
+<tr><td>发送 / 查询 / 停止</td><td>POST S/requests；GET S/requests/{rid}；POST S/requests/{rid}/cancel</td><td>稳定 requestId，202 仅受理，取消也需权威结算</td></tr>
+<tr><td>审批</td><td>POST S/approvals/{aid}/decision</td><td>携带 requestId + runId + decision；服务器绑定 toolCallId</td></tr>
+<tr><td>权限 / 补写</td><td>PATCH S/settings；POST S/persistence/flush</td><td>expectedRevision 并发控制；flush 不触发 send</td></tr>
+<tr><td>历史 / 会话列表</td><td>GET S/messages?before=…；GET W/sessions</td><td>旧消息分页；列表只在授权能力具备后开放</td></tr>
+</tbody></table></div>
+<p class="small">S = /api/v1/workspaces/{workspaceId}/sessions/{sessionId}；W = /api/v1/workspaces/{workspaceId}。所有路径段编码，不能用字符串拼接未校验工作区路径。</p>
+<h3>合并前必须补齐的契约缺口</h3>
+<div class="table-wrap"><table><thead><tr><th>缺口</th><th>为什么会阻塞等价体验</th><th>建议修订（尚未实现）</th></tr></thead><tbody>
+<tr><td>刷新后的 CSRF 恢复</td><td>D1 只在一次性 exchange 回 CSRF；fragment 清除后刷新没有可再次消费的 code</td><td>新增 GET /api/v1/auth/session，基于有效 cookie 返回会话信息、CSRF、能力和授权范围；失败提示从 TUI 再次 /web，不循环 exchange</td></tr>
+<tr><td>模型 / 工作区 / Skills</td><td>SessionSnapshot 无 modelId，缺少 Skills 元数据与加载诊断</td><td>新增 GET S/context，返回冻结 runtime 的 modelId、workspace 展示信息、skills、diagnostics、contextRevision、输入字节限制；重启/重新绑定后重取</td></tr>
+<tr><td>工具关联与完整状态</td><td>WireTool 缺 queued/failed、assistantId、callId、输出截断、cwd 等；不能还原现有 TUI</td><td>扩充 Tool DTO：assistantId、callId、callIndex、description/source、target、path/cwd、全部 ToolStatus、error/exitCode、truncated/omittedLines/outputIncomplete、startedAt/finishedAt</td></tr>
+<tr><td>消息顺序与历史边界</td><td>仅 id + requestId 不能从分离的 messages/tools 确定呈现顺序；分页响应可能晚到</td><td>WireMessage 增加稳定 ordinal 与不完整原因；工具挂到 assistantId 并按 callIndex 排序；分页附 instanceId + snapshotRevision，限定请求的 session/generation</td></tr>
+<tr><td>轮次结果与计时</td><td>请求仅 acceptedAt/finishedAt，无法等价显示恢复后的模型执行耗时；终态不必然成功</td><td>增加 startedAt、durationMs，以及最近一轮 completion；outcome 与 execution 分离，durationMs 服务端计算并持久化</td></tr>
+<tr><td>准入状态更新</td><td>eligibility 仅在 snapshot；saved/settings_changed 只给少量字段，UI 容易一直 busy 或错误放行</td><td>新增 session.state_changed { revision, eligibility, activeRequestId, settingsSaving }，在准入改变时发布；所有 revision 不倒退。P0 若未增加，就变更后以原子快照重新同步，不自行猜 ready</td></tr>
+<tr><td>回执与 SSE 竞争</td><td>旧 HTTP 回执可能覆盖流上已经保存的新状态</td><td>mutation receipt 附 serverCursor；只确认本地 intent，不覆盖比它新的投影。GET snapshot 不作为随时覆盖流状态的捷径</td></tr>
+<tr><td>浏览器授权范围</td><td>BrowserSession.target 不是完整 ACL；无法推断可以列举所有 workspace</td><td>显式 session-scoped grants 与可执行 capability；P1 workspace 授权另行由 native 用户意图授予，前端不能通过路由参数扩权</td></tr>
+</tbody></table></div>
+<p><strong>Tools 历史边界：</strong>P0 同 TUI 仅保留当前/最近一轮工具投影，旧用户和助手消息按 ordinal 分页；不声称能分页全部历史工具。若 P1 要展示全历史轨迹，再给消息页增加对应工具或引入统一 TimelinePage，并明确预算与稳定排序，不能混用不完整的 <code>snapshot.tools</code> 拼历史。</p>
+<pre><code>建议协议对象（设计示意，并非当前 D1 API）：
+SessionContext = {
+  modelId, workspace, contextRevision,
+  skills: [{ name, description, argumentHint, userInvocable }],
+  diagnostics, inputLimits
+}
+SessionProjection = {
+  ref, instanceId, appliedCursor, revision, eligibility,
+  activeRequest, permissionMode, settingsSaving,
+  messageIds, messagesById, toolsById, approvalsById
+}
+BrowserGrant = session refs + explicitly granted capabilities
+MutationReceipt = existing receipt + serverCursor</code></pre>
+<p>这些修订由 daemon/client 共用 schema 和契约夹具一起落地。不得直接把文档 <code>.d.ts</code> 通过路径别名当成稳定发布 SDK，也不能用强制类型断言绕过 runtime JSON 校验。破坏性改变递增 API 版本；新增可选功能用 capability 协商。旧服务端缺必需能力时给出版本不兼容提示。</p>
+</section>
+<section id="state">
+<h2>08 状态管理：三个层次，四条状态轴</h2>
+<div class="table-wrap"><table><thead><tr><th>层次</th><th>数据</th><th>写入者</th></tr></thead><tbody>
+<tr><td>服务端权威投影</td><td>消息、工具、审批、request、revision、eligibility、权限</td><td>唯一 SessionProjection reducer；快照和有序流进入同一通道</td></tr>
+<tr><td>客户端 intent</td><td>待发输入的 requestId、提交中、回执未知、审批决定提交中、settings mutation</td><td>命令 service；不冒充服务端 request 执行结果</td></tr>
+<tr><td>局部 UI 状态</td><td>草稿、面板开合、选中工具、滚动锚点、主题</td><td>组件 / route owner；不从它推断任务完成</td></tr>
+</tbody></table></div>
+<pre><code>connection:  booting → authenticating → syncing → connected
+                         ↘ auth_required / incompatible
+                                      connected → reconnecting → syncing
+execution:   idle → accepted → running ↔ awaiting_approval → terminal
+persistence: pending → saved | unsaved | recovery_required
+mutation:    idle → submitting → confirmed | rejected | outcome_unknown
+
+canSend = connected AND authoritative eligibility == ready
+          AND no active request AND no pending mutation
+          AND no pending approval AND valid nonempty input
+
+Completed + pending persistence → “Saving session…” → no Send
+Completed + unsaved             → “Not saved” → Retry save only
+Recovery required              → read-only + explicit recovery guidance</code></pre>
+<p><code>busy</code>、按钮可用性和状态文案从状态轴派生，不再另存五套可能矛盾的布尔值。运行计时依据服务端 startedAt/durationMs；客户端单调时钟只用于当前页面内动画，重连后校正。不要跨进程比较 <code>performance.now()</code>。</p>
+<p>网络 reducer 保持框架无关；按实体 ID 输出局部 patch，再由 Solid <code>batch</code> 写入 <code>createStore</code>。消息顺序用稳定 ID 列表，组件 key 不用数组下标；保留未变化实体引用。不在每个 token 克隆整个 ChatState，也不在多个组件各自保存一份消息数组。</p>
+<p>snapshot/reset 原子替换服务端投影，保留同会话未提交草稿；抛弃旧连接的缓冲增量、审批 pending intents 和旧页响应，随后查询回执未知的 request。历史读取捕获 routeGeneration + instanceId + revision，返回时不匹配则丢弃。组件 onCleanup 释放 stream、监听、计时器和 render buffer，但不取消后台请求。</p>
+</section>
+<section id="transport">
+<h2>09 流式、重连与并发正确性</h2>
+<h3>启动和恢复</h3>
+<ol><li>读取并立即清除 fragment 中的 launchCode，交换浏览器 cookie；无 code 的刷新走新增 auth/session。成功后校验 daemon 版本与授权目标。</li>
+<li>创建 routeGeneration 与 AbortController。读取 session context，同时打开该会话 SSE。只有合法的 <code>state.snapshot</code> 应用完成才从 syncing 变 connected。</li>
+<li>每帧校验 envelope：workspace/session、instanceId、event type、payload、sequence/cursor 对应关系与大小预算。同实例已应用 sequence 的重复帧丢弃；不连续或未知语义帧触发重新同步，不能继续盲目追加。</li>
+<li>断线保留可读投影，但暂停发送、审批和设置。重连仅携带最后<strong>已应用</strong>的游标；不是最后收到、但还没写入投影的帧 ID。</li>
+<li>服务器回 replay 则有序补齐；回 stream.reset 则原子覆盖快照。instanceId 改变时所有旧 pending 状态失效，不能向新实例重放旧审批。</li>
+</ol>
+<p><strong>选择 Fetch SSE：</strong>统一 Promise/AsyncIterable client，可读取 HTTP 状态、实现 AbortSignal 与可控退避；采用成熟 <code>eventsource-parser</code> 类解析器，不用 <code>split("\n\n")</code>。按照 SSE 标准处理分块 UTF-8、CRLF、多行 data、注释心跳、id、retry 和未完成尾帧。<a href="#source-sse">[S9]</a> 浏览器原生 EventSource 也是可行替代，但两套实现不要同时成为状态来源。</p>
+<p>建议退避 0.5s、1s、2s、4s，最大 15s，加 jitter；遵守 Retry-After。401 转 auth_required；403、协议不兼容和非法 payload 停止自动重试并展示明确错误；网络错误及明确可重试 5xx 才退避。D1 提议 15s 心跳，前台连续约 45s 无任何字节则重建连接；后台标签页恢复可见时主动校验，不把计时器被节流误判为任务失败。</p>
+<h3>发送幂等与回执丢失</h3>
+<ol><li>点击发送立即冻结输入与 UUID requestId，先标记本地 submitting，防止双击和重复 Enter。乐观用户行用 requestId 关联，但标记“Sending”，不是伪造已保存消息。</li><li>POST 202 只表示 accepted。SSE 的 request.accepted 可能先于 HTTP 返回：按 requestId 合并，用户行只能有一条。</li><li>若 POST 超时，标记 outcome_unknown；先查询同 requestId。查询存在就 attach；确定不存在且仍为同 daemon/grant 时，才允许同 ID、同输入重试。不可换 ID 或重新展开 Skill。</li><li>旧回执只更新 intent，不覆盖已前进的 execution/persistence；Saved 状态不得被晚到的 accepted receipt 回退。</li><li>刷新不恢复自动发送。可在 sessionStorage 保存最小 receipt locator（instanceId + ref + requestId，不含输入）用于查询；实例改变时仅做恢复提示，绝不自动重试执行。</li></ol>
+<h3>多端审批、取消与设置</h3>
+<p>审批决定绑定 approvalId/requestId/runId；服务器 first valid decision wins。另一端已批准，当前端的反向决定收到 409 后显示“Handled in another client”，重新读取权威状态；过期收到 APPROVAL_EXPIRED，不能复活按钮。断线不等于批准；不预先把工具标成 succeeded。</p>
+<p>取消仅发送对当前 requestId 的明确操作；按钮进入 Stopping，等 request.finished 与持久化结果。关闭标签页、切换会话、SSE abort 均不会触发 cancel。权限修改携带 expectedRevision，409 回滚选择并重新同步；保存成功前不改变生效权限。</p>
+<p>首版每个标签页一个活动会话连接；用户切换会话时取消旧订阅。两个标签页各自可读同一会话，写操作由服务端 single-writer + 幂等保护，不做前端选主。会话列表 P1 先在进入、focus 与操作结算时重新读取；没有列表事件就不宣称后台列表实时。</p>
+</section>
+<section id="security">
+<h2>10 本地认证、信任边界与安全</h2>
+<h3>/web 的握手合同</h3>
+<pre><code>TUI /web
+  → 确认唯一 daemon 与当前 session runtime 所有权
+  → native 凭证请求一次性、短时、目标绑定 launchCode
+  → 仅在服务就绪后打开浏览器 /w/{wid}/s/{sid}#launch=...
+Browser
+  → 读取 code，立即 history.replaceState 清除 fragment
+  → POST /auth/exchange → HttpOnly cookie + CSRF + grants
+  → GET /daemon + S/context → S/events → 原子 snapshot
+Refresh
+  → GET /auth/session（F1 新增建议）→ 恢复 CSRF → 重新订阅
+Close tab
+  → detach only；daemon 与任务继续</code></pre>
+<p>TUI 已有 Slash 命令注册与 Skills reservedNames 必须加入 <code>web</code>，在 UI/命令层截获，不能把 <code>/web</code> 发送模型。它是独立于聊天发送的本地操作：即使任务执行中也可以 attach，不受 <code>chat.canSend</code> 的发送门槛限制；这需要单独的命令分发路径。若启动时 runtime 仍属 TUI 进程，必须先完成 daemon 化；不通过新建同 ID runtime 或启动第二个进程来“模拟共享”。</p>
+<ul><li>生产仅 loopback、单一 browser origin；精确 Host/Origin 校验与授权作用域由后端负责，前端隐藏按钮不是 ACL。</li><li>launch code 放 fragment，不放 query、日志、analytics 或本地存储；默认沿 D1 60 秒、单次消费。交换响应不可缓存，禁止 service worker 缓存认证和会话。</li><li>HttpOnly、SameSite=Strict、host-only cookie；HTTPS 时 Secure。cookie 不隔离端口，必须防止另一本地服务被误信任。写操作带 JSON Content-Type 与 X-AlphaCode-CSRF；不开放通配 CORS。</li><li>认证刷新 GET 只向同源可见，校验 Host、Origin/Fetch Metadata；不要把 CSRF 挂进 HTML 或 URL。重启令 cookie 失效时要求重新 /web，而不是退回无认证模式。</li><li>多标签页 launch 交换应保持同一 browser session 的既有 grants，原子加入明确的新目标；不能静默覆盖 cookie 的唯一目标使旧标签页失效。若轮换 CSRF，写失败后经 auth/session 重新取值，不能盲目重放审批。</li><li>普通浏览器不能注册任意工作目录或 stopDaemon；P0 只访问 launch 授权的 session。P1 列表与创建权限通过 native 明确授予，不从路由推断。</li><li>模型 API key、配置文件、完整 Skill 指令、原始 Error stack 不进入 bundle 或 bootstrap；VITE_* 只允许公开构建信息。前端不 import Provider、Coding Agent、Session SQLite。</li><li>消息、路径、工具输出都是不可信文本；默认禁 raw HTML、任意 SVG/iframe 与外部图片自动请求。允许的外链先验证 http/https，开启新标签时 noopener/noreferrer；拒绝 javascript/data/file/vscode 等链接自动执行。</li></ul>
+<p><strong>生产响应头建议：</strong><code>Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'</code>，并加 nosniff、no-referrer。若某个 Ark 定位组件确需 inline style，只在明确审核后放开 style-src-attr，不放开 inline script。当前 starter 没有 daemon 响应头，这些不是已落实的安全保证。</p>
+<p><strong>开发环境：</strong>当前 Vite 只展示离线壳，不代理真实 API。联调时推荐浏览器仍访问 daemon origin：daemon 在受控开发模式代理 UI/HMR 到 loopback Vite，API 由自己处理；不通过 Vite changeOrigin 伪装所有来源。HMR 的 ws/connect-src 仅开发开放，生产没有例外。另一种直连 Vite 方案必须单独设计精确 dev origin 与 CSRF，不可临时禁认证。</p>
+</section>
+<section id="rendering">
+<h2>11 Markdown、长对话与性能预算</h2>
+<h3>流式内容不是每个 token 重画整页</h3>
+<p>网络帧先校验并应用到框架无关投影，应用成功后推进 cursor；只把 UI publication 合并到下一帧。对同 messageId 的增量可累计成 chunks，定期拼接，完成时由 <code>message.committed</code> 的完整 text 替换，绝不再次 append。结构性事件如审批/失败立即发布。后台标签页不能依赖 requestAnimationFrame 才推进协议状态；恢复可见时发布最新快照即可。</p>
+<p>Markdown 首版采用安全 AST 渲染：稳定的已完成消息缓存 AST；当前消息约 50ms 合并解析，提交时完整重解析；未闭合代码围栏按未完成代码块显示，不执行内容。HTML 默认作为文字或丢弃；不启用 rehype-raw。代码高亮可在块闭合后懒加载，输出白名单 token span，不把模型提供的 HTML 注入 DOM。图片首版只显示链接，由用户决定访问，不发出隐含的外网请求。</p>
+<p>不为 P0 上 Monaco、xterm、复杂 diff 或全语言 Shiki 包。若代码高亮后续需要 Shiki，仅加载业务常用语言并评估 worker/懒 chunk；纯代码块保留复制按钮即可先满足 TUI 等价体验。</p>
+<h3>分页与内存</h3>
+<p>跟随 D1 最近 50 条默认快照、历史分页；一次加载 50 条。前端建议消息工作集不超过 500 条或 10 MiB 文本（可测调优），超限优先移除离可见区最远的旧分页，并保留稳定 cursor 以供重新获取；活动轮、待审批和不明执行不得被静默淘汰。UI 裁剪不改变服务端完整历史，也不能把截断文字作为新对话输入。</p>
+<p>单条超大输出由协议字节预算裁剪且标记；前端显示“Output truncated”，不伪装完整。P0 最近工具记录沿 TUI 语义；全历史工具轨迹先修协议再谈虚拟列表。超过 300 个复杂可见项且实测长任务超预算时，再引入 TanStack Solid Virtual；必须验证动态高度、选择/复制、锚点和读屏体验。</p>
+<div class="table-wrap"><table><thead><tr><th>度量</th><th>建议验收阈值</th><th>测量条件</th></tr></thead><tbody>
+<tr><td>首屏 JS</td><td>P0 ≤ 250 KiB gzip；高亮独立懒 chunk</td><td>生产 build 的实际入口及依赖，不用 dev bundle；目前壳 JS gzip 约 29.14 kB，不能推断完整产品结果</td></tr>
+<tr><td>输入响应</td><td>p95 &lt; 50ms</td><td>100 条消息、持续增量与长工具输出同屏，目标开发机 Chrome/Edge</td></tr>
+<tr><td>流到屏幕</td><td>前台 p95 &lt; 100ms</td><td>从已收到合法帧到 DOM publication；排除模型网络延迟</td></tr>
+<tr><td>主线程</td><td>常规增量无 &gt; 50ms long task</td><td>约 100 帧/s、5 分钟回放夹具；关注 Markdown 和复制操作</td></tr>
+<tr><td>长会话</td><td>10,000 条归档仍可分页，工作集有界</td><td>浏览器不全量加载；切换 100 次 route 后无残留 stream/listener</td></tr>
+</tbody></table></div>
+<p class="small">除明确标出的 starter build 体积外，这些是设计目标，不是已经测得的性能结果。统一测试机器、浏览器版本与夹具后建立基线，禁止把框架性能宣传当验收。</p>
+</section>
+<section id="delivery">
+<h2>12 工程化、打包与交付边界</h2>
+<h3>当前已初始化</h3>
+<ul><li><code>apps/alphacode-web</code>：Solid DOM 入口、响应式非连接态壳、Ark Dialog、语义色彩变量和系统深浅色。</li><li>根脚本 <code>dev:web</code> / <code>build:web</code>；package 自带 build/typecheck/lint/test targets，Nx 通过 workspace 发现。</li><li>浏览器 TS types 明确覆盖为 vite/client，jsxImportSource 是 solid-js；测试/工具类型单独配置，不污染现有 OpenTUI transform。</li><li>复用唯一 bun.lock，精确版本；没有更新既有 TUI/ADK 行为，没有修改 D1 草案或其他正在进行的改动。</li><li>发送区域明确禁用，无虚构会话、模拟成功发送或假连接；starter 不读取环境密钥，不连接外部模型。</li></ul>
+<pre><code>bun install --frozen-lockfile
+bun run dev:web
+bun run build:web
+bun run --cwd apps/alphacode-web typecheck
+bun run --cwd apps/alphacode-web lint
+bun run --cwd apps/alphacode-web test</code></pre>
+<p>开发监听 <code>127.0.0.1:5173</code>，strictPort 防止悄悄切换端口；不会自动打开浏览器。<code>dist/</code> 是独立静态构建，当前不自动复制进 CLI。</p>
+<h3>未来生产构建链</h3>
+<pre><code>protocol build / schema checks
+          ↓
+client build + conformance tests
+          ↓
+web vite build → dist/index.html + assets/*
+          ↓
+CLI release packaging → daemon/web-static/*
+          ↓
+daemon authenticates API + serves same-origin UI</code></pre>
+<p>由 Nx 显式配置 CLI release 对 web:build 的依赖；没有源代码 import 也不能漏打包。构建 manifest 带 webBuildId/apiVersion/requiredCapabilities，daemon 不兼容时拒绝继续而不是显示半坏页面。index.html 不缓存，hash assets 长缓存；API/SSE no-store。SPA fallback 仅匹配 HTML navigation，<code>/api/*</code>、不存在的 asset 必须返回真实 404，不能返回 index.html。</p>
+<p>服务端静态路径解析限制在资源目录，拒绝 traversal；不从工作区任意文件回退。生产关闭 HMR、源映射公开访问和自动浏览器调试日志。接入 CI 后用 Windows + Bun 1.4.4 为必测矩阵，再补 Linux；浏览器端覆盖 Chromium/Firefox/WebKit，移动仅要求布局和触控可用，不承诺后台持续运行能力。</p>
+<h3>日志与诊断</h3>
+<p>前端记录 buildId、instanceId、requestId、traceId、cursor、重连次数和脱敏错误码；默认不记录 prompt、命令全文、输出或授权 token。提供可手动复制的诊断摘要，不自动上传。ErrorBoundary 隔离 Markdown/单条工具渲染错误；系统连接错误进入顶层状态，不能吞掉后继续允许写操作。</p>
+</section>
+<section id="tests">
+<h2>13 测试策略和可执行验收</h2>
+<p><strong>已执行范围：</strong>本轮 starter 的 build、两份 TS typecheck、ESLint、3 个 Vitest DOM 测试通过。真实 daemon、认证、流协议、多端并发和端到端浏览器集成尚未实现；不能用这三个测试代替下表验收。</p>
+<p class="small">另外验证了 Nx 的 web:test（包含 build）、冻结锁文件安装、开发首页/模块 HTTP 200、本文目录锚点与本地引用。全仓 typecheck/lint 仍被本轮未修改的 <code>apps/alphacode/test/daemon-api-design.test.ts</code> 阻塞：第 77 行数组类型不匹配，第 4/76 行 lint 错误。新增 Node 类型造成的冲突已通过对齐原仓库 <code>@types/node@26.6.6</code> 消除；没有修改无关测试。未执行真实浏览器截图验收，临时开发服务已停止。</p>
+<div class="table-wrap"><table><thead><tr><th>层级</th><th>用例</th><th>通过条件</th></tr></thead><tbody>
+<tr><td>协议/Reducer 单测</td><td>snapshot→delta→commit；重复帧；缺帧；reset；不同 session/instance；工具终态后旧 start</td><td>不丢字、不重复、不回退工具终态；非法事件 fail closed；客户端与 daemon 夹具一致</td></tr>
+<tr><td>SSE 解析与断流</td><td>逐字节切分 UTF-8、CRLF、多行 data、注释、截断帧；断在 receipt 与 accepted 之间</td><td>只应用完整帧；正确 cursor；不把心跳当业务消息；重连不创建新请求</td></tr>
+<tr><td>组件/键盘</td><td>中文 IME Enter、Shift+Enter、slash 原始参数、Dialog focus trap/restore、Esc 优先级</td><td>输入法不会误提交，弹窗关闭不会误取消，审批不会被随手输入 y 批准</td></tr>
+<tr><td>真实双客户端</td><td>TUI 发消息→Web 看到；Web 断线→TUI 审批→Web 恢复；两个客户端反向决定</td><td>同一 runtime、一次实际工具执行、同一最终审批；旧按钮立即失效</td></tr>
+<tr><td>请求幂等</td><td>双击发送、响应丢失、同 ID 同输入重试、同 ID 不同输入、刷新</td><td>一条用户消息与一次执行；冲突 409；刷新没有自动发送</td></tr>
+<tr><td>持久化</td><td>finished 先于 saved；保存失败；flush；CAS 冲突；daemon 崩溃</td><td>只在 ready 后可发送；flush 只写存储；未知副作用不重跑；不把未保存说成已保存</td></tr>
+<tr><td>认证与授权</td><td>code 过期/复用；刷新找回 CSRF；新 tab；跨端口/跨 Origin；伪造 sid；cookie 失效</td><td>越权被服务端拒绝；认证响应不缓存；不会因为 URL 改变扩大 grants</td></tr>
+<tr><td>内容安全</td><td>脚本/事件属性/危险 URL/恶意 Markdown/远程图片/终端控制序列/巨大输出</td><td>无脚本执行、自动外网请求或任意协议跳转；输出预算明确可见</td></tr>
+<tr><td>发布与边界</td><td>刷新深链接；missing asset；API 404；无 Node/Bun/SQLite/provider 进入 browser bundle</td><td>SPA 路由可刷新，API 不能被 fallback 污染；production 包不含秘密</td></tr>
+</tbody></table></div>
+<p>建议测试工具：Vitest + Solid Testing Library 做组件与 reducer；可控本地 HTTP/SSE fixture 做真实 streaming；Playwright 做两标签页/浏览器/截图/网络故障。MSW 可用于普通 HTTP，不把它作为 TCP 断流、后台计时或跨进程幂等的唯一证据。使用确定性 fake provider 验证工具执行计数，测试不依赖付费真实模型。</p>
+</section>
+<section id="roadmap">
+<h2>14 实施顺序与交付门槛</h2>
+<div class="table-wrap"><table><thead><tr><th>阶段</th><th>交付</th><th>前置 / 退出门槛</th></tr></thead><tbody>
+<tr><td>M0 · 本轮</td><td>技术方案、独立 starter、Ark 组件冒烟、构建/typecheck/lint</td><td>只读非连接壳可启动，现有 TUI 不变；不宣称功能首版已完成</td></tr>
+<tr><td>M1 · 契约与客户端</td><td>确认 F1 修订；browser-safe protocol/client；真实 SSE fixture；路由与认证状态</td><td>auth/session、context、工具 DTO、eligibility 的 owner 明确；黑盒事件回放通过</td></tr>
+<tr><td>M2 · 当前会话闭环</td><td>输入、Markdown、工具、审批、权限、Skills、取消、保存状态</td><td>daemon 具备真实执行/幂等/审批/保存；全部 TUI 等价项可验收</td></tr>
+<tr><td>M3 · /web 真实集成</td><td>CLI 当前会话交接、一次性打开、同源发布、重连与多端</td><td>Windows 后台生命周期先验证；TUI/Web 同一 session；关闭任何客户端不误杀任务</td></tr>
+<tr><td>P1 · 浏览器便利能力</td><td>授权工作区内历史、新建、搜索；长对话与细节抛光</td><td>先定义权限范围；新会话沿用服务器默认模型/权限；不自动扩到全部磁盘</td></tr>
+<tr><td>P2 · 有依据再加</td><td>文件树、diff、模型选择、终端、完整历史轨迹等</td><td>每项单独补服务端能力、协议和安全评审；不是前端加组件就完成</td></tr>
+</tbody></table></div>
+<p><strong>粗估而非承诺：</strong>在 daemon 已符合契约、单名前端开发且沿用现有设计的前提下，M1 约 2–3 人日、M2 约 4–6 人日、M3 约 2–4 人日；另留 2–3 人日处理浏览器与 Windows 联调。daemon 本身的开发不含在内；若协议未冻结，不给确定上线日期。</p>
+<h3>最值得先锁定的决定</h3>
+<ol><li><strong>当前会话优先：</strong>首个真实闭环不被历史管理、文件树或视觉细节阻塞。</li><li><strong>刷新认证补齐：</strong>auth/session 和明确 grant 模型是接口前置，不留给前端临时 localStorage token 解决。</li><li><strong>状态不做第二套真相：</strong>snapshot + cursor + 幂等 requestId + 独立 persistence 是协议基础，不是 UI 优化。</li><li><strong>不直接复用 TUI controller：</strong>复用纯语义和测试，通过 client/RemoteChat 适配，避免 close() 误杀共享执行。</li><li><strong>以真实双端验收：</strong>最重要的 demo 是“Web 断线、TUI 批准、Web 恢复后不重复执行”，不是漂亮的静态聊天气泡。</li></ol>
+<div class="notice"><strong>推荐下一步：</strong>先评审第 07 节的 F1 契约修订，再实现 M1 的可控 SSE fixture 与 client。后端未就绪时可做标记清楚的 fixture 模式，但它不能冒充已连接的 Agent，也不应修改真正会话。</div>
+</section>
+<section id="sources">
+<h2>15 依据与来源</h2>
+<p>在线部分只引用官方工程、官方文档和协议标准；参考项目分析是架构层调研，不含未执行的产品体验结论。设计选择、预算和阶段安排属于本项目建议。上游 default branch 链接非永久快照，实际借用代码前应再固定 revision 并审查许可证。</p>
+<ol class="sources">
+<li id="source-dsh"><strong>S1 · DeepSeek Harness Web Client architecture</strong>：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/web-client.md">官方分层、Client model、会话 follow 和重连语义</a>。</li>
+<li id="source-store"><strong>S2 · DeepSeek Harness client/store</strong>：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/store/README.md">框架无关快照 store 与按帧发布</a>。</li>
+<li id="source-opencode"><strong>S3 · OpenCode app / ui</strong>：<a href="https://github.com/anomalyco/opencode/blob/dev/packages/app/package.json">app 依赖与脚本</a>；<a href="https://github.com/anomalyco/opencode/blob/dev/packages/ui/package.json">UI 包导出与技术栈</a>。不把其 Kobalte 当成 Ark。</li>
+<li id="source-client"><strong>S4 · OpenCode client</strong>：<a href="https://github.com/anomalyco/opencode/blob/dev/packages/client/README.md">客户端生成、Promise fetch 入口和 bundle 边界</a>。</li>
+<li id="source-template"><strong>S5 · Solid official vanilla/bare</strong>：<a href="https://github.com/solidjs/templates/tree/84b83bf79fef2ae33c1d4511980042be9e118d09/vanilla/bare">固定 commit 的模板目录</a>。</li>
+<li id="source-test-template"><strong>S6 · Solid official vanilla/with-vitest</strong>：<a href="https://github.com/solidjs/templates/blob/84b83bf79fef2ae33c1d4511980042be9e118d09/vanilla/with-vitest/vite.config.ts">测试配置参考</a>。</li>
+<li id="source-ark"><strong>S7 · Ark UI</strong>：<a href="https://ark-ui.com/docs/overview/getting-started">Getting Started</a>；<a href="https://ark-ui.com/docs/overview/about">框架支持与状态机基础</a>。</li>
+<li id="source-park"><strong>S8 · Park UI</strong>：<a href="https://park-ui.com/docs/installation">安装前置 Panda、Ark 基础与 Solid quickstart</a>。</li>
+<li id="source-sse"><strong>S9 · WHATWG HTML SSE</strong>：<a href="https://html.spec.whatwg.org/multipage/server-sent-events.html">事件流帧格式、解析和 Last-Event-ID</a>。</li>
+<li><strong>本地事实</strong>：<code>apps/alphacode/README.md</code>；<code>src/chat/contracts.ts</code>；<code>src/chat/controller.ts</code>；<code>src/chat/messages.ts</code>；<code>src/runtime/history.ts</code>；<code>src/runtime/skills.ts</code>；<code>src/ui/keyboard.ts</code>；<code>src/ui/commands.ts</code>；根 <code>package.json</code>、<code>nx.json</code>、<code>tsconfig.base.json</code> 与 <code>eslint.config.js</code>。src 路径均相对 apps/alphacode。</li>
+<li><strong>本地设计依赖</strong>：<a href="alphacode-daemon-api-d1.html">D1 API 设计与离线演示</a>、<a href="alphacode-daemon-api-d1.d.ts">D1 types</a>。未更改这些文件。</li>
+<li><strong>版本核验</strong>：2026-11-08 读取 npm registry package metadata 的 version / engines / peerDependencies，并通过本仓库实际安装、构建和测试验证所选组合；不把所有选定依赖称为 latest。</li>
+</ol>
+</section>
+<footer class="foot">AlphaCode Web F1 · 设计与 starter，不是完整 Web 产品 · 2026-11-08</footer>
+</main>
+</div>
+</body>
+</html>

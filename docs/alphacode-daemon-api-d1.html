@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="referrer" content="no-referrer">
+<title>AlphaCode — Daemon API Lab</title>
+<style>
+:root{--bg:#f5f7f7;--paper:#fff;--ink:#182b30;--muted:#687c80;--line:#dfe7e7;--accent:#087f73;--wash:#eaf6f2;--amber:#946315;--amber-bg:#fff8e9;--red:#b74040;--mono:'Cascadia Code',Consolas,monospace;--sans:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.65 var(--sans)}button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;transition:background .15s,border-color .15s}button:disabled{cursor:not-allowed;opacity:.45}button,a,input,textarea,select,summary{outline-offset:4px}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent)}[hidden]{display:none!important}a{color:var(--accent);text-underline-offset:4px}code,pre,.mono{font-family:var(--mono)}code{font-size:.92em}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.8;margin:0}h1,h2,h3,p{margin-top:0}::selection{background:#bfe7dd}
+.topbar{height:72px;background:var(--paper);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 32px;gap:16px;position:sticky;top:0;z-index:20}.brand{display:flex;align-items:center;gap:12px}.brandmark{width:33px;height:33px;display:grid;place-items:center;background:var(--ink);color:#fff;border-radius:8px;font:23px Georgia,serif}.brandname{font-size:17px;font-weight:650;letter-spacing:-.5px}.crumb{font-size:12px;color:var(--muted);margin-left:18px;padding-left:18px;border-left:1px solid var(--line)}.topmeta{display:flex;align-items:center;gap:16px;font:11px var(--mono);color:var(--muted)}.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:5px;padding:4px 9px;background:var(--paper);font:10px/1.6 var(--mono);white-space:nowrap}.chip.green{background:var(--wash);border-color:#cae6dc;color:var(--accent)}.dot{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0}.shell{display:grid;grid-template-columns:218px minmax(0,1fr);max-width:1660px;margin:0 auto}.sidebar{position:sticky;top:72px;height:calc(100vh - 72px);border-right:1px solid var(--line);padding:33px 20px;display:flex;flex-direction:column;gap:28px}.section-label{font:10px var(--mono);letter-spacing:1.7px;color:var(--muted);margin:0 12px 13px}.nav{display:grid;gap:5px}.nav button{border:1px solid transparent;background:none;text-align:left;padding:10px 12px;border-radius:6px;display:flex;align-items:center;gap:12px;font-size:12px}.nav button span{font:10px var(--mono);color:#94a5a7}.nav button[aria-selected=true]{background:var(--paper);border-color:var(--line);color:var(--accent);font-weight:600;box-shadow:0 2px 4px #1b303005}.nav button[aria-selected=true] span{color:var(--accent)}.sidebar-note{font-size:11px;line-height:1.9;color:var(--muted);margin:0 12px}.sidebar-note b{color:var(--ink);font-weight:600;display:block;margin-bottom:7px}.sidebar-bottom{margin-top:auto;border-top:1px solid var(--line);padding:18px 12px 0;font-size:11px;color:var(--muted)}.sidebar-bottom a{display:block;margin-top:8px}.content{min-width:0;padding:34px 38px 44px}.eyebrow{font:10px var(--mono);letter-spacing:2px;color:var(--accent);display:flex;align-items:center;gap:10px;margin-bottom:12px}.eyebrow:before{content:'';width:18px;height:1px;background:var(--accent)}.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px}.hero h1{font-size:clamp(26px,2.8vw,39px);letter-spacing:-1.6px;font-weight:600;line-height:1.3;margin:0 0 10px}.hero p{font-size:13px;color:var(--muted);margin:0;max-width:690px}.hero-side{font:10px/1.9 var(--mono);color:var(--muted);white-space:nowrap;text-align:right;padding-bottom:4px}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);background:var(--paper);border-radius:8px;margin-bottom:23px}.metric{padding:15px 19px;border-right:1px solid var(--line);min-width:0}.metric:last-child{border:0}.metric-label{font-size:10px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;gap:8px}.metric-value{font:19px/1.5 var(--mono);letter-spacing:-.7px}.metric-value small{font:10px var(--sans);color:var(--muted);margin-left:6px}
+.button{border:1px solid #d7e1e0;background:var(--paper);border-radius:5px;padding:7px 12px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:32px;text-decoration:none}.button:hover:not(:disabled){background:#edf3f2;border-color:#b3c7c2}.button.primary{background:var(--accent);border-color:var(--accent);color:#fff}.button.primary:hover:not(:disabled){background:#086e64}.button.danger{color:var(--red)}.button.small{min-height:27px;padding:4px 8px;font-size:10px}.button.ghost{background:transparent}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap}.segmented{display:inline-flex;gap:4px;padding:4px;background:#e9eeee;border-radius:6px}.segmented button{border:0;background:transparent;border-radius:4px;padding:6px 11px;font-size:11px;color:var(--muted)}.segmented button[aria-pressed=true]{background:#fff;box-shadow:0 1px 3px #1a34300d;color:var(--ink)}.toolbar-actions{display:flex;align-items:center;gap:10px}.check{font-size:11px;display:flex;align-items:center;gap:6px;color:var(--muted);white-space:nowrap}.check input{accent-color:var(--accent)}.lab{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:20px}.panel{border:1px solid var(--line);border-radius:8px;background:var(--paper);overflow:hidden;min-width:0}.panel-head{min-height:49px;padding:12px 17px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);gap:12px}.panel-title{font-size:12px;font-weight:600;display:flex;align-items:center;gap:9px}.panel-title .tiny{font:10px var(--mono);color:var(--muted);font-weight:400}.panel-topline{font:10px var(--mono);color:var(--muted)}.chat-info{padding:9px 17px;background:#fcfdfd;border-bottom:1px solid var(--line);font:10px var(--mono);color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}.conversation{height:300px;overflow:auto;padding:22px 21px;scrollbar-width:thin;overflow-anchor:none}.empty-chat{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;color:var(--muted);font-size:12px}.empty-glyph{width:42px;height:42px;border:1px solid var(--line);background:#f7faf9;border-radius:11px;display:grid;place-items:center;margin-bottom:16px;font:21px Georgia,serif;color:var(--accent)}.empty-chat strong{color:var(--ink);font-weight:550;margin-bottom:7px}.empty-chat p{max-width:285px;margin:0}.message{margin-bottom:23px}.message.user{display:flex;justify-content:flex-end}.message.user .bubble{background:#f0f4f3;border-radius:8px 8px 2px 8px;padding:10px 13px;max-width:87%;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}.assistant-label{display:flex;align-items:center;gap:7px;color:var(--accent);font:10px var(--mono);margin-bottom:9px}.message.assistant .bubble{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.95}.streaming:after{content:'▍';color:var(--accent)}.tool{font:10px/1.8 var(--mono);padding:10px 12px;background:#f7f9f9;border:1px solid var(--line);border-radius:5px;margin:12px 0;overflow-wrap:anywhere}.tool strong{font-weight:500;color:var(--accent)}.approval{margin:0 17px 14px;border:1px solid #ead9b3;background:var(--amber-bg);border-radius:6px;padding:12px 14px}.approval h3{font-size:12px;margin:0 0 6px;color:var(--amber)}.approval p{font:10px var(--mono);margin:0 0 8px;color:var(--muted);overflow-wrap:anywhere}.approval code{display:block;font-size:12px;margin-bottom:12px}.button-row{display:flex;flex-wrap:wrap;gap:7px}.banner{padding:9px 16px;background:var(--amber-bg);color:var(--amber);font-size:11px;border-bottom:1px solid #eedfc0}.composer{border-top:1px solid var(--line);padding:13px 17px}.composer textarea{display:block;width:100%;resize:vertical;min-height:64px;max-height:170px;border:0;background:transparent;font-size:12px;line-height:1.8;padding:2px 0;outline-offset:3px}.composer-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px}.composer-hint{font-size:10px;color:var(--muted)}.state-strip{padding:9px 17px;font-size:10px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px;color:var(--muted);background:#fcfdfd}.state-strip b{font-weight:500;color:var(--ink)}.right-stack{display:grid;gap:16px;align-content:start}.terminal{background:#172a2c;border:1px solid #172a2c;border-radius:8px;color:#c8ddda;overflow:hidden}.terminal-head{display:flex;justify-content:space-between;align-items:center;padding:11px 15px;border-bottom:1px solid #ffffff15;font:10px var(--mono);color:#89aba6}.terminal pre{padding:14px 15px;font-size:11px;line-height:1.9;min-height:100px;color:#c8ddda}.terminal .button{background:#233d3d;border-color:#3c5a58;color:#c8ddda}
+.event-tabs{display:flex;gap:20px}.event-tabs button{border:0;background:none;padding:1px 0;font-size:11px;color:var(--muted)}.event-tabs button[aria-selected=true]{font-weight:600;color:var(--accent)}.event-tabs small{font:9px var(--mono);margin-left:5px;color:var(--muted)}.event-list{height:166px;overflow:auto;scrollbar-width:thin}.event-row{width:100%;display:grid;grid-template-columns:41px minmax(0,1fr) auto;gap:9px;padding:9px 14px;border:0;border-bottom:1px solid #eef2f2;background:#fff;text-align:left;font:10px var(--mono);line-height:1.4}.event-row:hover,.event-row.selected{background:#edf6f3}.event-row .event-seq{color:#8b9d9f}.event-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.event-time{color:var(--muted);font-size:9px}.event-detail{background:#f8fafa;border-top:1px solid var(--line);padding:12px 14px;max-height:186px;overflow:auto;scrollbar-width:thin}.event-detail pre{font-size:10px;line-height:1.7}.event-empty{padding:28px 18px;color:var(--muted);font-size:11px}.faults{margin-top:20px;padding:14px 17px;border:1px dashed #cbd9d7;border-radius:7px;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}.faults h3{font-size:11px;margin:0 0 3px}.faults p{font-size:10px;color:var(--muted);margin:0}.footnote{margin:16px 0 0;color:var(--muted);font-size:10px;line-height:1.9}.footnote strong{font-weight:550;color:var(--ink)}.notice{padding:12px 15px;background:var(--wash);border:1px solid #d0e6dd;border-radius:6px;font-size:11px;color:#365c54;margin-bottom:20px;line-height:1.9}.api-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px}.api-list{padding:12px}.search{border:1px solid var(--line);border-radius:5px;background:#f8fafa;padding:8px 10px;width:100%;font-size:12px;margin-bottom:12px}.api-endpoints{display:grid;gap:3px;max-height:680px;overflow:auto}.endpoint{width:100%;border:1px solid transparent;border-radius:5px;background:none;display:flex;align-items:flex-start;gap:9px;text-align:left;padding:9px 7px;font-size:11px}.endpoint:hover{background:#f6f9f8}.endpoint[aria-current=true]{border-color:#cfe4dc;background:var(--wash)}.endpoint span:last-child{min-width:0;overflow-wrap:anywhere}.endpoint small{display:block;color:var(--muted);font:9px/1.5 var(--mono);margin-top:3px;overflow-wrap:anywhere}.method{font:9px/1.5 var(--mono);padding:2px 5px;border-radius:3px;min-width:40px;text-align:center;flex-shrink:0;background:#e9f3f8;color:#22617c}.method.POST{background:#e8f4ee;color:#24724c}.method.PUT,.method.PATCH{background:#fff3dc;color:#996111}.api-detail{padding:24px}.api-detail h2{font-size:22px;line-height:1.4;letter-spacing:-.7px;margin:12px 0 8px}.api-description{font-size:12px;color:var(--muted);line-height:1.9}.route{display:flex;align-items:flex-start;gap:10px;padding:13px;background:#f5f8f7;border:1px solid var(--line);border-radius:5px;margin:19px 0}.route code{font-size:11px;overflow-wrap:anywhere;line-height:1.9}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}.detail-key{font:9px var(--mono);letter-spacing:1px;color:var(--muted);margin-bottom:5px}.detail-value{font-size:11px;line-height:1.9}.codebox{border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:17px}.codebox-head{padding:9px 13px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;font:10px var(--mono);color:var(--muted)}.codebox pre{padding:14px 15px;background:#f8fafa;max-height:330px;overflow:auto;font-size:11px}.request-editor{width:100%;display:block;border:0;background:#f8fafa;padding:13px 15px;font:11px/1.85 var(--mono);resize:vertical;min-height:100px;max-height:330px}.api-status{font:10px var(--mono);color:var(--accent)}.section-heading{font-size:18px;font-weight:600;letter-spacing:-.5px;margin-bottom:15px}.architecture{display:grid;grid-template-columns:1fr 44px 1.25fr 44px 1fr;align-items:center;padding:26px 22px;margin-bottom:22px;gap:0}.architecture-box{border:1px solid var(--line);border-radius:6px;padding:20px 15px;background:#f9fbfa;font-size:11px;text-align:center}.architecture-box strong{font-size:14px;display:block;margin-bottom:6px}.architecture-box.daemon{border-color:#bddbd0;background:var(--wash);color:var(--accent)}.architecture-box span{display:block;color:var(--muted);font-size:10px;line-height:1.9}.arrow{text-align:center;color:#7d9691;font-size:20px}.protocol-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}.prose{padding:22px}.prose h3{font-size:14px;margin-bottom:12px}.prose p,.prose li{font-size:12px;color:var(--muted);line-height:1.95}.prose p:last-child{margin:0}.prose ul,.prose ol{padding-left:18px;margin:0}.prose strong{color:var(--ink);font-weight:550}.prose code{font-size:11px;color:var(--ink);overflow-wrap:anywhere}.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:15px 0}.flow span{border:1px solid var(--line);border-radius:4px;padding:7px 10px;font:10px var(--mono);background:#fafcfb}.flow .highlight{border-color:#c4e0d5;color:var(--accent);background:var(--wash)}.table-scroll{overflow:auto}table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}th{font-size:10px;font-weight:500;color:var(--muted);background:#f8fafa}th,td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}td:first-child{white-space:nowrap}td code{overflow-wrap:anywhere}.scope-list{display:grid;gap:10px;margin-top:16px}.scope-item{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--muted)}.scope-item b{font:10px/1.7 var(--mono);color:var(--accent);border:1px solid #c4e0d5;border-radius:4px;padding:1px 6px;white-space:nowrap}.document-footer{border-top:1px solid var(--line);margin-top:30px;padding-top:17px;display:flex;justify-content:space-between;gap:12px;color:var(--muted);font:10px/1.8 var(--mono)}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:min(620px,calc(100vw - 32px));background:var(--ink);color:#fff;box-shadow:0 6px 25px #142a3022;border-radius:6px;padding:11px 18px;font-size:12px;z-index:40}.copy-fallback{width:100%;min-height:80px;font:11px var(--mono);padding:12px;border:1px solid var(--line);margin-top:10px}.sources{display:flex;gap:15px;flex-wrap:wrap;font-size:11px;margin-top:16px}.muted{color:var(--muted)}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(min-width:1600px){.conversation{height:340px}.event-list{height:206px}}
+@media(max-width:1160px){.shell{grid-template-columns:176px minmax(0,1fr)}.sidebar{padding:28px 11px}.content{padding:28px 24px}.lab{grid-template-columns:minmax(0,1fr) minmax(300px,.86fr);gap:14px}.hero-side{display:none}.api-layout{grid-template-columns:235px minmax(0,1fr)}.topmeta>span:first-child{display:none}.crumb{margin-left:6px;padding-left:12px}.metric{padding:13px}.metric-value{font-size:17px}.toolbar-actions{gap:7px}}
+@media(max-width:930px){.lab{grid-template-columns:1fr}.right-stack{grid-template-columns:minmax(0,.7fr) minmax(0,1fr);align-items:start}.terminal pre{min-height:145px}.api-layout{grid-template-columns:1fr}.api-endpoints{max-height:220px;grid-template-columns:1fr 1fr}.protocol-grid{grid-template-columns:1fr}.hero h1{font-size:30px}.metric-label{font-size:9px}.metric-value{font-size:16px}}
+@media(max-width:680px){.topbar{height:60px;padding:0 17px}.brandname{font-size:15px}.crumb{display:none}.topmeta{gap:0}.topmeta .chip{font-size:8px;padding:4px 6px}.shell{display:block}.sidebar{position:sticky;top:60px;height:auto;padding:9px 12px;background:var(--bg);z-index:15;border-right:0;border-bottom:1px solid var(--line);display:block}.sidebar .section-label,.sidebar-note,.sidebar-bottom{display:none}.nav{display:flex;justify-content:space-between;gap:4px}.nav button{padding:7px 8px;font-size:11px;gap:6px}.nav button span{font-size:8px}.content{padding:25px 16px}.hero{margin-bottom:20px}.hero h1{font-size:28px}.hero p{font-size:12px}.metrics{grid-template-columns:1fr 1fr}.metric:nth-child(2){border-right:0}.metric:nth-child(-n+2){border-bottom:1px solid var(--line)}.toolbar-actions{width:100%;justify-content:space-between}.right-stack{grid-template-columns:1fr}.conversation{height:290px}.terminal pre{min-height:95px}.event-list{height:150px}.api-endpoints{grid-template-columns:1fr;max-height:220px}.api-detail{padding:17px}.detail-grid{grid-template-columns:1fr;gap:10px}.architecture{grid-template-columns:1fr;padding:18px;gap:10px}.arrow{transform:rotate(90deg)}.architecture-box{padding:15px}.composer-hint{max-width:150px}.document-footer{flex-direction:column}.faults .button-row{width:100%}.faults .button{flex:1}.panel-head{padding:11px 14px}.endpoint{padding:8px}.prose{padding:18px}.hero p br{display:none}.segmented button{padding:6px 10px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="brand"><div class="brandmark" aria-hidden="true">α</div><span class="brandname">alphacode</span><span class="crumb">Engineering / Daemon</span></div><div class="topmeta"><span>DESIGN EXPLORATION · D1</span><span class="chip green"><i class="dot" aria-hidden="true"></i>OFFLINE SIMULATOR</span></div></header>
+<div class="shell">
+<aside class="sidebar"><div><p class="section-label">DAEMON WORKSPACE</p><nav class="nav" role="tablist" aria-label="设计文档" aria-orientation="vertical"><button id="nav-lab" role="tab" aria-selected="true" aria-controls="view-lab" data-view="lab"><span>01</span>交互沙盒</button><button id="nav-api" role="tab" aria-selected="false" aria-controls="view-api" tabindex="-1" data-view="api"><span>02</span>API 索引</button><button id="nav-protocol" role="tab" aria-selected="false" aria-controls="view-protocol" tabindex="-1" data-view="protocol"><span>03</span>协议与边界</button><button id="nav-plan" role="tab" aria-selected="false" aria-controls="view-plan" tabindex="-1" data-view="plan"><span>04</span>落地清单</button></nav></div><div class="sidebar-note"><b>One process. One owner.</b>执行留在 daemon。<br>界面只是会话的连接者。<br>刷新页面，不重跑工具。</div><div class="sidebar-bottom">PROPOSED · NOT IMPLEMENTED<br>本页不启动服务、不访问文件、<br>不执行 Shell、不调用模型。<a href="alphacode-daemon-api-d1.d.ts" download>下载 TypeScript API 契约 ↗</a></div></aside>
+<main class="content">
+<div class="hero"><div><div class="eyebrow">LOCAL AGENT INFRASTRUCTURE</div><h1>一个 Agent，多个入口。</h1><p>把本地执行交给 daemon，让终端和浏览器共享同一段对话。<br>在这个沙盒里，观察请求、审批与事件如何协作。</p></div><div class="hero-side">HTTP + SERVER-SENT EVENTS<br>BUN · LOCAL SQLITE · REACT WEB</div></div>
+<section id="view-lab" role="tabpanel" aria-labelledby="nav-lab">
+<div class="metrics"><div class="metric"><div class="metric-label">DAEMON INSTANCE<span>模拟</span></div><div id="metric-instance" class="metric-value">dm_01</div></div><div class="metric"><div class="metric-label">SESSION / REVISION</div><div class="metric-value"><span id="metric-revision">1</span><small>已提交版本</small></div></div><div class="metric"><div class="metric-label">CONNECTED CLIENTS</div><div class="metric-value"><span id="metric-clients">2</span><small>Web + TUI</small></div></div><div class="metric"><div class="metric-label">TOOL EXECUTIONS<span>模拟计数</span></div><div class="metric-value"><span id="metric-tools">0</span><small>重试不增加</small></div></div></div>
+<div class="toolbar"><div class="segmented" role="group" aria-label="模拟场景"><button data-scenario="approval" aria-pressed="true">工具审批</button><button data-scenario="chat" aria-pressed="false">普通对话</button><button data-scenario="unsaved" aria-pressed="false">保存失败</button></div><div class="toolbar-actions"><label class="check"><input id="auto-advance" type="checkbox" checked>自动推进</label><button id="step" class="button small">单步推进 →</button><button id="reset" class="button small ghost">重置沙盒</button></div></div>
+<div class="lab"><div class="panel"><div class="panel-head"><div class="panel-title"><span class="dot" id="web-dot" style="color:var(--accent)"></span>Web client <span class="tiny">/web</span></div><button id="connection" class="button small">断开 Web</button></div><div class="chat-info"><span>workspace: alpha</span><span>session: ses_demo</span><span id="web-cursor">dm_01:0</span></div><div id="connection-banner" class="banner" hidden></div><div id="conversation" class="conversation" aria-label="模拟会话消息"></div><div id="approval" class="approval" hidden><h3>需要你的确认</h3><p id="approval-binding"></p><code id="approval-command"></code><div class="button-row"><button id="allow" class="button primary small">批准一次</button><button id="deny" class="button small">拒绝</button><span class="muted" style="font-size:10px;align-self:center">仅模拟，不会执行命令</span></div></div><form id="composer" class="composer"><label for="prompt" class="sr-only">发送给模拟 Agent 的消息</label><textarea id="prompt" rows="2" maxlength="4096">检查项目并运行测试，先让我确认命令。</textarea><div class="composer-bottom"><span id="composer-hint" class="composer-hint">Enter 发送 · Shift + Enter 换行</span><div class="button-row"><button type="button" id="cancel" class="button small" disabled>停止</button><button type="submit" id="send" class="button primary">发送消息 ↑</button></div></div></form><div class="state-strip" aria-live="polite" aria-atomic="true"><span class="dot" style="color:var(--accent)"></span><b id="execution-state">Ready</b><span>·</span><span id="persistence-state">会话已就绪</span></div></div>
+<div class="right-stack"><div class="terminal"><div class="terminal-head"><span>›_ TUI · 同一会话</span><button id="tui-allow" class="button small" disabled>从 TUI 批准</button></div><pre id="tui-state"></pre></div><div class="panel"><div class="panel-head"><div class="event-tabs" role="tablist" aria-label="协议观察器"><button id="tab-events" role="tab" aria-selected="true" aria-controls="trace-list" data-log="events">SSE events <small id="event-count">0</small></button><button id="tab-http" role="tab" aria-selected="false" aria-controls="trace-list" tabindex="-1" data-log="http">HTTP trace <small id="http-count">0</small></button></div><span class="panel-topline">LIVE MOCK</span></div><div id="trace-list" class="event-list" role="tabpanel" aria-labelledby="tab-events"></div><div class="event-detail"><pre id="trace-detail">等待第一条协议事件。所有数据只存在于当前页面内存中。</pre></div></div></div></div>
+<div class="faults"><div><h3>测试边界，而不只是 happy path</h3><p>同 ID 重试、补写失败、游标过期和进程重启。</p></div><div class="button-row"><button id="retry" class="button small" disabled>重发同一请求</button><button id="flush" class="button small" disabled>仅重试保存</button><button id="expire" class="button small">清空事件缓冲</button><button id="restart" class="button small danger">模拟 daemon 重启</button></div></div><p class="footnote"><strong>建议试试：</strong>发送 → Web 断线 → 从 TUI 批准 → Web 重连。也可以关闭自动推进，逐个观察 <code>request.finished</code> 和 <code>session.saved</code>。<br>本页是确定性协议模拟器，不验证真实网络、SQLite、认证或 Windows 进程行为；模拟重启保留的“归档”也只存在于内存。</p>
+</section>
+<section id="view-api" role="tabpanel" aria-labelledby="nav-api" hidden><div class="notice"><strong>契约 D1 · 共 16 个端点。</strong>基址示例 <code>http://127.0.0.1:43127/api/v1</code>，实际端口由 daemon 分配。<code>W</code> = <code>/workspaces/{workspaceId}</code>，<code>S</code> = <code>W/sessions/{sessionId}</code>。端口、ID 和凭证均为示例，不是已运行的服务。</div><div class="api-layout"><div class="panel api-list"><label for="api-search" class="sr-only">搜索 API 名称、路径或方法</label><input id="api-search" class="search" placeholder="搜索接口、路径、方法…" type="search"><div id="api-endpoints" class="api-endpoints" aria-label="API 端点"></div></div><article id="api-detail" class="panel api-detail"><div id="api-badges"></div><h2 id="api-title"></h2><p id="api-description" class="api-description"></p><div class="route"><span id="api-method" class="method"></span><code id="api-path"></code></div><div class="detail-grid"><div><div class="detail-key">AUTHORIZATION</div><div id="api-auth" class="detail-value"></div></div><div><div class="detail-key">IDEMPOTENCY / CONCURRENCY</div><div id="api-idempotency" class="detail-value"></div></div></div><div class="detail-key">ERROR RESPONSES</div><div id="api-errors" class="detail-value"></div><div class="codebox"><div class="codebox-head"><span>REQUEST BODY <span id="editable-hint"></span></span><button id="try-api" class="button small">在沙盒中调用</button></div><label for="api-body" class="sr-only">模拟 API 请求 JSON</label><textarea id="api-body" class="request-editor" spellcheck="false"></textarea></div><div class="codebox"><div class="codebox-head"><span>RESPONSE <span id="api-status" class="api-status"></span></span><button id="copy-response" class="button small">复制 JSON</button></div><pre id="api-response"></pre></div><div class="codebox"><div class="codebox-head"><span>cURL · POSIX SHELL · 契约示例</span><button id="copy-curl" class="button small">复制 cURL</button></div><pre id="api-curl"></pre></div><textarea id="copy-fallback" class="copy-fallback" aria-label="复制失败时可手动复制的文本" readonly hidden></textarea></article></div></section>
+<section id="view-protocol" role="tabpanel" aria-labelledby="nav-protocol" hidden>
+<h2 class="section-heading">执行的所有权，不随窗口变化。</h2><div class="panel architecture"><div class="architecture-box"><strong>TUI / Web</strong><span>RemoteChat / DOM UI</span><span>HTTP commands · SSE projection</span></div><div class="arrow" aria-hidden="true">↔</div><div class="architecture-box daemon"><strong>AlphaCode Daemon</strong><span>Session registry · Approval broker</span><span>Single writer · Replay buffer</span></div><div class="arrow" aria-hidden="true">→</div><div class="architecture-box"><strong>Local runtime</strong><span>Coding Agent · Shell · Files</span><span>Session CAS · SQLite</span></div></div>
+<div class="protocol-grid"><article class="panel prose"><h3>01 / 受理、执行、落盘是三件事</h3><div class="flow"><span>202 accepted</span>→<span>running</span>→<span>completed</span>→<span class="highlight">saved</span></div><p><code>execution</code> 表达模型与工具的状态；<code>outcome</code> 保留 ADK 的 completed / refused / limited 等结果；<code>persistence</code> 单独表达保存状态。<strong>HTTP 202 和 request.finished 都不是保存成功。</strong>新输入仅在会话 eligibility 为 ready 时准入。</p></article><article class="panel prose"><h3>02 / 幂等必须穿透到 Session</h3><p>客户端为一次逻辑输入生成稳定 <code>requestId</code>；作用域为 workspace + session。先查该 ID，再检查 busy。同 ID 同内容返回原请求，不重发 token；不同内容返回 <code>409 REQUEST_MISMATCH</code>。</p><p>原始输入哈希、准备后的 Skill 输入与稳定请求 ID 需持久关联；不能在重试时重新展开已变化的 Skill。已有 SessionTurn 的输入哈希不等于完整的 HTTP 幂等回执。</p></article><article class="panel prose"><h3>03 / SSE：快照与订阅之间不丢事件</h3><p>初次订阅先发 <code>state.snapshot</code>。恢复优先使用 <code>Last-Event-ID</code>，首次手动连接可用 <code>?after=dm_01:12</code>；两者同时存在时 header 优先。游标按会话递增，不复用 ADK 单次 run 的 seq。</p><p>服务端在同一串行临界区绑定快照游标和后续订阅。缓冲溢出、游标超前或实例改变时，发送 <code>stream.reset</code> 和权威快照。客户端丢弃旧投影，不把旧 delta 叠加到新快照。</p></article><article class="panel prose"><h3>04 / 审批不是一个布尔开关</h3><p>审批由 <code>approvalId + requestId + runId + toolCallId</code> 绑定；命令预览从服务端读取。第一个有效决定原子生效，同决定重试返回回执，反向决定返回 <code>409 APPROVAL_CONFLICT</code>。</p><p>取消或过期使未处理审批失效；默认有效期拟定 10 分钟，过期拒绝本次工具。界面断开不视为批准，两个客户端同时点击也只能执行一次。</p></article><article class="panel prose"><h3>05 / 崩溃恢复不等于重跑</h3><p>运行中或 unsaved 状态重启后，只恢复已提交归档和 pending 标记，不伪造未保存文本、审批 Promise 或工具结果。返回 <code>RECOVERY_REQUIRED</code>；没有内存候选时，flush 也不能补救。</p><p>正常 unsaved 时，<code>/persistence/flush</code> 只补写捕获的结果，不执行模型或工具。冲突和未知副作用需要显式恢复流程，P0 不自动接管、不自动换 ID。</p></article><article class="panel prose"><h3>06 / 跨进程传输可移植的数据</h3><p>协议仅传 JSON，不暴露 Agent、Provider、密钥或原始 Error。时间使用 UTC ISO 字符串；持续时间传毫秒，不跨进程相减 <code>performance.now()</code>。</p><p>快照保留最近 50 条消息，历史以 cursor 分页；错误统一为 <code>{ error: { code, message, traceId, retryable } }</code>。requestId 与 traceId 分别对应逻辑执行和某次 HTTP 请求。</p></article></div>
+<div class="panel prose"><h3>本地服务，也需要真实的信任边界</h3><div class="protocol-grid" style="margin-bottom:0"><div><ul><li>默认只绑定 <strong>127.0.0.1</strong>；精确验证 Host、Origin，不使用通配 CORS。</li><li>CLI 使用受保护发现文件中的 Bearer 凭证。浏览器以短期单次 launch code 换取 HttpOnly、SameSite=Strict、host-only cookie；HTTPS 时加 Secure。</li><li>launch code 放 URL fragment，读取后立即清除；不得放持久 token、模型密钥或工作区秘密。</li><li>浏览器写操作要求精确 Origin、JSON Content-Type 和会话绑定的 <code>X-AlphaCode-CSRF</code>。cookie 没有端口隔离能力；同源校验不能省。</li></ul></div><div><ul><li>缺少 Origin 的原生客户端必须持有 Bearer；不能用缺少 Origin 绕过浏览器认证。未认证请求 401，非法 Origin / 权限 403。</li><li>工作区注册和 daemon 停止只允许可信 native 管理能力；普通浏览器身份没有该能力。</li><li>消息、Markdown、工具输出全部按不可信内容渲染；前端不接收服务端任意 HTML，不把浏览器请求直接映射为 Shell。</li><li>launch code 拟定 60 秒且原子单次消费；浏览器会话拟定 8 小时，重启失效。此处是实现要求，<strong>本页不模拟安全保证</strong>。</li></ul></div></div></div>
+<div class="panel prose" style="margin-top:20px"><h3>流控与资源预算 · 拟议默认值</h3><p>SSE 每 15 秒发送注释心跳；每会话保留最多 512 条 / 2 MiB 事件，先到先淘汰。慢客户端超过 1 MiB 排队即断开，重连恢复，不阻塞 Agent。快照与单条消息受字节预算约束，必要时返回分页或有标记的截断；历史默认 50、最大 100 条。JSON 请求最大 64 KiB；超限 413，限流 429 + Retry-After。第一版同会话最多一轮执行，不做隐式队列。</p><p>同一 ALPHACODE_HOME 默认一个 daemon，配置与数据库指纹不匹配时拒绝复用。按 canonical workspace ID 和 session ID 管理实例；不能让不同客户端各自打开独立 runtime。浏览器 disconnect 只撤销订阅；daemon stop 才执行取消、排空、保存、关闭资源。保存失败进入 stop_failed，不伪报退出成功。</p></div>
+<div class="sources"><a href="https://opencode.ai/docs/server/" target="_blank" rel="noreferrer">OpenCode Server ↗</a><a href="https://developers.openai.com/codex/app-server" target="_blank" rel="noreferrer">Codex App Server ↗</a><a href="https://html.spec.whatwg.org/multipage/server-sent-events.html" target="_blank" rel="noreferrer">SSE 标准 ↗</a><a href="https://nodejs.org/api/child_process.html" target="_blank" rel="noreferrer">进程生命周期 ↗</a></div>
+</section>
+<section id="view-plan" role="tabpanel" aria-labelledby="nav-plan" hidden><div class="notice"><strong>交付边界：</strong>当前交付 API 设计、类型契约和离线交互原型。没有接入真实 Agent、创建后台进程、开放 HTTP 端口或修改现有 TUI 行为。下面是下一步实现清单，不是已完成功能。</div><h2 class="section-heading">沿现有分层接入，不重写 Agent。</h2><div class="panel table-scroll"><table><thead><tr><th>模块</th><th>建议改动</th><th>关键验收</th></tr></thead><tbody><tr><td>daemon / lifecycle</td><td>独立入口、启动锁、受保护发现文件、认证握手、版本与配置指纹。</td><td>两个终端同时启动只得到一个实例；Windows 关闭终端后仍可连接。</td></tr><tr><td>runtime / send</td><td>接收稳定 requestId，透传至 Session；暴露执行与保存状态。</td><td>运行中与提交后重试不重跑模型 / 工具；ID 冲突返回 409。</td></tr><tr><td>approval broker</td><td>审批 ID、运行绑定、原子决定、超时与取消失效。</td><td>Web 与 TUI 同时批准只执行一次；旧审批不能授权新命令。</td></tr><tr><td>event hub</td><td>会话级游标、原子快照订阅、有限回放缓冲与背压。</td><td>断线时 Agent 继续；重连文本不丢不重；过期时快照重置。</td></tr><tr><td>RemoteChat / TUI</td><td>保留现有 UI 合同；将客户端 detach 与 runtime close 分离。</td><td>执行中 /web 只 attach；TUI 退出策略明确，不误杀共享运行。</td></tr><tr><td>web / shell</td><td>Solid + Vite 独立 DOM 构建；同源静态资源、输入、流式消息与审批。</td><td>刷新不重跑；未认证、跨 Origin、非法工作区访问被拒绝。</td></tr><tr><td>persistence</td><td>补齐 HTTP 回执关联；复用 Session CAS 和已保存历史，不修改执行语义。</td><td>完成但未保存单独可见；flush 只写存储；崩溃 pending 不自动执行。</td></tr></tbody></table></div><div class="protocol-grid" style="margin-top:22px"><article class="panel prose"><h3>P0：一个真实的纵向闭环</h3><div class="scope-list"><div class="scope-item"><b>01</b><span>Windows 后台生命周期验证；不安装系统服务。</span></div><div class="scope-item"><b>02</b><span>daemon + TUI 同一会话，先把执行 / 审批 / 保存跑通。</span></div><div class="scope-item"><b>03</b><span>Web 壳与 /web 打开当前会话；保留全部故障状态。</span></div></div></article><article class="panel prose"><h3>明确暂不做</h3><p>公网 / 局域网访问、多用户授权、PTY、Monaco、文件树、复杂 diff、分布式锁、每会话子进程、自动接管崩溃任务。也不把 HTTP 或浏览器认证放进通用 ADK。</p><a class="button" href="alphacode-daemon-api-d1.d.ts" download>下载 API 类型契约 ↗</a></article></div><div class="panel prose"><h3>现有代码中的接入点</h3><pre>apps/alphacode/src/application.ts             装配与所有权
+apps/alphacode/src/chat/contracts.ts          Chat / ChatRuntime 合同
+apps/alphacode/src/runtime/create-runtime.ts  requestId、运行与保存
+apps/alphacode/src/chat/approval.ts           审批回调
+apps/alphacode/src/runtime/events.ts          ADK → 展示事件
+apps/alphacode/src/runtime/skills.ts          保留 /web，避免当作 Skill
+apps/alphacode/bin/alphacode.ts               CLI 子命令分发
+apps/alphacode/src/ui/terminal.tsx            disconnect 与 stop 分离
+packages/adk-session                        幂等、CAS、pending 与 flush</pre></div></section>
+<footer class="document-footer"><span>ALPHACODE / DAEMON API LAB</span><span>D1 · PROPOSED CONTRACT · NO REAL COMMANDS</span></footer>
+</main></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script id="daemon-model">
+"use strict";
+(() => {
+  const clone = value => structuredClone(value);
+  const inProgress = request => request && ["accepted", "running", "awaiting_approval"].includes(request.execution);
+  const upsert = (items, item, key = "id") => {
+    const index = items.findIndex(existing => existing[key] === item[key]);
+    if (index < 0) items.push(clone(item)); else items[index] = clone(item);
+  };
+  function project(previous, event) {
+    if (event.type === "state.snapshot") return clone(event.payload);
+    if (event.type === "stream.reset") return clone(event.payload.snapshot);
+    const state = clone(previous);
+    if (state.cursor === event.cursor) return state;
+    const payload = event.payload;
+    switch (event.type) {
+      case "request.accepted":
+        state.request = clone(payload.request);
+        state.eligibility = "busy";
+        state.approvals = [];
+        state.tools = [];
+        upsert(state.messages.items, payload.message);
+        break;
+      case "request.started":
+        state.request = clone(payload.request);
+        break;
+      case "message.started":
+      case "message.committed":
+        upsert(state.messages.items, payload.message);
+        break;
+      case "message.delta": {
+        const message = state.messages.items.find(item => item.id === payload.messageId);
+        if (message) message.text += payload.text;
+        break;
+      }
+      case "approval.requested":
+      case "approval.resolved":
+        state.request = clone(payload.request);
+        upsert(state.approvals, payload.approval, "approvalId");
+        upsert(state.tools, payload.tool);
+        break;
+      case "tool.updated":
+        upsert(state.tools, payload.tool);
+        break;
+      case "request.finished":
+        state.request = clone(payload.request);
+        break;
+      case "session.saved":
+        state.revision = payload.revision;
+        state.eligibility = "ready";
+        if (state.request?.requestId === payload.requestId) state.request.persistence = { status: "saved", revision: payload.revision };
+        break;
+      case "session.unsaved":
+        state.eligibility = "unsaved";
+        if (state.request?.requestId === payload.requestId) state.request.persistence = { status: "unsaved", code: payload.code };
+        break;
+      case "session.settings_changed":
+        state.revision = payload.revision;
+        state.permissionMode = payload.permissionMode;
+        break;
+    }
+    state.cursor = event.cursor;
+    if (state.messages.items.length > 50) {
+      state.messages.items = state.messages.items.slice(-50);
+      state.messages.nextCursor = state.messages.items[0].id;
+    }
+    return state;
+  }
+  function createSimulator(options = {}) {
+    const clock = options.now || (() => new Date().toISOString());
+    const bufferLimit = options.bufferLimit ?? 512;
+    let instanceNumber = 1;
+    let instanceId = "dm_01";
+    let instanceStartedAt = clock();
+    let sequence = 0;
+    let nextRun = 0;
+    let traceNumber = 0;
+    let toolExecutions = 0;
+    let events = [];
+    let journal = [];
+    let http = [];
+    let active = null;
+    let lastSubmitted = null;
+    let archivedMessages = [];
+    let archivedTools = [];
+    let archivedApprovals = [];
+    let lastRecovery = "snapshot";
+    const requests = new Map();
+    const approvalRecords = new Map();
+    const clients = new Map();
+    const state = {
+      workspaceId: "ws_alpha", sessionId: "ses_demo", title: "AlphaCode daemon design",
+      revision: 1, eligibility: "ready", permissionMode: "ask", request: null,
+      messages: { items: [], nextCursor: null }, tools: [], approvals: [],
+    };
+    const cursor = () => `${instanceId}:${sequence}`;
+    const snapshot = () => ({ ...clone(state), cursor: cursor(), messages: {
+      items: clone(state.messages.items.slice(-50)),
+      nextCursor: state.messages.items.length > 50 ? state.messages.items.at(-50).id : null,
+    } });
+    const makeEvent = (type, payload) => ({
+      apiVersion: "v1", instanceId, sequence, cursor: cursor(), timestamp: clock(),
+      workspaceId: state.workspaceId, sessionId: state.sessionId, type, payload: clone(payload),
+    });
+    const recordEvent = (event, audience, delivery) => {
+      journal.push({ event: clone(event), audience, delivery });
+      journal = journal.slice(-200);
+    };
+    function emit(type, payload) {
+      sequence++;
+      const event = makeEvent(type, payload);
+      events.push(event);
+      while (events.length > bufferLimit || (events.length && new TextEncoder().encode(JSON.stringify(events)).length > 2 * 1024 * 1024)) events.shift();
+      const audience = [];
+      for (const [name, client] of clients) {
+        if (!client.connected) continue;
+        client.snapshot = project(client.snapshot, event);
+        client.cursor = event.cursor;
+        audience.push(name);
+      }
+      recordEvent(event, audience.join(", ") || "buffer only", "live");
+    }
+    function error(status, code, message, retryable = false) {
+      return { status, body: { error: { code, message, traceId: `trace_${String(++traceNumber).padStart(3, "0")}`, retryable } } };
+    }
+    function connect(name, requestedCursor) {
+      let client = clients.get(name);
+      if (!client) {
+        client = { connected: false, cursor: null, snapshot: null };
+        clients.set(name, client);
+      }
+      const after = requestedCursor ?? client.cursor;
+      if (!after) {
+        const event = makeEvent("state.snapshot", snapshot());
+        client.snapshot = project(null, event);
+        client.cursor = event.cursor;
+        client.connected = true;
+        recordEvent(event, name, "snapshot");
+        lastRecovery = "snapshot";
+        return { mode: "snapshot", count: 0 };
+      }
+      const parsed = /^([a-zA-Z0-9_-]+):(\d+)$/.exec(after);
+      if (!parsed || !Number.isSafeInteger(Number(parsed[2]))) return error(400, "CURSOR_INVALID", "Invalid event cursor.");
+      const afterSequence = Number(parsed[2]);
+      const oldest = events[0]?.sequence ?? sequence + 1;
+      const reason = parsed[1] !== instanceId ? "instance_changed"
+        : afterSequence > sequence ? "cursor_ahead"
+        : afterSequence < oldest - 1 ? "cursor_expired" : null;
+      if (reason || !client.snapshot) {
+        const event = makeEvent("stream.reset", { reason: reason || "cursor_expired", snapshot: snapshot() });
+        client.snapshot = project(null, event);
+        client.cursor = event.cursor;
+        client.connected = true;
+        recordEvent(event, name, "reset");
+        lastRecovery = reason || "cursor_expired";
+        return { mode: "reset", reason: lastRecovery, count: 0 };
+      }
+      const pending = events.filter(event => event.sequence > afterSequence);
+      for (const event of pending) {
+        client.snapshot = project(client.snapshot, event);
+        client.cursor = event.cursor;
+        recordEvent(event, name, "replay");
+      }
+      client.connected = true;
+      lastRecovery = `replay ${pending.length}`;
+      return { mode: "replay", count: pending.length };
+    }
+    function submit(body, scenario = "approval") {
+      if (!body || typeof body !== "object" || Array.isArray(body) || typeof body.requestId !== "string"
+        || !/^[a-zA-Z0-9_-]{1,128}$/.test(body.requestId) || typeof body.input !== "string" || !body.input.trim()
+        || Object.keys(body).some(key => !["requestId", "input"].includes(key))) return error(400, "INVALID_REQUEST", "Provide requestId and a non-empty input; unknown fields are rejected.");
+      if (new TextEncoder().encode(JSON.stringify(body)).length > 65536) return error(413, "INVALID_REQUEST", "JSON body exceeds 64 KiB.");
+      const known = requests.get(body.requestId);
+      if (known) {
+        if (known.input !== body.input) return error(409, "REQUEST_MISMATCH", "This requestId already identifies a different input.");
+        if (known.snapshot.persistence.status === "recovery_required") return error(409, "RECOVERY_REQUIRED", "The previous execution cannot safely be replayed.");
+        return { status: 200, body: { request: clone(known.snapshot), replayed: true } };
+      }
+      if (state.eligibility === "recovery_required") return error(409, "RECOVERY_REQUIRED", "An interrupted pending request requires explicit recovery.");
+      if (state.eligibility === "unsaved") return error(409, "SESSION_UNSAVED", "Save the captured result before accepting another request.");
+      if (state.eligibility !== "ready") return error(409, "SESSION_BUSY", "Only one request can run in a session.");
+      nextRun++;
+      const request = { requestId: body.requestId, execution: "accepted", persistence: { status: "pending" }, acceptedAt: clock() };
+      active = { input: body.input, snapshot: request, scenario, stage: "start", chunk: 0, cancelRequested: false, denied: false };
+      requests.set(body.requestId, active);
+      state.request = request;
+      state.eligibility = "busy";
+      state.tools = [];
+      state.approvals = [];
+      lastSubmitted = clone(body);
+      const message = { id: `user_${nextRun}`, requestId: body.requestId, role: "user", text: body.input, streaming: false };
+      state.messages.items.push(message);
+      emit("request.accepted", { request, message });
+      return { status: 202, body: { request: clone(request), replayed: false } };
+    }
+    function addAssistant() {
+      let message = state.messages.items.find(item => item.id === `assistant_${nextRun}`);
+      if (!message) {
+        message = { id: `assistant_${nextRun}`, requestId: state.request.requestId, role: "assistant", text: "", streaming: true };
+        state.messages.items.push(message);
+        emit("message.started", { message });
+      }
+      return message;
+    }
+    function appendText(text) {
+      const message = addAssistant();
+      message.text += text;
+      emit("message.delta", { messageId: message.id, text });
+    }
+    function expireApproval() {
+      const approval = state.approvals.find(item => item.status === "pending");
+      if (!approval) return;
+      approval.status = "expired";
+      state.request.execution = "running";
+      const tool = state.tools.find(item => item.id === approval.toolCallId);
+      tool.status = "not_executed";
+      active.denied = true;
+      emit("approval.resolved", { approval, request: state.request, tool });
+    }
+    function finish(outcome) {
+      expireApproval();
+      if (outcome === "cancelled") {
+        for (const tool of state.tools) {
+          if (tool.status === "running") {
+            tool.status = "not_executed";
+            emit("tool.updated", { tool });
+          }
+        }
+      }
+      const message = addAssistant();
+      if (outcome === "cancelled") appendText("\n本轮已停止。不会再执行后续工具，接下来仅保存已产生的结果。");
+      message.streaming = false;
+      emit("message.committed", { message });
+      state.request.execution = outcome === "cancelled" ? "cancelled" : "completed";
+      state.request.outcome = outcome;
+      state.request.finishedAt = clock();
+      active.stage = "save";
+      emit("request.finished", { request: state.request });
+    }
+    function save(force = false) {
+      if (active.scenario === "unsaved" && !force) {
+        state.eligibility = "unsaved";
+        state.request.persistence = { status: "unsaved", code: "STORE_UNAVAILABLE" };
+        active.stage = "unsaved";
+        emit("session.unsaved", { requestId: state.request.requestId, code: "STORE_UNAVAILABLE" });
+        return;
+      }
+      state.revision++;
+      state.request.persistence = { status: "saved", revision: state.revision };
+      state.eligibility = "ready";
+      archivedMessages = clone(state.messages.items);
+      archivedTools = clone(state.tools);
+      archivedApprovals = clone(state.approvals);
+      active.stage = "done";
+      emit("session.saved", { requestId: state.request.requestId, revision: state.revision });
+    }
+    function decide(approvalId, body) {
+      if (!body || typeof body !== "object" || Array.isArray(body) || typeof body.requestId !== "string"
+        || typeof body.runId !== "string" || !["allow", "deny"].includes(body.decision)
+        || Object.keys(body).some(key => !["requestId", "runId", "decision"].includes(key))) return error(400, "INVALID_REQUEST", "Provide requestId, runId, and allow or deny.");
+      const approval = approvalRecords.get(approvalId);
+      if (!approval) return error(404, "NOT_FOUND", "Approval not found in this session.");
+      if (approval.requestId !== body.requestId || approval.runId !== body.runId) return error(409, "APPROVAL_CONFLICT", "Approval is bound to a different request or run.");
+      if (approval.status === "resolved") return approval.decision === body.decision
+        ? { status: 200, body: { approval: clone(approval), replayed: true } }
+        : error(409, "APPROVAL_CONFLICT", "An immutable decision has already been recorded.");
+      if (approval.status === "pending" && Date.parse(clock()) >= Date.parse(approval.expiresAt)) {
+        expireApproval();
+        active.stage = "execute";
+      }
+      if (approval.status === "expired" || active?.cancelRequested) return error(410, "APPROVAL_EXPIRED", "Approval has expired or the run is cancelling.");
+      approval.status = "resolved";
+      approval.decision = body.decision;
+      state.request.execution = "running";
+      active.denied = body.decision === "deny";
+      active.stage = "execute";
+      const tool = state.tools.find(item => item.id === approval.toolCallId);
+      tool.status = active.denied ? "denied" : "running";
+      emit("approval.resolved", { approval, request: state.request, tool });
+      return { status: 200, body: { approval: clone(approval), replayed: false } };
+    }
+    function cancel(requestId) {
+      const record = requests.get(requestId);
+      if (!record) return error(404, "NOT_FOUND", "Request not found.");
+      if (record.snapshot.persistence.status === "recovery_required") return error(409, "RECOVERY_REQUIRED", "The old process cannot be controlled through this request.");
+      if (!inProgress(record.snapshot)) return { status: 200, body: { requestId, cancellation: "already_settled" } };
+      const cancellation = record.cancelRequested ? "already_requested" : "requested";
+      record.cancelRequested = true;
+      return { status: 202, body: { requestId, cancellation } };
+    }
+    function flush() {
+      if (state.eligibility === "recovery_required") return error(409, "RECOVERY_REQUIRED", "No in-memory commit candidate survived the restart.");
+      if (!state.request) return error(400, "INVALID_REQUEST", "There is no request to flush.");
+      if (state.eligibility === "busy") return error(409, "SESSION_BUSY", "Execution or its first save is still in progress.");
+      if (state.eligibility === "unsaved") save(true);
+      return { status: 200, body: { requestId: state.request.requestId, persistence: clone(state.request.persistence) } };
+    }
+    function advance() {
+      if (!active || state.eligibility !== "busy") return false;
+      if (active.cancelRequested && inProgress(state.request)) {
+        finish("cancelled");
+        return true;
+      }
+      if (active.stage === "start") {
+        state.request.runId = `run_${String(nextRun).padStart(3, "0")}`;
+        state.request.execution = "running";
+        emit("request.started", { request: state.request });
+        addAssistant();
+        active.stage = "intro";
+      } else if (active.stage === "intro") {
+        const chunks = active.scenario === "chat"
+          ? ["本地 daemon 是 Agent 的唯一宿主。", "\n终端和浏览器通过 HTTP 提交操作，", "通过 SSE 订阅同一会话。", "\n刷新或断开页面不会重跑工具，也不会关闭正在运行的 Agent。"]
+          : ["我会先检查项目，再运行测试。", "\n下一步需要执行 bun test；请确认这个动作。"];
+        appendText(chunks[active.chunk++]);
+        if (active.chunk === chunks.length) active.stage = active.scenario === "chat" ? "finish" : "approval";
+      } else if (active.stage === "approval") {
+        const approval = {
+          approvalId: `apr_${String(nextRun).padStart(3, "0")}`, requestId: state.request.requestId,
+          runId: state.request.runId, toolCallId: `tool_${nextRun}`, status: "pending",
+          preview: { type: "command", shell: "pwsh", cwd: "C:/project/alpha", command: "bun test" },
+          createdAt: clock(), expiresAt: new Date(Date.parse(clock()) + 600000).toISOString(),
+        };
+        const tool = { id: approval.toolCallId, requestId: state.request.requestId, name: "runCommand", command: "bun test", status: "awaiting_approval" };
+        state.approvals.push(approval);
+        approvalRecords.set(approval.approvalId, approval);
+        state.tools.push(tool);
+        state.request.execution = "awaiting_approval";
+        active.stage = "awaiting";
+        emit("approval.requested", { approval, request: state.request, tool });
+      } else if (active.stage === "awaiting") {
+        const approval = state.approvals.find(item => item.status === "pending");
+        if (approval && Date.parse(clock()) >= Date.parse(approval.expiresAt)) {
+          expireApproval();
+          active.stage = "execute";
+          return true;
+        }
+        return false;
+      } else if (active.stage === "execute") {
+        const tool = state.tools[0];
+        if (!active.denied) {
+          toolExecutions++;
+          tool.status = "succeeded";
+          tool.output = "SIMULATED: 12 passed, 0 failed. No command was executed.";
+          emit("tool.updated", { tool });
+          appendText("\n\n模拟测试已完成：12 passed, 0 failed。实际命令没有执行。");
+        } else appendText("\n\n本次命令未获授权，未执行。我会保留已有对话结果。");
+        active.stage = "finish";
+      } else if (active.stage === "finish") finish("completed");
+      else if (active.stage === "save") save();
+      else return false;
+      return true;
+    }
+    function restart() {
+      const interrupted = state.request && state.request.persistence.status !== "saved";
+      if (interrupted) {
+        const previous = state.request;
+        const recovered = { requestId: previous.requestId, acceptedAt: previous.acceptedAt, execution: "interrupted", persistence: { status: "recovery_required" } };
+        requests.get(previous.requestId).snapshot = recovered;
+        state.request = recovered;
+        state.eligibility = "recovery_required";
+        active = null;
+      }
+      state.messages.items = clone(archivedMessages);
+      state.tools = interrupted ? [] : clone(archivedTools);
+      state.approvals = interrupted ? [] : clone(archivedApprovals);
+      for (const [approvalId, approval] of approvalRecords) {
+        const record = requests.get(approval.requestId);
+        if (record?.snapshot.persistence.status !== "saved") approvalRecords.delete(approvalId);
+      }
+      instanceId = `dm_${String(++instanceNumber).padStart(2, "0")}`;
+      instanceStartedAt = clock();
+      sequence = 0;
+      events = [];
+      for (const client of clients.values()) client.connected = false;
+      connect("tui");
+      return { instanceId, recoveryRequired: Boolean(interrupted) };
+    }
+    function getRequest(requestId) {
+      const record = requests.get(requestId);
+      return record ? { status: 200, body: clone(record.snapshot) } : error(404, "NOT_FOUND", "Request not found.");
+    }
+    function call(operation, body, context = {}) {
+      let response;
+      switch (operation) {
+        case "getDaemon": response = { status: 200, body: { instanceId, apiVersion: "v1", state: "running", startedAt: instanceStartedAt, capabilities: ["sessions", "requests", "approvals", "sse-replay", "persistence-flush"] } }; break;
+        case "listWorkspaces": response = { status: 200, body: { items: [{ id: "ws_alpha", root: "C:/project/alpha", label: "alpha" }], nextCursor: null } }; break;
+        case "listSessions": response = { status: 200, body: { items: [{ workspaceId: state.workspaceId, sessionId: state.sessionId, title: state.title, revision: state.revision, eligibility: state.eligibility }], nextCursor: null } }; break;
+        case "getSession": response = { status: 200, body: snapshot() }; break;
+        case "listMessages": response = { status: 200, body: { items: clone(archivedMessages.slice(-50)), nextCursor: archivedMessages.length > 50 ? archivedMessages.at(-50).id : null } }; break;
+        case "createRequest": response = submit(body, context.scenario); break;
+        case "getRequest": response = getRequest(context.requestId ?? state.request?.requestId); break;
+        case "cancelRequest": response = cancel(context.requestId ?? state.request?.requestId); break;
+        case "decideApproval": response = decide(context.approvalId ?? state.approvals.at(-1)?.approvalId, body); break;
+        case "flushPersistence": response = flush(); break;
+        case "subscribe": {
+          const receipt = connect("web");
+          response = receipt.status ? receipt : { status: 200, body: { simulationOnly: true, delivery: receipt, cursor: clients.get("web").cursor } };
+          break;
+        }
+        default: response = error(400, "INVALID_REQUEST", "This endpoint is a contract example only, not simulated.");
+      }
+      http.push({ operation, actor: context.actor || "web", request: clone(body ?? null), response: clone(response), timestamp: clock() });
+      http = http.slice(-100);
+      return clone(response);
+    }
+    connect("web");
+    connect("tui");
+    return {
+      call, advance, connect, restart,
+      disconnect(name) { const client = clients.get(name); if (client) client.connected = false; },
+      clearBuffer() { events = []; },
+      invalidRequest(message) { return error(400, "INVALID_REQUEST", message); },
+      inspect() {
+        return {
+          server: snapshot(), clients: Object.fromEntries([...clients].map(([name, client]) => [name, clone(client)])),
+          instanceId, toolExecutions, lastSubmitted: clone(lastSubmitted), lastRecovery,
+          journal: clone(journal), http: clone(http), stage: active?.stage ?? null,
+          canAdvance: state.eligibility === "busy" && (active?.stage !== "awaiting" || active?.cancelRequested),
+        };
+      },
+    };
+  }
+  globalThis.AlphaDaemonDesign = { createSimulator, project };
+})();
+</script>
+<script id="daemon-catalog">
+"use strict";
+(() => {
+  const workspacePath = "/api/v1/workspaces/{workspaceId}";
+  const sessionPath = `${workspacePath}/sessions/{sessionId}`;
+  const standardAuth = "Native Bearer，或浏览器 HttpOnly cookie；浏览器写请求额外要求 Origin + CSRF。权限从 daemon 验证。";
+  const nativeAuth = "仅 native 管理能力；普通浏览器身份返回 403。管理能力不下发给网页。";
+  const exampleRequest = () => ({ requestId: "req_api_demo", execution: "accepted", persistence: { status: "pending" }, acceptedAt: "2026-11-08T03:00:00.000Z" });
+  const exampleApproval = () => ({
+    approvalId: "apr_001", requestId: "req_demo", runId: "run_001", toolCallId: "tool_1", status: "pending",
+    preview: { type: "command", shell: "pwsh", cwd: "C:/project/alpha", command: "bun test" },
+    createdAt: "2026-11-08T03:00:01.000Z", expiresAt: "2026-11-08T03:10:01.000Z",
+  });
+  const definitions = [
+    {
+      id: "exchangeLaunchCode", method: "POST", path: "/api/v1/auth/exchange", short: "/auth/exchange", title: "交换浏览器会话", group: "AUTH", status: 200,
+      description: "将 /web 提供的 60 秒单次 launch code 交换为浏览器会话。响应设置 HttpOnly、SameSite=Strict、host-only cookie，并返回 CSRF token。它不是通用登录接口。",
+      auth: "此端点不要求已有会话；要求有效 launch code、精确 Origin 和 JSON Content-Type。限制尝试次数。",
+      idempotency: "launch code 原子单次消费，不能重试复用；回执丢失时由可信 CLI 重新签发。",
+      errors: "400 INVALID_REQUEST · 401 UNAUTHENTICATED（无效 / 过期 / 已消费）· 403 ORIGIN_FORBIDDEN · 429 RATE_LIMITED",
+      body: () => ({ launchCode: "EXAMPLE_ONE_TIME_CODE" }),
+      example: () => ({ csrfToken: "EXAMPLE_SESSION_CSRF", expiresAt: "2026-11-08T11:00:00.000Z", target: { workspaceId: "ws_alpha", sessionId: "ses_demo" } }),
+    },
+    {
+      id: "getDaemon", method: "GET", path: "/api/v1/daemon", short: "/daemon", title: "读取实例与协议版本", group: "DAEMON", status: 200, simulated: true,
+      description: "认证后读取 daemon 实例与能力。发现文件只提供线索；必须通过认证握手确认实例，不能只相信 PID 或端口。",
+      idempotency: "只读。客户端要求 apiVersion=v1；发现 instanceId 改变时丢弃旧事件游标。",
+      errors: "401 UNAUTHENTICATED · 403 ORIGIN_FORBIDDEN",
+      example: state => ({ instanceId: state.instanceId, apiVersion: "v1", state: "running", startedAt: "2026-11-08T03:00:00.000Z", capabilities: ["sessions", "requests", "approvals", "sse-replay", "persistence-flush"] }),
+    },
+    {
+      id: "stopDaemon", method: "POST", path: "/api/v1/daemon/stop", short: "/daemon/stop", title: "请求优雅停止", group: "DAEMON", status: 202,
+      description: "进入 draining，拒绝新请求，取消活动运行并尝试保存，再按 Agent → Session → Manager → Store 顺序关闭。202 仅代表停止请求已受理。保存失败保留进程并进入 stop_failed；此版不提供 force kill。",
+      auth: nativeAuth, idempotency: "expectedInstanceId 防止误停新实例；相同实例重复停止返回当前 draining 状态。stop_failed 后显式重试保存 / 停止。",
+      errors: "403 FORBIDDEN · 409 INSTANCE_MISMATCH · 503 STORE_UNAVAILABLE",
+      body: state => ({ expectedInstanceId: state.instanceId }), example: state => ({ instanceId: state.instanceId, state: "draining" }),
+    },
+    {
+      id: "listWorkspaces", method: "GET", path: "/api/v1/workspaces", short: "/workspaces", title: "列出授权工作区", group: "WORKSPACES", status: 200, simulated: true,
+      description: "只返回当前身份被授权的工作区。浏览器不能靠修改 workspaceId 访问其他工作区。模拟器只有一个工作区。",
+      idempotency: "只读分页；limit 默认 50、最大 100。opaque cursor 必须原样传回，不自行计算。",
+      errors: "401 UNAUTHENTICATED · 400 CURSOR_INVALID",
+      example: () => ({ items: [{ id: "ws_alpha", root: "C:/project/alpha", label: "alpha" }], nextCursor: null }),
+    },
+    {
+      id: "putWorkspace", method: "PUT", path: workspacePath, short: "W", title: "注册本地工作区", group: "WORKSPACES", status: 201,
+      description: "仅由可信 CLI 注册本地工作区。服务端 realpath 规范化并验证数据库 / 配置作用域；root 不允许浏览器任意指定。",
+      auth: nativeAuth, idempotency: "客户端稳定 workspaceId + 规范化 root；首次 201，相同映射 200，不同映射 409。注册关系由 daemon 元数据持久化。",
+      errors: "400 INVALID_REQUEST · 403 FORBIDDEN · 409 RESOURCE_MISMATCH",
+      body: () => ({ root: "C:/project/alpha" }), example: () => ({ id: "ws_alpha", root: "C:/project/alpha", label: "alpha" }),
+    },
+    {
+      id: "listSessions", method: "GET", path: `${workspacePath}/sessions`, short: "W/sessions", title: "列出工作区会话", group: "SESSIONS", status: 200, simulated: true,
+      description: "列出该工作区的会话摘要，不创建 Agent。是否载入 runtime 由 daemon 决定；持久记录与活动实例不是同一概念。",
+      idempotency: "只读分页；按创建时间与 ID 降序；limit 默认 50、最大 100。",
+      errors: "403 FORBIDDEN · 404 NOT_FOUND · 400 CURSOR_INVALID",
+      example: state => ({ items: [{ workspaceId: state.server.workspaceId, sessionId: state.server.sessionId, title: state.server.title, revision: state.server.revision, eligibility: state.server.eligibility }], nextCursor: null }),
+    },
+    {
+      id: "putSession", method: "PUT", path: sessionPath, short: "S", title: "以稳定 ID 创建会话", group: "SESSIONS", status: 201,
+      description: "在已授权工作区创建会话，默认 permissionMode=ask。它是 create-if-absent，不是覆盖历史；已有会话的模型和权限保持原值。",
+      idempotency: "首次 201；同 sessionId 同创建指纹 200；不同创建内容 / 墓碑 ID 返回 409。创建指纹需持久保存；不能拿当前可修改的 title 充当原始指纹。",
+      errors: "403 FORBIDDEN · 409 RESOURCE_MISMATCH · 503 STORE_UNAVAILABLE",
+      body: () => ({ title: "AlphaCode daemon design" }), example: state => state.server,
+    },
+    {
+      id: "getSession", method: "GET", path: sessionPath, short: "S", title: "读取权威会话快照", group: "SESSIONS", status: 200, simulated: true,
+      description: "返回最近消息、当前请求、审批、工具、保存状态和 cursor。只读，不重新执行或恢复工具。订阅应从该 cursor 开始；过期则以 stream.reset 的新快照替换。",
+      idempotency: "只读。cursor 是流游标，revision 是存储 CAS 版本；两者不能混用。所有消息按创建顺序呈现。",
+      errors: "403 FORBIDDEN · 404 NOT_FOUND · 503 STORE_UNAVAILABLE", example: state => state.server,
+    },
+    {
+      id: "listMessages", method: "GET", path: `${sessionPath}/messages`, short: "S/messages", title: "分页读取历史消息", group: "SESSIONS", status: 200, simulated: true,
+      description: "向前翻页已提交历史；before 使用上一页的 opaque nextCursor，页内按时间正序。运行中草稿只通过快照 / SSE 取得。沙盒仅演示最近一页。",
+      idempotency: "只读；limit 默认 50、最大 100；游标锚定消息，避免新消息插入使旧历史翻页漂移。",
+      errors: "404 NOT_FOUND · 400 CURSOR_INVALID", example: () => ({ items: [], nextCursor: null }),
+    },
+    {
+      id: "createRequest", method: "POST", path: `${sessionPath}/requests`, short: "S/requests", title: "提交一次逻辑输入", group: "REQUESTS", status: 202, simulated: true,
+      description: "受理后后台继续运行；HTTP 结束或浏览器断开都不取消 Agent。requestId 必须透传给现有 Session。此处可修改 JSON，再重复调用观察去重或冲突。场景沿用沙盒当前选择。",
+      idempotency: "先去重再判 busy：新请求 202；已有同内容 200 + replayed=true；同 ID 不同内容 409。新输入遇到 busy / unsaved / recovery_required 拒绝，不自动排队。",
+      errors: "400 INVALID_REQUEST · 409 REQUEST_MISMATCH / SESSION_BUSY / SESSION_UNSAVED / RECOVERY_REQUIRED · 413 INVALID_REQUEST · 503 DAEMON_DRAINING",
+      body: () => ({ requestId: "req_api_demo", input: "检查项目并运行测试，先让我确认命令。" }), example: () => ({ request: exampleRequest(), replayed: false }),
+    },
+    {
+      id: "getRequest", method: "GET", path: `${sessionPath}/requests/{requestId}`, short: "S/requests/{requestId}", title: "查询执行与保存结果", group: "REQUESTS", status: 200, simulated: true,
+      description: "请求受理响应丢失时，以原 requestId 查询，不生成新的请求。runId 在 Agent 启动前可以缺省；执行完成后仍需检查 persistence。",
+      idempotency: "只读。重启后已提交结果可重建；无法确认的 pending 返回 interrupted + recovery_required，不伪造执行结果。",
+      errors: "403 FORBIDDEN · 404 NOT_FOUND", example: state => state.server.request || exampleRequest(),
+    },
+    {
+      id: "cancelRequest", method: "POST", path: `${sessionPath}/requests/{requestId}/cancel`, short: "S/requests/{requestId}/cancel", title: "取消指定请求", group: "REQUESTS", status: 202, simulated: true,
+      description: "只取消 URL 指向的请求。cancel 是控制操作，不代表立刻停止；最终状态由 request.finished / session.saved 通知。取消与保存仍是两个阶段。",
+      idempotency: "首次 requested，重复 already_requested，已结束 already_settled（200）。旧请求的 cancel 不影响后来启动的请求。",
+      errors: "404 NOT_FOUND · 409 RECOVERY_REQUIRED", example: state => ({ requestId: state.server.request?.requestId || "req_demo", cancellation: "requested" }),
+    },
+    {
+      id: "decideApproval", method: "POST", path: `${sessionPath}/approvals/{approvalId}/decision`, short: "S/approvals/{approvalId}/decision", title: "回答一个绑定的审批", group: "APPROVALS", status: 200, simulated: true,
+      description: "批准一次或拒绝当前工具。命令预览只从服务端读取；不能由客户端替换。绑定同时包含 URL 的 approvalId 与正文中的 requestId、runId。",
+      idempotency: "同审批首个有效决定生效；同决定重试 200 replayed=true；反向或错误运行绑定 409；已过期 / 正在取消 410。决定回执需随归档持久保留。",
+      errors: "400 INVALID_REQUEST · 404 NOT_FOUND · 409 APPROVAL_CONFLICT · 410 APPROVAL_EXPIRED",
+      body: state => { const approval = state.server.approvals.at(-1) || exampleApproval(); return { requestId: approval.requestId, runId: approval.runId, decision: "allow" }; },
+      example: state => ({ approval: { ...(state.server.approvals.at(-1) || exampleApproval()), status: "resolved", decision: "allow" }, replayed: false }),
+    },
+    {
+      id: "changeSettings", method: "PATCH", path: `${sessionPath}/settings`, short: "S/settings", title: "更新会话权限模式", group: "SESSIONS", status: 200,
+      description: "仅允许空闲且已保存的会话更新 permissionMode。需要明确交互与完整授权，不能通过普通 prompt 或审批扩大权限；不改写全局配置。",
+      idempotency: "expectedRevision 与 Session CAS 对齐；相同版本的竞态最多一个成功。回执丢失后重新读取，不盲目重试写入。",
+      errors: "400 INVALID_REQUEST · 409 REVISION_CONFLICT / SESSION_BUSY / SESSION_UNSAVED / RECOVERY_REQUIRED",
+      body: state => ({ expectedRevision: state.server.revision, permissionMode: "ask" }), example: state => ({ revision: state.server.revision + 1, permissionMode: "ask" }),
+    },
+    {
+      id: "flushPersistence", method: "POST", path: `${sessionPath}/persistence/flush`, short: "S/persistence/flush", title: "仅重试结果持久化", group: "PERSISTENCE", status: 200, simulated: true,
+      description: "只提交进程中已有的保存候选，不调用模型，不执行工具。没有候选的崩溃 pending 不能用此接口自动恢复。",
+      idempotency: "成功后重复调用返回已保存回执。STORE_UNAVAILABLE 可重试同一候选；COMMIT_CONFLICT 不可覆盖。",
+      errors: "400 INVALID_REQUEST · 409 RECOVERY_REQUIRED / SESSION_BUSY / REVISION_CONFLICT · 503 STORE_UNAVAILABLE",
+      example: state => ({ requestId: state.server.request?.requestId || "req_demo", persistence: { status: "saved", revision: state.server.revision + 1 } }),
+    },
+    {
+      id: "subscribe", method: "GET", path: `${sessionPath}/events`, short: "S/events", title: "订阅快照与事件流", group: "STREAM", status: 200, simulated: true, stream: true,
+      description: "Content-Type: text/event-stream；Cache-Control: no-store。初次先快照，再实时事件；Last-Event-ID 优先于 ?after。框架与代理必须关闭缓冲，心跳不占用序号。沙盒调用会重新连接 Web 客户端。",
+      idempotency: "重复连接不启动执行。有效游标补发；缓冲过期 / 实例改变 / 游标超前发送 stream.reset。认证、资源不存在与游标格式错误在流打开前以 JSON 返回。",
+      errors: "401 UNAUTHENTICATED · 403 FORBIDDEN · 404 NOT_FOUND · 400 CURSOR_INVALID",
+      example: state => ({ apiVersion: "v1", instanceId: state.instanceId, sequence: Number(state.server.cursor.split(":").at(-1)), cursor: state.server.cursor, timestamp: "2026-11-08T03:00:00.000Z", workspaceId: "ws_alpha", sessionId: "ses_demo", type: "state.snapshot", payload: state.server }),
+    },
+  ];
+  globalThis.AlphaDaemonCatalog = definitions.map(definition => ({ auth: standardAuth, ...definition }));
+})();
+</script>
+<script id="daemon-ui">
+"use strict";
+(() => {
+  const element = id => document.getElementById(id);
+  const create = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const pretty = value => JSON.stringify(value, null, 2);
+  const sse = event => `id: ${event.cursor}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+  const catalog = globalThis.AlphaDaemonCatalog;
+  let simulator = globalThis.AlphaDaemonDesign.createSimulator();
+  let scenario = "approval";
+  let requestNumber = 0;
+  let logKind = "events";
+  let selectedTrace = null;
+  let selectedApi = "createRequest";
+  let apiTarget = {};
+  let toastTimer;
+  const scenarioPrompts = {
+    approval: "检查项目并运行测试，先让我确认命令。",
+    chat: "解释本地 daemon 如何让 TUI 和 Web 共享同一个 Agent。",
+    unsaved: "运行模拟测试，然后演示执行完成但结果保存失败的状态。",
+  };
+  function toast(message) {
+    element("toast").textContent = message;
+    element("toast").hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { element("toast").hidden = true; }, 4500);
+  }
+  function showResponse(response, successText) {
+    if (response.status >= 400) toast(`${response.status} ${response.body.error.code} · ${response.body.error.message}`);
+    else if (successText) toast(successText);
+    render();
+  }
+  function renderConversation(snapshot) {
+    const container = element("conversation");
+    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 75;
+    const oldScroll = container.scrollTop;
+    container.replaceChildren();
+    if (!snapshot.messages.items.length) {
+      const empty = create("div", "empty-chat");
+      empty.append(create("div", "empty-glyph", "α"), create("strong", "", "从一次请求，理解整个协议。"), create("p", "", "发送消息后，可以断开 Web、在 TUI 批准，再重连观察同一段流式回复。"));
+      container.append(empty);
+    }
+    for (const message of snapshot.messages.items) {
+      const row = create("div", `message ${message.role}`);
+      if (message.role === "assistant") row.append(create("div", "assistant-label", "α  ALPHACODE · LOCAL AGENT"));
+      row.append(create("div", `bubble${message.streaming ? " streaming" : ""}`, message.text || "正在思考…"));
+      container.append(row);
+      if (message.role === "assistant") {
+        for (const tool of snapshot.tools.filter(tool => tool.requestId === message.requestId)) {
+          const toolNode = create("div", "tool");
+          toolNode.append(create("strong", "", `${tool.name} · ${tool.status}`), create("div", "", tool.command || ""));
+          if (tool.output) toolNode.append(create("div", "muted", tool.output));
+          container.append(toolNode);
+        }
+      }
+    }
+    container.scrollTop = atBottom ? container.scrollHeight : oldScroll;
+  }
+  function traceKey(entry) {
+    return entry.event ? `${entry.event.cursor}/${entry.delivery}/${entry.audience}/${entry.event.timestamp}`
+      : `${entry.operation}/${entry.timestamp}/${entry.response.status}`;
+  }
+  function renderTrace(state) {
+    element("event-count").textContent = state.journal.length;
+    element("http-count").textContent = state.http.length;
+    const list = element("trace-list");
+    const oldScroll = list.scrollTop;
+    const entries = logKind === "events" ? state.journal : state.http;
+    list.replaceChildren();
+    if (!entries.length) list.append(create("div", "event-empty", "暂无请求。发送一条消息开始观察。"));
+    const selected = selectedTrace || entries.at(-1);
+    for (const entry of [...entries].reverse()) {
+      const button = create("button", `event-row${selected && traceKey(entry) === traceKey(selected) ? " selected" : ""}`);
+      button.type = "button";
+      const leading = entry.event ? String(entry.event.sequence).padStart(3, "0") : String(entry.response.status);
+      const name = entry.event ? entry.event.type : entry.operation;
+      const trailing = entry.event ? entry.delivery : entry.actor;
+      button.append(create("span", "event-seq", leading), create("span", "event-name", name), create("span", "event-time", trailing));
+      button.setAttribute("aria-label", `${leading} ${name} ${trailing}`);
+      button.addEventListener("click", () => { selectedTrace = entry; renderTrace(simulator.inspect()); });
+      list.append(button);
+    }
+    list.scrollTop = oldScroll;
+    if (selected) element("trace-detail").textContent = selected.event
+      ? `delivery: ${selected.delivery} → ${selected.audience}\n\n${sse(selected.event)}`
+      : pretty(selected);
+  }
+  function render() {
+    const state = simulator.inspect();
+    const web = state.clients.web;
+    const browser = web.snapshot;
+    const terminal = state.clients.tui.snapshot;
+    const pendingApproval = browser.approvals.find(approval => approval.status === "pending");
+    const terminalApproval = terminal.approvals.find(approval => approval.status === "pending");
+    const activeRequest = browser.request;
+    const executing = activeRequest && ["accepted", "running", "awaiting_approval"].includes(activeRequest.execution);
+    element("metric-instance").textContent = state.instanceId;
+    element("metric-revision").textContent = state.server.revision;
+    element("metric-clients").textContent = Object.values(state.clients).filter(client => client.connected).length;
+    element("metric-tools").textContent = state.toolExecutions;
+    element("web-cursor").textContent = web.cursor;
+    const changedInstance = !web.cursor.startsWith(`${state.instanceId}:`);
+    element("connection").textContent = web.connected ? "断开 Web" : changedInstance ? "重新授权并重连" : "重连 Web";
+    element("web-dot").style.color = web.connected ? "var(--accent)" : "var(--amber)";
+    const banner = element("connection-banner");
+    banner.hidden = web.connected && browser.eligibility !== "recovery_required";
+    banner.textContent = !web.connected
+      ? changedInstance ? "daemon 已重启。重连会模拟重新授权并读取新快照；真实认证不在此沙盒内。" : "Web 已断线，下方是旧视图。daemon 仍在运行，TUI 可以继续审批。"
+      : "RECOVERY_REQUIRED：旧进程的 pending 无法安全接管。请重置沙盒开始新的演示。";
+    renderConversation(browser);
+    element("approval").hidden = !pendingApproval;
+    if (pendingApproval) {
+      element("approval-binding").textContent = `${pendingApproval.approvalId} · ${pendingApproval.runId} · ${pendingApproval.toolCallId}`;
+      element("approval-command").textContent = pendingApproval.preview.command || pendingApproval.preview.description;
+    }
+    element("allow").disabled = !web.connected || !pendingApproval;
+    element("deny").disabled = !web.connected || !pendingApproval;
+    element("send").disabled = !web.connected || browser.eligibility !== "ready" || !element("prompt").value.trim();
+    element("cancel").disabled = !web.connected || !executing;
+    element("retry").disabled = !web.connected || !state.lastSubmitted;
+    element("flush").disabled = !web.connected || browser.eligibility !== "unsaved";
+    element("step").disabled = !state.canAdvance;
+    element("tui-allow").disabled = !terminalApproval;
+    for (const button of document.querySelectorAll("[data-scenario]")) button.disabled = state.server.eligibility !== "ready";
+    const executionLabels = { accepted: "Accepted", running: "Running", awaiting_approval: "Awaiting approval", completed: "Completed", cancelled: "Cancelled", failed: "Failed", interrupted: "Interrupted" };
+    const persistenceLabels = { pending: "尚未保存", saved: "已确认保存", unsaved: "保存失败 · 可仅重试保存", recovery_required: "恢复受阻 · 不可自动重跑" };
+    element("execution-state").textContent = web.connected ? activeRequest ? executionLabels[activeRequest.execution] : "Ready" : "Offline · 旧状态";
+    element("persistence-state").textContent = activeRequest ? persistenceLabels[activeRequest.persistence.status] : "会话已就绪";
+    element("composer-hint").textContent = browser.eligibility === "unsaved" ? "执行已结束，请先补写保存。" : "Enter 发送 · Shift + Enter 换行";
+    element("tui-state").textContent = [
+      "$ alphacode attach ses_demo", `  execution    ${terminal.request?.execution || "idle"}`,
+      `  persistence  ${terminal.request?.persistence.status || "saved"}`,
+      `  cursor       ${state.clients.tui.cursor}`,
+      ...(terminalApproval ? [`  approval     ${terminalApproval.approvalId} [pending]`] : []),
+      ...(state.lastRecovery !== "snapshot" ? [`  web recovery ${state.lastRecovery}`] : []),
+    ].join("\n");
+    renderTrace(state);
+  }
+  function selectView(name) {
+    for (const button of document.querySelectorAll("[data-view]")) {
+      const selected = button.dataset.view === name;
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+      element(`view-${button.dataset.view}`).hidden = !selected;
+    }
+    if (name === "api") renderApi();
+  }
+  function chooseLog(name) {
+    logKind = name;
+    selectedTrace = null;
+    for (const button of document.querySelectorAll("[data-log]")) {
+      button.setAttribute("aria-selected", String(button.dataset.log === name));
+      button.tabIndex = button.dataset.log === name ? 0 : -1;
+    }
+    element("trace-list").setAttribute("aria-labelledby", name === "events" ? "tab-events" : "tab-http");
+    renderTrace(simulator.inspect());
+  }
+  function bindTabKeys(selector, activate) {
+    const tabs = [...document.querySelectorAll(selector)];
+    for (const [index, tab] of tabs.entries()) tab.addEventListener("keydown", event => {
+      let next;
+      if (["ArrowRight", "ArrowDown"].includes(event.key)) next = (index + 1) % tabs.length;
+      else if (["ArrowLeft", "ArrowUp"].includes(event.key)) next = (index + tabs.length - 1) % tabs.length;
+      else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = tabs.length - 1;
+      else return;
+      event.preventDefault();
+      activate(tabs[next]);
+      tabs[next].focus();
+    });
+  }
+  function renderEndpointList() {
+    const search = element("api-search").value.trim().toLowerCase();
+    const list = element("api-endpoints");
+    list.replaceChildren();
+    const matches = catalog.filter(endpoint => `${endpoint.method} ${endpoint.path} ${endpoint.title} ${endpoint.group}`.toLowerCase().includes(search));
+    for (const endpoint of matches) {
+      const button = create("button", "endpoint");
+      button.type = "button";
+      button.setAttribute("aria-current", String(endpoint.id === selectedApi));
+      const label = create("span", "", endpoint.title);
+      label.append(create("small", "", endpoint.short));
+      button.append(create("span", `method ${endpoint.method}`, endpoint.method), label);
+      button.addEventListener("click", () => { selectedApi = endpoint.id; renderApi(); });
+      list.append(button);
+    }
+    if (!matches.length) list.append(create("p", "event-empty", "没有匹配的接口，试试 requests 或 GET。"));
+  }
+  function concretePath(endpoint) {
+    return endpoint.path.replace("{workspaceId}", "ws_alpha").replace("{sessionId}", "ses_demo")
+      .replace("{requestId}", apiTarget.requestId).replace("{approvalId}", apiTarget.approvalId);
+  }
+  const shellQuote = value => `'${value.replaceAll("'", `'"'"'`)}'`;
+  function updateCurl() {
+    const endpoint = catalog.find(item => item.id === selectedApi);
+    const lines = [`curl${endpoint.stream ? " -N" : ""} -X ${endpoint.method} ${shellQuote(`http://127.0.0.1:43127${concretePath(endpoint)}`)}`];
+    if (endpoint.id === "exchangeLaunchCode") lines.push("  -H 'Origin: http://127.0.0.1:43127'");
+    else lines.push('  -H "Authorization: Bearer $ALPHACODE_DAEMON_TOKEN"');
+    if (endpoint.body) {
+      lines.push("  -H 'Content-Type: application/json'");
+      lines.push(`  --data-raw ${shellQuote(element("api-body").value)}`);
+    }
+    element("api-curl").textContent = lines.join(" \\\n");
+  }
+  function renderApi() {
+    const endpoint = catalog.find(item => item.id === selectedApi);
+    const state = simulator.inspect();
+    apiTarget = { requestId: state.server.request?.requestId || "req_demo", approvalId: state.server.approvals.at(-1)?.approvalId || "apr_001", actor: "inspector" };
+    renderEndpointList();
+    const badges = element("api-badges");
+    badges.replaceChildren(create("span", "chip", endpoint.group), document.createTextNode(" "), create("span", "chip green", endpoint.simulated ? "LOCAL SIMULATION" : "CONTRACT ONLY"));
+    const refresh = create("button", "button small", "同步沙盒参数");
+    refresh.style.marginLeft = "8px";
+    refresh.addEventListener("click", renderApi);
+    badges.append(document.createTextNode(" "), refresh);
+    element("api-title").textContent = endpoint.title;
+    element("api-description").textContent = endpoint.description;
+    element("api-method").textContent = endpoint.method;
+    element("api-method").className = `method ${endpoint.method}`;
+    element("api-path").textContent = concretePath(endpoint);
+    element("api-auth").textContent = endpoint.auth;
+    element("api-idempotency").textContent = endpoint.idempotency;
+    element("api-errors").textContent = endpoint.errors;
+    element("editable-hint").textContent = endpoint.body ? "· 可编辑 JSON" : "· 无正文";
+    element("api-body").value = endpoint.body ? pretty(endpoint.body(state)) : "此请求不需要 JSON 正文。";
+    element("api-body").readOnly = !endpoint.body;
+    element("try-api").disabled = !endpoint.simulated;
+    element("try-api").textContent = endpoint.simulated ? "在沙盒中调用" : "仅契约示例";
+    element("api-status").textContent = `示例 · ${endpoint.status}${endpoint.stream ? " text/event-stream" : ""}`;
+    element("api-response").textContent = endpoint.stream ? sse(endpoint.example(state)) : pretty(endpoint.example(state));
+    element("copy-response").textContent = endpoint.stream ? "复制 SSE" : "复制 JSON";
+    element("copy-fallback").hidden = true;
+    updateCurl();
+  }
+  async function copyText(text) {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(text);
+      toast("已复制到剪贴板。");
+    } catch {
+      const fallback = element("copy-fallback");
+      fallback.hidden = false;
+      fallback.value = text;
+      fallback.focus();
+      fallback.select();
+      toast("浏览器未允许自动复制，已选中文本，可按 Ctrl+C。 ");
+    }
+  }
+  for (const button of document.querySelectorAll("[data-view]")) button.addEventListener("click", () => selectView(button.dataset.view));
+  for (const button of document.querySelectorAll("[data-log]")) button.addEventListener("click", () => chooseLog(button.dataset.log));
+  bindTabKeys("[data-view]", tab => selectView(tab.dataset.view));
+  bindTabKeys("[data-log]", tab => chooseLog(tab.dataset.log));
+  for (const button of document.querySelectorAll("[data-scenario]")) button.addEventListener("click", () => {
+    scenario = button.dataset.scenario;
+    element("prompt").value = scenarioPrompts[scenario];
+    for (const candidate of document.querySelectorAll("[data-scenario]")) candidate.setAttribute("aria-pressed", String(candidate.dataset.scenario === scenario));
+    render();
+  });
+  element("composer").addEventListener("submit", event => {
+    event.preventDefault();
+    if (element("send").disabled) return;
+    const body = { requestId: `req_ui_${String(++requestNumber).padStart(3, "0")}`, input: element("prompt").value };
+    const response = simulator.call("createRequest", body, { scenario });
+    if (response.status < 400) element("prompt").value = "";
+    selectedTrace = null;
+    showResponse(response);
+  });
+  element("prompt").addEventListener("input", () => {
+    const state = simulator.inspect();
+    element("send").disabled = !state.clients.web.connected || state.clients.web.snapshot.eligibility !== "ready" || !element("prompt").value.trim();
+  });
+  element("prompt").addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
+      event.preventDefault();
+      element("composer").requestSubmit();
+    }
+  });
+  function answer(decision, actor) {
+    const client = simulator.inspect().clients[actor];
+    const approval = client.snapshot.approvals.find(item => item.status === "pending");
+    if (!client.connected || !approval) return;
+    showResponse(simulator.call("decideApproval", { requestId: approval.requestId, runId: approval.runId, decision }, { approvalId: approval.approvalId, actor }), `${actor.toUpperCase()} 已提交 ${decision}。所有在线客户端同步更新。`);
+  }
+  element("allow").addEventListener("click", () => answer("allow", "web"));
+  element("deny").addEventListener("click", () => answer("deny", "web"));
+  element("tui-allow").addEventListener("click", () => answer("allow", "tui"));
+  element("cancel").addEventListener("click", () => {
+    const requestId = simulator.inspect().clients.web.snapshot.request?.requestId;
+    showResponse(simulator.call("cancelRequest", undefined, { requestId }), "取消已受理，等待执行收尾与保存。 ");
+  });
+  element("retry").addEventListener("click", () => showResponse(simulator.call("createRequest", simulator.inspect().lastSubmitted, { scenario }), "返回原请求回执。没有新增用户消息，也没有重复执行工具。"));
+  element("flush").addEventListener("click", () => showResponse(simulator.call("flushPersistence"), "已补写保存。工具执行计数保持不变。"));
+  element("connection").addEventListener("click", () => {
+    if (simulator.inspect().clients.web.connected) {
+      simulator.disconnect("web");
+      toast("Web 已断开；daemon 不停止，TUI 仍然在线。 ");
+    } else {
+      const result = simulator.connect("web");
+      if (result.status) showResponse(result);
+      else toast(result.mode === "replay" ? `已重连，补发 ${result.count} 条事件，没有重跑请求。` : `已重连，以权威快照替换旧视图（${result.reason || result.mode}）。`);
+    }
+    selectedTrace = null;
+    render();
+  });
+  element("step").addEventListener("click", () => { simulator.advance(); render(); });
+  element("expire").addEventListener("click", () => {
+    simulator.clearBuffer();
+    toast("事件缓冲已清空。若离线客户端缺少事件，重连会收到 stream.reset。 ");
+    render();
+  });
+  element("restart").addEventListener("click", () => {
+    const result = simulator.restart();
+    toast(result.recoveryRequired ? "模拟进程已重启：pending 标记保留，丢失的执行结果不会被重跑。" : "模拟进程已重启：已提交会话保留。Web 重新授权后读取快照。 ");
+    selectedTrace = null;
+    render();
+  });
+  element("reset").addEventListener("click", () => {
+    simulator = globalThis.AlphaDaemonDesign.createSimulator();
+    requestNumber = 0;
+    selectedTrace = null;
+    element("prompt").value = scenarioPrompts[scenario];
+    render();
+    toast("演示数据已重置。真实文件和会话从未被修改。 ");
+  });
+  element("api-search").addEventListener("input", renderEndpointList);
+  element("api-body").addEventListener("input", updateCurl);
+  element("try-api").addEventListener("click", () => {
+    const endpoint = catalog.find(item => item.id === selectedApi);
+    if (!endpoint.simulated) return;
+    let body;
+    let response;
+    try {
+      body = endpoint.body ? JSON.parse(element("api-body").value) : undefined;
+      response = simulator.call(endpoint.id, body, { ...apiTarget, scenario });
+    } catch {
+      response = simulator.invalidRequest("Invalid JSON. No request was submitted.");
+    }
+    element("api-status").textContent = `MOCK · ${response.status}${endpoint.stream && response.status < 400 ? " text/event-stream" : ""}`;
+    element("api-response").textContent = endpoint.stream && response.status < 400
+      ? sse(simulator.inspect().journal.findLast(entry => entry.audience.includes("web"))?.event || endpoint.example(simulator.inspect()))
+      : pretty(response.body);
+    showResponse(response, "调用已在页面内存中完成。未发起网络请求。 ");
+  });
+  element("copy-response").addEventListener("click", () => { void copyText(element("api-response").textContent); });
+  element("copy-curl").addEventListener("click", () => { void copyText(element("api-curl").textContent); });
+  render();
+  setInterval(() => {
+    if (element("auto-advance").checked && simulator.advance()) render();
+  }, 650);
+})();
+</script>
+</body>
+</html>

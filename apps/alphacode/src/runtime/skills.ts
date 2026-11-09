@@ -24,7 +24,7 @@ export async function loadRuntimeSkills(config: AppConfig, cwd: string): Promise
   add(join(config.configDirectory ?? join(homedir(), ".alphacode"), "skills"), "user");
   if (settings.sharedDirectories) add(join(homedir(), ".agents", "skills"), "user");
   if (settings.claudeDirectories) add(join(homedir(), ".claude", "skills"), "user");
-  return loadSkills({ roots, disabledNames: settings.disabledNames, reservedNames: ["skills", "permission"] });
+  return loadSkills({ roots, disabledNames: settings.disabledNames, reservedNames: ["skills", "permission", "web"] });
 }
 
 export function skillStatus(loaded: LoadSkillsResult): string {

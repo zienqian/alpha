@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-test("linked source entry resolves UI preloads outside the repository", async () => {
+test("linked source entry resolves the React JSX runtime outside the repository", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "alphacode-launcher-"));
   try {
     const config = fileURLToPath(new URL("../../../bunfig.toml", import.meta.url));

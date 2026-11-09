@@ -1,6 +1,7 @@
 import type { ChatSkill, PermissionMode } from "../chat/contracts";
 
 export const commands = [
+  { name: "/web", description: "Open this live session in your browser" },
   { name: "/permission", description: "Choose how tools and commands are approved" },
   { name: "/skills", description: "List available skills and loading diagnostics" },
 ] as const;

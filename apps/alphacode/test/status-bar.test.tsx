@@ -1,8 +1,7 @@
 import { expect, test } from "bun:test";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { createSignal } from "solid-js";
-import { testRender } from "@opentui/solid";
+import { testRender } from "./render";
 import { StatusBar } from "../src/ui/components/status-bar";
 import { formatWorkspacePath } from "../src/ui/workspace-path";
 
@@ -24,18 +23,18 @@ test("workspace display abbreviates only the home directory and its descendants"
 });
 
 test("status bar displays the shortened workspace and reactive session title, not permissions", async () => {
-  const [title, setTitle] = createSignal("New session");
-  const ui = await testRender(() => <StatusBar modelId="test-model" workspaceRoot={join(homedir(), "projects", "alpha")} sessionTitle={title()} />, { width: 100, height: 3 });
+  const workspaceRoot = join(homedir(), "projects", "alpha");
+  const ui = await testRender(<StatusBar modelId="test-model" workspaceRoot={workspaceRoot} sessionTitle="New session" />, { width: 100, height: 3 });
   try {
     await ui.renderOnce();
     expect(ui.captureCharFrame()).toContain("~/projects/alpha");
     expect(ui.captureCharFrame()).toContain("New session");
     expect(ui.renderer.root.findDescendantById("permission-info")).toBeFalsy();
-    setTitle("修复输入框布局");
+    ui.rerender(<StatusBar modelId="test-model" workspaceRoot={workspaceRoot} sessionTitle="修复输入框布局" />);
     await ui.renderOnce();
     expect(ui.captureCharFrame()).toContain("修复输入框布局");
     expect(ui.captureCharFrame()).not.toContain("New session");
-    setTitle("检查输入框布局和会话标题".repeat(8));
+    ui.rerender(<StatusBar modelId="test-model" workspaceRoot={workspaceRoot} sessionTitle={"检查输入框布局和会话标题".repeat(8)} />);
     for (const width of [100, 60, 40, 28]) {
       ui.resize(width, 3);
       await ui.renderOnce();

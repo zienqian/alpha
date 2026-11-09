@@ -1,7 +1,8 @@
 {
   "title": "alphacode A1 research and design decisions",
   "reviewedAt": "2026-11-04",
-  "status": "proposal",
+  "status": "historical",
+  "implementationUpdate": "2026-11-09: terminal and Web use React; historical research below is not the current stack. See repository and application READMEs for current dependencies and commands.",
   "implemented": false,
   "currentScope": "P0 terminal application only. No public SDK, JSONL or server protocol. Earlier A1 API proposal withdrawn; app server will be planned separately.",
   "stack": ["OpenTUI", "SolidJS"],

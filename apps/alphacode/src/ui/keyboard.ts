@@ -1,8 +1,9 @@
-import { useKeyboard } from "@opentui/solid";
+import { useKeyboard } from "@opentui/react";
 import type { Chat } from "../chat/contracts";
 
 export function useChatKeyboard(chat: Chat, onExit: () => void, commandOpen: () => boolean = () => false): void {
   useKeyboard(key => {
+    if (key.defaultPrevented) return;
     if (key.ctrl && key.name === "c") {
       key.preventDefault();
       if (chat.state.busy) chat.cancel();

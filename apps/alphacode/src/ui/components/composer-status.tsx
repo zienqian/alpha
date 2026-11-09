@@ -1,5 +1,5 @@
-import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js";
-import { useTerminalDimensions } from "@opentui/solid";
+import { useEffect, useState } from "react";
+import { useTerminalDimensions } from "@opentui/react";
 import type { ChatState } from "../../chat/contracts";
 import { colors } from "../theme";
 import { formatDuration } from "../duration";
@@ -21,27 +21,26 @@ export function composerActivity(state: ChatState): { text: string; animated: bo
 
 export function ComposerStatus(props: { state: ChatState }) {
   const dimensions = useTerminalDimensions();
-  const activity = createMemo(() => composerActivity(props.state));
-  const busy = createMemo(() => props.state.busy || props.state.closing);
-  const runStartedAt = createMemo(() => props.state.activeRunStartedAt);
-  const [elapsed, setElapsed] = createSignal(0);
-  createEffect(() => {
-    if (!busy()) return;
-    const started = runStartedAt() ?? performance.now();
+  const activity = composerActivity(props.state);
+  const busy = props.state.busy || props.state.closing;
+  const runStartedAt = props.state.activeRunStartedAt;
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!busy) return;
+    const started = runStartedAt ?? performance.now();
     const tick = () => setElapsed(Math.max(0, performance.now() - started));
     tick();
     const timer = setInterval(tick, 250);
-    onCleanup(() => clearInterval(timer));
-  });
+    return () => clearInterval(timer);
+  }, [busy, runStartedAt]);
+  if (!busy) return null;
   return (
-    <Show when={busy()}>
       <box id="composer-status" flexDirection="row" flexShrink={0} height={1} gap={1} paddingX={1} marginBottom={1}>
-        <Spinner active={activity().animated} color={activity().color} />
-        <ShimmerText text={activity().text} animated={activity().animated} color={activity().color} />
+        <Spinner active={activity.animated} color={activity.color} />
+        <ShimmerText text={activity.text} animated={activity.animated} color={activity.color} />
         <text id="activity-elapsed" fg={colors.muted} flexShrink={0} height={1}>
-          ({formatDuration(elapsed())}{props.state.busy && dimensions().width >= 48 ? " · esc to interrupt" : ""})
+          ({formatDuration(elapsed)}{props.state.busy && dimensions.width >= 48 ? " · esc to interrupt" : ""})
         </text>
       </box>
-    </Show>
   );
 }

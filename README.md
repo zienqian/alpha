@@ -18,14 +18,14 @@ bun run dev
 - `packages/coding-agent`：六个独立静态工具、cwd 上下文和跨平台 Shell 执行。
 - `packages/provider`：模型提供商配置和适配。
 - `apps/example-agent`：组装 Provider 与 ADK 的示例，默认离线运行。
-- `apps/alphacode`：OpenTUI + SolidJS 终端编程 Agent，提供用户输入与 Markdown 流式回复。
+- `apps/alphacode`：OpenTUI + React 终端编程 Agent，提供用户输入与 Markdown 流式回复。
 - `docs`：调研与技术方案。
 
 依赖方向：应用组装 Coding、Session、ADK 和 Provider；Coding 复用 core 工厂与插件，Session 仅引用 core 公开类型，两者不互相依赖。ADK 仅通过公开类型单向依赖 Provider，内核不反向依赖扩展。使用 Nx 标签、ESLint 与产物测试检查跨包和运行时边界。ADK 的唯一业务入口是 `@alpha/adk/core`。
 
 ## 本地开发
 
-全仓库开发使用 Bun 1.4.4（`.bun-version`），安装和任务执行统一使用 Bun。根目录 `workspaces` 管理应用与库包，`bun.lock` 固定依赖；Nx 继续负责任务依赖与缓存，ESLint 检查包边界，tsrs 负责库包构建与全仓类型检查，AlphaCode 使用 OpenTUI Solid 的 Bun 插件构建。
+全仓库开发使用 Bun 1.4.4（`.bun-version`），安装和任务执行统一使用 Bun。根目录 `workspaces` 管理应用与库包，`bun.lock` 固定依赖；Nx 继续负责任务依赖与缓存，ESLint 检查包边界，tsrs 负责库包构建与全仓类型检查。终端与 Web 统一使用 React：AlphaCode 通过 Bun 原生 JSX 转换和 `@opentui/react` 构建，Web 使用 React DOM、Vite 和 `@vitejs/plugin-react`，不再需要额外的 JSX preload。
 
 相对模块的 `import` / `export` 统一省略代码扩展名（例如 `./config`、`../contracts`），类型导入和动态 `import()` 也遵循此约定，由 ESLint 检查。跨包使用公开入口（例如 `@alpha/adk/core`）；JSON 等资源导入、`package.json` 入口和文件系统路径保留实际扩展名。源码与构建产物均由 Bun 解析模块。
 
@@ -40,7 +40,7 @@ bun run graph
 
 `bun run graph` 打开 Nx 项目依赖图。Provider 使用方法见 [Provider README](packages/provider/README.md)。包名为内部占位名称，目前均为 private；尚未配置发布或 CI。
 
-使用 `bun run test` 执行 Nx 的完整测试任务（先构建依赖）。测试统一使用 `bun:test`；运行环境无需单独安装 Node。真实模型测试通过各包的 `test:live` 或显式脚本运行，不在普通测试中自动请求模型。
+使用 `bun run test` 执行 Nx 的完整测试任务（先构建依赖）。终端和库包测试使用 `bun:test`，Web 使用 Vitest、jsdom 和 React Testing Library；任务由 Bun 执行。真实模型测试通过各包的 `test:live` 或显式脚本运行，不在普通测试中自动请求模型。
 
 Session 使用 Bun 内置的 `bun:sqlite`，无需第三方 SQLite 驱动或原生模块安装。`@alpha/coding-agent` 直接接收 cwd，进程通过 `cross-spawn` 启动，按 OpenCode 路线选择 Shell 和处理取消。`node:fs`、`node:path` 等是 Bun 支持的标准库 API。
 

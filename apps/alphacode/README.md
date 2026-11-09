@@ -1,6 +1,6 @@
 # AlphaCode
 
-OpenTUI + SolidJS 终端编程 Agent。当前提供用户输入、Markdown 流式回复、多轮对话、简短工具状态与命令确认。应用界面、状态提示、错误信息和 CLI 帮助统一使用英文；模型根据用户请求和指令选择回复语言。
+OpenTUI + React 终端编程 Agent。当前提供用户输入、Markdown 流式回复、多轮对话、简短工具状态与命令确认。应用界面、状态提示、错误信息和 CLI 帮助统一使用英文；模型根据用户请求和指令选择回复语言。
 
 ## 运行
 
@@ -13,7 +13,23 @@ Copy-Item .env.example .env.local
 bun run dev
 ```
 
-`bun run dev` 直接运行应用和基础包源码，并监听变化自动重启，无需预先 build。构建产物仍可通过 `bun run build` 后执行 `bun run start` 体验。启动器通过绝对路径读取仓库的 `.env.local` 和 TUI 配置，保持调用者当前目录。终端环境变量优先于 `.env.local`，两者都覆盖全局 YAML 默认配置。
+`bun run dev` 直接运行应用和基础包源码，并监听 TUI 变化自动重启，无需预先 build。构建产物仍可通过 `bun run build` 后执行 `bun run start` 体验。启动器通过绝对路径读取仓库的 `.env.local` 和 TUI 配置，保持调用者当前目录。终端环境变量优先于 `.env.local`，两者都覆盖全局 YAML 默认配置。
+
+## 本地 Server 与 Web
+
+启动 `alphacode` 会自动启动或复用同一会话数据库的本地 server，终端连接到 server 持有的会话。无需手动启动 daemon，不安装系统服务、不配置开机自启。默认仍直接进入 TUI，不启动浏览器或构建 Web。
+
+- 在终端输入 `/web`，才构建（若缺少产物）、启用并打开 WebUI。浏览器进入**当前同一个 session**，不会另开 Agent。也可先执行根目录 `bun run build:web`。
+- 多个项目只要使用同一个 `ALPHACODE_DB`，就复用同一 server。Web 左侧列出该数据库里已登记项目的当前及历史会话，可切换、新建、发消息、停止任务、审批工具和修改权限。登记发生在 CLI 打开项目时。
+- CLI/Web 的消息、工具状态、审批及权限通过 SSE 全量快照同步；网络重连获取最新快照，不重放工具调用。相同会话一次只执行一个请求，审批绑定 request ID 和一次性 approval ID。
+- 退出终端或关闭网页只断开客户端，**不取消任务**。仍在执行、等待审批或结果未保存时 server 保持运行。没有客户端、请求或未保存状态后，空闲 60 秒自动退出。需要停止任务时先按 Esc/Ctrl+C 或 Web 的 Stop。
+- 默认只监听 `127.0.0.1` 随机端口。`/web` 直接打开 `/?session=<sessionId>`，无需授权码、登录 cookie 或独立 CSRF token，可刷新和重复打开。保留 Host、同源 Origin、JSON 请求校验及跨站拒绝；登记项目和启用 Web 仍需要原生 bearer token。此模式信任本机进程，不隔离同机其他用户或进程，不适用于局域网或公网开放。密钥不写入 URL、项目索引或浏览器存储。
+
+SQLite 旁的 `.sessions.db.server/`（名称随数据库文件名变化）保存 `server.json`、进程租约、项目索引、请求去重回执和诊断日志。该目录是本用户的私有控制数据，不要共享、提交或在服务运行时删除。不同数据库互相隔离。
+
+当前范围是本用户、当前数据库、已登记的 AlphaCode 项目；不会扫描其他软件的 session，也不会接管升级前仍在运行的旧版 CLI。旧会话所在项目需要用新 CLI 打开一次才能出现在全局列表。运行中的会话保留创建时的 runtime 配置；修改 server 源码后需关闭客户端并等待 server 空闲退出，TUI 的 `--watch` 不热替换后台 runtime。Web 源码修改后重新执行 `bun run build:web`。
+
+server 异常退出后，重新启动 CLI 可恢复已提交历史；端口变化时重新 `/web` 打开新地址，不需要授权。协议升级后关闭旧客户端，待任务完成且旧 server 空闲退出再启动，并重新构建 Web。未确认完成的请求不会自动重试，有未完成工具副作用的会话仍由 Session 层阻止继续执行。首版没有远程访问、事件日志回放、分页虚拟列表或人工恢复面板。API 与一致性约定见 `src/server/README.md`。
 
 ## 全局配置目录
 
@@ -174,11 +190,10 @@ AlphaCode 不设置整轮执行期限、模型/工具调用次数上限、命令
 - `src/runtime/`：组装 Provider、Coding Agent 和 Session SQLite，将 ADK 事件转为对话事件，管理保存与关闭顺序。
 - `src/ui/app.tsx`：订阅 Chat 状态并组合布局；`components/`：欢迎页、输入框、消息列表、审批面板；`theme.ts`：配色与 Markdown 样式。
 - `src/ui/keyboard.ts` / `src/ui/terminal.tsx`：快捷键、终端生命周期和进程信号。
-- `scripts/build.ts`：使用 OpenTUI Solid 的 Bun 插件构建；产物需 Bun 与已安装依赖。
-- `bin/alphacode.ts`：跨目录的开发版命令入口，指定源码条件、仓库配置和 Solid 转换，保持 cwd 并等待 TUI 退出。
-- `scripts/preload.ts`：为源码和构建产物加载 Solid 转换。
+- `scripts/build.ts`：使用 Bun 原生 automatic JSX 转换和 `@opentui/react` 构建；产物需 Bun 与已安装依赖。
+- `bin/alphacode.ts`：跨目录的开发版命令入口，指定源码条件、仓库配置和 React JSX tsconfig，保持 cwd 并等待 TUI 退出；源码和构建产物均无需额外 preload。
 
-依赖关系：`UI → Chat 接口`，`对话控制器 → ChatRuntime 接口`，`具体运行时实现 ChatRuntime`。只有 `application.ts` 负责把实现连接起来。UI 不读取 Agent 或数据库；对话模块不创建运行时，也不依赖 Solid/OpenTUI。ESLint 检查这些边界。扩展界面组件、调整对话策略或更换运行时，可以在各自模块内完成。
+依赖关系：`UI → Chat 接口`，`对话控制器 → ChatRuntime 接口`，`具体运行时实现 ChatRuntime`。只有 `application.ts` 负责把实现连接起来。UI 通过 React `useSyncExternalStore` 订阅 Chat 快照，不读取 Agent 或数据库；对话模块不创建运行时，也不依赖 React/OpenTUI。ESLint 检查这些边界。扩展界面组件、调整对话策略或更换运行时，可以在各自模块内完成。
 
 ```powershell
 bun run build
@@ -189,4 +204,4 @@ bun run test
 
 AlphaCode 测试使用离线 SSE 夹具驱动真实 Provider、ADK、Coding Agent 和临时 SQLite，并用 OpenTUI 测试渲染器检查输入与增量显示；普通测试不会请求真实模型。
 
-工程基于 [create-tui Solid 模板](https://github.com/msmps/create-tui/tree/main/packages/templates/solid)，使用 OpenTUI 0.8.1 和 SolidJS 1.9.18。Markdown 行为参考 [OpenTUI 文档](https://opentui.com/docs/components/markdown/)。
+工程使用 OpenTUI Core/React 0.8.1 和 React 19.3.1，组件通过 `@opentui/react` 的 `createRoot` 挂载。Markdown 行为参考 [OpenTUI 文档](https://opentui.com/docs/components/markdown/)。

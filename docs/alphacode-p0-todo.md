@@ -1,5 +1,7 @@
 # alphacode P0 实施 TODO
 
+> 历史记录：本文保留当时的设计与验收事实。2026-11-09 起，终端与 Web 已统一迁移到 React，当前依赖、命令与实现以根目录和各应用 README 为准；下文的旧技术栈不再是实现约束。
+
 状态：功能已编码，22 项完成自动化验收；T01、T06 尚有人工部分，T24 待人工验收。证据见 [验收记录](alphacode-p0-validation.md)。功能定义以 [P0 Spec](alphacode-p0-spec.md) 为准；[HTML](alphacode-design-a1.html) 用于评审。P0 仅交付终端应用，没有对外 SDK、JSONL、HTTP/RPC 或 app server。
 
 每项完成需要代码、对应验收证据和资源清理检查；不能只以组件出现或类型检查通过勾选。任务按依赖顺序实施，同阶段可在明确边界后拆分。

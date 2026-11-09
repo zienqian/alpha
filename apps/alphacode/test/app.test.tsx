@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { testRender } from "@opentui/solid";
+import { testRender } from "./render";
 import type { ScrollBoxRenderable, TextareaRenderable } from "@opentui/core";
 import type { Chat, ChatState } from "../src/chat/contracts";
 import { App } from "../src/ui/app";
@@ -7,7 +7,7 @@ import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "
 
 test("composer uses a blinking line cursor and selects text between caret positions", async () => {
   const app = await fixture(() => textResponse("done"));
-  const ui = await testRender(() => <App chat={app.chat} onExit={() => undefined} />, { width: 100, height: 32 });
+  const ui = await testRender(<App chat={app.chat} onExit={() => undefined} />, { width: 100, height: 32 });
   const input = ui.renderer.root.findDescendantById("prompt") as TextareaRenderable;
   try {
     await ui.renderOnce();
@@ -32,7 +32,7 @@ test("composer uses a blinking line cursor and selects text between caret positi
 
 test("slash commands filter, complete and select permissions locally, with Escape preserving the draft", async () => {
   const app = await fixture(() => textResponse("普通消息回复"));
-  const ui = await testRender(() => <App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 32 });
+  const ui = await testRender(<App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 32 });
   const input = ui.renderer.root.findDescendantById("prompt") as TextareaRenderable;
   try {
     await ui.renderOnce();
@@ -47,7 +47,7 @@ test("slash commands filter, complete and select permissions locally, with Escap
     for (const label of ["Ask for approval", "Approve for me", "Full access"]) expect(ui.captureCharFrame()).toContain(label);
     ui.mockInput.pressArrow("down");
     ui.mockInput.pressEnter();
-    await waitFor(() => !app.chat.state.settingsSaving);
+    await waitFor(() => !app.chat.state.settingsSaving && !ui.renderer.root.findDescendantById("command-panel"));
     await ui.renderOnce();
     expect(app.chat.state.permissionMode).toBe("auto");
     expect(input.plainText).toBe("");
@@ -70,13 +70,13 @@ test("slash commands filter, complete and select permissions locally, with Escap
     ui.mockInput.pressEnter();
     ui.mockInput.pressArrow("down");
     ui.mockInput.pressEnter();
-    await waitFor(() => !app.chat.state.settingsSaving);
+    await waitFor(() => !app.chat.state.settingsSaving && !ui.renderer.root.findDescendantById("command-panel"));
     expect(app.chat.state.permissionMode).toBe("full");
     await ui.mockInput.typeText("/permission");
     ui.mockInput.pressEnter();
     ui.mockInput.pressArrow("down");
     ui.mockInput.pressEnter();
-    await waitFor(() => !app.chat.state.settingsSaving);
+    await waitFor(() => !app.chat.state.settingsSaving && !ui.renderer.root.findDescendantById("command-panel"));
     expect(app.chat.state.permissionMode).toBe("ask");
 
     input.setText("/unknown");
@@ -95,7 +95,7 @@ test("slash commands filter, complete and select permissions locally, with Escap
 test("Escape closes the command picker before cancelling a running task, and a busy task keeps its permission", async () => {
   const stream = controlledStream();
   const app = await fixture(() => stream.response);
-  const ui = await testRender(() => <App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 60, height: 20 });
+  const ui = await testRender(<App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 60, height: 20 });
   try {
     await ui.renderOnce();
     await ui.mockInput.typeText("hello");
@@ -121,7 +121,7 @@ test("Escape closes the command picker before cancelling a running task, and a b
 
 test("composer grows with wrapped text and newlines, caps tall drafts, and shrinks after deleting or sending", async () => {
   const app = await fixture(() => textResponse("收到"));
-  const ui = await testRender(() => <App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 32 });
+  const ui = await testRender(<App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 32 });
   const input = ui.renderer.root.findDescendantById("prompt") as TextareaRenderable;
   const composer = ui.renderer.root.findDescendantById("composer");
   const footer = ui.renderer.root.findDescendantById("status-bar");
@@ -192,7 +192,7 @@ test("composer and context stay at the bottom across empty, overflowing, approva
     async setPermissionMode() { return false; },
     async close() { /* Layout-only fixture. */ },
   };
-  const ui = await testRender(() => <App chat={chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 32 });
+  const ui = await testRender(<App chat={chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 32 });
   const element = (id: string) => {
     const node = ui.renderer.root.findDescendantById(id);
     if (!node) throw new Error(`Missing ${id}`);
@@ -276,7 +276,7 @@ test("typing and Enter send a prompt; Markdown appears before completion and fin
   let exits = 0;
   let ui: Awaited<ReturnType<typeof testRender>> | undefined;
   try {
-    ui = await testRender(() => <App chat={app.chat} onExit={() => { exits++; }} />, { width: 100, height: 32 });
+    ui = await testRender(<App chat={app.chat} onExit={() => { exits++; }} />, { width: 100, height: 32 });
     const screen = ui;
     await ui.renderOnce();
     await ui.mockInput.typeText("hello");
@@ -323,7 +323,7 @@ test("approval keys do not leak into the input; Escape cancels an active stream"
     : index === 2 ? textResponse("已拒绝命令") : stream.response);
   let ui: Awaited<ReturnType<typeof testRender>> | undefined;
   try {
-    ui = await testRender(() => <App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 36 });
+    ui = await testRender(<App chat={app.chat} onExit={() => { /* No exit in this test. */ }} />, { width: 100, height: 36 });
     await ui.renderOnce();
     await ui.mockInput.typeText("command");
     ui.mockInput.pressEnter();

@@ -1,6 +1,6 @@
 import type { TextareaRenderable } from "@opentui/core";
-import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
-import { createEffect, createSignal, onCleanup, Show } from "solid-js";
+import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { ChatSkill, PermissionMode } from "../../chat/contracts";
 import { matchingCommands, permissionOptions } from "../commands";
 import { CommandPanel } from "./command-panel";
@@ -17,96 +17,104 @@ export function Composer(props: {
   onCommandOpenChange: (open: boolean) => void;
   onSubmit: (text: string) => void;
 }) {
-  let input: TextareaRenderable | undefined;
+  const input = useRef<TextareaRenderable>(null);
   const dimensions = useTerminalDimensions();
-  const [draft, setDraft] = createSignal("");
-  const [permission, setPermission] = createSignal(false);
-  const [dismissed, setDismissed] = createSignal(false);
-  const [selected, setSelected] = createSignal(0);
-  const slash = () => /^\/[^\s/]*$/.test(draft().trimStart());
-  const matches = () => matchingCommands(draft(), props.skills);
-  const panelOpen = () => props.focused && !dismissed() && (permission() || slash());
-  const contentChanged = () => {
-    const text = input?.plainText ?? "";
-    if (text === draft()) return;
-    setDraft(text);
-    setDismissed(false);
-    setSelected(0);
+  const [draft, setDraft] = useState("");
+  const draftRef = useRef("");
+  const [menu, setMenu] = useState({ permission: false, dismissed: false, selected: 0 });
+  const menuRef = useRef(menu);
+  const updateMenu = (patch: Partial<typeof menu>) => {
+    menuRef.current = { ...menuRef.current, ...patch };
+    setMenu(menuRef.current);
+    props.onCommandOpenChange(props.focused && !menuRef.current.dismissed
+      && (menuRef.current.permission || /^\/[^\s/]*$/.test(draftRef.current.trimStart())));
   };
-  createEffect(() => props.onCommandOpenChange(panelOpen()));
-  onCleanup(() => props.onCommandOpenChange(false));
+  const panelOpen = props.focused && !menu.dismissed && (menu.permission || /^\/[^\s/]*$/.test(draft.trimStart()));
+  const contentChanged = () => {
+    const text = input.current?.plainText ?? "";
+    if (text === draftRef.current) return;
+    draftRef.current = text;
+    setDraft(text);
+    updateMenu({ dismissed: false, selected: 0 });
+  };
+  const { onCommandOpenChange } = props;
+  useLayoutEffect(() => onCommandOpenChange(panelOpen), [onCommandOpenChange, panelOpen]);
+  useLayoutEffect(() => () => onCommandOpenChange(false), [onCommandOpenChange]);
   const openPermission = () => {
-    setPermission(true);
-    setDismissed(false);
-    setSelected(Math.max(0, permissionOptions.findIndex(option => option.value === props.permissionMode)));
+    updateMenu({ permission: true, dismissed: false,
+      selected: Math.max(0, permissionOptions.findIndex(option => option.value === props.permissionMode)) });
   };
   const choosePermission = async (mode: PermissionMode) => {
     if (await props.onPermissionChange(mode)) {
-      setPermission(false);
-      input?.setText("");
-      setDraft("");
+      if (!input.current || input.current.isDestroyed) return;
+      updateMenu({ permission: false });
+      input.current.setText("");
+      contentChanged();
     }
   };
   useKeyboard(key => {
     contentChanged();
-    if (!panelOpen() || key.defaultPrevented || key.ctrl || key.meta || key.super) return;
+    const current = menuRef.current;
+    const slash = /^\/[^\s/]*$/.test(draftRef.current.trimStart());
+    const matches = matchingCommands(draftRef.current, props.skills);
+    if (!props.focused || current.dismissed || (!current.permission && !slash) || key.defaultPrevented || key.ctrl || key.meta || key.super) return;
     if (props.settingsSaving) { key.preventDefault(); return; }
     if (key.name === "escape") {
       key.preventDefault();
-      setPermission(false);
-      setDismissed(true);
+      updateMenu({ permission: false, dismissed: true });
     } else if (key.name === "up" || key.name === "down") {
       key.preventDefault();
-      const count = permission() ? permissionOptions.length : matches().length;
-      if (count) setSelected(index => (index + (key.name === "up" ? -1 : 1) + count) % count);
+      const count = current.permission ? permissionOptions.length : matches.length;
+      if (count) updateMenu({ selected: (current.selected + (key.name === "up" ? -1 : 1) + count) % count });
     } else if ((key.name === "return" && !key.shift) || key.name === "tab") {
       key.preventDefault();
-      if (permission()) {
-        const option = permissionOptions[selected()];
+      if (current.permission) {
+        const option = permissionOptions[current.selected];
         if (key.name === "return" && option) void choosePermission(option.value);
-      } else if (matches()[selected()]) {
-        const command = matches()[selected()];
+      } else if (matches[current.selected]) {
+        const command = matches[current.selected];
         if (!command) return;
         if (key.name === "tab") {
-          input?.setText(command.name);
-          input?.gotoBufferEnd();
+          input.current?.setText(command.name);
+          input.current?.gotoBufferEnd();
+          contentChanged();
         } else if (command.name === "/permission") openPermission();
-        else if (props.canSend && !props.busy) {
-          input?.setText("");
-          setDraft("");
+        else if (command.name === "/web" || (props.canSend && !props.busy)) {
+          input.current?.setText("");
+          contentChanged();
           props.onSubmit(command.name);
         }
       } else if (key.name === "return") {
         submit();
       }
-    } else if (permission()) {
+    } else if (current.permission) {
       // Keep the draft intact while the picker owns text input.
       key.preventDefault();
     }
   });
-  const maxInputHeight = () => Math.max(1, Math.min(6, Math.floor(dimensions().height / 4)));
+  const maxInputHeight = Math.max(1, Math.min(6, Math.floor(dimensions.height / 4)));
   const submit = () => {
-    const text = input?.plainText;
+    const text = input.current?.plainText;
     if (text?.trim() === "/permission") { openPermission(); return; }
-    if (!text?.trim() || !props.canSend || props.busy) return;
-    input?.setText("");
-    setDraft("");
+    if (!text?.trim() || (text.trim() !== "/web" && (!props.canSend || props.busy))) return;
+    input.current?.setText("");
+    contentChanged();
     props.onSubmit(text);
   };
   return (
     <box flexDirection="column" flexShrink={0}>
-    <Show when={panelOpen()}>
-      <CommandPanel query={draft()} permission={permission()} selected={selected()}
+    {panelOpen && (
+      <CommandPanel query={draft} permission={menu.permission} selected={menu.selected}
         skills={props.skills}
         currentMode={props.permissionMode} busy={props.busy} settingsSaving={props.settingsSaving} />
-    </Show>
+    )}
     <box id="composer" flexDirection="row" backgroundColor={colors.surface}
       flexShrink={0} padding={1}>
       <text fg={props.focused ? colors.accent : colors.muted} width={2} flexShrink={0}>›</text>
       <textarea
-        id="prompt" ref={value => { input = value; }} flexGrow={1} minWidth={0}
-        height="auto" minHeight={1} maxHeight={maxInputHeight()} wrapMode="word"
-        focused={props.focused && !permission()}
+        id="prompt" ref={input} flexGrow={1} minWidth={0}
+        height="auto" minHeight={1} maxHeight={maxInputHeight} wrapMode="word"
+        focused={props.focused && !menu.permission}
         placeholder={props.busy ? "Working… draft your next message" : "Describe your task…"}
         placeholderColor={colors.muted}
         cursorStyle={{ style: "line", blinking: true }} selectionOccupancy="boundary"

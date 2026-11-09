@@ -68,7 +68,7 @@ export interface Chat {
   readonly workspaceRoot: string;
   readonly sessionId: string;
   subscribe(listener: (state: ChatState) => void): () => void;
-  send(input: string): Promise<void>;
+  send(input: string, requestId?: string): Promise<void>;
   cancel(): void;
   answerApproval(allow: boolean): void;
   setPermissionMode(mode: PermissionMode): Promise<boolean>;
@@ -97,7 +97,7 @@ export interface ChatRuntime {
   readonly blocked: boolean;
   setPermissionMode(mode: PermissionMode): Promise<void>;
   subscribe(listener: (event: ChatEvent) => void): () => void;
-  send(input: string): Promise<{ status: ChatRunStatus; error?: string; localText?: string; completion?: ChatMessage["completion"] }>;
+  send(input: string, requestId?: string): Promise<{ status: ChatRunStatus; error?: string; localText?: string; completion?: ChatMessage["completion"] }>;
   cancel(): void;
   /** Drain execution and persist before resolving; a failed close may be retried. */
   close(): Promise<void>;

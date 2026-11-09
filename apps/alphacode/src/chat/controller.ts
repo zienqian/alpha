@@ -29,7 +29,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
     sessionId: runtime.sessionId,
     skills: runtime.skills,
     subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    async send(input) {
+    async send(input, requestId) {
       const text = input.trimStart().startsWith("/") ? input : input.trim();
       if (!text.trim() || state.busy || !state.canSend || state.closing) return;
       const started = performance.now();
@@ -43,7 +43,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
           { id: randomUUID(), role: "user", text }],
       });
       try {
-        const result = await runtime.send(text);
+        const result = await runtime.send(text, requestId);
         outcome = result.status;
         completion = result.completion;
         if (result.localText !== undefined) {

@@ -17,16 +17,26 @@ export default [
           { sourceTag: 'layer:provider', onlyDependOnLibsWithTags: ['layer:provider'] },
           { sourceTag: 'layer:session', onlyDependOnLibsWithTags: ['layer:session', 'layer:adk'] },
           { sourceTag: 'layer:coding', onlyDependOnLibsWithTags: ['layer:coding', 'layer:adk', 'layer:provider', 'layer:session'] },
-          { sourceTag: 'layer:app', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider', 'layer:session', 'layer:coding'] }
+          { sourceTag: 'layer:app', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider', 'layer:session', 'layer:coding'] },
+          { sourceTag: 'layer:web', onlyDependOnLibsWithTags: [] }
         ]
       }]
+    }
+  },
+  {
+    files: ['apps/alphacode-web/src/**/*.ts', 'apps/alphacode-web/src/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [{
+        group: ['@alpha/**', '@opentui/**', 'bun', 'bun:*', 'node:*', '**/alphacode/src/**'],
+        message: 'Keep the browser independent of CLI and server internals.'
+      }] }]
     }
   },
   {
     files: ['apps/alphacode/src/chat/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [{
-        group: ['@alpha/**', '@opentui/**', 'solid-js', 'solid-js/**', 'bun:*', 'node:fs', 'node:fs/**', '**/runtime/**', '**/ui/**', '**/application', '**/config'],
+        group: ['@alpha/**', '@opentui/**', 'react', 'react/**', 'react-dom', 'react-dom/**', 'bun:*', 'node:fs', 'node:fs/**', '**/runtime/**', '**/ui/**', '**/application', '**/config'],
         message: 'Chat depends on its contracts; inject runtime capabilities from application.ts.'
       }] }]
     }
@@ -44,7 +54,7 @@ export default [
     files: ['apps/alphacode/src/runtime/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [{
-        group: ['@opentui/**', 'solid-js', 'solid-js/**', '**/ui/**', '**/application', '**/chat/controller', '**/chat/approval', '**/chat/messages'],
+        group: ['@opentui/**', 'react', 'react/**', 'react-dom', 'react-dom/**', '**/ui/**', '**/application', '**/chat/controller', '**/chat/approval', '**/chat/messages'],
         message: 'Runtime implements Chat contracts; application.ts owns controller and UI composition.'
       }] }]
     }

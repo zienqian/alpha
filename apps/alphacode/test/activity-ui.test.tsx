@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
+import { flushSync } from "@opentui/react";
 import { Writable } from "node:stream";
-import { createSignal, Show } from "solid-js";
-import { testRender } from "@opentui/solid";
+import { testRender } from "./render";
 import { measureEditText, type ImageRenderable, type TextRenderable } from "@opentui/core";
 import { setRendererCapabilities } from "@opentui/core/testing";
 import type { Chat, ChatState } from "../src/chat/contracts";
@@ -57,7 +57,7 @@ test("flat tool records and the composer status render above the input without d
     async send() { /* UI fixture. */ }, cancel() { /* UI fixture. */ }, answerApproval() { /* UI fixture. */ },
     async setPermissionMode() { return false; }, async close() { /* UI fixture. */ },
   };
-  const ui = await testRender(() => <App chat={chat} onExit={() => { /* UI fixture. */ }} />, { width: 90, height: 28 });
+  const ui = await testRender(<App chat={chat} onExit={() => { /* UI fixture. */ }} />, { width: 90, height: 28 });
   try {
     await ui.renderOnce();
     const frame = ui.captureCharFrame();
@@ -101,14 +101,14 @@ test("unrelated state changes do not restart shimmer; ANSI-256 and unknown capab
   delete process.env.NO_COLOR;
   delete process.env.ALPHACODE_REDUCED_MOTION;
   process.env.TERM = "xterm-256color";
-  const [state, setState] = createSignal({ text: "正在验证消息与工具状态", animated: true, count: 0 });
-  const ui = await testRender(() => <ShimmerText text={state().text} animated={state().animated} />, { width: 60, height: 4 });
+  const text = "正在验证消息与工具状态";
+  const ui = await testRender(<ShimmerText text={text} animated />, { width: 60, height: 4 });
   let updates: ReturnType<typeof setInterval> | undefined;
   try {
     setRendererCapabilities(ui.renderer, { rgb: false, ansi256: true });
-    ui.renderer.emit("capabilities", ui.renderer.capabilities);
+    flushSync(() => ui.renderer.emit("capabilities", ui.renderer.capabilities));
     await ui.renderOnce();
-    updates = setInterval(() => setState(value => ({ ...value, count: value.count + 1 })), 40);
+    updates = setInterval(() => ui.rerender(<ShimmerText text={text} animated />), 40);
     const label = ui.renderer.root.findDescendantById("activity-label") as TextRenderable;
     await waitFor(async () => {
       await ui.renderOnce();
@@ -116,19 +116,19 @@ test("unrelated state changes do not restart shimmer; ANSI-256 and unknown capab
       return new Set(painted.map(span => span.fg.toString())).size > 1;
     }, 3000);
     clearInterval(updates);
-    setState(value => ({ ...value, animated: false }));
+    ui.rerender(<ShimmerText text={text} animated={false} />);
     await ui.renderOnce();
     expect(label.chunks).toHaveLength(1);
-    expect(label.chunks[0]?.text).toBe(state().text);
+    expect(label.chunks[0]?.text).toBe(text);
     setRendererCapabilities(ui.renderer, { rgb: false, ansi256: false });
-    ui.renderer.emit("capabilities", ui.renderer.capabilities);
-    setState(value => ({ ...value, animated: true }));
+    flushSync(() => ui.renderer.emit("capabilities", ui.renderer.capabilities));
+    ui.rerender(<ShimmerText text={text} animated />);
     await ui.renderOnce();
     await waitFor(async () => {
       await ui.renderOnce();
       return new Set(label.chunks.map(chunk => chunk.fg?.toString())).size > 1;
     }, 2000);
-    ui.renderer.emit("blur");
+    flushSync(() => ui.renderer.emit("blur"));
     await ui.renderOnce();
     expect(label.chunks).toHaveLength(1);
   } finally {
@@ -145,18 +145,17 @@ test("the circle/infinity morph animates without color and stops for approval; r
   process.env.NO_COLOR = "1";
   delete process.env.ALPHACODE_REDUCED_MOTION;
   process.env.TERM = "xterm-256color";
-  const [active, setActive] = createSignal(true);
-  const ui = await testRender(() => <Spinner active={active()} />, { width: 8, height: 2 });
+  const ui = await testRender(<Spinner active />, { width: 8, height: 2 });
   try {
     await ui.renderOnce();
     const first = ui.captureCharFrame();
     expect(first).toContain(brailleMorph(0));
     await waitFor(async () => { await ui.renderOnce(); return ui.captureCharFrame() !== first; });
-    setActive(false);
+    ui.rerender(<Spinner active={false} />);
     await ui.renderOnce();
     expect(ui.captureCharFrame()).toContain(brailleMorph(0));
     process.env.ALPHACODE_REDUCED_MOTION = "1";
-    const reduced = await testRender(() => <Spinner active />, { width: 8, height: 2 });
+    const reduced = await testRender(<Spinner active />, { width: 8, height: 2 });
     try { await reduced.renderOnce(); expect(reduced.captureCharFrame()).toContain(brailleMorph(0)); }
     finally { await reduced.dispose(); }
   } finally {
@@ -190,10 +189,10 @@ test("graphics-capable terminals render changing antialiased morph images and ca
   delete process.env.NO_COLOR;
   delete process.env.ALPHACODE_REDUCED_MOTION;
   process.env.TERM = "xterm-256color";
-  const ui = await testRender(() => <Spinner active />, { width: 16, height: 3 });
+  const ui = await testRender(<Spinner active />, { width: 16, height: 3 });
   try {
     setRendererCapabilities(ui.renderer, { kitty_graphics: true, multiplexer: "none", image_protocol: "auto" });
-    ui.renderer.emit("capabilities", ui.renderer.capabilities);
+    flushSync(() => ui.renderer.emit("capabilities", ui.renderer.capabilities));
     const image = () => ui.renderer.root.findDescendantById("activity-spinner-image") as ImageRenderable | undefined;
     await waitFor(async () => { await ui.renderOnce(); return Boolean(image()?.image); });
     expect(image()?.effectiveProtocol).toBe("kitty");
@@ -204,7 +203,7 @@ test("graphics-capable terminals render changing antialiased morph images and ca
       return image()?.image?.raw().data.some((byte, index) => byte !== first[index]) === true;
     });
     setRendererCapabilities(ui.renderer, { kitty_graphics: false, sixel: false, image_protocol: "auto" });
-    ui.renderer.emit("capabilities", ui.renderer.capabilities);
+    flushSync(() => ui.renderer.emit("capabilities", ui.renderer.capabilities));
     await ui.renderOnce();
     expect(image()).toBeUndefined();
     expect(ui.renderer.root.findDescendantById("activity-spinner-dots")).toBeDefined();
@@ -237,8 +236,7 @@ test("native spinner output uses visible VS Code image layers and removes the im
   const destination = new Writable({ write(chunk, _encoding, done) { pieces.push(Buffer.from(chunk)); done(); } });
   Object.assign(destination, { isTTY: true, columns: 16, rows: 3 });
   const output = new VscodeImageOutput(destination as unknown as NodeJS.WriteStream);
-  const [busy, setBusy] = createSignal(true);
-  const ui = await testRender(() => <Show when={busy()} fallback={<text>Done</text>}><Spinner active={false} /></Show>, {
+  const ui = await testRender(<Spinner active={false} />, {
     width: 16, height: 3, bufferedOutput: "stdout", remote: false,
     stdout: output as unknown as NodeJS.WriteStream,
     environment: { TERM: "xterm-256color", TERM_PROGRAM: "vscode", OPENTUI_GRAPHICS: "1", OPENTUI_IMAGE_PROTOCOL: "kitty" },
@@ -247,13 +245,13 @@ test("native spinner output uses visible VS Code image layers and removes the im
   try {
     await ui.renderer.setupTerminal();
     setRendererCapabilities(ui.renderer, { kitty_graphics: true, multiplexer: "none", image_protocol: "kitty" });
-    ui.renderer.emit("capabilities", ui.renderer.capabilities);
+    flushSync(() => ui.renderer.emit("capabilities", ui.renderer.capabilities));
     await waitFor(async () => { await ui.renderOnce(); return encoded().includes("a=p,"); });
     const placements = encoded().split("\x1b_G").filter(command => command.startsWith("a=p,")).map(command => command.split("\x1b\\")[0] ?? "");
     expect(placements.every(command => /,z=\d+,q=2/.test(command))).toBe(true);
     expect(placements.some(command => command.includes(",z=-"))).toBe(false);
     pieces.length = 0;
-    setBusy(false);
+    ui.rerender(<text>Done</text>);
     await waitFor(async () => { await ui.renderOnce(); return encoded().includes("a=d,d=I,"); });
     expect(ui.renderer.root.findDescendantById("activity-spinner-image")).toBeUndefined();
   } finally {

@@ -1,5 +1,4 @@
-import { createEffect, Show } from "solid-js";
-import { bold, fg, StyledText, type TextRenderable } from "@opentui/core";
+import { bold, fg, StyledText } from "@opentui/core";
 import type { ToolRecord } from "../../chat/contracts";
 import { colors } from "../theme";
 import { formatDuration } from "../duration";
@@ -18,12 +17,7 @@ export function toolVerb(tool: ToolRecord): string {
 }
 
 export function ToolRecordView(props: { tool: ToolRecord }) {
-  let header: TextRenderable | undefined;
-  // OpenTUI Solid 0.8 coerces the JSX content prop to a string; keep styled chunks on the native text node.
-  createEffect(() => {
-    const content = new StyledText([bold(toolVerb(props.tool)), fg(colors.accent)(` ${props.tool.target}`)]);
-    if (header) header.content = content;
-  });
+  const header = new StyledText([bold(toolVerb(props.tool)), fg(colors.accent)(` ${props.tool.target}`)]);
   const color = () => props.tool.status === "succeeded" ? colors.success : props.tool.status === "failed" ? colors.error
     : props.tool.status === "outcome_unknown" || props.tool.status === "awaiting_approval" || props.tool.status === "denied" ? colors.warning
     : props.tool.status === "running" ? colors.accent : colors.muted;
@@ -39,18 +33,18 @@ export function ToolRecordView(props: { tool: ToolRecord }) {
     <box id={`tool-${props.tool.id}`} flexDirection="row" flexShrink={0} paddingLeft={1} marginBottom={1}>
       <text fg={color()} width={2} flexShrink={0}>•</text>
       <box flexDirection="column" flexGrow={1} minWidth={0}>
-        <text ref={value => { header = value; }} height={1} truncate wrapMode="none" fg={colors.foreground} />
+        <text content={header} height={1} truncate wrapMode="none" fg={colors.foreground} />
         <text fg={colors.muted} maxHeight={2} truncate>└ {props.tool.description}</text>
-        <Show when={props.tool.cwd}>
+        {props.tool.cwd && (
           <text fg={colors.muted} paddingLeft={2} height={1} truncate wrapMode="none">cwd: {props.tool.cwd}</text>
-        </Show>
-        <Show when={props.tool.error}>
+        )}
+        {props.tool.error && (
           <text fg={colors.error} paddingLeft={2} maxHeight={2} truncate>{props.tool.error}</text>
-        </Show>
-        <Show when={props.tool.output}>
+        )}
+        {props.tool.output && (
           <text fg={props.tool.status === "failed" ? colors.error : colors.muted} paddingLeft={2} maxHeight={8} truncate>{props.tool.output}</text>
-        </Show>
-        <Show when={footer()}><text fg={colors.muted} paddingLeft={2} height={1} truncate wrapMode="none">{footer()}</text></Show>
+        )}
+        {footer() && <text fg={colors.muted} paddingLeft={2} height={1} truncate wrapMode="none">{footer()}</text>}
       </box>
     </box>
   );

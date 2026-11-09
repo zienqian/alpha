@@ -3,8 +3,8 @@
   "compilerOptions": {
     "lib": ["ESNext"],
     "moduleDetection": "force",
-    "jsx": "preserve",
-    "jsxImportSource": "@opentui/solid",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@opentui/react",
     "allowJs": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,

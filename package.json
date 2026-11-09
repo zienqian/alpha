@@ -12,8 +12,10 @@
   },
   "scripts": {
     "dev": "bun --no-env-file ./apps/alphacode/bin/alphacode.ts --watch",
+    "dev:web": "bun run --cwd apps/alphacode-web dev",
+    "build:web": "bun run --cwd apps/alphacode-web build",
     "link:dev": "bun link --cwd apps/alphacode",
-    "start": "bun --env-file=.env.local --preload ./apps/alphacode/scripts/preload.ts ./apps/alphacode/dist/index.js",
+    "start": "bun --env-file=.env.local ./apps/alphacode/dist/index.js",
     "build": "bun --bun run nx run-many -t build",
     "typecheck": "bun --bun run nx run-many -t typecheck",
     "lint": "bun --bun run nx run-many -t lint",

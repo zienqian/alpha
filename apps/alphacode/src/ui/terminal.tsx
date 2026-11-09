@@ -1,5 +1,5 @@
 import { createCliRenderer } from "@opentui/core";
-import { render } from "@opentui/solid";
+import { createRoot } from "@opentui/react";
 import { finished } from "node:stream/promises";
 import type { Chat } from "../chat/contracts";
 import { App } from "./app";
@@ -24,7 +24,7 @@ export async function runTerminal(chat: Chat): Promise<void> {
   process.on("SIGINT", interrupt);
   process.on("SIGTERM", exit);
   try {
-    await render(() => <App chat={chat} onExit={exit} />, renderer);
+    createRoot(renderer).render(<App chat={chat} onExit={exit} />);
     await renderer.closed;
   } finally {
     process.off("SIGINT", interrupt);

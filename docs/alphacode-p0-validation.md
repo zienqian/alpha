@@ -1,5 +1,7 @@
 # alphacode P0 验收记录
 
+> 历史记录：本文保留当时的设计与验收事实。2026-11-09 起，终端与 Web 已统一迁移到 React，当前依赖、命令与实现以根目录和各应用 README 为准；下文的旧技术栈不再是实现约束。
+
 日期：2026-11-04。功能实现可试用；发布验收尚有 Windows Terminal 人工项。源码见 `apps/alphacode`，启动方式见 [应用 README](../apps/alphacode/README.md)。
 
 ## 环境与运行时

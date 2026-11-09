@@ -6,8 +6,8 @@ test("UI, conversation, and runtime implementations respect the injected contrac
   const eslint = new ESLint({ cwd: resolve(import.meta.dir, "../../..") });
   const layers = [
     { file: "ui/app.tsx", contract: "../chat/contracts", forbidden: ["@alpha/adk/core", "@alpha/adk-session/sqlite", "../runtime/create-runtime", "../chat/controller", "../application"] },
-    { file: "chat/controller.ts", contract: "./contracts", forbidden: ["@opentui/core", "solid-js", "@alpha/provider", "../runtime/create-runtime", "../application", "../ui/app"] },
-    { file: "runtime/create-runtime.ts", contract: "../chat/contracts", forbidden: ["../chat/controller", "../ui/app", "../application"] },
+    { file: "chat/controller.ts", contract: "./contracts", forbidden: ["@opentui/core", "react", "react/jsx-runtime", "react-dom/client", "@alpha/provider", "../runtime/create-runtime", "../application", "../ui/app"] },
+    { file: "runtime/create-runtime.ts", contract: "../chat/contracts", forbidden: ["react", "react/jsx-runtime", "react-dom/client", "../chat/controller", "../ui/app", "../application"] },
   ];
   for (const layer of layers) {
     const filePath = resolve(import.meta.dir, "../src", layer.file);

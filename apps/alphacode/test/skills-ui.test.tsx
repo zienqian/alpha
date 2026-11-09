@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { testRender } from "@opentui/solid";
+import { testRender } from "./render";
 import type { TextareaRenderable } from "@opentui/core";
 import type { Chat } from "../src/chat/contracts";
 import { App } from "../src/ui/app";
@@ -18,7 +18,7 @@ test("skill completion, arguments, list command and slash escape reach the dispa
     setPermissionMode: async () => false,
     close: async () => undefined,
   };
-  const ui = await testRender(() => <App chat={chat} onExit={() => undefined} />, { width: 100, height: 32 });
+  const ui = await testRender(<App chat={chat} onExit={() => undefined} />, { width: 100, height: 32 });
   const input = ui.renderer.root.findDescendantById("prompt") as TextareaRenderable;
   try {
     await ui.renderOnce();

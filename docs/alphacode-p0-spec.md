@@ -1,5 +1,7 @@
 # alphacode P0：功能与实现规格
 
+> 历史记录：本文保留当时的设计与验收事实。2026-11-09 起，终端与 Web 已统一迁移到 React，当前依赖、命令与实现以根目录和各应用 README 为准；下文的旧技术栈不再是实现约束。
+
 状态：P0 功能已编码并完成自动化与本地模型联调；Windows Terminal 输入法手工验收待完成。更新：2026-11-04。本规格替代上一版 A1 的功能范围与 API 规划。见 [验收记录](alphacode-p0-validation.md)，不把代码完成等同于所有发布门槛通过。
 
 [交互评审页](alphacode-design-a1.html) · [P0 实施 TODO](alphacode-p0-todo.md)

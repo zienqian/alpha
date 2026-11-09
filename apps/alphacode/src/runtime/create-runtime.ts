@@ -140,7 +140,7 @@ export async function createRuntime(config: AppConfig, options: {
         || activeAgent.state.historyStatus === "blocked" || activeAgent.state.boundaryStatus === "failed";
     },
     subscribe(listener) { return subscribeToAgent(activeAgent, listener); },
-    async send(input) {
+    async send(input, requestId) {
       if (closing || running || changing) throw settingsError("SESSION_BUSY");
       running = true;
       cancelled = false;
@@ -159,7 +159,7 @@ export async function createRuntime(config: AppConfig, options: {
         const snapshot = await activeSession.getSnapshot();
         if (cancelled || closing) return { status: "cancelled" };
         if (!sameSettings(readSessionSettings(snapshot.data), settings)) throw settingsError("SESSION_CONFLICT");
-        const result = await activeAgent.prompt(prepared, { requestId: randomUUID(), signal: preparation.signal });
+        const result = await activeAgent.prompt(prepared, { requestId: requestId ?? randomUUID(), signal: preparation.signal });
         let completion: ChatMessage["completion"];
         if (activeSession.state.persistence?.status === "saved") {
           try {
