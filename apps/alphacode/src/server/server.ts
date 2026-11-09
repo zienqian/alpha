@@ -2,10 +2,11 @@ import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import type { Chat, ApprovalRequest } from "../chat/contracts";
-import { protocolVersion, type SessionView, type RequestReceipt } from "./protocol";
+import { protocolVersion, type SessionView, type RequestReceipt, type SessionSearchResult } from "./protocol";
 import { createApplication } from "../application";
 import type { AppConfig } from "../config";
 import { isPermissionMode } from "../runtime/session-settings";
+import { archiveSearchMessages, searchSession } from "./search";
 import { createRegistry, digest, readJson, writeJson } from "./storage";
 import { createSecurity, fail, jsonBody, requiredString, secret } from "./security";
 
@@ -183,6 +184,29 @@ export async function startServer(options: ServerOptions) {
       if (path === "/api/sessions" && request.method === "GET") {
         const sessions = await registry.list();
         return Response.json({ sessions: sessions.map(item => { const entry = entries.get(item.id); return entry ? snapshot(entry).session : item; }) });
+      }
+      if (path === "/api/sessions/search" && request.method === "GET") {
+        const query = (url.searchParams.get("q") ?? "").trim();
+        if (query.length > 500) fail(400, "INVALID_QUERY");
+        const results: SessionSearchResult[] = [];
+        if (!query) return Response.json({ results });
+        const sessions = await registry.list();
+        for (const info of sessions) {
+          request.signal.throwIfAborted();
+          const entry = entries.get(info.id);
+          const saved = await registry.store.read({ namespace: info.projectId, id: info.id });
+          // Read archives without opening a runtime or requiring model credentials.
+          const archived = saved ? archiveSearchMessages(saved.data) : [];
+          // Live user/assistant IDs differ from their stored IDs. Use one source
+          // for conversation text and prefer full archives over clipped live tools.
+          const live = entry?.chat.state.messages;
+          const archivedTools = archived.filter(message => message.tool);
+          const archivedToolCalls = new Set(archivedTools.map(message => message.tool?.callId));
+          const messages = live ? [...live.filter(message => !message.tool || !archivedToolCalls.has(message.tool.callId)), ...archivedTools] : archived;
+          const result = searchSession(entry ? snapshot(entry).session : info, messages, query);
+          if (result) results.push(result);
+        }
+        return Response.json({ results: results.sort((a, b) => b.session.updatedAt.localeCompare(a.session.updatedAt)) });
       }
       if (path === "/api/connect" && request.method === "POST") {
         const body = await jsonBody(request);

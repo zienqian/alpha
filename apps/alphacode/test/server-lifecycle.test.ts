@@ -58,8 +58,8 @@ test("concurrent CLI startups share one child; a stale dead owner can be restart
     expect(replacement.instanceId).not.toBe(server.instanceId);
     const resumed = await createClient(replacement).request<SessionView>("/api/connect", { config, credential: undefined });
     expect(resumed.session.id).not.toBe(session.session.id);
-    const restored = await createClient(replacement).request<SessionView>(`/api/sessions/${session.session.id}`);
-    expect(restored.state.canSend).toBe(true);
+    expect(resumed.state.canSend).toBe(true);
+    await expect(createClient(replacement).request(`/api/sessions/${session.session.id}`)).rejects.toMatchObject({ code: "SESSION_NOT_FOUND" });
   } finally {
     for (const pid of owned) if (running(pid)) process.kill(pid, "SIGKILL");
     await waitFor(() => [...owned].every(pid => !running(pid)));

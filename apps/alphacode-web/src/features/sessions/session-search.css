@@ -1,0 +1,245 @@
+/*! Adapted from cmdk's official Vercel example (MIT):
+ * https://github.com/dip/cmdk/blob/main/website/styles/cmdk/vercel.scss
+ * Uses AlphaCode theme tokens; result rows expand to show full-text snippets.
+ *
+ * Copyright (c) 2022 Paco Coursey
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+.session-search-command[cmdk-root] {
+  --search-secondary: color-mix(in oklab, var(--muted-foreground) 94%, var(--foreground));
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 80dvh;
+  padding: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 16px 48px -12px rgb(0 0 0 / 22%);
+  outline: none;
+}
+
+.session-search-command .search-input-row {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 8px 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.session-search-command .search-input-row:focus-within {
+  border-color: var(--ring);
+}
+
+.session-search-command [cmdk-input] {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 17px;
+  line-height: 28px;
+  outline: none;
+}
+
+.session-search-command [cmdk-input]::placeholder {
+  color: var(--search-secondary);
+}
+
+.session-search-command [cmdk-list] {
+  height: min(330px, var(--cmdk-list-height, 330px));
+  min-height: 0;
+  max-height: 400px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 8px;
+  transition: height 100ms ease;
+}
+
+.session-search-command [cmdk-group-heading] {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 0 8px;
+  color: var(--search-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  user-select: none;
+}
+
+.session-search-command [cmdk-item] {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 8px;
+  color: var(--search-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.session-search-command [cmdk-item] + [cmdk-item] {
+  margin-top: 4px;
+}
+
+.session-search-command [cmdk-item][data-selected="true"] {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.session-search-command [cmdk-item]:active {
+  background: color-mix(in oklab, var(--foreground) 10%, var(--background));
+}
+
+.session-search-command [cmdk-item][data-search-hit="true"] {
+  align-items: flex-start;
+  padding-block: 12px;
+}
+
+.session-search-command .search-result-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.session-search-command [data-search-hit="true"] .search-result-icon {
+  margin-top: 2px;
+}
+
+.session-search-command .search-result-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.session-search-command .search-result-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+}
+
+.session-search-command .search-result-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-search-command .search-project {
+  max-width: 120px;
+  overflow: hidden;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--foreground) 5%, transparent);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-search-command .search-result-count {
+  flex-shrink: 0;
+  color: var(--search-secondary);
+  font-size: 12px;
+}
+
+.session-search-command .search-result-path {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--search-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-search-command .search-result-snippet {
+  margin-top: 8px;
+  color: var(--search-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.session-search-command kbd {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  background: var(--muted);
+  color: var(--search-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.session-search-command .search-close {
+  padding: 4px;
+  font-weight: 400;
+}
+
+.session-search-command .search-shortcuts {
+  display: flex;
+  flex-shrink: 0;
+  margin-left: auto;
+  gap: 8px;
+}
+
+.session-search-command .search-result-shortcut {
+  visibility: hidden;
+}
+
+.session-search-command [data-selected="true"] .search-result-shortcut {
+  visibility: visible;
+}
+
+.session-search-command .search-shortcuts svg {
+  width: 12px;
+  height: 12px;
+}
+
+.session-search-command [cmdk-empty],
+.session-search-command .search-state {
+  padding: 24px 8px;
+  color: var(--search-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+@media (max-width: 639px) {
+  .session-search-command [cmdk-input] { font-size: 16px; }
+  .session-search-command [cmdk-item] { padding-inline: 8px; }
+  .session-search-command .search-project { max-width: 80px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-search-command [cmdk-list] { transition: none; }
+}

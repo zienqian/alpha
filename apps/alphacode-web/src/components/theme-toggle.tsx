@@ -11,7 +11,7 @@ export function ThemeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" className="size-7 text-muted-foreground [&_svg]:size-3.5" aria-label="切换主题" title="切换主题">
+        <Button variant="ghost" size="icon-sm" className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground" aria-label="切换主题" title="切换主题">
           <Sun className="dark:hidden" aria-hidden="true" />
           <Moon className="hidden dark:block" aria-hidden="true" />
         </Button>

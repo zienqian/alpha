@@ -15,7 +15,7 @@ export function CopyButton({ value, label = "复制消息" }: { value: string; l
     <>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label={feedback || label}
+          <Button variant="ghost" size="icon-xs" aria-label={feedback || label}
             className="shrink-0 text-muted-foreground hover:text-foreground"
             onClick={async () => {
               try {

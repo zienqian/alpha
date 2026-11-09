@@ -1,4 +1,4 @@
-import { FileText, FolderOpen, PanelRight, X } from "lucide-react";
+import { FileText, FolderOpen, ListTree, X } from "lucide-react";
 import { Popover } from "radix-ui";
 import { CopyButton } from "@/components/copy-button";
 import { Button } from "@/components/ui/button";
@@ -9,24 +9,24 @@ export function SessionContext({ folder, session, draft }: {
   folder?: SessionFolder; session?: Session; draft: SessionDraft;
 }) {
   return (
-    <Popover.Root>
+    <Popover.Root defaultOpen={false}>
       <Popover.Trigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label="会话上下文" title="会话上下文" className="size-7 text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground">
-          <PanelRight className="size-3.5" aria-hidden="true" />
+        <Button variant="ghost" size="icon-sm" aria-label="会话摘要" title="会话摘要" className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground">
+          <ListTree className="size-3.5" aria-hidden="true" />
         </Button>
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content align="end" sideOffset={8} collisionPadding={12} aria-label="会话上下文" className="z-50 max-h-[var(--radix-popover-content-available-height)] w-72 max-w-[calc(100vw-24px)] overflow-y-auto rounded-xl border bg-popover text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
+        <Popover.Content align="end" sideOffset={4} collisionPadding={12} aria-label="会话摘要" className="z-50 max-h-[var(--radix-popover-content-available-height)] w-72 max-w-[calc(100vw-24px)] overflow-y-auto rounded-lg border bg-popover text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
           <div className="flex h-10 items-center justify-between border-b px-3">
-            <h2 className="text-xs font-medium">会话上下文</h2>
-            <Popover.Close asChild><Button variant="ghost" size="icon-xs" aria-label="关闭会话上下文"><X aria-hidden="true" /></Button></Popover.Close>
+            <h2 className="text-xs font-medium">会话摘要</h2>
+            <Popover.Close asChild><Button variant="ghost" size="icon-xs" className="text-muted-foreground" aria-label="关闭会话摘要"><X aria-hidden="true" /></Button></Popover.Close>
           </div>
           <div className="space-y-3 border-b p-3">
             <div className="flex items-center gap-2 text-[13px] font-medium"><FolderOpen className="size-3.5 text-muted-foreground" aria-hidden="true" /><span className="truncate">{folder?.name ?? "未选择工作区"}</span></div>
             {folder && <div className="flex items-center gap-1 rounded-md bg-muted/60 py-1 pr-1 pl-2"><code className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground" title={folder.path}>{folder.path}</code><CopyButton value={folder.path} label="复制工作区路径" /></div>}
             <dl className="grid grid-cols-2 gap-y-2 text-xs">
-              <dt className="text-muted-foreground">消息记录</dt><dd className="text-right tabular-nums">{session?.messages.length ?? 0} 条</dd>
-              <dt className="text-muted-foreground">会话类型</dt><dd className="text-right">{session?.messages.length ? "示例会话" : "本地草稿"}</dd>
+              <dt className="text-muted-foreground">消息记录</dt><dd className="text-right tabular-nums">{session && !session.local && !session.historyLoaded ? "尚未加载" : `${session?.messages.length ?? 0} 条`}</dd>
+              <dt className="text-muted-foreground">会话类型</dt><dd className="text-right">{session && !session.local ? "服务端会话" : "本地草稿"}</dd>
             </dl>
           </div>
           <div className="p-3">
@@ -37,7 +37,7 @@ export function SessionContext({ folder, session, draft }: {
               </ul>
             ) : <p className="text-xs leading-5 text-muted-foreground">还没有附件。使用输入框中的附件按钮添加文件。</p>}
           </div>
-          <p className="border-t bg-muted/30 px-3 py-2.5 text-[11px] leading-4 text-muted-foreground">草稿仅保存在当前页面，刷新后会清空。消息和附件尚不支持发送。</p>
+          <p className="border-t bg-muted/30 px-3 py-2.5 text-[11px] leading-4 text-muted-foreground">已发送消息由服务端保存。未发送草稿仅保留在当前页面，刷新后会清空；附件暂不支持上传。</p>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

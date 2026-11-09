@@ -38,8 +38,9 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
       let local = false;
       update({
         busy: true, canSend: false, status: "Connecting…", phase: "thinking", error: undefined, activeRunStartedAt: started,
-        messages: [...state.messages.filter(message => message.role !== "tool")
-          .map(message => message.completion ? { ...message, completion: undefined } : message),
+        // Tool results belong to the conversation, including earlier turns.
+        // Clearing them here also removes them from every CLI/Web snapshot.
+        messages: [...state.messages.map(message => message.completion ? { ...message, completion: undefined } : message),
           { id: randomUUID(), role: "user", text }],
       });
       try {

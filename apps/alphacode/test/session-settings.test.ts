@@ -10,7 +10,7 @@ function archive(db: Database, id: string): SessionData {
   return JSON.parse(row.body);
 }
 
-test("model and permission settings are saved before any turn, isolated by session and restored with history", async () => {
+test("draft settings stay in memory until the first message, then remain isolated and restore with history", async () => {
   const app = await fixture(() => textResponse("original reply"));
   const db = new Database(app.config.databasePath);
   const chats: Chat[] = [];
@@ -20,16 +20,16 @@ test("model and permission settings are saved before any turn, isolated by sessi
     return textResponse("restored reply");
   } };
   try {
-    expect(archive(db, app.chat.sessionId).metadata.alphacode).toEqual({ version: 1, modelId: "test-model", permissionMode: "ask" });
+    expect(db.query("SELECT id FROM sessions").all()).toHaveLength(0);
     expect(await app.chat.setPermissionMode("full")).toBe(true);
-    expect(archive(db, app.chat.sessionId).turns).toHaveLength(0);
-    expect(archive(db, app.chat.sessionId).metadata.alphacode).toEqual({ version: 1, modelId: "test-model", permissionMode: "full" });
+    expect(db.query("SELECT id FROM sessions").all()).toHaveLength(0);
     const other = await createApplication({ ...app.config, modelId: "other-model" }, { provider });
     chats.push(other);
     expect(other.sessionId).not.toBe(app.chat.sessionId);
     expect(other.modelId).toBe("other-model");
     expect(other.state.permissionMode).toBe("ask");
     await app.chat.send("remember this request");
+    expect(archive(db, app.chat.sessionId).metadata.alphacode).toEqual({ version: 1, modelId: "test-model", permissionMode: "full" });
     await app.chat.close();
 
     const resumed = await createApplication({ ...app.config, sessionId: app.chat.sessionId, modelId: "changed-environment-model" }, { provider });
@@ -47,7 +47,7 @@ test("model and permission settings are saved before any turn, isolated by sessi
     const again = await createApplication({ ...app.config, sessionId: resumed.sessionId }, { provider });
     chats.push(again);
     expect(again.state.permissionMode).toBe("auto");
-    expect(archive(db, other.sessionId).metadata.alphacode).toEqual({ version: 1, modelId: "other-model", permissionMode: "ask" });
+    expect(db.query("SELECT id FROM sessions WHERE id = ?").get(other.sessionId)).toBeNull();
   } finally {
     for (const chat of chats) await chat.close();
     db.close();
@@ -59,6 +59,8 @@ test("failed settings writes keep the old permission active and persisted, then 
   const app = await fixture(() => textResponse("unused"));
   const db = new Database(app.config.databasePath);
   try {
+    await app.chat.send("create persisted session");
+    app.requests.length = 0;
     db.exec("CREATE TRIGGER reject_settings BEFORE UPDATE ON sessions BEGIN SELECT RAISE(ABORT, 'private storage detail'); END");
     expect(await app.chat.setPermissionMode("full")).toBe(false);
     expect(app.chat.state.permissionMode).toBe("ask");
@@ -92,7 +94,7 @@ test("settings changes block sending and duplicate changes, and closing waits fo
     await closing;
     expect(app.requests).toHaveLength(0);
     expect(app.chat.state.canSend).toBe(false);
-    expect(archive(db, app.chat.sessionId).metadata.alphacode).toEqual({ version: 1, modelId: "test-model", permissionMode: "full" });
+    expect(db.query("SELECT id FROM sessions").all()).toHaveLength(0);
   } finally { db.close(); await app.dispose(); }
 });
 
@@ -101,6 +103,7 @@ test("legacy sessions recover their recorded model, default to ask, and preserve
   const db = new Database(app.config.databasePath);
   let resumed: Chat | undefined;
   try {
+    await app.chat.send("create legacy fixture");
     await app.chat.close();
     const old = archive(db, app.chat.sessionId);
     db.query("UPDATE sessions SET body = ? WHERE id = ?").run(JSON.stringify({ ...old, agentKey: "alphacode-v1:test-model", metadata: { note: "keep me" } }), app.chat.sessionId);
@@ -117,6 +120,8 @@ test("invalid saved settings and missing sessions fail before any model call", a
   const app = await fixture(() => textResponse("unused"));
   const db = new Database(app.config.databasePath);
   try {
+    await app.chat.send("create persisted fixture");
+    app.requests.length = 0;
     await app.chat.close();
     const original = archive(db, app.chat.sessionId);
     for (const invalid of [null, [], { version: 2, modelId: "test-model", permissionMode: "full" }, { version: 1, modelId: "test-model", permissionMode: "typo" }]) {
@@ -133,6 +138,8 @@ test("an open session cannot overwrite or execute with settings changed by anoth
   let second: Chat | undefined;
   try {
     expect(await app.chat.setPermissionMode("full")).toBe(true);
+    await app.chat.send("create persisted session");
+    app.requests.length = 0;
     second = await createApplication({ ...app.config, sessionId: app.chat.sessionId });
     expect(await second.setPermissionMode("ask")).toBe(true);
     expect(await app.chat.setPermissionMode("auto")).toBe(false);

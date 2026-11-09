@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { request as httpRequest } from "node:http";
 import { basename, dirname, join, resolve } from "node:path";
-import type { SessionView, RequestReceipt, SessionInfo } from "../src/server/protocol";
+import type { SessionView, RequestReceipt, SessionInfo, SessionSearchResult } from "../src/server/protocol";
 import { createClient } from "../src/server/transport";
 import { createApplication } from "../src/application";
 import { remoteChat } from "../src/server/client";
@@ -73,6 +73,111 @@ async function serverFixture(reply: (body: RequestBody, count: number) => Respon
   };
 }
 
+test("global search finds persisted message contents across projects without resuming runtimes", async () => {
+  const fixture = await serverFixture(() => textResponse(`${"前文 ".repeat(100)}全文检索 a+b ${"后文 ".repeat(100)}`));
+  try {
+    const first = await fixture.connect();
+    const otherWorkspace = join(fixture.root, "search-project");
+    await mkdir(otherWorkspace);
+    const second = await fixture.connect({ ...fixture.config, workspaceRoot: otherWorkspace });
+    for (const view of [first, second]) {
+      const path = `/api/sessions/${view.session.id}`;
+      await fixture.client().request(`${path}/requests`, { input: "保存一条普通消息", requestId: "search-message" });
+      await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    }
+    const search = (query: string) => fixture.browser().request<{ results: SessionSearchResult[] }>(`/api/sessions/search?q=${encodeURIComponent(query)}`);
+    const live = await search("全文检索");
+    expect(live.results).toHaveLength(2);
+    expect(live.results.every(result => result.matchCount === 1)).toBe(true);
+    expect((await search("保存一条普通消息")).results.every(result => result.matchCount === 1)).toBe(true);
+    await fixture.restart();
+    const creations = fixture.creations;
+    const found = await search("全文检索");
+    expect(found.results).toHaveLength(2);
+    expect(found.results.every(result => result.matchCount === 1 && result.snippets[0]?.text.includes("全文检索"))).toBe(true);
+    expect(found.results[0]?.snippets[0]?.text.length).toBeLessThan(220);
+    expect((await search("A+B")).results).toHaveLength(2);
+    expect((await search("search-project")).results.map(result => result.session.id)).toEqual([second.session.id]);
+    expect((await search("保存一条普通消息")).results).toHaveLength(2);
+    expect((await search("does-not-exist")).results).toHaveLength(0);
+    expect((await search("   ")).results).toHaveLength(0);
+    await expect(search("x".repeat(501))).rejects.toMatchObject({ code: "INVALID_QUERY" });
+    expect(fixture.creations).toBe(creations);
+    expect(fixture.calls).toHaveLength(2);
+  } finally { await fixture.dispose(); }
+});
+
+test("search includes omitted tool output and old turns both live and after restart", async () => {
+  const fixture = await serverFixture((_body, count) => count === 1
+    ? toolResponse("read_file", { path: "search-fixture.txt" }) : textResponse("读取完成"));
+  try {
+    const lines = Array.from({ length: 20 }, (_, index) => index === 10 ? "middle-output-needle" : `line ${index}`);
+    lines[0] = `${"x".repeat(300)}long-line-needle`;
+    await writeFile(join(fixture.config.workspaceRoot, "search-fixture.txt"), lines.join("\n"));
+    const view = await fixture.connect({ ...fixture.config, permissionMode: "full" });
+    const path = `/api/sessions/${view.session.id}`;
+    await fixture.client().request(`${path}/requests`, { input: "读取文件", requestId: "tool-search" });
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    const current = await fixture.client().request<SessionView>(path);
+    expect(current.state.messages.find(message => message.tool)?.tool?.output).not.toContain("middle-output-needle");
+    const assertFound = async () => {
+      for (const needle of ["middle-output-needle", "long-line-needle"]) {
+        const response = await fixture.browser().request<{ results: SessionSearchResult[] }>(`/api/sessions/search?q=${needle}`);
+        expect(response.results).toHaveLength(1);
+        expect(response.results[0]?.matchCount).toBe(1);
+        expect(response.results[0]?.snippets[0]?.text).toContain(needle);
+      }
+    };
+    await assertFound();
+    await fixture.client().request(`${path}/requests`, { input: "继续对话", requestId: "next-turn" });
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    await assertFound();
+    await fixture.restart();
+    await assertFound();
+  } finally { await fixture.dispose(); }
+});
+
+test("Web snapshots retain tool steps in each turn during later requests and after a server restart", async () => {
+  const nextReply = controlledStream();
+  const fixture = await serverFixture((_body, count) => count === 1 || count === 3
+    ? toolResponse("read_file", { path: "history.txt" })
+    : count === 5 ? nextReply.response : textResponse("文件读取完成"));
+  try {
+    await writeFile(join(fixture.config.workspaceRoot, "history.txt"), "persisted tool output");
+    const initial = await fixture.connect({ ...fixture.config, permissionMode: "full" });
+    const id = initial.session.id;
+    const path = `/api/sessions/${id}`;
+    const web = fixture.subscribe(id);
+    for (const turn of [1, 2]) {
+      await fixture.client().request(`${path}/requests`, { input: `读取第 ${turn} 轮`, requestId: `history-${turn}` });
+      await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    }
+    const before = await fixture.browser().request<SessionView>(path);
+    expect(before.state.error).toBeUndefined();
+    expect(fixture.calls).toHaveLength(4);
+    const tools = before.state.messages.filter(message => message.tool);
+    expect(tools).toHaveLength(2);
+    // Both provider replies deliberately reuse the same call ID in different turns.
+    expect(tools[0]?.tool?.callId).toBe(tools[1]?.tool?.callId);
+    expect(tools[0]?.id).not.toBe(tools[1]?.id);
+    await fixture.client().request(`${path}/requests`, { input: "继续总结", requestId: "history-3" });
+    await waitFor(() => fixture.calls.length === 5 && web.values.some(view => view.requestId === "history-3" && view.state.busy));
+    const during = web.values.findLast(view => view.requestId === "history-3");
+    expect(during?.state.messages.filter(message => message.tool).map(message => message.id)).toEqual(tools.map(message => message.id));
+    nextReply.text("总结完成"); nextReply.end();
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    await web.close();
+    await fixture.restart();
+    const restored = await fixture.browser().request<SessionView>(path);
+    const restoredTools = restored.state.messages.filter(message => message.tool);
+    expect(restoredTools.map(message => message.id)).toEqual(tools.map(message => message.id));
+    expect(restoredTools.every(message => message.tool?.status === "succeeded" && message.tool.output === "persisted tool output")).toBe(true);
+    const order = restored.state.messages.filter(message => message.role === "user" || message.tool).map(message => message.role);
+    expect(order).toEqual(["user", "tool", "user", "tool", "user"]);
+    expect(fixture.calls).toHaveLength(5);
+  } finally { nextReply.end(); await fixture.dispose(); }
+});
+
 test("one runtime streams to CLI and Web; detach does not cancel; duplicate requests do not rerun", async () => {
   const model = controlledStream();
   const fixture = await serverFixture(() => model.response);
@@ -112,6 +217,34 @@ test("one runtime streams to CLI and Web; detach does not cancel; duplicate requ
   } finally { model.end(); await cli.close(); await fixture.dispose(); }
 });
 
+test("Web starts a shared conversation and CLI continues it with the same runtime and history", async () => {
+  const model = controlledStream();
+  const fixture = await serverFixture((_body, count) => count === 1 ? model.response : textResponse("CLI continuation"));
+  const registered = await fixture.connect();
+  const initial = await fixture.browser().request<SessionView>("/api/sessions", { projectId: registered.session.projectId });
+  const cli = remoteChat(fixture.client(), initial);
+  const web = fixture.subscribe(initial.session.id);
+  try {
+    await waitFor(() => cli.state.canSend && web.values.length > 0);
+    const receipt = await fixture.browser().request<RequestReceipt>(`/api/sessions/${initial.session.id}/requests`, {
+      requestId: "web-first", input: "来自 Web 的中文消息",
+    });
+    expect(receipt.status).toBe("accepted");
+    await waitFor(() => fixture.calls.length === 1 && cli.state.messages.some(message => message.text === "来自 Web 的中文消息"));
+    model.text("同步的部分回复");
+    await waitFor(() => cli.state.messages.at(-1)?.text === "同步的部分回复" && web.values.at(-1)?.state.messages.at(-1)?.text === "同步的部分回复");
+    expect(cli.state.busy).toBe(true);
+    model.text("，已完成。"); model.end();
+    await waitFor(() => cli.state.canSend && web.values.at(-1)?.state.busy === false);
+    await cli.send("continue from CLI", "cli-next");
+    await waitFor(() => web.values.at(-1)?.state.messages.at(-1)?.text === "CLI continuation" && !cli.state.busy);
+    expect(fixture.creations).toBe(2); // Registered session plus the one created by Web.
+    expect(fixture.calls).toHaveLength(2);
+    expect(JSON.stringify(fixture.calls[1])).toContain("来自 Web 的中文消息");
+    expect(cli.state.messages.map(message => message.text)).toEqual(web.values.at(-1)?.state.messages.map(message => message.text) ?? []);
+  } finally { model.end(); await cli.close(); await fixture.dispose(); }
+});
+
 test("approval is shared and exactly one client can decide; cancellation is scoped to its request", async () => {
   const fixture = await serverFixture((_body, count) => count === 1 ? toolResponse("run_command", { command: "echo approval-test" }) : textResponse("denied safely"));
   try {
@@ -139,6 +272,27 @@ test("approval is shared and exactly one client can decide; cancellation is scop
   } finally { await fixture.dispose(); }
 });
 
+test("CLI and Web drafts are usable but absent from history and disappear after server restart", async () => {
+  const fixture = await serverFixture();
+  try {
+    const cli = await fixture.connect();
+    const web = await fixture.browser().request<SessionView>("/api/sessions", { projectId: cli.session.projectId });
+    expect(web.session.id).not.toBe(cli.session.id);
+    for (const draft of [cli, web]) {
+      const path = `/api/sessions/${draft.session.id}`;
+      expect((await fixture.browser().request<SessionView>(path)).state.messages).toHaveLength(0);
+      expect((await fixture.browser().request<SessionView>(`${path}/permission`, { mode: "auto" })).state.permissionMode).toBe("auto");
+    }
+    expect((await fixture.client().request<{ sessions: SessionInfo[] }>("/api/sessions")).sessions).toHaveLength(0);
+    await fixture.restart();
+    expect((await fixture.client().request<{ sessions: SessionInfo[] }>("/api/sessions")).sessions).toHaveLength(0);
+    for (const draft of [cli, web]) {
+      await expect(fixture.client().request(`/api/sessions/${draft.session.id}`)).rejects.toMatchObject({ code: "SESSION_NOT_FOUND" });
+    }
+    expect(fixture.calls).toHaveLength(0);
+  } finally { await fixture.dispose(); }
+});
+
 test("global session index includes registered projects and persisted histories, with single-flight resume", async () => {
   const fixture = await serverFixture();
   try {
@@ -146,6 +300,11 @@ test("global session index includes registered projects and persisted histories,
     const otherWorkspace = join(fixture.root, "other-project");
     await mkdir(otherWorkspace);
     const second = await fixture.connect({ ...fixture.config, workspaceRoot: otherWorkspace });
+    for (const session of [first, second]) {
+      const path = `/api/sessions/${session.session.id}`;
+      await fixture.client().request(`${path}/requests`, { input: "save history", requestId: "first-message" });
+      await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    }
     const listed = await fixture.client().request<{ sessions: SessionInfo[] }>("/api/sessions");
     expect(new Set(listed.sessions.map(session => session.workspaceRoot)).size).toBe(2);
     await fixture.restart();
@@ -301,6 +460,10 @@ test("an admitted but unconfirmed request after restart is not automatically exe
   const fixture = await serverFixture();
   try {
     const initial = await fixture.connect();
+    const path = `/api/sessions/${initial.session.id}`;
+    await fixture.client().request(`${path}/requests`, { input: "saved history", requestId: "saved-request" });
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    fixture.calls.length = 0;
     const requestId = "crash-after-admission";
     const input = "never repeat unknown side effects";
     const file = join(fixture.paths.directory, "requests", `${digest(`${initial.session.id}:${requestId}`)}.json`);
@@ -309,7 +472,7 @@ test("an admitted but unconfirmed request after restart is not automatically exe
     const receipt = await fixture.client().request<RequestReceipt>(`/api/sessions/${initial.session.id}/requests`, { requestId, input });
     expect(receipt.status).toBe("interrupted");
     expect(fixture.calls).toHaveLength(0);
-    expect((await fixture.client().request<SessionView>(`/api/sessions/${initial.session.id}`)).state.messages).toHaveLength(0);
+    expect((await fixture.client().request<SessionView>(`/api/sessions/${initial.session.id}`)).state.messages.map(message => message.text)).toEqual(["saved history", "hello"]);
   } finally { await fixture.dispose(); }
 });
 

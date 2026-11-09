@@ -41,6 +41,7 @@ test("saved titles are sanitized for display without changing the stored title",
   const database = new Database(app.config.databasePath);
   let resumed: Chat | undefined;
   try {
+    await app.chat.send("create saved title fixture");
     await app.chat.close();
     const saved = archive(database, app.chat.sessionId);
     const title = "Saved\n\x1b[31mreview\x1b[0m";

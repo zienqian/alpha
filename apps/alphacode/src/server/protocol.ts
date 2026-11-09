@@ -22,6 +22,12 @@ export interface SessionView {
   approvalId?: string;
 }
 
+export interface SessionSearchResult {
+  session: SessionInfo;
+  snippets: { messageId: string; role: "user" | "assistant" | "tool"; text: string }[];
+  matchCount: number;
+}
+
 export interface RequestReceipt {
   requestId: string;
   status: "accepted" | "settled" | "interrupted";

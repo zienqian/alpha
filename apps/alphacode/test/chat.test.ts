@@ -34,7 +34,9 @@ test("Provider → ADK → coding tools → streaming reply → SQLite; subseque
     expect(app.chat.state.messages.some(message => message.role === "tool")).toBe(true);
     const nextRun = app.chat.send("继续");
     expect(app.chat.state.busy).toBe(true);
-    expect(app.chat.state.messages.some(message => message.completion || message.role === "tool")).toBe(false);
+    expect(app.chat.state.messages.some(message => message.completion)).toBe(false);
+    expect(app.chat.state.messages.filter(message => message.role === "tool")).toHaveLength(1);
+    expect(app.chat.state.messages.find(message => message.tool)?.tool?.output).toContain("hello-from-workspace");
     expect(app.chat.state.messages.some(message => message.text.includes("const answer = 42"))).toBe(true);
     await nextRun;
     const completedTurns = app.chat.state.messages.filter(message => message.completion);
@@ -55,7 +57,8 @@ test("Provider → ADK → coding tools → streaming reply → SQLite; subseque
     } finally { db.close(); }
     const restored = await createApplication({ ...app.config, sessionId: app.chat.sessionId }, { provider: { fetch: async () => textResponse("restored") } });
     try {
-      expect(restored.state.messages.some(message => message.role === "tool")).toBe(false);
+      expect(restored.state.messages.filter(message => message.role === "tool")).toHaveLength(1);
+      expect(restored.state.messages.find(message => message.tool)?.tool?.output).toContain("hello-from-workspace");
       expect(restored.state.messages.filter(message => message.completion)).toHaveLength(1);
       expect(restored.state.messages.at(-1)?.completion).toEqual(completedTurns[0]?.completion);
       expect(restored.state.messages.some(message => message.text.includes("const answer = 42"))).toBe(true);

@@ -1,47 +1,75 @@
-import { lazy, Suspense, type CSSProperties } from "react";
+import { lazy, Suspense, type ComponentProps, type CSSProperties } from "react";
 import { FolderOpen } from "lucide-react";
 import { PromptInput } from "@/components/ai-elements/prompt-input";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { demoFolders } from "@/features/sessions/demo-data";
+import { Button } from "@/components/ui/button";
+import { sessionErrorMessage } from "@/features/sessions/api";
 import { ContinueSessions } from "@/features/sessions/continue-sessions";
 import { SessionContext } from "@/features/sessions/session-context";
 import { SessionSidebar } from "@/features/sessions/session-sidebar";
+import { SessionApproval } from "@/features/sessions/session-approval";
 import { useSessionWorkspace } from "@/features/sessions/use-session-workspace";
-import { WorkspacePicker } from "@/features/sessions/workspace-picker";
-import type { SessionFolder } from "@/features/sessions/types";
+import { cn } from "@/lib/utils";
 
 const SessionContent = lazy(() => import("@/features/sessions/session-content").then((module) => ({ default: module.SessionContent })));
 
-export function App({ folders: sourceFolders = demoFolders }: { folders?: SessionFolder[] }) {
-  const workspace = useSessionWorkspace(sourceFolders);
+function HistoryColumn({ className, ...props }: ComponentProps<"div">) {
+  // Reserve the same native scrollbar gutter as the message viewport.
+  return <div className="shrink-0 overflow-y-hidden scrollbar-gutter-stable">
+    <div className={cn("mx-auto w-full max-w-[744px] px-5 sm:px-8", className)} {...props} />
+  </div>;
+}
+
+function HistoryLoading() {
+  return <HistoryColumn role="status" aria-label="正在加载会话历史" className="space-y-4 py-6">
+    <Skeleton className="ml-auto h-14 w-2/3 rounded-xl" />
+    <Skeleton className="mt-10 h-4 w-24" />
+    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-4 w-4/5" />
+  </HistoryColumn>;
+}
+
+export function App() {
+  const workspace = useSessionWorkspace();
   const { folders, selectedFolder, selectedSession, selectedSessionId, draft } = workspace;
-  const isWelcome = !selectedSession?.messages.length;
-  const composer = <PromptInput draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest} context={isWelcome ? (
-    <WorkspacePicker folders={folders} selectedFolder={selectedFolder} onSelect={workspace.changeWorkspace} />
-  ) : <span className="flex min-w-0 items-center gap-1.5 text-xs" title={selectedFolder?.path}><FolderOpen className="size-3 shrink-0" aria-hidden="true" /><span className="truncate">{selectedFolder?.path}</span></span>} />;
+  const isWelcome = workspace.isLocal;
+  const view = workspace.history.data;
+  const connectionLabel = workspace.connected ? "实时同步" : workspace.history.connection === "error" ? "连接失败" : workspace.history.connection === "reconnecting" ? "正在重连…" : "正在连接…";
+  const composer = <>
+    {workspace.actionError && <div role="alert" className="mb-3 space-y-2 text-xs text-destructive">
+      <p>{workspace.actionError}</p>
+      {workspace.actions.pending?.status === "uncertain" && <Button size="sm" variant="outline" disabled={!workspace.connected} onClick={workspace.actions.retry}>重试发送</Button>}
+    </div>}
+    {view?.state.approval && <SessionApproval approval={view.state.approval}
+      disabled={!workspace.connected || workspace.actions.controlling || !view.approvalId} onAnswer={workspace.actions.approve} />}
+    <PromptInput draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
+      onSend={() => void workspace.send()} canSend={workspace.canSend} busy={workspace.busy} submitting={workspace.submitting}
+      onCancel={workspace.actions.cancel} canCancel={workspace.connected && !workspace.actions.controlling && Boolean(view?.requestId) && view?.state.phase !== "stopping"}
+      status={isWelcome ? selectedFolder?.name ?? "请先在 CLI 登记项目" : !workspace.connected ? connectionLabel : workspace.busy ? view?.state.phase === "stopping" ? "正在停止…" : "正在运行…" : view?.state.canSend ? "Enter 发送 · Shift+Enter 换行" : "会话暂不可发送"} />
+  </>;
 
   return (
     <SidebarProvider className="h-dvh min-h-0 overflow-hidden" style={{ "--sidebar-width": "15rem" } as CSSProperties}>
       <a href="#session-content" className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
         跳转到会话内容
       </a>
-      <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={workspace.selectSession} onNewSession={workspace.newSession} />
+      <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={workspace.selectSession} onNewSession={workspace.newSession}
+        loading={workspace.index.isPending} error={workspace.index.error} refreshing={workspace.index.isFetching} onRefresh={() => void workspace.index.refetch()} />
       <SidebarInset className="workspace-canvas min-h-0 min-w-0 overflow-hidden">
         <header className="flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
-          <SidebarTrigger aria-label="切换侧栏" title="切换侧栏 (Ctrl / ⌘ + B)" className="size-7 text-muted-foreground" />
+          <SidebarTrigger aria-label="切换侧栏" title="切换侧栏 (Ctrl / ⌘ + B)" className="text-muted-foreground" />
           <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px]">
             {!isWelcome && (
-              <span className="hidden shrink-0 items-center gap-1.5 text-muted-foreground sm:flex">
-                <FolderOpen className="size-3.5" aria-hidden="true" />{selectedFolder?.name}
+              <span className="hidden min-w-0 max-w-40 items-center gap-1.5 text-muted-foreground sm:flex" title={selectedFolder?.path}>
+                <FolderOpen className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{selectedFolder?.name}</span>
               </span>
             )}
             {!isWelcome && <span className="hidden text-border sm:inline" aria-hidden="true">/</span>}
             {isWelcome ? <span className="truncate text-muted-foreground">新会话</span> : (
-              <h1 id="session-title" className="truncate font-medium">{selectedSession.title}</h1>
+              <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title ?? "会话记录"}</h1>
             )}
           </div>
-          <span className="mr-1 text-[11px] text-muted-foreground">预览</span>
           <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} />
         </header>
         {isWelcome ? (
@@ -56,21 +84,19 @@ export function App({ folders: sourceFolders = demoFolders }: { folders?: Sessio
           </section>
         ) : (
           <>
-            <div id="session-content" key={selectedSession.id} tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">
-              <Suspense fallback={
-                <div role="status" aria-label="正在打开会话" className="mx-auto w-full max-w-[744px] space-y-4 px-5 py-6 sm:px-8">
-                  <Skeleton className="ml-auto h-14 w-2/3 rounded-xl" />
-                  <Skeleton className="mt-10 h-4 w-24" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-4/5" />
-                </div>
-              }>
-                <SessionContent session={selectedSession} />
-              </Suspense>
+            <div id="session-content" key={selectedSessionId} tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">
+              {workspace.history.isError && <HistoryColumn role="alert" className="space-y-2 py-4 text-xs leading-5">
+                <p>{sessionErrorMessage(workspace.history.error, "history")}</p>
+                {workspace.history.data && <p className="text-xs text-muted-foreground">当前显示上次加载的记录。</p>}
+                <Button variant="outline" size="sm" disabled={workspace.history.isFetching} onClick={() => void workspace.history.refetch()}>重试加载历史</Button>
+              </HistoryColumn>}
+              {workspace.history.data?.state.error && <HistoryColumn role="status" className="py-2 text-xs leading-5 text-destructive">{workspace.history.data.state.error}</HistoryColumn>}
+              {!workspace.connected && workspace.history.data && <HistoryColumn role="status" className="py-2 text-xs leading-5 text-muted-foreground">{workspace.history.connection === "error" ? "无法订阅会话，请从 CLI 重新运行 /web。" : "正在连接实时会话，已有内容和草稿会保留。"}</HistoryColumn>}
+              {workspace.history.isPending ? <HistoryLoading /> : selectedSession?.historyLoaded && (
+                <Suspense fallback={<HistoryLoading />}><SessionContent session={selectedSession} busy={workspace.busy} phase={view?.state.phase} connected={workspace.connected} /></Suspense>
+              )}
             </div>
-            <div className="mx-auto w-full max-w-[744px] shrink-0 px-5 pt-3 pb-4 sm:px-8">
-              {composer}
-            </div>
+            <HistoryColumn className="pt-3 pb-4">{composer}</HistoryColumn>
           </>
         )}
       </SidebarInset>

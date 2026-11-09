@@ -1,11 +1,21 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "@/app";
 import { AppProviders } from "@/components/providers";
+import { mockSessionApi } from "./fixtures/session-api";
+
+let api: ReturnType<typeof mockSessionApi>;
+beforeEach(() => { window.history.replaceState(null, "", "/"); api = mockSessionApi(); });
+
+async function renderWorkspace() {
+  const view = render(<AppProviders><App /></AppProviders>);
+  await screen.findByRole("button", { name: "继续 搭建前端工作区" });
+  return view;
+}
 
 describe("Session workspace", () => {
-  it("starts on a new conversation with the composer as the primary action", () => {
-    render(<App />);
+  it("starts on a new conversation with the composer as the primary action", async () => {
+    await renderWorkspace();
     expect(screen.getByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
     expect(screen.queryByRole("list", { name: "会话消息" })).toBeNull();
     expect(screen.getByRole("textbox", { name: "消息草稿" })).toBeTruthy();
@@ -13,18 +23,18 @@ describe("Session workspace", () => {
   });
 
   it("renders folder navigation and the initial Markdown conversation", async () => {
-    render(<AppProviders><App /></AppProviders>);
+    await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
     expect(screen.getByRole("navigation", { name: "文件夹与会话" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("搭建前端工作区");
-    expect(await screen.findByRole("table")).toBeTruthy();
-    expect(screen.getByText("预览")).toBeTruthy();
+    expect(await screen.findByRole("table", {}, { timeout: 5000 })).toBeTruthy();
+    expect(await screen.findByText("Enter 发送 · Shift+Enter 换行")).toBeTruthy();
     expect(within(screen.getByRole("list", { name: "会话消息" })).getAllByRole("article")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "搭建前端工作区" }).getAttribute("aria-current")).toBe("page");
   });
 
   it("switches the active session, title and rendered messages", async () => {
-    render(<App />);
+    await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("项目说明与约定");
     expect(await screen.findByRole("heading", { name: "开发约定" })).toBeTruthy();
@@ -34,8 +44,8 @@ describe("Session workspace", () => {
     expect(screen.getByRole("button", { name: "搭建前端工作区" }).hasAttribute("aria-current")).toBe(false);
   });
 
-  it("collapses and expands a folder", () => {
-    render(<App />);
+  it("collapses and expands a folder", async () => {
+    await renderWorkspace();
     const folder = screen.getByRole("button", { name: "文件夹 alphacode-web" });
     fireEvent.click(folder);
     expect(folder.getAttribute("aria-expanded")).toBe("false");
@@ -45,8 +55,8 @@ describe("Session workspace", () => {
     expect(screen.getByRole("button", { name: "Markdown 渲染预览" })).toBeTruthy();
   });
 
-  it("keeps drafts separate for each session and cannot send in preview mode", () => {
-    render(<App />);
+  it("keeps drafts separate for each session", async () => {
+    await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
     fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "下一步检查布局" } });
     fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
@@ -54,58 +64,59 @@ describe("Session workspace", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "整理项目文档" } });
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("下一步检查布局");
-    expect((screen.getByRole("button", { name: "发送消息（未连接模型）" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
   });
 
-  it("searches case-insensitive session titles and opens matching collapsed folders", async () => {
-    render(<App />);
+  it("opens a search dialog, highlights case-insensitive matches, and selects a collapsed session", async () => {
+    await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "文件夹 alphacode-web" }));
     fireEvent.click(screen.getByRole("button", { name: "搜索会话" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "搜索会话或文件夹" }), { target: { value: "  MARKDOWN  " } });
-    expect(screen.getByRole("button", { name: "Markdown 渲染预览" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "文件夹 docs" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Markdown 渲染预览" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "搜索会话内容" }), { target: { value: "  MARKDOWN  " } });
+    const result = await screen.findByRole("option", { name: /Markdown 渲染预览/ });
+    expect(result.querySelector("mark")?.textContent).toBe("Markdown");
+    fireEvent.click(result);
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(await screen.findByRole("heading", { name: "Markdown 格式预览" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "清除搜索" }));
     expect(screen.getByRole("button", { name: "文件夹 docs" })).toBeTruthy();
   });
 
-  it("searches by folder path and keeps all of its sessions", () => {
-    render(<App />);
+  it("searches by folder path and keeps all of its sessions", async () => {
+    await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "搜索会话" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "搜索会话或文件夹" }), { target: { value: "apps/alphacode-web" } });
-    expect(screen.getByRole("button", { name: "搭建前端工作区" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Markdown 渲染预览" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "文件夹 docs" })).toBeNull();
+    fireEvent.change(screen.getByRole("combobox", { name: "搜索会话内容" }), { target: { value: "apps/alphacode-web" } });
+    expect(await screen.findByRole("option", { name: /搭建前端工作区/ })).toBeTruthy();
+    expect(screen.getByRole("option", { name: /Markdown 渲染预览/ })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: /项目说明与约定/ })).toBeNull();
   });
 
-  it("shows a no-results state without discarding the selected conversation", () => {
-    render(<App />);
+  it("shows a no-results state without discarding the selected conversation", async () => {
+    await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
     fireEvent.click(screen.getByRole("button", { name: "搜索会话" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "搜索会话或文件夹" }), { target: { value: "not-found" } });
-    expect(screen.getByRole("status").textContent).toBe("没有找到匹配的会话");
+    fireEvent.change(screen.getByRole("combobox", { name: "搜索会话内容" }), { target: { value: "not-found" } });
+    expect(await screen.findByText("没有找到匹配的会话")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "关闭搜索" }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("搭建前端工作区");
   });
 
-  it("shows an empty-message state", () => {
-    render(<App />);
+  it("shows an empty-message state", async () => {
+    await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "待开始的会话" }));
-    expect(screen.getByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "这个会话还没有消息" })).toBeTruthy();
     expect(screen.queryByRole("list", { name: "会话消息" })).toBeNull();
   });
 
-  it("handles a workspace with no folders or sessions", () => {
-    const { rerender } = render(<App folders={[]} />);
+  it("handles a server with no sessions", async () => {
+    api.infos.splice(0);
+    render(<AppProviders><App /></AppProviders>);
     expect(screen.getByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
-    expect(screen.getByText("暂无工作区")).toBeTruthy();
-    rerender(<App folders={[{ id: "empty", name: "empty", path: "empty", sessions: [] }]} />);
-    expect(screen.getByText("暂无会话")).toBeTruthy();
+    expect(await screen.findByText("暂无会话，请先在 CLI 中开始对话。")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "新建会话" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("opens a mobile drawer and closes it after selecting a session", () => {
+  it("opens a mobile drawer and closes it after selecting a session", async () => {
     vi.stubGlobal("innerWidth", 390);
-    render(<App />);
+    await renderWorkspace();
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "切换侧栏" }));
     const drawer = screen.getByRole("dialog");
@@ -114,47 +125,39 @@ describe("Session workspace", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("项目说明与约定");
   });
 
-  it("creates a new local draft without losing the previous text or attachments", () => {
-    render(<App />);
+  it("creates a new local draft without losing the previous text or attachments", async () => {
+    await renderWorkspace();
+    const originalDraft = screen.getByRole("button", { name: "新会话" });
     fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "实现新的导航" } });
+    expect(originalDraft.textContent).toBe("新会话");
     fireEvent.change(screen.getByLabelText("添加附件"), { target: { files: [new File(["content"], "notes.txt", { type: "text/plain" })] } });
     expect(screen.getByText("notes.txt")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("");
     expect(screen.queryByText("notes.txt")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "实现新的导航" }));
+    fireEvent.click(originalDraft);
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("实现新的导航");
     expect(screen.getByText("notes.txt")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "移除附件 notes.txt" }));
     expect(screen.queryByText("notes.txt")).toBeNull();
   });
 
-  it("does not create duplicate empty drafts and focuses the composer", () => {
-    render(<App />);
+  it("does not create duplicate empty drafts and focuses the composer", async () => {
+    await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
     expect(screen.getAllByRole("button", { name: "新会话" })).toHaveLength(1);
     expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "消息草稿" }));
   });
 
-  it("moves a new draft to the selected workspace without clearing its content", () => {
-    render(<App />);
-    fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "整理文档" } });
-    fireEvent.keyDown(screen.getByRole("button", { name: "选择工作区" }), { key: "ArrowDown" });
-    fireEvent.click(screen.getByRole("menuitemradio", { name: /^docs/ }));
-    expect(screen.getByRole("button", { name: "选择工作区" }).textContent).toContain("docs");
-    expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("整理文档");
-    expect(screen.getByRole("button", { name: "整理文档" }).getAttribute("aria-current")).toBe("page");
-  });
-
-  it("opens and focuses search with the keyboard shortcut", () => {
-    render(<App />);
+  it("opens and focuses search with the keyboard shortcut", async () => {
+    await renderWorkspace();
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
-    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "搜索会话或文件夹" }));
+    expect(document.activeElement).toBe(screen.getByRole("combobox", { name: "搜索会话内容" }));
   });
 
-  it("toggles the desktop sidebar with its trigger and keyboard shortcut", () => {
-    const { container } = render(<App />);
+  it("toggles the desktop sidebar with its trigger and keyboard shortcut", async () => {
+    const { container } = await renderWorkspace();
     const sidebar = container.querySelector('[data-slot="sidebar"][data-state]');
     expect(sidebar?.getAttribute("data-state")).toBe("expanded");
     fireEvent.click(screen.getByRole("button", { name: "切换侧栏" }));

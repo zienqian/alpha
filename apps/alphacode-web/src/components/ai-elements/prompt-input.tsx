@@ -1,14 +1,15 @@
-import { useEffect, useRef, type ReactNode } from "react";
-import { ArrowUp, CircleDashed, FileText, Paperclip, X } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { ArrowUp, LoaderCircle, Square, FileText, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { SessionDraft } from "@/features/sessions/use-session-workspace";
 
-// AI Elements Prompt Input pattern. Files and text stay in this local draft;
-// no upload or model call is made while the workspace is in preview mode.
-export function PromptInput({ draft, onChange, focusRequest = 0, context }: {
-  draft: SessionDraft; onChange: (patch: Partial<SessionDraft>) => void; focusRequest?: number; context?: ReactNode;
+// AI Elements Prompt Input pattern; the server owns accepted conversation state.
+export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend, busy, submitting, onCancel, canCancel, status }: {
+  draft: SessionDraft; onChange: (patch: Partial<SessionDraft>) => void; focusRequest?: number;
+  onSend: () => void; canSend: boolean; busy: boolean; submitting?: boolean;
+  onCancel: () => void; canCancel: boolean; status: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -40,41 +41,33 @@ export function PromptInput({ draft, onChange, focusRequest = 0, context }: {
           </InputGroupAddon>
         )}
         <InputGroupTextarea ref={textareaRef} aria-label="消息草稿" aria-describedby="composer-status"
-          placeholder="描述任务，或添加文件作为上下文…" value={draft.text}
+          placeholder="描述任务…" value={draft.text}
           onChange={(event) => onChange({ text: event.target.value })}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) {
+              event.preventDefault();
+              if (canSend) onSend();
+            }
+          }}
           className="min-h-20 max-h-48 px-4 pt-3.5 pb-2 text-base leading-6 placeholder:text-muted-foreground md:text-sm" />
         <InputGroupAddon align="block-end" className="gap-2 px-2.5 pt-1 pb-2.5">
           <Tooltip>
             <TooltipTrigger asChild>
-              <InputGroupButton size="sm" className="h-7 gap-1.5 px-2 text-xs font-normal" aria-label="添加上下文附件" onClick={() => fileRef.current?.click()}>
+              <InputGroupButton size="sm" className="px-2" aria-label="添加上下文附件" onClick={() => fileRef.current?.click()}>
                 <Paperclip className="size-3.5" aria-hidden="true" />附件
               </InputGroupButton>
             </TooltipTrigger>
-            <TooltipContent>添加附件到草稿</TooltipContent>
+            <TooltipContent>附件仅保留在草稿中，暂不支持上传。</TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span tabIndex={0} className="ml-auto flex items-center gap-1.5 rounded-sm px-1 text-xs font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="模型未连接">
-                <CircleDashed className="size-3" aria-hidden="true" />未连接模型
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>当前为本地预览，消息和附件不会发送。</TooltipContent>
-          </Tooltip>
-          <InputGroupButton variant="default" size="icon-sm" className="size-7 rounded-md" disabled aria-label="发送消息（未连接模型）">
-            <ArrowUp className="size-3.5" aria-hidden="true" />
-          </InputGroupButton>
+          <span id="composer-status" role="status" className="ml-auto truncate px-1 text-xs font-normal">{submitting ? "正在提交…" : status}</span>
+          {busy ? <InputGroupButton variant="default" size="icon-sm" disabled={!canCancel} aria-label="停止生成" onClick={onCancel}>
+            <Square className="size-3.5" aria-hidden="true" />
+          </InputGroupButton> : <InputGroupButton variant="default" size="icon-sm" disabled={!canSend} aria-label="发送消息" onClick={onSend}>
+            {submitting ? <LoaderCircle className="size-3.5 motion-safe:animate-spin" aria-hidden="true" /> : <ArrowUp className="size-3.5" aria-hidden="true" />}
+          </InputGroupButton>}
         </InputGroupAddon>
       </InputGroup>
-      <p id="composer-status" className="sr-only">
-        草稿仅保留在当前页面，暂不支持发送
-      </p>
-      <div className="mt-2 flex min-w-0 items-center justify-between gap-2 px-1 text-muted-foreground">
-        <div className="min-w-0">{context}</div>
-        <Tooltip>
-          <TooltipTrigger asChild><span tabIndex={0} className="shrink-0 rounded-sm text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-ring">仅本页保存</span></TooltipTrigger>
-          <TooltipContent>草稿和附件会在刷新后清空，当前尚未连接模型。</TooltipContent>
-        </Tooltip>
-      </div>
+      {draft.attachments.length > 0 && <p className="mt-2 px-1 text-xs text-muted-foreground">附件暂不支持发送，请移除附件后发送文字。</p>}
     </div>
   );
 }

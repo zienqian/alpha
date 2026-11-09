@@ -16,14 +16,14 @@ export function restoreMessages(data: SessionData): ChatMessage[] {
           id: message.id, role: "assistant", text: message.text,
           ...(message.incompleteReason ? { note: "Response incomplete" } : {}),
         });
-        for (const call of latest ? message.toolCalls : []) {
+        for (const call of message.toolCalls) {
           const tool = createToolRecord(message.id, call);
           indices.set(tool.id, messages.length);
           // A historical call without a corresponding result is not still running.
           messages.push({ id: tool.id, role: "tool", text: tool.name, note: "outcome_unknown", tool: { ...tool, status: "outcome_unknown" } });
         }
       }
-      else if (message.role === "toolResult" && latest) {
+      else if (message.role === "toolResult") {
         const assistant = turn.messages.find(item => item.id === message.assistantId);
         const call = assistant?.role === "assistant" ? assistant.toolCalls.find(call => call.id === message.callId) : undefined;
         const tool = completeToolRecord(createToolRecord(message.assistantId, call ?? { id: message.callId, name: "Tool call", arguments: {} }), message);

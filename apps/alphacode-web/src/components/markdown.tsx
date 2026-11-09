@@ -1,4 +1,4 @@
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import { isValidElement, type ReactNode } from "react";
 import remarkGfm from "remark-gfm";
 import { CopyButton } from "@/components/copy-button";
@@ -11,25 +11,22 @@ interface MarkdownProps {
   className?: string;
 }
 
+// Stable component identities preserve code highlighting and selection as tokens arrive.
+const markdownComponents: Components = {
+  a: ({ href, children }) => (
+    <a href={href} target={href?.startsWith("http") ? "_blank" : undefined} rel="noreferrer noopener">{children}</a>
+  ),
+  table: ({ children }) => <div className="my-5 max-w-full overflow-x-auto rounded-md border"><table>{children}</table></div>,
+  pre: ({ children }) => <MarkdownCodeBlock>{children}</MarkdownCodeBlock>,
+};
+
 export function Markdown({ children, className }: MarkdownProps) {
   return (
     <div className={cn("markdown min-w-0 text-sm leading-6", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
-        components={{
-          a: ({ href, children }) => (
-            <a href={href} target={href?.startsWith("http") ? "_blank" : undefined} rel="noreferrer noopener">
-              {children}
-            </a>
-          ),
-          table: ({ children }) => (
-            <div className="my-5 max-w-full overflow-x-auto rounded-md border">
-              <table>{children}</table>
-            </div>
-          ),
-          pre: ({ children }) => <MarkdownCodeBlock>{children}</MarkdownCodeBlock>,
-        }}
+        components={markdownComponents}
       >
         {children}
       </ReactMarkdown>

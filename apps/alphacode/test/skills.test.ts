@@ -51,6 +51,11 @@ async function setup(reply: (body: RequestBody, index: number) => Response = () 
       try { return JSON.parse((database.query("SELECT body FROM sessions WHERE id = ?").get(id) as { body: string }).body); }
       finally { database.close(); }
     },
+    hasSession(id: string): boolean {
+      const database = new Database(config.databasePath);
+      try { return database.query("SELECT id FROM sessions WHERE id = ?").get(id) !== null; }
+      finally { database.close(); }
+    },
     async [Symbol.asyncDispose]() {
       for (const runtime of runtimes) await runtime.close();
       expect(dirname(resolve(directory))).toBe(resolve(tmpdir()));
@@ -141,8 +146,7 @@ test("listing and bad slash commands never enter a Session run; escaped slash is
   expect(workspace.requests).toHaveLength(0);
   await expect(runtime.send("/unknown")).rejects.toMatchObject({ code: "SKILL_NOT_FOUND" });
   await expect(runtime.send("/review argument")).rejects.toMatchObject({ code: "SKILL_CHANGED" });
-  expect(workspace.snapshot(runtime.sessionId).turns).toHaveLength(0);
-  expect(workspace.snapshot(runtime.sessionId).pending).toBeNull();
+  expect(workspace.hasSession(runtime.sessionId)).toBe(false);
   await runtime.send("//review not a command");
   expect(workspace.requests[0]?.messages.at(-1)?.content).toBe("/review not a command");
   await chat.close();
@@ -171,19 +175,21 @@ test("manual preparation cancels and closes without model calls or pending Sessi
   await expect(runtime.setPermissionMode("full")).rejects.toMatchObject({ code: "SESSION_BUSY" });
   runtime.cancel();
   expect((await sending).status).toBe("cancelled");
-  expect(workspace.snapshot(runtime.sessionId).turns).toHaveLength(0);
+  expect(workspace.hasSession(runtime.sessionId)).toBe(false);
   const again = runtime.send("/review");
   const closing = runtime.close();
   expect((await again).status).toBe("cancelled");
   await closing;
   expect(workspace.requests).toHaveLength(0);
-  expect(workspace.snapshot(runtime.sessionId).pending).toBeNull();
+  expect(workspace.hasSession(runtime.sessionId)).toBe(false);
 });
 
 test("legacy sessions always load skills and include readSkill when resumed", async () => {
   await using workspace = await setup();
   await workspace.write("config/skills/review/SKILL.md", document("review"));
   const legacy = await workspace.open();
+  await legacy.send("create legacy fixture");
+  workspace.requests.length = 0;
   await legacy.close();
   const saved = workspace.snapshot(legacy.sessionId);
   const database = new Database(workspace.config.databasePath);
@@ -206,7 +212,7 @@ test("input limits reject before model execution; history envelopes are display-
   await expect(runtime.send("/review " + "x".repeat(8193))).rejects.toMatchObject({ code: "SKILL_ARGUMENTS_TOO_LARGE" });
   await expect(runtime.send("/review")).rejects.toMatchObject({ code: "SKILL_CONTENT_TOO_LARGE" });
   expect(workspace.requests).toHaveLength(0);
-  expect(workspace.snapshot(runtime.sessionId).turns).toHaveLength(0);
+  expect(workspace.hasSession(runtime.sessionId)).toBe(false);
   for (const input of [skillInputPrefix + "not json", skillInputPrefix + JSON.stringify({ kind: "alpha.skill-input", version: 2, displayText: "hidden" })]) expect(skillInputDisplay(input)).toBe(input);
   expect(parseInput("  /review  arg ")).toMatchObject({ name: "review", arguments: " arg ", displayText: "  /review  arg " });
   expect(matchingCommands("/rev", [{ name: "review", description: "Review", userInvocable: true }, { name: "review-private", description: "Private", userInvocable: false }]).map(command => command.name)).toEqual(["/review"]);

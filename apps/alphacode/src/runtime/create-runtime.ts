@@ -7,7 +7,7 @@ import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
 import { createCodingAgent, type CodingContext, type LoadSkillsResult } from "@alpha/coding-agent";
 import { createProvider, type CreateProviderOptions } from "@alpha/provider";
 import type { AppConfig } from "../config";
-import type { ChatMessage, ChatRuntime, RequestApproval } from "../chat/contracts";
+import type { ChatEvent, ChatMessage, ChatRuntime, RequestApproval } from "../chat/contracts";
 import { subscribeToAgent } from "./events";
 import { permissionDecision } from "./permission-policy";
 import { restoreMessages } from "./history";
@@ -26,8 +26,11 @@ export async function createRuntime(config: AppConfig, options: {
   let manager: SessionManager | undefined;
   let session: Session | undefined;
   let agent: Agent | undefined;
-  let messages: ChatMessage[];
-  let title: string;
+  const sessionId = config.sessionId ?? randomUUID();
+  const subscriptions = new Map<(event: ChatEvent) => void, (() => void) | undefined>();
+  let initialize: () => Promise<{ agent: Agent; session: Session }>;
+  let messages: ChatMessage[] = [];
+  let title = "AlphaCode";
   let loadedSkills: LoadSkillsResult = { skills: [], diagnostics: [] };
   let settings: SessionSettings = { version: 1, modelId: config.modelId, permissionMode: config.permissionMode ?? "ask" };
   try {
@@ -41,15 +44,15 @@ export async function createRuntime(config: AppConfig, options: {
       ? saved.data.agentKey : `alphacode-v2:${settings.modelId}`;
     loadedSkills = await loadRuntimeSkills(config, cwd);
     manager = createSessionManager({ store, namespace, agentKey });
-    session = config.sessionId ? await manager.openSession(config.sessionId) : await manager.createSession({
-      title: "AlphaCode", metadata: { alphacode: { ...settings } },
-    });
-    if (saved && saved.data.metadata.alphacode === undefined) {
-      await manager.updateSession(session.id, { metadata: { ...saved.data.metadata, alphacode: { ...settings } } }, { expectedRevision: saved.revision });
+    if (saved) {
+      session = await manager.openSession(sessionId);
+      if (saved.data.metadata.alphacode === undefined) {
+        await manager.updateSession(session.id, { metadata: { ...saved.data.metadata, alphacode: { ...settings } } }, { expectedRevision: saved.revision });
+      }
+      const snapshot = await session.getSnapshot();
+      messages = restoreMessages(snapshot.data);
+      title = displayText(snapshot.data.title, 80) || "AlphaCode";
     }
-    const snapshot = await session.getSnapshot();
-    messages = restoreMessages(snapshot.data);
-    title = displayText(snapshot.data.title, 80) || "AlphaCode";
     const model = createProvider({ providers: { main: {
       adapter: "openai-completions",
       options: {
@@ -58,36 +61,47 @@ export async function createRuntime(config: AppConfig, options: {
       },
       models: { chat: { id: settings.modelId } },
     } } }, options.provider).use("main", "chat");
-    const approve = options.approve;
-    const policySession = session;
-    agent = await createCodingAgent({
-      model, cwd,
-      skills: loadedSkills.skills,
-      fileAccess: "host", commandTimeoutMs: null,
-      limits: {
-        timeoutMs: undefined, maxModelCalls: null, maxToolCalls: null,
-        maxHistoryMessages: null, maxHistoryBytes: null,
-      },
-      policy: { decide: async action => {
-        // A second process may have changed metadata before this run's admission.
-        const current = readSessionSettings((await policySession.getSnapshot()).data);
-        if (!sameSettings(current, settings)) return "deny";
-        return permissionDecision(settings.permissionMode, action);
-      } },
-      approve: approve ? async (action, { signal }) => {
-        const allowed = await approve({
-          name: action.call.name,
-          assistantId: action.call.assistantId, callId: action.call.callId,
-          preview: action.preview.type === "command" ? action.preview : { type: "tool" },
-        }, signal);
-        return allowed ? "allow" : "deny";
-      } : undefined,
-      instructions: "You are AlphaCode. Respond in the user's language. Use Markdown for explanations and fenced blocks for code. Keep answers concise.",
-      plugins: [
-        ...(config.globalInstructions ? [globalInstructionsPlugin<CodingContext<undefined>>(config.globalInstructions, config.globalInstructionsPath ?? "~/.alphacode/AGENTS.md")] : []),
-        createSessionPlugin({ session }),
-      ],
-    });
+    const activeManager = manager;
+    initialize = async () => {
+      // A new CLI/Web session is only a draft until a valid prompt reaches here.
+      session ??= await activeManager.createSession({ id: sessionId,
+        title: "AlphaCode", metadata: { alphacode: { ...settings } },
+      });
+      if (agent) return { agent, session };
+      const approve = options.approve;
+      const policySession = session;
+      agent = await createCodingAgent({
+        model, cwd,
+        skills: loadedSkills.skills,
+        fileAccess: "host", commandTimeoutMs: null,
+        limits: {
+          timeoutMs: undefined, maxModelCalls: null, maxToolCalls: null,
+          maxHistoryMessages: null, maxHistoryBytes: null,
+        },
+        policy: { decide: async action => {
+          // A second process may have changed metadata before this run's admission.
+          const current = readSessionSettings((await policySession.getSnapshot()).data);
+          if (!sameSettings(current, settings)) return "deny";
+          return permissionDecision(settings.permissionMode, action);
+        } },
+        approve: approve ? async (action, { signal }) => {
+          const allowed = await approve({
+            name: action.call.name,
+            assistantId: action.call.assistantId, callId: action.call.callId,
+            preview: action.preview.type === "command" ? action.preview : { type: "tool" },
+          }, signal);
+          return allowed ? "allow" : "deny";
+        } : undefined,
+        instructions: "You are AlphaCode. Respond in the user's language. Use Markdown for explanations and fenced blocks for code. Keep answers concise.",
+        plugins: [
+          ...(config.globalInstructions ? [globalInstructionsPlugin<CodingContext<undefined>>(config.globalInstructions, config.globalInstructionsPath ?? "~/.alphacode/AGENTS.md")] : []),
+          createSessionPlugin({ session }),
+        ],
+      });
+      for (const listener of subscriptions.keys()) subscriptions.set(listener, subscribeToAgent(agent, listener));
+      return { agent, session };
+    };
+    if (saved) await initialize();
   } catch (error) {
     // Startup has not accepted a prompt; release only resources created here.
     for (const resource of [agent, session, manager, store]) {
@@ -96,7 +110,7 @@ export async function createRuntime(config: AppConfig, options: {
     throw error;
   }
 
-  const activeAgent = agent, activeSession = session, activeStore = store, activeManager = manager;
+  const activeStore = store, activeManager = manager;
   let changing: Promise<void> | undefined;
   let running = false;
   let cancelled = false;
@@ -107,25 +121,26 @@ export async function createRuntime(config: AppConfig, options: {
     skills: Object.freeze(loadedSkills.skills.map(({ name, description, argumentHint, userInvocable }) => Object.freeze({ name, description: displayText(description, 1024), argumentHint: argumentHint === undefined ? undefined : displayText(argumentHint, 256), userInvocable }))),
     modelId: settings.modelId,
     workspaceRoot: cwd,
-    sessionId: activeSession.id,
+    sessionId,
     sessionTitle: title,
     messages,
     get permissionMode() { return settings.permissionMode; },
     setPermissionMode(mode) {
       if (!isPermissionMode(mode)) return Promise.reject(settingsError("SESSION_SETTINGS_INVALID"));
-      if (closing || running || changing || activeSession.state.persistence?.status === "pending") return Promise.reject(settingsError("SESSION_BUSY"));
+      if (closing || running || changing || session?.state.persistence?.status === "pending") return Promise.reject(settingsError("SESSION_BUSY"));
       const work = (async () => {
-        const snapshot = await activeSession.getSnapshot();
+        if (!session) { settings = { ...settings, permissionMode: mode }; return; }
+        const snapshot = await session.getSnapshot();
         if (!sameSettings(readSessionSettings(snapshot.data), settings)) throw settingsError("SESSION_CONFLICT");
         const next: SessionSettings = { ...settings, permissionMode: mode };
         if (sameSettings(next, settings)) return;
         try {
-          await activeManager.updateSession(activeSession.id, {
+          await activeManager.updateSession(session.id, {
             metadata: { ...snapshot.data.metadata, alphacode: { ...next } },
           }, { expectedRevision: snapshot.revision });
         } catch (error) {
           // A lost acknowledgement must not leave persisted and active permissions different.
-          const found = await activeSession.getSnapshot();
+          const found = await session.getSnapshot();
           if (found.revision !== snapshot.revision + 1 || found.data.pending || !sameSettings(readSessionSettings(found.data), next)) throw error;
         }
         settings = next;
@@ -133,13 +148,18 @@ export async function createRuntime(config: AppConfig, options: {
       changing = work.finally(() => { changing = undefined; });
       return changing;
     },
-    get unsaved() { return activeSession.state.persistence?.status === "pending"; },
+    get unsaved() { return session?.state.persistence?.status === "pending"; },
     get blocked() {
-      const { historyStatus, persistence } = activeSession.state;
+      if (!session) return false;
+      const { historyStatus, persistence } = session.state;
       return historyStatus === "blocked" || (historyStatus === "pending" && persistence?.status !== "pending")
-        || activeAgent.state.historyStatus === "blocked" || activeAgent.state.boundaryStatus === "failed";
+        || agent?.state.historyStatus === "blocked" || agent?.state.boundaryStatus === "failed";
     },
-    subscribe(listener) { return subscribeToAgent(activeAgent, listener); },
+    subscribe(listener) {
+      const forward = (event: ChatEvent) => listener(event);
+      subscriptions.set(forward, agent ? subscribeToAgent(agent, forward) : undefined);
+      return () => { subscriptions.get(forward)?.(); subscriptions.delete(forward); };
+    },
     async send(input, requestId) {
       if (closing || running || changing) throw settingsError("SESSION_BUSY");
       running = true;
@@ -156,6 +176,9 @@ export async function createRuntime(config: AppConfig, options: {
           return { status: "completed", localText: "Use the /permission picker to change session permissions." };
         }
         const prepared = await prepareSkillInput(input, loadedSkills.skills, preparation.signal);
+        if (!prepared.trim()) throw settingsError("SESSION_INPUT_INVALID");
+        if (cancelled || closing) return { status: "cancelled" };
+        const { agent: activeAgent, session: activeSession } = await initialize();
         const snapshot = await activeSession.getSnapshot();
         if (cancelled || closing) return { status: "cancelled" };
         if (!sameSettings(readSessionSettings(snapshot.data), settings)) throw settingsError("SESSION_CONFLICT");
@@ -176,24 +199,26 @@ export async function createRuntime(config: AppConfig, options: {
         throw error;
       } finally { running = false; preparation = undefined; finishRun(); }
     },
-    cancel() { cancelled = true; preparation?.abort(); activeAgent.abort(); },
+    cancel() { cancelled = true; preparation?.abort(); agent?.abort(); },
     close() {
       cancelled = true;
       preparation?.abort();
-      activeAgent.abort();
+      agent?.abort();
       if (!closing) closing = (async () => {
         await draining;
         await changing?.catch(() => { /* A failed settings change retains the previous mode. */ });
         try {
-          await activeAgent.close();
+          await agent?.close();
         } catch (error) {
           // The Session plugin unbinds even if its final save failed. Retry the
           // captured commit only; never rerun the model or tools on shutdown.
-          if (activeSession.state.persistence?.status !== "pending") throw error;
-          const saved = await activeSession.flush();
+          if (session?.state.persistence?.status !== "pending") throw error;
+          const saved = await session.flush();
           if (saved.status === "pending") throw Object.assign(new Error(), { code: saved.code });
         }
-        await activeSession.close();
+        for (const unsubscribe of subscriptions.values()) unsubscribe?.();
+        subscriptions.clear();
+        await session?.close();
         await activeManager.close();
         await activeStore.close();
       })().catch(error => {

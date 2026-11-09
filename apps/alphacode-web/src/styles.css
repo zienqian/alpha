@@ -147,6 +147,10 @@
 }
 
 @layer components {
+  .morphing-spinner[data-active="true"] > path {
+    animation: alphacode-morph 5s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  }
+
   .composer {
     transition: border-color 160ms ease-out;
   }
@@ -257,7 +261,23 @@
   }
 }
 
+@keyframes alphacode-morph {
+  0%, 100% {
+    d: path("M12 8 C14.21 8 16 9.79 16 12 C16 14.21 14.21 16 12 16 C9.79 16 8 14.21 8 12 C8 9.79 9.79 8 12 8 Z");
+  }
+  25%, 75% {
+    d: path("M12 12 C14 8.5 19 8.5 19 12 C19 15.5 14 15.5 12 12 C10 8.5 5 8.5 5 12 C5 15.5 10 15.5 12 12 Z");
+  }
+  50% {
+    d: path("M12 16 C14.21 16 16 14.21 16 12 C16 9.79 14.21 8 12 8 C9.79 8 8 9.79 8 12 C8 14.21 9.79 16 12 16 Z");
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .morphing-spinner[data-active="true"] > path {
+    animation: none;
+  }
+
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

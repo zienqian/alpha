@@ -1,12 +1,14 @@
 # Local server API v1
 
-`index.tsx → connectApplication → ensureServer → remoteChat` 是正常 CLI 启动链路；`createApplication` 保留为进程内 runtime/controller 工厂，由 server 使用，现有离线测试也继续使用它。通信实现保留在应用内部，不再提供独立客户端包。Web 当前为空白脚手架，尚未接入 API，也不导入 CLI、Bun、SQLite 或 Agent。
+`index.tsx → connectApplication → ensureServer → remoteChat` 是正常 CLI 启动链路；`createApplication` 保留为进程内 runtime/controller 工厂，由 server 使用，现有离线测试也继续使用它。通信实现保留在应用内部，不再提供独立客户端包。Web 通过同源 GET 读取历史，通过 SSE 与 CLI 同步当前会话，支持在已登记项目中新建、发送、取消及审批。浏览器不导入 CLI、Bun、SQLite 或 Agent。
 
 ## 生命周期
 
 同一真实数据库路径对应一个 server。启动子进程前检查私有 descriptor，子进程用独立 SQLite 表的 `BEGIN IMMEDIATE` 原子获取租约，租约记录 PID/instanceId。只有确认旧 PID 不存在才接管；不根据超时猜测或杀掉存活的 owner。多个 CLI 并发启动可以产生短暂的竞选子进程，但只有一个持有租约、提供 API。Windows 子进程隐藏窗口并脱离终端。
 
 server 唯一持有每个已打开 session 的 Chat/runtime。恢复会话使用 single-flight；多个客户端不会各自创建 Agent。每个 runtime 保留原有 SessionManager/SQLite 连接和保存协议，registry 的单独连接只负责历史索引。API 操作、SSE 连接、进行中的请求、待审批、未保存/blocked 状态都会阻止空闲退出。普通 detach 不调用 runtime.cancel/close。
+
+新建会话先分配稳定 ID，作为 server 内存草稿提供 GET/SSE 和 `/web` 访问；不写入会话数据库，也不进入 `GET /api/sessions` 历史列表。首条有效模型请求准备完成后才创建持久化 Session 和 Agent，并在模型调用前保存 admission。草稿权限随首条消息一起保存；仅启动、查看 `/skills`、无效输入或关闭草稿不会生成历史记录。server 退出会丢弃尚未发送消息的草稿，之后访问该 ID 返回 `SESSION_NOT_FOUND`。
 
 ## 本地访问边界
 
@@ -23,7 +25,8 @@ Web 按单机使用、信任本机进程的前提设计，不使用浏览器登�
 | GET | `/api/info` | `protocolVersion, instanceId, databasePath` |
 | POST | `/api/connect` | 原生专用：`{config, credential?}`；登记项目并新建/恢复 config.sessionId，返回 SessionView |
 | GET | `/api/sessions` | `{sessions: SessionInfo[]}`，覆盖所有已登记项目 |
-| POST | `/api/sessions` | `{projectId}`；在已登记项目中新建会话，返回 SessionView |
+| GET | `/api/sessions/search?q=...` | `{results: SessionSearchResult[]}`；跨项目搜索标题、路径、消息正文和工具记录，忽略大小写、按字面匹配；关键词最多 500 字符，空值返回空结果。读取历史不启动 runtime；每个会话返回匹配消息总数及最多三条上下文片段 |
+| POST | `/api/sessions` | `{projectId}`；在已登记项目中新建内存草稿，返回 SessionView；首条有效消息才落盘 |
 | GET | `/api/events` | 全局 SSE：`{instanceId, sequence}`；提示重新读取列表 |
 | GET | `/api/sessions/:id` | SessionView 全量快照 |
 | GET | `/api/sessions/:id/events` | SSE SessionView，全量替换客户端投影 |
