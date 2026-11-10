@@ -1,6 +1,6 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
-import { Folder, Monitor, Plus, Search, SquarePen, SquareTerminal, X } from "lucide-react";
+import { Folder, Monitor, Plus, Search, SquarePen, SquareTerminal, X, Blocks } from "lucide-react";
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
 import { SessionTitle } from "@/features/sessions/session-title";
@@ -26,9 +26,11 @@ interface SessionSidebarProps {
   refreshing: boolean;
   error: Error | null;
   onRefresh: () => void;
+  onOpenSkills?: () => void;
+  skillsActive?: boolean;
 }
 
-export function SessionSidebar({ folders, selectedSessionId, onSelectSession, onNewSession, loading, refreshing, error, onRefresh }: SessionSidebarProps) {
+export function SessionSidebar({ folders, selectedSessionId, onSelectSession, onNewSession, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive }: SessionSidebarProps) {
   const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set());
@@ -95,6 +97,10 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
           <Search className="size-3.5" aria-hidden="true" /><span>{t("sessions:search")}</span>
           <kbd className="ml-auto rounded border border-sidebar-border px-1 font-sans text-[10px] leading-4 text-muted-foreground">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}</kbd>
         </Button>
+        {onOpenSkills && <Button variant="ghost" className="h-9 w-full justify-start gap-2 rounded-md px-2.5 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-foreground md:h-8"
+          aria-current={skillsActive ? "page" : undefined} onClick={() => { onOpenSkills(); setOpenMobile(false); }}>
+          <Blocks className="size-3.5" aria-hidden="true" /><span>{t("skills:market.title")}</span>
+        </Button>}
         </div>
       </SidebarHeader>
       <SidebarContent className="pt-5" style={{ scrollbarGutter: "stable both-edges" }}>
@@ -126,9 +132,9 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
                         <SidebarMenuSub className="mx-0 mt-1 translate-x-0 gap-0.5 border-0 p-0">
                           {folder.sessions.map((session) => (
                             <SidebarMenuSubItem key={session.id}>
-                              <SidebarMenuSubButton asChild isActive={selectedSessionId === session.id}
+                              <SidebarMenuSubButton asChild isActive={!skillsActive && selectedSessionId === session.id}
                                 className="h-9 w-full translate-x-0 rounded-md border border-transparent pr-2 pl-7 text-[13px] text-sidebar-foreground/80 data-[active=true]:border-sidebar-border data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-foreground md:h-8">
-                                <button type="button" title={session.title} aria-label={session.title} aria-current={selectedSessionId === session.id ? "page" : undefined}
+                                <button type="button" title={session.title} aria-label={session.title} aria-current={!skillsActive && selectedSessionId === session.id ? "page" : undefined}
                                   onClick={() => { onSelectSession(session.id); setOpenMobile(false); }}>
                                   <SessionTitle title={session.title} pending={session.titleStatus === "pending"} />
                                 </button>

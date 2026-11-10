@@ -418,6 +418,30 @@ test("native RPC and SSE bypass proxy environment variables without forwarding c
   }
 });
 
+test("/web keeps an empty CLI draft unpersisted until its first Web message", async () => {
+  const fixture = await serverFixture();
+  const initial = await fixture.connect();
+  let opened = "";
+  const cli = remoteChat(fixture.client(), initial, async url => { opened = url; });
+  try {
+    await waitFor(() => cli.state.canSend);
+    await cli.send("/web");
+    await cli.send("/web");
+    expect(opened).toBe(`${fixture.server.origin}/?session=${encodeURIComponent(initial.session.id)}`);
+    expect(fixture.creations).toBe(1);
+    expect(fixture.calls).toHaveLength(0);
+    expect(cli.state.messages).toHaveLength(0);
+    expect((await fixture.browser().request<{ sessions: SessionInfo[] }>("/api/sessions")).sessions).toHaveLength(0);
+
+    const path = `/api/sessions/${initial.session.id}`;
+    await fixture.browser().request(`${path}/requests`, { input: "first Web message", requestId: "first-web-message" });
+    await waitFor(async () => !(await fixture.browser().request<SessionView>(path)).requestId);
+    expect((await fixture.browser().request<{ sessions: SessionInfo[] }>("/api/sessions")).sessions.map(session => session.id)).toEqual([initial.session.id]);
+    await waitFor(() => cli.state.messages.some(message => message.text === "first Web message"));
+    expect(fixture.creations).toBe(1);
+  } finally { await cli.close(); await fixture.dispose(); }
+});
+
 test("/web opens the current busy session without creating or prompting another agent", async () => {
   const model = controlledStream();
   const fixture = await serverFixture(() => model.response);

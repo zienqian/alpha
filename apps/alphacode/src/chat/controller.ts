@@ -3,13 +3,15 @@ import { errorCode } from "../errors";
 import type { Approvals } from "./approval";
 import type { Chat, ChatMessage, ChatRunStatus, ChatRuntime, ChatState } from "./contracts";
 import { applyApproval, applyChatEvent, settlePendingTools, statusLabels } from "./messages";
+import type { RestoredChat } from "../server/handoff";
 
-export function createChat(runtime: ChatRuntime, approvals: Approvals): Chat {
+export function createChat(runtime: ChatRuntime, approvals: Approvals, restored?: RestoredChat): Chat {
   let state: ChatState = {
     sessionTitle: runtime.sessionTitle,
     messages: runtime.messages, busy: false, closing: false,
     canSend: !runtime.unsaved && !runtime.blocked, status: "Ready", phase: "idle",
     permissionMode: runtime.permissionMode, settingsSaving: false, approval: approvals.pending,
+    ...(restored ? { messages: restored.messages, lastRunStatus: restored.lastRunStatus, notice: restored.notice, error: restored.error } : {}),
   };
   const listeners = new Set<(state: ChatState) => void>();
   const update = (patch: Partial<ChatState>) => {

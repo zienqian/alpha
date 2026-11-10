@@ -32,6 +32,7 @@ export class SessionCommands {
   ) {}
 
   getState = (id: string): SessionCommandState => this.states.get(id) ?? emptyState;
+  canRefresh = () => ![...this.states.values()].some(state => state.controlling || state.pending?.status === "sending" || state.pending?.status === "uncertain");
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);

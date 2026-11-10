@@ -47,6 +47,7 @@ describe("session commands", () => {
     const receipt = deferred<RequestReceipt>();
     gateway.send.mockReturnValueOnce(receipt.promise);
     const first = commands.send("one", "first");
+    expect(commands.canRefresh()).toBe(false);
     await commands.send("one", "duplicate");
     await commands.send("two", "independent");
     expect(gateway.send).toHaveBeenCalledTimes(2);
@@ -55,6 +56,7 @@ describe("session commands", () => {
     await first;
     expect(accepted.mock.calls).toEqual([["two", "independent"], ["one", "first"]]);
     expect(commands.getState("one").pending?.status).toBe("accepted");
+    expect(commands.canRefresh()).toBe(true);
   });
 
   it.each([new TypeError("offline"), new SessionApiError(503, "UNAVAILABLE"), new SessionApiError(409, "SESSION_BUSY")])(
@@ -63,11 +65,14 @@ describe("session commands", () => {
       gateway.send.mockRejectedValueOnce(cause);
       await commands.send("one", "original");
       expect(commands.getState("one").pending?.status).toBe("uncertain");
+      expect(commands.getState("two").pending).toBeUndefined();
+      expect(commands.canRefresh()).toBe(false);
       expect(accepted).not.toHaveBeenCalled();
       await commands.send("one", "edited draft");
       expect(gateway.send.mock.calls[1]).toEqual(gateway.send.mock.calls[0]);
       expect(accepted).toHaveBeenCalledWith("one", "original");
       expect(commands.getState("one").error).toBeUndefined();
+      expect(commands.canRefresh()).toBe(true);
     },
   );
 

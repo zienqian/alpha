@@ -33,7 +33,7 @@ export function sessionFromView(view: SessionView): Session {
   };
 }
 
-export function groupSessions(sessions: readonly SessionInfo[]): SessionFolder[] {
+export function groupSessions(sessions: readonly SessionInfo[], projects: readonly Pick<SessionInfo, "projectId" | "workspaceRoot">[] = []): SessionFolder[] {
   const folders = new Map<string, SessionFolder>();
   for (const session of [...sessions].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))) {
     let folder = folders.get(session.projectId);
@@ -46,6 +46,13 @@ export function groupSessions(sessions: readonly SessionInfo[]): SessionFolder[]
       folders.set(folder.id, folder);
     }
     folder.sessions.push(sessionSummary(session));
+  }
+  for (const project of projects) {
+    if (!folders.has(project.projectId)) folders.set(project.projectId, {
+      id: project.projectId,
+      name: project.workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) || project.workspaceRoot,
+      path: project.workspaceRoot, sessions: [],
+    });
   }
   return [...folders.values()];
 }

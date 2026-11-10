@@ -1,5 +1,5 @@
 import { useTranslation } from "@/i18n/react";
-import { lazy, Suspense, type ComponentProps, type CSSProperties } from "react";
+import { lazy, Suspense, useEffect, useState, type ComponentProps, type CSSProperties } from "react";
 import { FolderOpen } from "lucide-react";
 import { PromptInput } from "@/components/ai-elements/prompt-input";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -11,10 +11,12 @@ import { SessionContext } from "@/features/sessions/session-context";
 import { SessionSidebar } from "@/features/sessions/session-sidebar";
 import { SessionApproval } from "@/features/sessions/session-approval";
 import { useSessionWorkspace } from "@/features/sessions/use-session-workspace";
+import { ServerUpdate } from "@/features/sessions/server-update";
 import { presentNotice } from "@/i18n/presentation";
 import { cn } from "@/lib/utils";
 
 const SessionContent = lazy(() => import("@/features/sessions/session-content").then((module) => ({ default: module.SessionContent })));
+const SkillsMarket = lazy(() => import("@/features/skills/skills-market").then(module => ({ default: module.SkillsMarket })));
 
 function HistoryColumn({ className, ...props }: ComponentProps<"div">) {
   // Reserve the same native scrollbar gutter as the message viewport.
@@ -36,8 +38,21 @@ function HistoryLoading() {
 export function App() {
   const { t } = useTranslation();
   const workspace = useSessionWorkspace();
+  const [skillsOpen, setSkillsOpen] = useState(() => new URL(window.location.href).searchParams.get("view") === "skills");
+  useEffect(() => {
+    const update = () => setSkillsOpen(new URL(window.location.href).searchParams.get("view") === "skills");
+    window.addEventListener("popstate", update);
+    return () => window.removeEventListener("popstate", update);
+  }, []);
+  function showSkills(open: boolean) {
+    const url = new URL(window.location.href);
+    if (open) url.searchParams.set("view", "skills");
+    else url.searchParams.delete("view");
+    if (url.href !== window.location.href) window.history.pushState(window.history.state, "", url);
+    setSkillsOpen(open);
+  }
   const { folders, selectedFolder, selectedSession, selectedSessionId, draft } = workspace;
-  const isWelcome = workspace.isLocal;
+  const isWelcome = workspace.isWelcome;
   const view = workspace.history.data;
   const connectionLabel = workspace.connected ? t("sessions:connected") : workspace.history.connection === "error" ? t("sessions:connectionFailed") : workspace.history.connection === "reconnecting" ? t("sessions:reconnecting") : t("sessions:connecting");
   const composer = <>
@@ -57,9 +72,16 @@ export function App() {
     <SidebarProvider className="h-dvh min-h-0 overflow-hidden" style={{ "--sidebar-width": "15rem" } as CSSProperties}>
       <a href="#session-content" className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
         {t("sessions:skip")}</a>
-      <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={workspace.selectSession} onNewSession={workspace.newSession}
+      <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={id => { showSkills(false); workspace.selectSession(id); }} onNewSession={id => { showSkills(false); workspace.newSession(id); }}
+        onOpenSkills={() => showSkills(true)} skillsActive={skillsOpen}
         loading={workspace.index.isPending} error={workspace.index.error} refreshing={workspace.index.isFetching} onRefresh={() => void workspace.index.refetch()} />
       <SidebarInset className="workspace-canvas min-h-0 min-w-0 overflow-hidden">
+        <ServerUpdate submitting={!workspace.canRefresh} onRefresh={() => {
+          if (!workspace.preserveDrafts()) return false;
+          window.location.reload();
+          return true;
+        }} />
+        {skillsOpen ? <Suspense fallback={<HistoryLoading />}><SkillsMarket initialProjectId={selectedFolder?.id} onBack={() => showSkills(false)} /></Suspense> : <>
         <header className="flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
           <SidebarTrigger aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground" />
           <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px]">
@@ -102,6 +124,7 @@ export function App() {
             <HistoryColumn className="pt-3 pb-4">{composer}</HistoryColumn>
           </>
         )}
+        </>}
       </SidebarInset>
     </SidebarProvider>
   );

@@ -1,0 +1,21 @@
+{
+  "repository": "https://github.com/multica-ai/multica",
+  "commit": "10f0ab332e57035feadae43cff2cd511f0d1d1f1",
+  "retrieved": "2026-11-10",
+  "modifiedFiles": [
+    "packages/views/common/task-transcript/agent-transcript-dialog.tsx",
+    "packages/views/common/task-transcript/run-timeline.tsx",
+    "packages/views/common/task-transcript/detail-surfaces.tsx",
+    "packages/views/common/task-transcript/task-transcript.css"
+  ],
+  "reusedFiles": [
+    "packages/views/common/task-transcript/build-steps.ts",
+    "packages/views/common/task-transcript/trace-event-presenter.ts",
+    "packages/views/common/task-transcript/run-outcome.ts",
+    "packages/core/utils.ts",
+    "packages/ui/icons/glyphs.ts",
+    "packages/ui/styles/tokens.css",
+    "docs/assets/logo-light.svg"
+  ],
+  "changes": "Native offline HTML/CSS/DOM port for local design review; synthetic fixtures and review controls; no server, no virtualized list, no rich media or syntax highlighter. Pure helper functions compiled without logic changes."
+}

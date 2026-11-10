@@ -21,13 +21,14 @@ import { fallbackTitle, generateSessionTitle, titleTimeoutMs } from "./session-t
 export async function createRuntime(config: AppConfig, options: {
   approve?: RequestApproval;
   provider?: CreateProviderOptions;
+  draftSessionId?: string;
 } = {}): Promise<ChatRuntime> {
   const cwd = await realpath(config.workspaceRoot);
   let store: SessionStore | undefined;
   let manager: SessionManager | undefined;
   let session: Session | undefined;
   let agent: Agent | undefined;
-  const sessionId = config.sessionId ?? randomUUID();
+  const sessionId = config.sessionId ?? options.draftSessionId ?? randomUUID();
   const subscriptions = new Map<(event: ChatEvent) => void, (() => void) | undefined>();
   let initialize: (input?: string) => Promise<{ agent: Agent; session: Session }>;
   let messages: ChatMessage[] = [];

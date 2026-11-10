@@ -6,6 +6,7 @@ import { protocolVersion } from "./protocol";
 import { createNativeClient } from "./http";
 import { readJson, serverPaths } from "./storage";
 import { ConfigurationError } from "../errors";
+import { serverLayout } from "./revision";
 
 export interface ServerDescriptor {
   protocolVersion: number;
@@ -14,6 +15,8 @@ export interface ServerDescriptor {
   origin: string;
   token: string;
   databasePath: string;
+  managed?: boolean;
+  revision?: string;
 }
 
 function alive(pid: number) {
@@ -48,18 +51,17 @@ async function discover(path: string, databasePath: string): Promise<ServerDescr
   try {
     const info = await createNativeClient(descriptor).request<{ instanceId: string; protocolVersion: number }>("/api/info", undefined, AbortSignal.timeout(1500));
     if (info.instanceId !== descriptor.instanceId || info.protocolVersion !== protocolVersion) throw new Error("SERVER_IDENTITY_MISMATCH");
-    return descriptor;
   } catch { return undefined; }
+  // Automatic updating is optional, not a prerequisite for connecting. A live
+  // server with the same protocol remains usable until its normal shutdown.
+  return descriptor;
 }
 
 export async function ensureServer(databasePath: string) {
   const paths = await serverPaths(databasePath);
   const existing = await discover(paths.descriptor, paths.database);
   if (existing) return existing;
-  const source = join(import.meta.dir, "main.ts");
-  const development = await Bun.file(source).exists();
-  const entry = development ? source : join(import.meta.dir, "server", "main.js");
-  const config = join(import.meta.dir, development ? "../../../.." : "../../..", "bunfig.toml");
+  const { main: entry, config } = await serverLayout();
   const log = await open(join(paths.directory, "server.log"), "a", 0o600);
   let launchError: Error | undefined;
   let child: ChildProcess;

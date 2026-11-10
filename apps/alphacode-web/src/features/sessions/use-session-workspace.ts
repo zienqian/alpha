@@ -1,10 +1,11 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { createSession, type SessionInfo } from "@/features/sessions/api";
+import { createSession, type SessionInfo, type SessionView } from "@/features/sessions/api";
 import { useSessionActions } from "@/features/sessions/use-session-actions";
 import { useSessionQuery, useSessionsQuery } from "@/features/sessions/queries";
 import { groupSessions, sessionFromView, type Session } from "@/features/sessions/types";
+import { clearReloadDrafts, preserveReloadDrafts, readReloadDrafts } from "./reload-drafts";
 
 export interface DraftAttachment {
   id: string;
@@ -31,18 +32,37 @@ export function useSessionWorkspace() {
   });
   const client = useQueryClient();
   const index = useSessionsQuery();
-  const [localSessions, setLocalSessions] = useState<LocalSession[]>(() => [createLocalSession("local-initial")]);
+  const [reloadDrafts] = useState(readReloadDrafts);
+  useEffect(clearReloadDrafts, []);
+  const [localSessions, setLocalSessions] = useState<LocalSession[]>(() => reloadDrafts?.localSessions.map(item => createLocalSession(item.id, item.folderId)) ?? [createLocalSession("local-initial")]);
   const [selectedSessionId, setSelectedSessionId] = useState(() =>
-    new URL(window.location.href).searchParams.get("session") || "local-initial",
+    new URL(window.location.href).searchParams.get("session") || reloadDrafts?.selectedSessionId || "local-initial",
   );
   const isLocal = localSessions.some((session) => session.id === selectedSessionId);
   const history = useSessionQuery(isLocal ? undefined : selectedSessionId);
+  const [drafts, setDrafts] = useState<Record<string, SessionDraft>>(() => reloadDrafts?.drafts ?? {});
+  const hasDraft = (id: string) => Boolean(drafts[id]?.text.trim() || drafts[id]?.attachments.length);
+  const projectId = history.data?.session.projectId;
+  const workspaceRoot = history.data?.session.workspaceRoot;
+  const [openedProjects, setOpenedProjects] = useState<Pick<SessionInfo, "projectId" | "workspaceRoot">[]>([]);
+  useEffect(() => {
+    if (projectId && workspaceRoot) setOpenedProjects(previous => previous.some(project => project.projectId === projectId && project.workspaceRoot === workspaceRoot)
+      ? previous : [...previous.filter(project => project.projectId !== projectId), { projectId, workspaceRoot }]);
+  }, [projectId, workspaceRoot]);
   // A direct /web link can load its history even if the index request fails.
+  // Keep its project usable without inventing a session row for an empty draft.
   const infos = index.data ?? [];
-  const sourceFolders = groupSessions(history.data
-    ? [...infos.filter((info) => info.id !== history.data.session.id), history.data.session]
-    : infos);
-  const [drafts, setDrafts] = useState<Record<string, SessionDraft>>({});
+  const draftViews = Object.keys(drafts).filter(id => hasDraft(id) && !infos.some(info => info.id === id))
+    .map(id => client.getQueryData<SessionView>(["session", id]))
+    .filter((view): view is SessionView => Boolean(view) && view?.session.id !== history.data?.session.id);
+  const views = history.data ? [...draftViews, history.data] : draftViews;
+  const emptyRemoteIds = new Set(views.filter(view => !view.state.messages.length && !infos.some(info => info.id === view.session.id))
+    .map(view => view.session.id));
+  const isWelcome = isLocal || (emptyRemoteIds.has(selectedSessionId) && !history.isError && history.connection !== "error");
+  const sourceFolders = groupSessions([
+    ...infos.filter(info => !views.some(view => view.session.id === info.id)),
+    ...views.map(view => view.session),
+  ], openedProjects);
   const selection = useRef(selectedSessionId);
   const creating = useRef(new Set<string>());
   const [creatingIds, setCreatingIds] = useState<Record<string, boolean>>({});
@@ -60,13 +80,18 @@ export function useSessionWorkspace() {
   const folders = sourceFolders.map((folder) => ({
     ...folder,
     sessions: [
-      ...localSessions.filter((session) => (session.folderId ?? sourceFolders[0]?.id) === folder.id),
-      ...folder.sessions,
+      ...localSessions.filter((session) => (session.folderId ?? sourceFolders[0]?.id) === folder.id && hasDraft(session.id)),
+      ...folder.sessions.filter(session => !emptyRemoteIds.has(session.id) || hasDraft(session.id))
+        .map(session => emptyRemoteIds.has(session.id) ? { ...session, title: "", local: true } : session),
     ].map(session => displaySession(creatingIds[session.id] ? { ...session, titleStatus: "pending" } : session)),
   }));
-  const selectedFolder = folders.find((folder) => folder.sessions.some((session) => session.id === selectedSessionId));
-  const selectedSession = !isLocal && history.data ? displaySession(sessionFromView(history.data))
-    : selectedFolder?.sessions.find((session) => session.id === selectedSessionId);
+  const localSession = localSessions.find(session => session.id === selectedSessionId);
+  const selectedFolderId = isLocal ? localSession?.folderId ?? sourceFolders[0]?.id : history.data?.session.projectId;
+  const selectedFolder = folders.find(folder => folder.id === selectedFolderId)
+    ?? folders.find(folder => folder.sessions.some(session => session.id === selectedSessionId));
+  const selectedSession = isWelcome ? displaySession(localSession ?? createLocalSession(selectedSessionId, selectedFolder?.id))
+    : history.data ? displaySession(sessionFromView(history.data))
+      : selectedFolder?.sessions.find((session) => session.id === selectedSessionId);
   const draft = drafts[selectedSessionId] ?? emptyDraft;
 
   useEffect(() => {
@@ -145,7 +170,9 @@ export function useSessionWorkspace() {
   }
 
   return { folders, selectedFolder, selectedSession, selectedSessionId, selectSession, draft, updateDraft,
-    newSession, focusRequest, isLocal, index, history, canSend, send, busy, connected, actions,
+    preserveDrafts: () => preserveReloadDrafts({ selectedSessionId, localSessions: localSessions.map(({ id, folderId }) => ({ id, folderId })), drafts }),
+    canRefresh: actions.canRefresh && !Object.values(creatingIds).some(Boolean),
+    newSession, focusRequest, isLocal, isWelcome, index, history, canSend, send, busy, connected, actions,
     submitting: creatingIds[selectedSessionId] || actions.pending?.status === "sending" || actions.pending?.status === "accepted",
     actionError: actions.error ?? (creationErrors[selectedSessionId] ? t("errors:create") : undefined) };
 }

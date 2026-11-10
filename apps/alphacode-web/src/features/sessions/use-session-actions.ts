@@ -20,10 +20,12 @@ export function useSessionActions(view: SessionView | undefined, selectedId: str
     invalidateList: () => { void client.invalidateQueries({ queryKey: sessionKeys.list }); },
   }, (id, input) => accepted.current(id, input)), [client, gateway]);
   const state = useSyncExternalStore(commands.subscribe, () => commands.getState(selectedId));
+  const canRefresh = useSyncExternalStore(commands.subscribe, commands.canRefresh);
 
   useEffect(() => { commands.observe(view); }, [commands, view]);
 
   return {
+    canRefresh,
     send: (id: string, input: string) => commands.send(id, input),
     error: presentActionError(t, state.error),
     pending: state.pending,

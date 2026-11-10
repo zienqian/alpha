@@ -21,7 +21,7 @@ describe("Session workspace", () => {
     expect(screen.getByRole("textbox", { name: "消息草稿" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "添加上下文附件" })).toBeNull();
     expect(screen.queryByLabelText("添加附件")).toBeNull();
-    expect(screen.getByRole("button", { name: "新会话" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
   });
 
   it("renders folder navigation and the initial Markdown conversation", async () => {
@@ -130,8 +130,8 @@ describe("Session workspace", () => {
 
   it("creates a new local draft without losing the previous text", async () => {
     await renderWorkspace();
-    const originalDraft = screen.getByRole("button", { name: "新会话" });
     fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "实现新的导航" } });
+    const originalDraft = screen.getByRole("button", { name: "新会话" });
     expect(originalDraft.textContent).toBe("新会话");
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("");
@@ -143,8 +143,21 @@ describe("Session workspace", () => {
     await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
-    expect(screen.getAllByRole("button", { name: "新会话" })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "消息草稿" }));
+    expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
+  });
+
+  it("only lists a local draft while it has input, without creating a server session", async () => {
+    await renderWorkspace();
+    const input = screen.getByRole("textbox", { name: "消息草稿" });
+    fireEvent.change(input, { target: { value: "   " } });
+    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    fireEvent.change(input, { target: { value: "开始新的任务" } });
+    expect(screen.getByRole("button", { name: "新会话" }).getAttribute("aria-current")).toBe("page");
+    fireEvent.change(input, { target: { value: "" } });
+    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
   });
 
   it("opens and focuses search with the keyboard shortcut", async () => {

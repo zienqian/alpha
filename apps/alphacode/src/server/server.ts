@@ -9,6 +9,9 @@ import { isPermissionMode } from "../runtime/session-settings";
 import { archiveSearchMessages, searchSession } from "./search";
 import { createRegistry, digest, readJson, writeJson } from "./storage";
 import { createSecurity, fail, jsonBody, requiredString, secret } from "./security";
+import { createSkillRoutes } from "./skills";
+import { skillUploadLimit } from "./skill-archive";
+import type { ServerHandoff, SessionHandoff, UpdateStatus } from "./handoff";
 
 interface Entry {
   chat: Chat;
@@ -29,7 +32,14 @@ export interface ServerOptions {
   token?: string;
   instanceId?: string;
   idleMs?: number;
-  createChat?: (config: AppConfig, credential?: string) => Promise<Chat>;
+  port?: number;
+  paused?: boolean;
+  revision?: string;
+  updateStatus?: () => UpdateStatus;
+  onUpdateRequest?: () => void;
+  restore?: ServerHandoff;
+  assetDirectory?: string;
+  createChat?: (config: AppConfig, credential?: string, restore?: SessionHandoff) => Promise<Chat>;
   enableWeb?: () => Promise<string>;
   onIdle?: () => void;
 }
@@ -38,6 +48,7 @@ export async function startServer(options: ServerOptions) {
   const token = options.token ?? secret();
   const instanceId = options.instanceId ?? randomUUID();
   const registry = await createRegistry(options.databasePath, options.directory);
+  const skillRoutes = createSkillRoutes(registry.configs);
   const receipts = join(options.directory, "requests");
   await mkdir(receipts, { recursive: true, mode: 0o700 });
   const entries = new Map<string, Entry>();
@@ -52,16 +63,19 @@ export async function startServer(options: ServerOptions) {
   let closed = false;
   let stopping: Promise<void> | undefined;
   let webDirectory: Promise<string> | undefined;
+  let updating = options.paused ?? false;
   const changed = () => { sequence++; lastActivity = Date.now(); for (const listener of listeners) listener(); };
   const security = createSecurity(token, () => origin);
-  const factory = options.createChat ?? ((config, credential) => createApplication(config, {
+  const factory = options.createChat ?? ((config, credential, restore) => createApplication(config, {
+    restore,
     provider: { getEnv: name => name === config.apiKeyEnv && credential !== undefined ? credential : process.env[name] },
   }));
 
-  async function createEntry(projectId: string, sessionId?: string): Promise<Entry> {
+  async function createEntry(projectId: string, sessionId?: string, restore?: SessionHandoff): Promise<Entry> {
     const config = registry.configs.get(projectId);
     if (!config) return fail(404, "PROJECT_NOT_FOUND");
-    const chat = await factory({ ...config, sessionId }, registry.credentials.get(projectId));
+    const chat = await factory({ ...config, sessionId,
+      permissionMode: restore?.state.permissionMode ?? config.permissionMode }, registry.credentials.get(projectId), restore);
     const entry: Entry = { chat, projectId, admission: false, updatedAt: new Date().toISOString(), unsubscribe: () => undefined };
     entry.unsubscribe = chat.subscribe(() => {
       if (entry.approval !== chat.state.approval) {
@@ -175,11 +189,18 @@ export async function startServer(options: ServerOptions) {
   async function route(request: Request, server: Bun.Server<undefined>): Promise<Response> {
     security.checkHost(request);
     if (stopping) fail(503, "SERVER_STOPPING");
+    if (updating) fail(503, "SERVER_UPDATING");
     const url = new URL(request.url);
     const path = url.pathname;
     if (path.startsWith("/api/")) {
       security.checkAccess(request, path === "/api/connect" || path === "/api/web");
-      if (path === "/api/info" && request.method === "GET") return Response.json({ protocolVersion, instanceId, databasePath: options.databasePath });
+      if (path === "/api/skills" || path === "/api/skills/install") return skillRoutes(request, url);
+      if (path === "/api/info" && request.method === "GET") return Response.json({ protocolVersion, instanceId, databasePath: options.databasePath,
+        revision: options.revision, managed: Boolean(options.updateStatus), updateStatus: options.updateStatus?.() });
+      if (path === "/api/server/update" && request.method === "POST" && options.onUpdateRequest) {
+        options.onUpdateRequest();
+        return Response.json({ ok: true }, { status: 202 });
+      }
       if (path === "/api/events" && request.method === "GET") { server.timeout(request, 0); return stream(() => ({ instanceId, sequence }), request.signal); }
       if (path === "/api/sessions" && request.method === "GET") {
         const sessions = await registry.list();
@@ -262,13 +283,31 @@ export async function startServer(options: ServerOptions) {
     const directory = resolve(await webDirectory);
     const filePath = resolve(directory, path === "/" ? "index.html" : `.${decodeURIComponent(path)}`);
     if (!filePath.startsWith(`${directory}${sep}`)) fail(404, "NOT_FOUND");
-    const file = Bun.file(filePath);
+    let file = Bun.file(filePath);
+    // Already open pages may still request a lazy chunk from the previous build.
+    if (!await file.exists() && options.assetDirectory && /^\/assets\/[a-zA-Z0-9_.-]+$/.test(path)) file = Bun.file(join(options.assetDirectory, path.slice("/assets/".length)));
     if (!await file.exists()) fail(404, "NOT_FOUND");
+    if (path === "/" && options.revision) return new Response((await file.text()).replace("<head>", `<head><meta name="alphacode-revision" content="${options.revision}">`), { headers: { "Content-Type": "text/html; charset=utf-8" } });
     return new Response(file);
   }
 
+  try {
+    for (const [id, credential] of options.restore?.credentials ?? []) registry.credentials.set(id, credential);
+    for (const saved of options.restore?.sessions ?? []) {
+      const restore = { ...saved, state: { ...saved.state, messages: saved.state.messages.map(message => !message.tool ? message : { ...message, tool: { ...message.tool,
+        startedAt: message.tool.startedAt === undefined ? undefined : message.tool.startedAt - performance.timeOrigin,
+        finishedAt: message.tool.finishedAt === undefined ? undefined : message.tool.finishedAt - performance.timeOrigin,
+      } }) } };
+      await createEntry(saved.projectId, saved.persisted ? saved.sessionId : undefined, restore);
+    }
+    if (options.restore?.webEnabled && options.enableWeb) webDirectory = Promise.resolve(await options.enableWeb());
+  } catch (error) {
+    for (const entry of entries.values()) { entry.unsubscribe(); await entry.chat.close(); }
+    await registry.close();
+    throw error;
+  }
   const server = Bun.serve({
-    hostname: "127.0.0.1", port: 0, maxRequestBodySize: 256 * 1024,
+    hostname: "127.0.0.1", port: options.port ?? 0, maxRequestBodySize: skillUploadLimit,
     async fetch(request, serving) {
       operations++; lastActivity = Date.now();
       try {
@@ -286,9 +325,12 @@ export async function startServer(options: ServerOptions) {
   });
   const origin = `http://127.0.0.1:${server.port}`;
   const idleMs = options.idleMs ?? 60000;
+  const settled = () => !operations && !opening.size && !running.size && [...entries.values()].every(entry => {
+    const state = entry.chat.state;
+    return !entry.admission && !entry.requestId && !state.busy && !state.closing && !state.settingsSaving && !state.approval && state.titleStatus !== "pending" && state.canSend;
+  });
   const idle = setInterval(() => {
-    if (!closed && !stopping && !connections && !operations && !opening.size && !running.size && Date.now() - lastActivity >= idleMs
-      && [...entries.values()].every(entry => !entry.admission && !entry.requestId && !entry.chat.state.busy && !entry.chat.state.settingsSaving && entry.chat.state.canSend)) {
+    if (!closed && !stopping && !updating && !connections && settled() && Date.now() - lastActivity >= idleMs) {
       void close().then(() => options.onIdle?.()).catch(() => { console.error("SERVER_IDLE_CLOSE_FAILED"); });
     }
   }, Math.min(idleMs, 1000));
@@ -308,5 +350,22 @@ export async function startServer(options: ServerOptions) {
     })().catch(error => { stopping = undefined; throw error; });
     return stopping;
   }
-  return { origin, token, instanceId, close };
+  async function prepareReload(): Promise<ServerHandoff | undefined> {
+    if (closed || stopping || updating || !settled()) return undefined;
+    // Freeze admission synchronously, before the first await. SSE connections
+    // do not block this handoff; their clients reconnect to the same address.
+    updating = true;
+    try {
+      const sessions: SessionHandoff[] = [];
+      for (const entry of entries.values()) {
+        const state = snapshot(entry).state;
+        sessions.push({ projectId: entry.projectId, sessionId: entry.chat.sessionId,
+          persisted: Boolean(await registry.find(entry.chat.sessionId)),
+          state: { messages: state.messages, permissionMode: state.permissionMode, lastRunStatus: state.lastRunStatus, notice: state.notice, error: state.error } });
+      }
+      return { credentials: [...registry.credentials], sessions, webEnabled: Boolean(webDirectory) };
+    } catch (error) { updating = false; throw error; }
+  }
+  return { origin, token, instanceId, close, prepareReload,
+    canReload: () => !closed && !stopping && !updating && settled(), resume: () => { updating = false; } };
 }

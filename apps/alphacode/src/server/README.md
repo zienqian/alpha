@@ -6,23 +6,32 @@
 
 同一真实数据库路径对应一个 server。启动子进程前检查私有 descriptor，子进程用独立 SQLite 表的 `BEGIN IMMEDIATE` 原子获取租约，租约记录 PID/instanceId。只有确认旧 PID 不存在才接管；不根据超时猜测或杀掉存活的 owner。多个 CLI 并发启动可以产生短暂的竞选子进程，但只有一个持有租约、提供 API。Windows 子进程隐藏窗口并脱离终端。
 
+租约由 supervisor 持有，HTTP/runtime 在独立 worker 中运行。每 3 秒比较应用源码（构建模式比较 dist）、基础包源码、依赖清单和 Web 构建入口的内容指纹；连续两次稳定后准备替换。正在执行、审批、保存、生成标题、未保存或 blocked 时延后切换。SSE 连接本身不阻止更新。切换前同步冻结新请求，再经内存 IPC 转交凭据、草稿 ID、权限和当前消息；不把交接数据写入文件。旧 worker 关闭后，新 worker 绑定原端口并沿用 token，descriptor 发布后开放请求。原客户端按既有 SSE 重连逻辑恢复；新 worker 无法导入或恢复时回退旧 worker。
+
+Web 使用该版本的静态入口快照，避免新页面请求旧 API；内容哈希资源保留在私有 `web/assets` 缓存中，支持旧页面延迟加载。缓存目前不自动清理；服务完全退出后可删除 `web/`。页面轮询 `/api/info` 显示等待更新、失败重试或刷新提示，点击刷新时暂存本标签页的文字草稿，恢复后立即移除；附件或无法保存草稿时不刷新，发送结果不明时也禁止该刷新操作。后台更新不会自动刷新页面。普通业务代码/页面更新无需关闭客户端；协议、supervisor 自身或运行环境升级仍需完整重启。
+
 server 唯一持有每个已打开 session 的 Chat/runtime。恢复会话使用 single-flight；多个客户端不会各自创建 Agent。每个 runtime 保留原有 SessionManager/SQLite 连接和保存协议，registry 的单独连接只负责历史索引。API 操作、SSE 连接、进行中的请求、待审批、未保存/blocked 状态都会阻止空闲退出。普通 detach 不调用 runtime.cancel/close。
 
-新建会话先分配稳定 ID，作为 server 内存草稿提供 GET/SSE 和 `/web` 访问；不写入会话数据库，也不进入 `GET /api/sessions` 历史列表。首条有效模型请求准备完成后才创建持久化 Session 和 Agent，并在模型调用前保存 admission。草稿权限随首条消息一起保存；仅启动、查看 `/skills`、无效输入或关闭草稿不会生成历史记录。server 退出会丢弃尚未发送消息的草稿，之后访问该 ID 返回 `SESSION_NOT_FOUND`。
+新建会话先分配稳定 ID，作为 server 内存草稿提供 GET/SSE 和 `/web` 访问；不写入会话数据库，也不进入 `GET /api/sessions` 历史列表。首条有效模型请求准备完成后才创建持久化 Session 和 Agent，并在模型调用前保存 admission。草稿权限随首条消息一起保存；仅启动、查看 `/skills`、无效输入或关闭草稿不会生成历史记录。自动更新保留内存草稿；整个 server 退出或崩溃后未发送消息的草稿会丢失，之后访问该 ID 返回 `SESSION_NOT_FOUND`。
 
 ## 本地访问边界
 
-Web 按单机使用、信任本机进程的前提设计，不使用浏览器登录、授权码、认证 cookie 或独立 CSRF token。所有请求验证 Host，存在的 Origin 必须与 server 同源，禁止 cross-site fetch。没有原生 bearer token 的写请求必须携带同源 Origin；POST 请求体只接受 JSON，上限 256 KiB。服务无 CORS 放行，仅监听 `127.0.0.1` 随机端口；这些来源校验不替代用户身份认证，不能隔离同机的其他用户或进程，不适用于局域网或公网开放。
+Web 按单机使用、信任本机进程的前提设计，不使用浏览器登录、授权码、认证 cookie 或独立 CSRF token。所有请求验证 Host，存在的 Origin 必须与 server 同源，禁止 cross-site fetch。没有原生 bearer token 的写请求必须携带同源 Origin；JSON 请求体上限 256 KiB，Skills 安装接口额外接受最多 10 MiB 的 ZIP 二进制请求体。服务无 CORS 放行，仅监听 `127.0.0.1` 随机端口；这些来源校验不替代用户身份认证，不能隔离同机的其他用户或进程，不适用于局域网或公网开放。
 
 `POST /api/connect` 和 `POST /api/web` 仍只允许携带 `Authorization: Bearer <server.json token>` 的原生客户端。`/api/web` 懒加载静态资源后返回 `/?session=<sessionId>`，浏览器直接访问 API/SSE；链接不是凭证，可在 server 存活时刷新、收藏或重复打开。server 重启后端口可能变化，重新 `/web` 获取新地址即可，不需要重新授权。浏览器请求不携带 cookie 或原生 token；原生 RPC/SSE 强制直连，不使用 HTTP_PROXY/HTTPS_PROXY/ALL_PROXY；所有客户端拒绝 API 重定向，避免本地认证或配置被转发。工具审批与执行权限保持独立，不因免登录而跳过。
 
-当前协议版本为 2，已移除 `/api/browser` 和 `/api/browser/exchange`。升级时重新构建 Web，并关闭旧 CLI/Web 客户端，待任务完成、旧 server 空闲退出后再启动；不会接管或终止仍持有会话的旧 server。
+当前协议版本为 2，已移除 `/api/browser` 和 `/api/browser/exchange`。协议兼容的旧后台即使不支持自动更新，也允许 CLI 正常连接，不阻断启动、不要求关闭其他客户端。自动更新机制在后台下一次正常退出并重新启动后生效；旧后台缺少的新接口由对应功能页面提示。不会强行接管仍持有会话的旧 server。
+
+外部 Skills 下载与本地 RPC 分开：遵循服务端的 `HTTPS_PROXY` / `ALL_PROXY` / `NO_PROXY`，每次请求和重定向都校验目标为公开 HTTPS 地址，并将直连或代理 CONNECT 固定到已校验的 IP，同时保留原主机的 TLS 证书校验。代理凭据不发送给目标站点。
 
 ## 接口
 
 | Method | Path | 请求 / 响应 |
 | --- | --- | --- |
-| GET | `/api/info` | `protocolVersion, instanceId, databasePath` |
+| GET | `/api/info` | `protocolVersion, instanceId, databasePath, managed, revision, updateStatus`；更新状态为 current / pending / failed |
+| POST | `/api/server/update` | 重试失败的更新检查；沿用同源写请求校验，不强制中断任务 |
+| GET | `/api/skills?projectId=...` | 项目列表、当前 projectId、目录、Skill 元数据/状态和诊断。未指定项目时取第一个已登记项目；无需已有持久化会话 |
+| POST | `/api/skills/install?projectId=...&directoryId=...` | `application/zip` 二进制或 JSON `{url}`；默认目录 `user-local`，返回 201 `{installed, directory, requiresNewSession: true}` |
 | POST | `/api/connect` | 原生专用：`{config, credential?}`；登记项目并新建/恢复 config.sessionId，返回 SessionView |
 | GET | `/api/sessions` | `{sessions: SessionInfo[]}`，覆盖所有已登记项目 |
 | GET | `/api/sessions/search?q=...` | `{results: SessionSearchResult[]}`；跨项目搜索标题、路径、消息正文和工具记录，忽略大小写、按字面匹配；关键词最多 500 字符，空值返回空结果。读取历史不启动 runtime；每个会话返回匹配消息总数及最多三条上下文片段 |
@@ -50,4 +59,4 @@ requestId 由客户端创建，同会话重复 ID、相同原始输入不会再�
 
 ## 验证
 
-在应用目录执行 `bun test test/server.test.ts test/server-lifecycle.test.ts`。测试使用真实 loopback HTTP、SQLite、独立 server 进程和受控模型流，不访问付费模型。覆盖双端流式快照、重连、恢复历史、请求去重、审批竞争、跨项目索引、免登录访问、可复用会话链接、Host/Origin/JSON 校验、跨站拒绝、原生专用接口鉴权、空闲退出、并发启动和陈旧 PID 恢复。Web 的 DOM 测试在 `apps/alphacode-web/test`。
+在应用目录执行 `bun test test/server.test.ts test/server-lifecycle.test.ts test/server-update.test.ts`。测试使用真实 loopback HTTP、SQLite、独立 server 进程和受控模型流，不访问付费模型。覆盖双端流式快照、重连、恢复历史、请求去重、审批竞争、跨项目索引、免登录访问、可复用会话链接、Host/Origin/JSON 校验、跨站拒绝、原生专用接口鉴权、空闲退出、并发启动和陈旧 PID 恢复，以及自动更新等待生成、固定地址、草稿/凭据交接、新代码失败回退和旧服务识别。Web 的 DOM 测试在 `apps/alphacode-web/test`。
