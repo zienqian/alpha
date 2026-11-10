@@ -7,12 +7,10 @@ import {
   MessageScroller, MessageScrollerButton, MessageScrollerContent,
   MessageScrollerItem, MessageScrollerProvider, MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
-import type { Session, SessionMessage } from "@/features/sessions/types";
+import type { Session } from "@/features/sessions/types";
 import { presentNote, presentLocalResult } from "@/i18n/presentation";
 import { ToolActivity } from "@/features/sessions/tool-message";
-
-type HistoryItem = { type: "message"; id: string; message: SessionMessage & { role: "user" | "assistant" } }
-  | { type: "tools"; id: string; messages: SessionMessage[] };
+import { buildSessionHistory } from "@/features/sessions/domain/history";
 
 export function SessionContent({ session, busy = false, phase, connected = true }: {
   session: Session;
@@ -21,32 +19,8 @@ export function SessionContent({ session, busy = false, phase, connected = true 
   connected?: boolean;
 }) {
   const { t } = useTranslation();
-  // Empty assistant deltas need no message row: the shared trailing indicator
-  // already covers waiting for the first token. Keep any explicit notes.
-  const messages = session.messages.filter((message) => message.role !== "assistant"
-    || message.content.trim() || message.note?.trim());
-  const items: HistoryItem[] = [];
-  const finalReplyIds = new Set<string>();
-  let lastReplyId: string | undefined;
-  for (const message of messages) {
-    // Tool steps do not start a new reply. Only the final prose block of each
-    // completed user turn gets a copy action; the current turn waits until idle.
-    if (message.role === "user") {
-      if (lastReplyId) finalReplyIds.add(lastReplyId);
-      lastReplyId = undefined;
-    } else if (message.role === "assistant" && message.content.trim()) lastReplyId = message.id;
-    const previous = items.at(-1);
-    if (message.role === "tool") {
-      if (previous?.type === "tools") previous.messages.push(message);
-      else items.push({ type: "tools", id: message.id, messages: [message] });
-    } else items.push({ type: "message", id: message.id, message: { ...message, role: message.role } });
-  }
-  if (!busy && lastReplyId) finalReplyIds.add(lastReplyId);
-  const last = items.at(-1);
-  const toolsRunning = last?.type === "tools" && last.messages.some((message) => ["running", "queued", "awaiting_approval"].includes(message.tool?.status ?? ""));
-  const streamingReply = last?.type === "message" && last.message.role === "assistant" && Boolean(last.message.streaming && last.message.content.trim());
-  const showProgress = busy && (!toolsRunning || phase === "stopping" || !connected);
-  if (messages.length === 0 && !busy) {
+  const { items, finalReplyIds, last, streamingReply, showProgress, empty } = buildSessionHistory(session.messages, busy, phase, connected);
+  if (empty) {
     return (
       <Empty role="status">
         <EmptyHeader>

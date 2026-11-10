@@ -1,6 +1,5 @@
 import { useTranslation } from "@/i18n/react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Command } from "cmdk";
 import { Dialog } from "radix-ui";
 import { AnimatePresence } from "motion/react";
@@ -8,7 +7,7 @@ import * as m from "motion/react-m";
 import { exitTransition, surfaceMotion, surfaceTransition } from "@/lib/motion";
 import { CornerDownLeft, MessageSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { searchSessions, type SessionSearchResult } from "@/features/sessions/api";
+import { useSessionSearch } from "@/features/sessions/application/use-session-search";
 import type { SessionFolder } from "@/features/sessions/types";
 import "./session-search.css";
 
@@ -64,33 +63,8 @@ export function SessionSearch({ open, onOpenChange, folders, onSelectSession, on
 
 function SearchContent({ folders, onSelect }: { folders: SessionFolder[]; onSelect: (id: string) => void }) {
   const { t } = useTranslation();
-  const [input, setInput] = useState("");
-  const [query, setQuery] = useState("");
-  const [composing, setComposing] = useState(false);
+  const { input, setInput, normalized, setComposing, waiting, results, search, clear } = useSessionSearch(folders);
   const inputRef = useRef<HTMLInputElement>(null);
-  const normalized = input.trim();
-  useEffect(() => {
-    if (composing) return;
-    const timer = setTimeout(() => setQuery(normalized), 180);
-    return () => clearTimeout(timer);
-  }, [normalized, composing]);
-  const search = useQuery({
-    queryKey: ["session-search", query],
-    queryFn: ({ signal }) => searchSessions(query, signal),
-    enabled: Boolean(query) && query === normalized && !composing,
-    retry: false,
-  });
-  const waiting = Boolean(normalized) && (query !== normalized || composing || search.isPending);
-  const recent: SessionSearchResult[] = folders.flatMap(folder => folder.sessions.filter(session => !session.local).map(session => ({
-    session: { id: session.id, title: session.title, workspaceRoot: folder.path, projectId: folder.id, updatedAt: "", status: "" },
-    snippets: [], matchCount: 0,
-  }))).slice(0, 8);
-  const local: SessionSearchResult[] = normalized ? folders.flatMap(folder => folder.sessions.filter(session => session.local &&
-    `${session.title}\n${folder.path}`.toLowerCase().includes(normalized.toLowerCase())).map(session => ({
-    session: { id: session.id, title: session.title, workspaceRoot: folder.path, projectId: folder.id, updatedAt: "", status: "local" },
-    snippets: [], matchCount: 0,
-  }))) : [];
-  const results = !normalized ? recent : waiting || search.isError ? [] : [...local, ...(search.data ?? [])];
 
   // Results are already matched against full history by the server. Let cmdk own
   // selection/accessibility without filtering or reordering those results again.
@@ -100,7 +74,7 @@ function SearchContent({ folders, onSelect }: { folders: SessionFolder[]; onSele
         placeholder={t("sessions:searchPlaceholder")} value={input}
         onValueChange={setInput}
         onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} />
-      {input && <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("sessions:clearSearch")} onClick={() => { setInput(""); setQuery(""); inputRef.current?.focus(); }}><X aria-hidden="true" /></Button>}
+      {input && <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("sessions:clearSearch")} onClick={() => { clear(); inputRef.current?.focus(); }}><X aria-hidden="true" /></Button>}
       {/* i18next-instrument-ignore-next-line — Physical keyboard key. */}
       <Dialog.Close asChild><Button variant="ghost" size="sm" aria-label={t("sessions:closeSearch")} className="search-close"><kbd>Esc</kbd></Button></Dialog.Close>
     </div>

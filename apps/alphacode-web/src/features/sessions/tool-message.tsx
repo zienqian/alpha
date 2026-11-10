@@ -6,6 +6,7 @@ import { ChainOfThought } from "@/components/ai-elements/chain-of-thought";
 import { MorphingSpinner } from "@/components/ui/morphing-spinner";
 import { TraceDescription, TraceIcon, TraceLine, TraceTitle } from "@/components/ui/trace";
 import type { SessionMessage } from "@/features/sessions/types";
+import { hasActiveTools } from "@/features/sessions/domain/history";
 
 function activityStatus(t: Translate, messages: SessionMessage[]) {
   const statuses = messages.map((message) => message.tool?.status);
@@ -22,7 +23,7 @@ function activityStatus(t: Translate, messages: SessionMessage[]) {
 
 export function ToolActivity({ messages, active = false }: { messages: SessionMessage[]; active?: boolean }) {
   const { t } = useTranslation();
-  const running = active && messages.some((message) => ["running", "queued", "awaiting_approval"].includes(message.tool?.status ?? ""));
+  const running = active && hasActiveTools(messages);
   const executing = active && messages.some((message) => message.tool?.status === "running");
   const failed = messages.some((message) => message.tool?.status === "failed" || message.tool?.status === "outcome_unknown");
   return (

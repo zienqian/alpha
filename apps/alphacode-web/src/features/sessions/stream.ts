@@ -1,6 +1,5 @@
 import { SessionApiError } from "@/features/sessions/api";
-
-export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "error";
+import type { ConnectionStatus } from "@/features/sessions/application/session-gateway";
 
 // Fetch keeps the same credential/redirect policy as JSON requests. Each
 // connection starts with a full snapshot; there is no delta replay to merge.
