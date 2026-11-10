@@ -27,6 +27,12 @@ html[data-theme=dark]{color-scheme:dark;--bg:#161a18;--paper:#1d221f;--ink:#e1e8
   <div class="nav-bottom"><span class="tag">独立 HTML · 可离线阅读</span><p>原型全部使用演示数据。<br>源码与外部资料核对于<br>2026-11-10。</p></div>
 </nav>
 <main>
+<section id="implementation-status" style="padding:20px;border:1px solid #cad7ce;border-radius:12px;background:#f4f9f5;margin-bottom:24px">
+<h2>实现更新 · 2026-11-10</h2>
+<p>独立 <code>@alpha/adk-trace</code> plugin、SQLite Worker、会话范围 API 和 React Trace 视图已接入。实际入口位于 AlphaCode Web 模型回复下方、复制按钮旁的「执行记录」，直接打开该回复对应的运行。界面沿用固定版本 Multica 的字体、图标、色值、双轨时间线、分组步骤和详情布局。</p>
+<p>实现采用事务化 run 快照代替草案中的独立 <code>trace_records</code> 日志；Web 读取有界完整 metadata 投影并虚拟化，服务端另提供带 revision 栅栏的分页 steps API。详情按需从 Session 读取、脱敏，不重复落库。</p>
+<p>已完成实际应用桌面与 390 px 窄屏检查；插件、后端和前端回归测试通过。下方内嵌原型仍是设计期合成数据；原版截图的逐像素比对及性能分位数仍未测量。详见 <a href="trace-implementation.md">代码实现说明</a>。</p>
+</section>
 <header>
   <div class="header-row"><span class="meta">Alpha / ADK & AlphaCode · T2 · 2026-11-10</span><div class="actions"><button id="theme" type="button" aria-pressed="false">深色阅读</button><button id="print" type="button">打印 / PDF</button></div></div>
   <h1>Trace 观测与插件设计</h1>
@@ -2277,7 +2283,7 @@ try {
 <li>前端：<a href="../apps/alphacode-web/DESIGN.md">现有设计约定</a>、<a href="../apps/alphacode-web/src/components/ui/trace.tsx">聊天 Trace 组件</a>、<a href="../apps/alphacode-web/package.json">当前依赖</a>。技术文档保留现有阅读样式；Trace 产品 UI 以用户指定的 Multica 页面为准。</li>
 </ul>
 </section>
-<footer class="footer">Alpha Trace T2 · Multica 源码对齐 · 研究与设计稿 · 原型使用合成数据 · 字体 / 图标 / 脚本内嵌，可离线阅读<br>验证：离线 DOM 交互检查及源码尺寸核对；未完成原版运行截图的逐像素验收。生产 Trace Plugin / API / 数据库尚未实现。</footer>
+<footer class="footer">Alpha Trace T2 · Multica 源码对齐 · 设计基线与实现更新 · 内嵌原型使用合成数据<br>独立 Trace Plugin、API、数据库与实际 React 视图已实现；已检查桌面及窄屏运行。原版运行截图的逐像素比对未完成，详见顶部实现更新。</footer>
 </main>
 </div>
 

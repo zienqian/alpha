@@ -1,0 +1,69 @@
+/* Multica 10f0ab3, Copyright Index Labs (Hong Kong) Limited. See public/third-party/multica/LICENSE and NOTICE. */
+/* Syntax highlighting — lowlight (hljs). Scoped to the editor surface, to the
+   task transcript, which highlights file bodies with the same engine so a
+   file reads identically in a comment and in an execution trace, and to the
+   attachment viewer's data tree, whose keys and values borrow the same token
+   colours as the file's source. */
+.trace-ui .transcript-code .hljs-keyword,
+.trace-ui .transcript-code .hljs-selector-tag,
+.trace-ui .transcript-code .hljs-built_in { color: oklch(0.55 0.16 255); }
+
+.trace-ui .transcript-code .hljs-string,
+.trace-ui .transcript-code .hljs-addition { color: oklch(0.55 0.14 155); }
+
+.trace-ui .transcript-code .hljs-comment,
+.trace-ui .transcript-code .hljs-quote { color: var(--muted-foreground); font-style: italic; }
+
+.trace-ui .transcript-code .hljs-number,
+.trace-ui .transcript-code .hljs-literal { color: oklch(0.58 0.16 30); }
+
+.trace-ui .transcript-code .hljs-title,
+.trace-ui .transcript-code .hljs-section,
+.trace-ui .transcript-code .hljs-title\.function_ { color: oklch(0.55 0.14 280); }
+
+.trace-ui .transcript-code .hljs-attr,
+.trace-ui .transcript-code .hljs-attribute { color: oklch(0.58 0.12 60); }
+
+.trace-ui .transcript-code .hljs-variable,
+.trace-ui .transcript-code .hljs-template-variable { color: oklch(0.58 0.14 20); }
+
+.trace-ui .transcript-code .hljs-type,
+.trace-ui .transcript-code .hljs-title\.class_ { color: oklch(0.55 0.14 200); }
+
+.trace-ui .transcript-code .hljs-deletion { color: oklch(0.55 0.2 25); }
+
+.trace-ui .transcript-code .hljs-meta { color: var(--muted-foreground); }
+
+/* XML / HTML — lowlight emits .hljs-tag for `<` `>` brackets and .hljs-name
+   for the element name. Without these rules, HTML source renders mostly in
+   the default text color and looks unhighlighted. */
+.trace-ui .transcript-code .hljs-tag { color: var(--muted-foreground); }
+.trace-ui .transcript-code .hljs-name { color: oklch(0.55 0.16 255); }
+
+/* Dark mode overrides */
+.dark .trace-ui .transcript-code .hljs-keyword,
+.dark .trace-ui .transcript-code .hljs-selector-tag,
+.dark .trace-ui .transcript-code .hljs-built_in { color: oklch(0.7 0.14 255); }
+
+.dark .trace-ui .transcript-code .hljs-string,
+.dark .trace-ui .transcript-code .hljs-addition { color: oklch(0.7 0.14 155); }
+
+.dark .trace-ui .transcript-code .hljs-number,
+.dark .trace-ui .transcript-code .hljs-literal { color: oklch(0.72 0.14 30); }
+
+.dark .trace-ui .transcript-code .hljs-title,
+.dark .trace-ui .transcript-code .hljs-section,
+.dark .trace-ui .transcript-code .hljs-title\.function_ { color: oklch(0.72 0.12 280); }
+
+.dark .trace-ui .transcript-code .hljs-attr,
+.dark .trace-ui .transcript-code .hljs-attribute { color: oklch(0.72 0.1 60); }
+
+.dark .trace-ui .transcript-code .hljs-variable,
+.dark .trace-ui .transcript-code .hljs-template-variable { color: oklch(0.72 0.12 20); }
+
+.dark .trace-ui .transcript-code .hljs-type,
+.dark .trace-ui .transcript-code .hljs-title\.class_ { color: oklch(0.72 0.12 200); }
+
+.dark .trace-ui .transcript-code .hljs-deletion { color: oklch(0.7 0.18 25); }
+
+.dark .trace-ui .transcript-code .hljs-name { color: oklch(0.72 0.14 255); }

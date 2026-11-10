@@ -48,7 +48,7 @@ export function callModel<C>(run: Run<C>, model: LanguageModel, instructions: st
     };
     run.reserveModel();
     const modelCallId = createId('model');
-    run.emit({ type: 'model.start', modelCallId });
+    run.emit({ type: 'model.start', modelCallId }, { provider: model.provider, modelId: model.modelId });
     let candidate: AssistantMessage | undefined, deltaBytes = 0, committed = false;
     try {
       run.check();
@@ -79,12 +79,17 @@ export function callModel<C>(run: Run<C>, model: LanguageModel, instructions: st
       run.history.commitAssistant(candidate);
       committed = true;
       run.recordAssistant(candidate);
-      run.emit({ type: 'model.end', modelCallId, outcome: candidate.outcome });
+      run.emit({ type: 'model.end', modelCallId, outcome: candidate.outcome }, {
+        assistantId: candidate.id, usage: candidate.usage,
+        toolCalls: Object.freeze(candidate.toolCalls.map(call => Object.freeze({ callId: call.id, name: call.name }))),
+      });
       run.check();
       return candidate;
     } catch (cause) {
       run.fail(cause, 'MODEL_FAILED');
-      if (!committed) run.emit({ type: 'model.end', modelCallId, outcome: run.intent?.status === 'cancelled' ? 'cancelled' : 'failed' });
+      if (!committed) run.emit({ type: 'model.end', modelCallId, outcome: run.intent?.status === 'cancelled' ? 'cancelled' : 'failed' }, {
+        errorCode: run.intent?.status === 'failed' ? run.intent.error.code : undefined,
+      });
       throw new Stop();
     }
   });

@@ -40,7 +40,7 @@ export function callTool<C>(run: Run<C>, tools: ReadonlyMap<string, Tool<C>>, ho
       if (denied) { execution = 'denied'; content = '[Tool execution denied.]'; }
       else {
         run.reserveTool();
-        run.emit({ type: 'tool.start', assistantId, callId, name: pending.call.name });
+        run.emit({ type: 'tool.start', assistantId, callId, name: pending.call.name }, { effect: tool.info.effect });
         run.check();
         pending.fallback = tool.info.effect === 'read' ? 'failed' : 'outcome_unknown';
         execution = pending.fallback;

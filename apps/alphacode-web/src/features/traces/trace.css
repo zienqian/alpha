@@ -1,0 +1,1071 @@
+/* Based on Multica 10f0ab332e57035feadae43cff2cd511f0d1d1f1.
+ * Copyright 2025-2026 Index Labs (Hong Kong) Limited.
+ * See public/third-party/multica/LICENSE and NOTICE. Adapted for Alpha; see SOURCE.json. */
+@import "./tokens.css";
+@import "./vendor/code.css";
+@font-face {
+  font-family: "Multica Inter";
+  font-weight: 100 900;
+  src: url("./assets/inter.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Multica Geist Mono";
+  font-weight: 100 900;
+  src: url("./assets/geist-mono.woff2") format("woff2");
+  font-display: swap;
+}
+@media (max-width: 767px) {
+  .trace-ui .has-inspector > .list {
+    display: none;
+  }
+}
+/* Native HTML translation of Multica's pinned transcript classes. See embedded source notice. */
+.trace-ui * {
+  box-sizing: border-box;
+  border-color: var(--border);
+}
+.trace-ui {
+  font-size: 16px;
+  color-scheme: light;
+}
+.trace-ui {
+  margin: 0;
+  background: var(--app-shell);
+  color: var(--foreground);
+  font:
+    14px/20px "Multica Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "PingFang SC",
+    "Microsoft YaHei",
+    "Noto Sans CJK SC",
+    sans-serif;
+  font-optical-sizing: auto;
+}
+.trace-ui button,
+.trace-ui input,
+.trace-ui select {
+  font: inherit;
+  color: inherit;
+}
+.trace-ui button {
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: inherit;
+}
+.trace-ui button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.trace-ui button:focus-visible,
+.trace-ui a:focus-visible,
+.trace-ui select:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.trace-ui input {
+  border: 0;
+  outline: 0;
+}
+.trace-ui svg {
+  display: block;
+  flex-shrink: 0;
+}
+.trace-ui a {
+  color: var(--brand);
+}
+.trace-ui p,
+.trace-ui h1,
+.trace-ui h2,
+.trace-ui h3,
+.trace-ui pre {
+  margin: 0;
+}
+.trace-ui .mono,
+.trace-ui pre,
+.trace-ui code {
+  font-family:
+    "Multica Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+}
+.trace-ui pre,
+.trace-ui code {
+  font-size: 11px;
+}
+.trace-ui .muted {
+  color: var(--muted-foreground);
+}
+.trace-ui .faint {
+  color: var(--faint-foreground);
+}
+.trace-ui .success {
+  color: var(--success);
+}
+.trace-ui .error {
+  color: var(--destructive);
+}
+.trace-ui .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+.trace-ui [hidden] {
+  display: none !important;
+}
+.trace-ui * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+/* Review controls are outside the reproduced product dialog. */
+.trace-ui .backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0/0.1);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+}
+.trace-ui .dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100vw - 4rem);
+  max-width: 1024px;
+  height: calc(100vh - 4rem);
+  max-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  box-shadow:
+    0 0 0 1px var(--surface-border),
+    var(--floating-shadow);
+  overflow: hidden;
+  z-index: 50;
+}
+.trace-ui .header {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+.trace-ui .header-line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+.trace-ui .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.trace-ui .badge.completed {
+  background: color-mix(in oklab, var(--success) 15%, transparent);
+  color: var(--success);
+}
+.trace-ui .badge.running {
+  background: color-mix(in oklab, var(--info) 15%, transparent);
+  color: var(--info);
+}
+.trace-ui .badge.failed {
+  background: color-mix(in oklab, var(--destructive) 15%, transparent);
+  color: var(--destructive);
+}
+.trace-ui .badge.neutral {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.dark .trace-ui {
+  color-scheme: dark;
+}
+.trace-ui .identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.trace-ui .avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: color-mix(in oklab, var(--info) 10%, transparent);
+  color: var(--info);
+}
+.trace-ui .agent-name {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trace-ui .provenance {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted-foreground);
+}
+.trace-ui .provenance span {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.trace-ui .usage {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.trace-ui .header-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.trace-ui .icon-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+.trace-ui .icon-button:hover,
+.trace-ui .icon-button[aria-expanded="true"] {
+  background: var(--muted);
+  color: var(--foreground);
+}
+.trace-ui .trigger {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.trace-ui .trigger-label {
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+.trace-ui .trigger p {
+  font-size: 12px;
+  line-height: 16px;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+.trace-ui .outcome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklab, var(--muted) 40%, transparent);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.trace-ui .outcome-label {
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--faint-foreground);
+  flex-shrink: 0;
+}
+.trace-ui .chip {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.trace-ui .chip svg {
+  color: var(--muted-foreground);
+}
+.trace-ui .chip.branch {
+  min-width: 0;
+  font-size: 11px;
+  line-height: 15px;
+}
+.trace-ui .chip.branch span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trace-ui .chip strong {
+  font-weight: 500;
+}
+.trace-ui .timeline {
+  position: relative;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px 10px;
+}
+.trace-ui .timeline-row {
+  display: flex;
+  align-items: flex-start;
+}
+.trace-ui .lane-labels {
+  width: 92px;
+  flex-shrink: 0;
+}
+.trace-ui .tick-space {
+  height: 12px;
+}
+.trace-ui .lanes {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trace-ui .lane-label {
+  height: 15px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-right: 10px;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--muted-foreground);
+}
+.trace-ui .lane-label .total {
+  margin-left: auto;
+  color: var(--faint-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.trace-ui .track-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+}
+.trace-ui .track-inner {
+  position: relative;
+}
+.trace-ui .ticks {
+  height: 12px;
+  position: relative;
+}
+.trace-ui .tick {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint-foreground);
+  transform: translateX(-50%);
+}
+.trace-ui .tick:first-child {
+  transform: none;
+}
+.trace-ui .tick:last-child {
+  transform: translateX(-100%);
+}
+.trace-ui .track {
+  position: relative;
+  height: 15px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--muted) 55%, transparent);
+}
+.trace-ui .segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+  transition: opacity 0.15s;
+}
+.trace-ui .segment:hover {
+  opacity: 0.8;
+}
+.trace-ui .segment.tool {
+  background: var(--chart-2);
+}
+.trace-ui .segment.think {
+  background: var(--chart-3);
+}
+.trace-ui .segment.report {
+  background: var(--success);
+}
+.trace-ui .segment.error {
+  background: var(--destructive);
+}
+.trace-ui .playhead {
+  pointer-events: none;
+  position: absolute;
+  bottom: 0;
+  top: 10px;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--brand);
+}
+.trace-ui .zoom {
+  position: absolute;
+  right: 12px;
+  top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 95%, transparent);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px #0000001a;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.trace-ui .timeline:hover .zoom,
+.trace-ui .zoom:focus-within,
+.trace-ui .zoom.engaged {
+  opacity: 1;
+}
+.trace-ui .zoom button {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  color: var(--muted-foreground);
+}
+.trace-ui .zoom button:hover {
+  background: var(--accent);
+}
+.trace-ui .zoom span {
+  min-width: 32px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--muted-foreground);
+}
+.trace-ui .toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.trace-ui .search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  min-width: 0;
+  max-width: 320px;
+  flex: 1;
+  border-radius: 6px;
+  background: var(--muted);
+  padding: 0 8px;
+}
+.trace-ui .search svg {
+  color: var(--faint-foreground);
+}
+.trace-ui .search input {
+  min-width: 0;
+  width: 100%;
+  flex: 1;
+  font-size: 12px;
+  line-height: 16px;
+  background: transparent;
+}
+.trace-ui .search input::placeholder {
+  color: var(--faint-foreground);
+}
+.trace-ui .count {
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted-foreground);
+}
+.trace-ui .filter-button {
+  height: 28px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted-foreground);
+}
+.trace-ui .filter-button:hover {
+  background: var(--muted);
+}
+.trace-ui .filter-button.active {
+  background: var(--brand);
+  color: var(--brand-foreground);
+}
+.trace-ui .filter-number {
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--brand-foreground) 20%, transparent);
+  padding: 0 6px;
+  font-size: 11px;
+}
+.trace-ui .body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+.trace-ui .list {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+.trace-ui .row-wrap {
+  border-bottom: 1px solid var(--border);
+}
+.trace-ui .step-row,
+.trace-ui .prose-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 16px;
+  width: 100%;
+  text-align: left;
+}
+.trace-ui .step-row:hover {
+  background: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+.trace-ui .step-row.selected {
+  background: color-mix(in oklab, var(--brand) 8%, transparent);
+}
+.trace-ui .step-row.error-row {
+  background: color-mix(in oklab, var(--destructive) 5%, transparent);
+}
+.trace-ui .offset {
+  width: 44px;
+  flex-shrink: 0;
+  padding-top: 2px;
+  text-align: right;
+  font:
+    11px/15px "Multica Geist Mono",
+    monospace;
+  color: var(--faint-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.trace-ui .marker {
+  width: 2px;
+  flex-shrink: 0;
+  align-self: stretch;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--border);
+}
+.trace-ui .selected .marker {
+  background: var(--brand);
+}
+.trace-ui .error-row .marker {
+  background: var(--destructive);
+}
+.trace-ui .row-icon {
+  margin-top: 4px;
+  color: var(--muted-foreground);
+}
+.trace-ui .error-row .row-icon,
+.trace-ui .error-row .label {
+  color: var(--destructive);
+}
+.trace-ui .row-main {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.trace-ui .label {
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+.trace-ui .summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--muted-foreground);
+}
+.trace-ui .duration {
+  width: 48px;
+  flex-shrink: 0;
+  padding-top: 2px;
+  text-align: right;
+  font:
+    11px/15px "Multica Geist Mono",
+    monospace;
+  color: var(--faint-foreground);
+}
+.trace-ui .duration.pending {
+  width: auto;
+  color: var(--info);
+}
+.trace-ui .prose-row {
+  padding: 10px 16px;
+}
+.trace-ui .prose-row .marker {
+  margin-top: 4px;
+  background: var(--success);
+}
+.trace-ui .prose {
+  min-width: 0;
+  flex: 1;
+  padding-right: 8px;
+  font-size: 12px;
+  line-height: 1.7;
+  max-width: 992px;
+}
+.trace-ui .prose p {
+  margin: 4px 0;
+}
+.trace-ui .prose p:first-child {
+  margin-top: 0;
+}
+.trace-ui .prose p:last-child {
+  margin-bottom: 0;
+}
+.trace-ui .prose h3 {
+  font-size: 12px;
+  font-weight: 500;
+  margin: 8px 0 2.4px;
+}
+.trace-ui .prose h3:first-child {
+  margin-top: 0;
+}
+.trace-ui .prose ul {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+.trace-ui .prose li {
+  margin: 1.6px 0;
+}
+.trace-ui .prose code {
+  background: var(--muted);
+  border-radius: 3px;
+  padding: 1px 3px;
+}
+.trace-ui .group-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--faint-foreground);
+}
+.trace-ui .chevron {
+  transition: transform 0.15s;
+  color: var(--faint-foreground);
+}
+.trace-ui [aria-expanded="true"] .chevron {
+  transform: rotate(90deg);
+}
+.trace-ui .group-children {
+  margin-left: 70.4px;
+  border-left: 1px solid var(--border);
+  padding-left: 12px;
+}
+.trace-ui .group-child {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 15px;
+  border-radius: 3px;
+  text-align: left;
+}
+.trace-ui .group-child:hover {
+  background: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+.trace-ui .group-child.selected {
+  background: color-mix(in oklab, var(--brand) 10%, transparent);
+}
+.trace-ui .group-child .duration {
+  margin-left: auto;
+  width: auto;
+  padding: 0;
+}
+.trace-ui .group-selected {
+  background: color-mix(in oklab, var(--brand) 5%, transparent);
+}
+.trace-ui .empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  padding: 16px;
+  text-align: center;
+}
+.trace-ui .inspector {
+  width: 416px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: color-mix(in oklab, var(--muted) 25%, transparent);
+}
+.trace-ui .inspector-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+}
+.trace-ui .inspector-title {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.trace-ui .inspector-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--muted-foreground);
+}
+.trace-ui .inspector-content {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+.trace-ui .detail-section {
+  border-bottom: 1px solid var(--border);
+}
+.trace-ui .detail-section:last-child {
+  border-bottom: 0;
+}
+.trace-ui .detail-section h3 {
+  padding: 8px 12px 0;
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: var(--faint-foreground);
+}
+.trace-ui .detail-body {
+  padding: 0 4px 8px;
+}
+.trace-ui .detail-surface {
+  position: relative;
+}
+.trace-ui .detail-surface pre {
+  padding: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--muted-foreground);
+}
+.trace-ui .detail-surface.long pre {
+  max-height: 208px;
+  overflow: hidden;
+}
+.trace-ui .show-all {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 48px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(transparent, var(--background));
+}
+.trace-ui .show-all button {
+  margin-bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  box-shadow: 0 1px 3px #0000001a;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--muted-foreground);
+}
+.trace-ui .diff-path {
+  padding: 8px 12px 0;
+  font:
+    11px/15px "Multica Geist Mono",
+    monospace;
+  color: var(--muted-foreground);
+}
+.trace-ui .diff-count {
+  padding: 8px 12px 0;
+  display: flex;
+  gap: 8px;
+  font:
+    11px/15px "Multica Geist Mono",
+    monospace;
+}
+.trace-ui .diff pre {
+  padding-top: 4px;
+}
+.trace-ui .diff-line {
+  display: block;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+.trace-ui .diff-line.add {
+  background: color-mix(in oklab, var(--success) 10%, transparent);
+  color: var(--success);
+}
+.trace-ui .diff-line.remove {
+  background: color-mix(in oklab, var(--destructive) 10%, transparent);
+  color: var(--destructive);
+}
+.trace-ui .diff-line.highlighted {
+  color: var(--foreground);
+}
+.trace-ui .popup {
+  position: fixed;
+  z-index: 100;
+  border-radius: 8px;
+  border: 1px solid var(--surface-border);
+  background: var(--popover);
+  box-shadow: var(--menu-shadow);
+  padding: 4px;
+  min-width: 160px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  color: var(--popover-foreground);
+}
+.trace-ui .popup[role="menu"] {
+  font-size: 13px;
+  line-height: 18px;
+}
+.trace-ui .menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.trace-ui .menu-item:hover,
+.trace-ui .menu-item:focus-visible {
+  background: var(--accent);
+  outline: none;
+}
+.trace-ui .menu-item .check-slot {
+  width: 14px;
+  flex-shrink: 0;
+}
+.trace-ui .menu-separator {
+  height: 1px;
+  background: var(--border);
+  margin: 4px -4px;
+}
+.trace-ui .info-popup {
+  width: 320px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 16px;
+}
+.trace-ui .info-popup h3 {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.trace-ui .info-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 4px;
+}
+.trace-ui .info-row span:last-child {
+  word-break: break-all;
+}
+.trace-ui .info-row span:first-child {
+  color: var(--muted-foreground);
+}
+.trace-ui .tooltip {
+  position: fixed;
+  z-index: 110;
+  pointer-events: none;
+  max-width: 280px;
+  background: var(--tooltip);
+  color: #fafafa;
+  font-size: 11px;
+  line-height: 15px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  box-shadow: var(--tooltip-shadow);
+}
+.trace-ui .spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 767px) {
+  .trace-ui .inspector {
+    width: 100%;
+    border-left: 0;
+  }
+}
+@media (max-width: 639px) {
+  .trace-ui .filter-label {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trace-ui *,
+  .trace-ui *::before,
+  .trace-ui *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media print {
+  .trace-ui .dialog {
+    position: relative;
+    inset: auto;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    height: 850px;
+    max-height: none;
+    box-shadow: none;
+    border: 1px solid #ccc;
+    margin: 32px 0;
+  }
+  .trace-ui .segment {
+    print-color-adjust: exact;
+  }
+}
+
+.trace-ui .popup,
+.trace-ui .tooltip {
+  position: relative;
+}
+.trace-ui .tooltip {
+  pointer-events: auto;
+}
+.trace-ui .dialog {
+  outline: none;
+}
+.trace-ui .list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.trace-ui .prose {
+  overflow-wrap: anywhere;
+}
+.trace-ui .trace-health {
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--muted-foreground);
+  background: var(--muted);
+}
+.trace-ui .trace-health button {
+  text-decoration: underline;
+  margin-left: 8px;
+}
+.trace-ui .prose a {
+  color: var(--brand);
+  text-decoration: underline;
+}
+.trace-ui .prose pre {
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.trace-ui .prose table {
+  font-size: 11px;
+  border-collapse: collapse;
+}
+.trace-ui .prose th,
+.trace-ui .prose td {
+  border: 1px solid var(--border);
+  padding: 4px;
+}
+.trace-ui .prose img {
+  max-width: 100%;
+  height: auto;
+}
+.trace-ui .result-image {
+  max-height: 320px;
+  width: 100%;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.trace-ui .copy-feedback {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  padding: 4px 12px;
+}
+.trace-ui .brand-attribution {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  padding-top: 8px;
+  font-size: 10px;
+}
+.trace-ui .brand-attribution img {
+  width: 64px;
+  height: 20px;
+  margin-bottom: 4px;
+}
+.dark .trace-ui .brand-attribution img {
+  filter: invert(1);
+}
+.trace-ui .tool-detail-note {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  padding: 0 12px 8px;
+}
+.trace-ui .dialog-empty {
+  min-height: 240px;
+}
+.trace-ui .menu-item[data-highlighted] {
+  background: var(--accent);
+  outline: none;
+}
+.trace-ui .info-popup {
+  max-width: calc(100vw - 32px);
+}

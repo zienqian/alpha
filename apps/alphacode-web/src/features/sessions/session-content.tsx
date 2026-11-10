@@ -11,6 +11,7 @@ import type { Session } from "@/features/sessions/types";
 import { presentNote, presentLocalResult } from "@/i18n/presentation";
 import { ToolActivity } from "@/features/sessions/tool-message";
 import { buildSessionHistory } from "@/features/sessions/domain/history";
+import { TraceLauncher } from '@/features/traces/trace-launcher';
 
 export function SessionContent({ session, busy = false, phase, connected = true }: {
   session: Session;
@@ -41,6 +42,7 @@ export function SessionContent({ session, busy = false, phase, connected = true 
                 <article aria-label={item.type === "tools" ? t("tools:activity") : item.message.role === "user" ? t("sessions:userMessage") : t("sessions:assistantMessage")}>
                   {item.type === "tools" ? <ToolActivity messages={item.messages} active={busy && connected && phase !== "stopping" && item === last} /> : <>
                     <ChatMessage role={item.message.role} content={item.message.localResult ? presentLocalResult(t, item.message.localResult) : item.message.content} streaming={busy && item.message.streaming}
+                      actions={item.message.role==='assistant'&&finalReplyIds.has(item.id)&&!item.message.localResult&&!session.local ? <TraceLauncher sessionId={session.id} replyId={item.id}/> : undefined}
                       showCopy={item.message.role === "user" || finalReplyIds.has(item.id)} />
                     {item.message.note && <p className="mt-2 text-xs text-muted-foreground">{presentNote(t, item.message)}</p>}
                   </>}

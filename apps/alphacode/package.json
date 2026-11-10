@@ -22,6 +22,7 @@
   "dependencies": {
     "@alpha/adk": "workspace:*",
     "@alpha/adk-session": "workspace:*",
+    "@alpha/adk-trace": "workspace:*",
     "@alpha/coding-agent": "workspace:*",
     "@alpha/provider": "workspace:*",
     "@opentui/core": "0.8.1",

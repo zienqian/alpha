@@ -1,13 +1,13 @@
 import { useTranslation } from "@/i18n/react";
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { Markdown } from "@/components/markdown";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Message, MessageContent, MessageFooter } from "@/components/ui/message";
 
 // https://ui.shadcn.com/docs/ai-elements/radix/message
-export const ChatMessage = memo(function ChatMessage({ role, content, streaming = false, showCopy = true }: {
-  role: "user" | "assistant"; content: string; streaming?: boolean; showCopy?: boolean;
+export const ChatMessage = memo(function ChatMessage({ role, content, streaming = false, showCopy = true, actions }: {
+  role: "user" | "assistant"; content: string; streaming?: boolean; showCopy?: boolean; actions?: ReactNode;
 }) {
   const { t } = useTranslation();
   if (!content.trim()) return null;
@@ -22,6 +22,7 @@ export const ChatMessage = memo(function ChatMessage({ role, content, streaming 
         ) : <Markdown>{content}</Markdown>}
         {showCopy && !streaming && <MessageFooter className="pointer-events-none px-0 opacity-0 transition-opacity group-hover/message:pointer-events-auto group-hover/message:opacity-100 group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100">
           <CopyButton value={content} label={isUser ? t("common:copyUser") : t("common:copyReply")} />
+          {actions}
         </MessageFooter>}
       </MessageContent>
     </Message>

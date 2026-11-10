@@ -34,7 +34,7 @@ export function createAgentInstance<C>(config: {
     } catch (cause) { run.fail(cause); }
     const result = await run.finish(natural);
     if (!registry.boundary) status = closing ? 'closed' : 'idle';
-    run.emit({ type: 'run.end', status: result.status });
+    run.emit({ type: 'run.end', status: result.status }, { usage: result.usage, errorCode: result.status === 'failed' ? result.error.code : undefined });
     current = undefined;
     return result;
   }
@@ -60,7 +60,7 @@ export function createAgentInstance<C>(config: {
     let snapshot: RunSnapshot | undefined;
     try {
       ensure(!history.blocked, 'HISTORY_BLOCKED');
-      const run = createRun(id, app, history, events, limits, () => { status = 'cancelling'; });
+      const run = createRun(id, app, history, events, limits, () => { status = 'cancelling'; }, requestId);
       current = run;
       const result = await drive(run, input, signal);
       snapshot = Object.freeze({ result, messages: history.messages, historyStatus: history.blocked ? 'blocked' : 'ready' });

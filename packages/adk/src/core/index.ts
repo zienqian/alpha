@@ -2,7 +2,7 @@ export { createAgent } from './create-agent';
 export { createTool } from './create-tool';
 export type {
   AdkError, Agent, AgentEvent, AgentOptions, AgentState, AppOption,
-  AssistantMessage, Awaitable, DeepReadonly, Effect, EventMeta,
+  AssistantMessage, Awaitable, DeepReadonly, Effect, EventMeta, EventTelemetry,
   HookMap, Hooks, InputSchema, Json, JsonObject, Limits, Message,
   Plugin, PluginAPI, PreparedTool, PromptOptions, RunBoundary, RunHistory, RunPlan,
   RunRequest, RunSnapshot, RunContext, RunResult, RunStatus,

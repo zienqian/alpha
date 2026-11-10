@@ -28,6 +28,9 @@ describe("reply activity", () => {
     expect(replies.filter(reply => within(reply).queryByRole("button", { name: "复制回复" }))
       .map(reply => reply.textContent)).toEqual(["配置检查完成。", "构建通过。"]);
     expect(screen.getAllByRole("button", { name: "复制你的消息" })).toHaveLength(2);
+    const traces=screen.getAllByRole('button',{name:'执行记录'});
+    expect(traces).toHaveLength(2);
+    for(const action of traces)expect(within(action.closest('[data-slot="message-footer"]') as HTMLElement).getByRole('button',{name:'复制回复'})).toBeTruthy();
   });
 
   it("keeps intermediate blocks without copy actions while tools or final prose are running", () => {

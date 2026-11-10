@@ -141,6 +141,22 @@ export interface RunBoundary<C = undefined> {
 }
 export interface EventMeta {
   readonly agentId: string; readonly runId: string; readonly seq: number;
+  /** Optional for older producers. Metadata only: never includes prompt or tool payloads. */
+  readonly telemetry?: Readonly<EventTelemetry>;
+}
+export interface EventTelemetry {
+  readonly version: 1;
+  readonly timestampMs: number;
+  readonly elapsedMs: number;
+  readonly requestId?: string;
+  readonly provider?: string;
+  readonly modelId?: string;
+  readonly assistantId?: string;
+  readonly resultMessageId?: string;
+  readonly effect?: Effect;
+  readonly usage?: Usage;
+  readonly toolCalls?: readonly { readonly callId: string; readonly name: string }[];
+  readonly errorCode?: string;
 }
 export type AgentEvent = EventMeta & (
   | { type: 'run.start' }

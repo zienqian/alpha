@@ -1,4 +1,4 @@
-import type { AgentEvent, AssistantMessage, EventMeta, Limits, Message, RunContext, RunResult, ToolResultMessage, Usage } from '../contracts';
+import type { AgentEvent, AssistantMessage, EventMeta, EventTelemetry, Limits, Message, RunContext, RunResult, ToolResultMessage, Usage } from '../contracts';
 import type { Events } from './events';
 import type { History } from './history';
 import { HistoryCapacity, placeholder } from './history';
@@ -10,7 +10,7 @@ type EventPayload = AgentEvent extends infer E ? E extends AgentEvent ? Omit<E, 
 type StopIntent = { status: 'cancelled' | 'limited'; reason: string } | { status: 'failed'; error: ReturnType<typeof error> };
 export class Stop extends Error {}
 
-export function createRun<C>(agentId: string, app: C, history: History, events: Events, limits: Readonly<Limits>, onStop: () => void) {
+export function createRun<C>(agentId: string, app: C, history: History, events: Events, limits: Readonly<Limits>, onStop: () => void, requestId?: string) {
   const runId = createId('run'), controller = new AbortController();
   const context: RunContext<C> = Object.freeze({ agentId, runId, app, signal: controller.signal });
   const completed = new Map<string, ToolResultMessage>(), assistants = new Set<string>();
@@ -18,8 +18,10 @@ export function createRun<C>(agentId: string, app: C, history: History, events: 
   let seq = 0, modelCalls = 0, toolCalls = 0, last: AssistantMessage | undefined;
   const usage: { inputTokens?: number; outputTokens?: number } = {};
   let timer: ReturnType<typeof setTimeout> | undefined, detach: (() => void) | undefined;
-  function emit(event: EventPayload) {
-    events.emit({ ...event, agentId, runId, seq: ++seq } as AgentEvent);
+  const started = performance.now();
+  function emit(event: EventPayload, metadata: Omit<EventTelemetry, 'version' | 'timestampMs' | 'elapsedMs'> = {}) {
+    const telemetry = Object.freeze({ ...metadata, version: 1 as const, timestampMs: Date.now(), elapsedMs: Math.max(0, performance.now() - started) });
+    events.emit({ ...event, agentId, runId, seq: ++seq, telemetry } as AgentEvent);
   }
   function stop(next: StopIntent) {
     if (intent || !accepting) return;
@@ -41,7 +43,7 @@ export function createRun<C>(agentId: string, app: C, history: History, events: 
     // Capture the capacity failure before observers can request another stop.
     if (limited) stop({ status: 'limited', reason: 'history_capacity' });
     commit(message);
-    emit({ type: 'tool.end', assistantId, callId, execution });
+    emit({ type: 'tool.end', assistantId, callId, execution }, { resultMessageId: message.id });
     return message;
   }
   return {
@@ -52,7 +54,7 @@ export function createRun<C>(agentId: string, app: C, history: History, events: 
     cancel(reason = 'user') { stop({ status: 'cancelled', reason }); },
     limit(reason: string) { stop({ status: 'limited', reason }); },
     begin(signal?: AbortSignal) {
-      emit({ type: 'run.start' });
+      emit({ type: 'run.start' }, { requestId });
       if (signal) {
         const abort = () => stop({ status: 'cancelled', reason: 'external_signal' });
         signal.addEventListener('abort', abort, { once: true });

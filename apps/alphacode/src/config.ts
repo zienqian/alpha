@@ -22,6 +22,7 @@ export interface AppConfig {
   configDirectory?: string;
   globalInstructions?: string;
   globalInstructionsPath?: string;
+  traceEnabled?: boolean;
 }
 
 function expandHome(path: string): string {
@@ -75,6 +76,7 @@ export function readConfig(
     baseURL: env.ADK_BASE_URL ?? defaults.baseURL ?? "https://api.openai.com/v1",
     apiKeyEnv: env.ADK_API_KEY_ENV ?? defaults.apiKeyEnv ?? "OPENAI_API_KEY",
     noAuth,
+    traceEnabled: env.ALPHACODE_TRACE !== '0',
     permissionMode,
     skills: defaults.skills,
     configDirectory: directory,

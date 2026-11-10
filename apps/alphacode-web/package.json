@@ -17,12 +17,15 @@
     "i18n:review": "bun ../../scripts/check-i18n.ts --record-review"
   },
   "dependencies": {
+    "@alpha/adk-trace": "workspace:*",
     "@shadcn/react": "0.3.1",
     "@tanstack/react-query": "5.107.1",
     "class-variance-authority": "0.7.1",
     "cmdk": "1.1.1",
     "cn": "0.5.2",
+    "hast-util-to-html": "9.0.5",
     "i18next": "27.0.1",
+    "lowlight": "3.3.0",
     "lucide-react": "1.70.0",
     "motion": "14.11.1",
     "radix-ui": "1.8.1",
@@ -30,6 +33,7 @@
     "react-dom": "19.3.1",
     "react-i18next": "18.0.1",
     "react-markdown": "10.1.0",
+    "react-virtuoso": "4.18.21",
     "remark-gfm": "4.0.1",
     "shiki": "4.6.0"
   },
@@ -37,6 +41,7 @@
     "@tailwindcss/vite": "4.3.5",
     "@testing-library/dom": "10.4.0",
     "@testing-library/react": "16.3.3",
+    "@types/hast": "3.0.4",
     "@types/node": "26.6.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",

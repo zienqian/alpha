@@ -45,6 +45,7 @@ export async function createRegistry(databasePath: string, directory: string) {
         workspaceRoot, databasePath, configDirectory: input.configDirectory,
         modelId: input.modelId, baseURL: input.baseURL, apiKeyEnv: input.apiKeyEnv, noAuth: input.noAuth,
         permissionMode: input.permissionMode, skills: input.skills,
+        traceEnabled: input.traceEnabled,
         globalInstructions: input.globalInstructions, globalInstructionsPath: input.globalInstructionsPath,
       };
       configs.set(projectId, config);

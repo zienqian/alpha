@@ -2,6 +2,8 @@ import { mkdir, realpath } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import { dirname } from "node:path";
 import type { Agent } from "@alpha/adk/core";
+import { createTracePlugin } from "@alpha/adk-trace";
+import type { RuntimeTrace } from "./trace-bridge";
 import { createSessionManager, createSessionPlugin, type Session, type SessionManager, type SessionStore } from "@alpha/adk-session";
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
 import { createCodingAgent, type CodingContext, type LoadSkillsResult } from "@alpha/coding-agent";
@@ -22,12 +24,14 @@ export async function createRuntime(config: AppConfig, options: {
   approve?: RequestApproval;
   provider?: CreateProviderOptions;
   draftSessionId?: string;
+  trace?: RuntimeTrace;
 } = {}): Promise<ChatRuntime> {
   const cwd = await realpath(config.workspaceRoot);
   let store: SessionStore | undefined;
   let manager: SessionManager | undefined;
   let session: Session | undefined;
   let agent: Agent | undefined;
+  let detachTrace: (() => void) | undefined;
   const sessionId = config.sessionId ?? options.draftSessionId ?? randomUUID();
   const subscriptions = new Map<(event: ChatEvent) => void, (() => void) | undefined>();
   let initialize: (input?: string) => Promise<{ agent: Agent; session: Session }>;
@@ -101,25 +105,35 @@ export async function createRuntime(config: AppConfig, options: {
           if (!sameSettings(current, settings)) return "deny";
           return permissionDecision(settings.permissionMode, action);
         } },
-        approve: approve ? async (action, { signal }) => {
-          const allowed = await approve({
+        approve: approve ? async (action, ctx) => {
+          const scope = { namespace, sessionId };
+          options.trace?.service.recordApproval(scope, ctx.runId, action.call.assistantId, action.call.callId, 'start');
+          let allowed: boolean | undefined;
+          try {
+            allowed = await approve({
             name: action.call.name,
             assistantId: action.call.assistantId, callId: action.call.callId,
             preview: action.preview.type === "command" ? action.preview : { type: "tool" },
-          }, signal);
-          return allowed ? "allow" : "deny";
+            }, ctx.signal);
+            return allowed ? "allow" : "deny";
+          } finally {
+            options.trace?.service.recordApproval(scope, ctx.runId, action.call.assistantId, action.call.callId, 'end', allowed);
+          }
         } : undefined,
         instructions: "You are AlphaCode. Respond in the user's language. Use Markdown for explanations and fenced blocks for code. Keep answers concise.",
         plugins: [
           ...(config.globalInstructions ? [globalInstructionsPlugin<CodingContext<undefined>>(config.globalInstructions, config.globalInstructionsPath ?? "~/.alphacode/AGENTS.md")] : []),
           createSessionPlugin({ session }),
+          ...(options.trace ? [createTracePlugin<CodingContext<undefined>>({ service: options.trace.service, scope: { namespace, sessionId } })] : []),
         ],
       });
+      detachTrace = options.trace?.bind({ namespace, sessionId }, agent, session);
       for (const listener of subscriptions.keys()) subscriptions.set(listener, subscribeToAgent(agent, listener));
       return { agent, session };
     };
     if (saved) await initialize();
   } catch (error) {
+    detachTrace?.();
     // Startup has not accepted a prompt; release only resources created here.
     for (const resource of [agent, session, manager, store]) {
       try { await resource?.close(); } catch { /* Keep the original initialization error. */ }
@@ -285,6 +299,7 @@ export async function createRuntime(config: AppConfig, options: {
         await persistTitle();
         for (const unsubscribe of subscriptions.values()) unsubscribe?.();
         subscriptions.clear();
+        detachTrace?.();
         await session?.close();
         await activeManager.close();
         await activeStore.close();

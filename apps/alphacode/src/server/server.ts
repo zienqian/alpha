@@ -11,6 +11,10 @@ import { createRegistry, digest, readJson, writeJson } from "./storage";
 import { createSecurity, fail, jsonBody, requiredString, secret } from "./security";
 import { createSkillRoutes } from "./skills";
 import { skillUploadLimit } from "./skill-archive";
+import { createTraceService, createMemoryTraceStore, type TraceService } from "@alpha/adk-trace";
+import { createSqliteTraceStore } from "@alpha/adk-trace/sqlite";
+import { createRuntimeTrace } from "../runtime/trace-bridge";
+import { createTraceRoutes } from "./traces";
 import type { ServerHandoff, SessionHandoff, UpdateStatus } from "./handoff";
 
 interface Entry {
@@ -42,6 +46,8 @@ export interface ServerOptions {
   createChat?: (config: AppConfig, credential?: string, restore?: SessionHandoff) => Promise<Chat>;
   enableWeb?: () => Promise<string>;
   onIdle?: () => void;
+  /** Injectable for hosts/tests; otherwise this daemon owns an independent SQLite Worker. */
+  traces?: TraceService;
 }
 
 export async function startServer(options: ServerOptions) {
@@ -49,6 +55,8 @@ export async function startServer(options: ServerOptions) {
   const instanceId = options.instanceId ?? randomUUID();
   const registry = await createRegistry(options.databasePath, options.directory);
   const skillRoutes = createSkillRoutes(registry.configs);
+  const traces = options.traces ?? createTraceService({ store: await createSqliteTraceStore({ filename: join(options.directory, 'traces.db') }).catch(() => createMemoryTraceStore()) });
+  const trace = createRuntimeTrace(traces);
   const receipts = join(options.directory, "requests");
   await mkdir(receipts, { recursive: true, mode: 0o700 });
   const entries = new Map<string, Entry>();
@@ -67,9 +75,27 @@ export async function startServer(options: ServerOptions) {
   const changed = () => { sequence++; lastActivity = Date.now(); for (const listener of listeners) listener(); };
   const security = createSecurity(token, () => origin);
   const factory = options.createChat ?? ((config, credential, restore) => createApplication(config, {
-    restore,
+    restore, trace: config.traceEnabled === false ? undefined : trace,
     provider: { getEnv: name => name === config.apiKeyEnv && credential !== undefined ? credential : process.env[name] },
   }));
+  const detachTrace = traces.subscribe(() => changed());
+  const traceRoutes = createTraceRoutes({ service: traces,
+    async session(id) {
+      const entry = entries.get(id), saved = entry ? undefined : await registry.find(id);
+      const projectId = entry?.projectId ?? saved?.projectId;
+      if (!projectId) return;
+      const config = registry.configs.get(projectId); if (!config) return;
+      const scope = { namespace: projectId, sessionId: id };
+      return { scope, workspace: config.workspaceRoot, async messages(snapshot) {
+        const live = trace.messages(scope);
+        const archive = await registry.store.read({ namespace: projectId, id });
+        const turn = archive?.data.turns.find(turn => turn.run.runId === snapshot.summary.runId);
+        // A finalized turn is immutable. While running/unsaved, use the owning runtime.
+        return turn?.messages ?? live ?? [];
+      } };
+    },
+    stream(request) { return stream(() => ({ instanceId, revision: sequence, health: traces.health }), request.signal); },
+  });
 
   async function createEntry(projectId: string, sessionId?: string, restore?: SessionHandoff): Promise<Entry> {
     const config = registry.configs.get(projectId);
@@ -194,6 +220,10 @@ export async function startServer(options: ServerOptions) {
     const path = url.pathname;
     if (path.startsWith("/api/")) {
       security.checkAccess(request, path === "/api/connect" || path === "/api/web");
+      if (/^\/api\/sessions\/[^/]+\/traces(?:\/|$)/.test(path)) {
+        if (path.endsWith('/traces/events')) server.timeout(request, 0);
+        return await traceRoutes(request, url) ?? fail(404, 'NOT_FOUND');
+      }
       if (path === "/api/skills" || path === "/api/skills/install") return skillRoutes(request, url);
       if (path === "/api/info" && request.method === "GET") return Response.json({ protocolVersion, instanceId, databasePath: options.databasePath,
         revision: options.revision, managed: Boolean(options.updateStatus), updateStatus: options.updateStatus?.() });
@@ -302,8 +332,10 @@ export async function startServer(options: ServerOptions) {
     }
     if (options.restore?.webEnabled && options.enableWeb) webDirectory = Promise.resolve(await options.enableWeb());
   } catch (error) {
+    detachTrace();
     for (const entry of entries.values()) { entry.unsubscribe(); await entry.chat.close(); }
     await registry.close();
+    if (!options.traces) await traces.close();
     throw error;
   }
   const server = Bun.serve({
@@ -342,6 +374,8 @@ export async function startServer(options: ServerOptions) {
       for (const entry of entries.values()) await entry.chat.close();
       await Promise.all([...running]);
       for (const entry of entries.values()) entry.unsubscribe();
+      detachTrace();
+      if (!options.traces) await traces.close();
       await registry.close();
       clearInterval(idle);
       for (const finish of streams) finish();
