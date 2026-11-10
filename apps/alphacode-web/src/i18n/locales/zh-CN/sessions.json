@@ -11,6 +11,7 @@
   "unavailable": "会话暂不可发送",
   "skip": "跳转到会话内容",
   "new": "新会话",
+  "generatingTitle": "正在生成标题…",
   "history": "会话记录",
   "cachedHistory": "当前显示上次加载的记录。",
   "retryHistory": "重试加载历史",

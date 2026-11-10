@@ -35,6 +35,7 @@ async function serverFixture(reply: (body: RequestBody, count: number) => Respon
       creations++;
       return createApplication(input, { provider: { fetch: async (_url, init) => {
         const body = JSON.parse(String(init?.body)) as RequestBody;
+        if (!body.stream) return Response.json({ choices: [{ message: { content: "Test conversation" }, finish_reason: "stop" }] });
         calls.push(body);
         return reply(body, calls.length);
       } } });

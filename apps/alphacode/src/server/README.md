@@ -40,6 +40,8 @@ Web 按单机使用、信任本机进程的前提设计，不使用浏览器登�
 
 ## 同步与去重
 
+新会话首个模型调用在 admission 保存后并行触发一次独立的标题请求：同一 provider/model、无工具、最多 80 输出 token、8 秒超时。创建档案时先保存首条原始消息的短摘要作为兜底；标题请求不进入对话历史、不阻塞回复，失败不影响会话状态。生成结果立即经 `state.sessionTitle`、可选的 `state.titleStatus` / `session.titleStatus`（`pending` 或 `ready`）同步给 CLI 和 Web，在正文和设置写入结束后通过 revision CAS 保存，避免与 Session 的 pending/commit 冲突。关闭时中止标题请求、保留兜底；历史恢复不重新生成标题。
+
 SSE `id` 为 `instanceId:sequence`。连接后直接给出全量快照，慢客户端仅保留一个待发送快照，15 秒心跳也携带快照。客户端重连重新订阅即可；这是快照恢复，不是持久化事件日志，也不宣称支持 Last-Event-ID 历史重放。wire 中 activeRunStartedAt、tool.startedAt/finishedAt 为 epoch 毫秒；TUI adapter 转回本进程 monotonic 时间。
 
 requestId 由客户端创建，同会话重复 ID、相同原始输入不会再次调用模型；修改输入返回 409。server 在调用 runtime 前持久化原始输入 hash 的 admission 回执，并把相同 requestId 传入 Session 层。回执不保存请求正文。已收到的 admission 不随网络断线撤回；客户端不得把响应超时当作“未执行”。正在落盘的并发 admission 可返回 SESSION_BUSY，使用原 ID 重试而不是生成新 ID。

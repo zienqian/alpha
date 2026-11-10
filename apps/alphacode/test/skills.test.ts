@@ -30,6 +30,7 @@ async function setup(reply: (body: RequestBody, index: number) => Response = () 
   const provider = { fetch: async (_url: unknown, init?: RequestInit) => {
     init?.signal?.throwIfAborted();
     const body = JSON.parse(String(init?.body)) as RequestBody;
+    if (!body.stream) return Response.json({ choices: [{ message: { content: "Review source" }, finish_reason: "stop" }] });
     requests.push(body);
     return reply(body, requests.length);
   } };
@@ -121,7 +122,7 @@ test("manual invocation preserves literal arguments and persists full determinis
   expect(encoded.arguments).toBe("  src/file.ts\n  $HOME !`echo nope`  ");
   expect(encoded.skill.content).toBe("Literal $ARGUMENTS and !`echo never`.\n");
   const saved = workspace.snapshot(runtime.sessionId);
-  expect(saved.title).toBe("AlphaCode");
+  expect(saved.title).toBe("Review source");
   expect(chat.state.sessionTitle).toBe(saved.title);
   expect(saved.agentKey).toBe("alphacode-v2:test-model");
   expect(saved.turns[0]?.messages[0]).toMatchObject({ role: "user", content: first });

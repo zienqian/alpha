@@ -16,6 +16,7 @@ import { isPermissionMode, readSessionSettings, sameSettings, settingsError, typ
 import { loadRuntimeSkills, prepareSkillInput, skillStatus } from "./skills";
 import { parseInput } from "../input";
 import { displayText } from "./tool-records";
+import { fallbackTitle, generateSessionTitle, titleTimeoutMs } from "./session-title";
 
 export async function createRuntime(config: AppConfig, options: {
   approve?: RequestApproval;
@@ -28,9 +29,16 @@ export async function createRuntime(config: AppConfig, options: {
   let agent: Agent | undefined;
   const sessionId = config.sessionId ?? randomUUID();
   const subscriptions = new Map<(event: ChatEvent) => void, (() => void) | undefined>();
-  let initialize: () => Promise<{ agent: Agent; session: Session }>;
+  let initialize: (input?: string) => Promise<{ agent: Agent; session: Session }>;
   let messages: ChatMessage[] = [];
   let title = "AlphaCode";
+  let titleInput: string | undefined;
+  let initialTitle: string | undefined;
+  let titleStarted = false;
+  let titleDirty = false;
+  let titleAbort: AbortController | undefined;
+  let titleWork: Promise<void> | undefined;
+  let titleSaving: Promise<void> | undefined;
   let loadedSkills: LoadSkillsResult = { skills: [], diagnostics: [] };
   let settings: SessionSettings = { version: 1, modelId: config.modelId, permissionMode: config.permissionMode ?? "ask" };
   try {
@@ -62,16 +70,24 @@ export async function createRuntime(config: AppConfig, options: {
       models: { chat: { id: settings.modelId } },
     } } }, options.provider).use("main", "chat");
     const activeManager = manager;
-    initialize = async () => {
+    initialize = async (input) => {
       // A new CLI/Web session is only a draft until a valid prompt reaches here.
-      session ??= await activeManager.createSession({ id: sessionId,
-        title: "AlphaCode", metadata: { alphacode: { ...settings } },
-      });
+      if (!session) {
+        const heading = fallbackTitle(input ?? "");
+        session = await activeManager.createSession({ id: sessionId,
+          title: heading, metadata: { alphacode: { ...settings } },
+        });
+        title = initialTitle = heading;
+        titleInput = input;
+        emitTitle("ready");
+      }
       if (agent) return { agent, session };
       const approve = options.approve;
       const policySession = session;
       agent = await createCodingAgent({
-        model, cwd,
+        // The first model call happens after the Session plugin has persisted
+        // admission. Title generation must not run for rejected/local prompts.
+        model: { ...model, stream(input) { startTitle(model); return model.stream(input); } }, cwd,
         skills: loadedSkills.skills,
         fileAccess: "host", commandTimeoutMs: null,
         limits: {
@@ -117,18 +133,61 @@ export async function createRuntime(config: AppConfig, options: {
   let closing: Promise<void> | undefined;
   let preparation: AbortController | undefined;
   let draining = Promise.resolve();
+
+  function emitTitle(status: "pending" | "ready") {
+    for (const listener of subscriptions.keys()) listener({ type: "session.title", title, status });
+  }
+
+  function startTitle(model: Parameters<typeof generateSessionTitle>[0]) {
+    if (titleStarted || !titleInput || closing) return;
+    titleStarted = true;
+    titleAbort = new AbortController();
+    const abort = titleAbort;
+    const timeout = setTimeout(() => abort.abort(), titleTimeoutMs);
+    emitTitle("pending");
+    // Race the abort as well as passing its signal, so a stalled transport
+    // cannot leave the sidebar loading or prevent shutdown indefinitely.
+    const aborted = new Promise<undefined>(resolve => abort.signal.addEventListener("abort", () => resolve(undefined), { once: true }));
+    titleWork = Promise.race([generateSessionTitle(model, titleInput, abort.signal).catch(() => undefined), aborted])
+      .then(generated => {
+        if (generated) { title = generated; titleDirty = title !== initialTitle; }
+        emitTitle("ready");
+      }).finally(() => {
+        clearTimeout(timeout);
+        titleAbort = undefined;
+        void persistTitle();
+      });
+  }
+
+  function persistTitle(): Promise<void> {
+    if (titleSaving) return titleSaving;
+    if (!session || !titleDirty || running || changing || session.state.persistence?.status === "pending") return Promise.resolve();
+    const target = session;
+    titleSaving = (async () => {
+      const snapshot = await target.getSnapshot();
+      if (snapshot.data.pending) return;
+      // Preserve a title changed by another writer while generation was running.
+      if (snapshot.data.title !== initialTitle) { titleDirty = false; return; }
+      await activeManager.updateSession(target.id, { title }, { expectedRevision: snapshot.revision });
+      titleDirty = false;
+    })().catch(() => { /* Optional naming must never block conversation persistence. */ })
+      .finally(() => { titleSaving = undefined; });
+    return titleSaving;
+  }
+
   return {
     skills: Object.freeze(loadedSkills.skills.map(({ name, description, argumentHint, userInvocable }) => Object.freeze({ name, description: displayText(description, 1024), argumentHint: argumentHint === undefined ? undefined : displayText(argumentHint, 256), userInvocable }))),
     modelId: settings.modelId,
     workspaceRoot: cwd,
     sessionId,
-    sessionTitle: title,
+    get sessionTitle() { return title; },
     messages,
     get permissionMode() { return settings.permissionMode; },
     setPermissionMode(mode) {
       if (!isPermissionMode(mode)) return Promise.reject(settingsError("SESSION_SETTINGS_INVALID"));
       if (closing || running || changing || session?.state.persistence?.status === "pending") return Promise.reject(settingsError("SESSION_BUSY"));
       const work = (async () => {
+        await titleSaving;
         if (!session) { settings = { ...settings, permissionMode: mode }; return; }
         const snapshot = await session.getSnapshot();
         if (!sameSettings(readSessionSettings(snapshot.data), settings)) throw settingsError("SESSION_CONFLICT");
@@ -145,7 +204,7 @@ export async function createRuntime(config: AppConfig, options: {
         }
         settings = next;
       })();
-      changing = work.finally(() => { changing = undefined; });
+      changing = work.finally(() => { changing = undefined; void persistTitle(); });
       return changing;
     },
     get unsaved() { return session?.state.persistence?.status === "pending"; },
@@ -168,6 +227,7 @@ export async function createRuntime(config: AppConfig, options: {
       let finishRun!: () => void;
       draining = new Promise<void>(resolve => { finishRun = resolve; });
       try {
+        await titleSaving;
         const command = parseInput(input);
         if (command.kind === "command" && command.name === "skills" && !command.arguments.trim()) {
           return { status: "completed", localText: skillStatus(loadedSkills), localResult: { kind: "skills",
@@ -181,7 +241,7 @@ export async function createRuntime(config: AppConfig, options: {
         const prepared = await prepareSkillInput(input, loadedSkills.skills, preparation.signal);
         if (!prepared.trim()) throw settingsError("SESSION_INPUT_INVALID");
         if (cancelled || closing) return { status: "cancelled" };
-        const { agent: activeAgent, session: activeSession } = await initialize();
+        const { agent: activeAgent, session: activeSession } = await initialize(input);
         const snapshot = await activeSession.getSnapshot();
         if (cancelled || closing) return { status: "cancelled" };
         if (!sameSettings(readSessionSettings(snapshot.data), settings)) throw settingsError("SESSION_CONFLICT");
@@ -200,15 +260,17 @@ export async function createRuntime(config: AppConfig, options: {
       } catch (error) {
         if (cancelled || closing) return { status: "cancelled" };
         throw error;
-      } finally { running = false; preparation = undefined; finishRun(); }
+      } finally { running = false; preparation = undefined; await persistTitle(); finishRun(); }
     },
     cancel() { cancelled = true; preparation?.abort(); agent?.abort(); },
     close() {
       cancelled = true;
       preparation?.abort();
       agent?.abort();
+      titleAbort?.abort();
       if (!closing) closing = (async () => {
         await draining;
+        await titleWork;
         await changing?.catch(() => { /* A failed settings change retains the previous mode. */ });
         try {
           await agent?.close();
@@ -219,6 +281,7 @@ export async function createRuntime(config: AppConfig, options: {
           const saved = await session.flush();
           if (saved.status === "pending") throw Object.assign(new Error(), { code: saved.code });
         }
+        await persistTitle();
         for (const unsubscribe of subscriptions.values()) unsubscribe?.();
         subscriptions.clear();
         await session?.close();

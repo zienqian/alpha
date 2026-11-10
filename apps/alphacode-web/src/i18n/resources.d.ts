@@ -82,6 +82,7 @@ export default interface Resources {
     },
     "found_one": "Found {{count}} conversation",
     "found_other": "Found {{count}} conversations",
+    "generatingTitle": "Generating title…",
     "history": "Conversation history",
     "liveSaved": "Saved conversations · Live sync",
     "loadingHistory": "Loading conversation history",

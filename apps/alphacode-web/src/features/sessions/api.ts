@@ -8,6 +8,7 @@ export interface SessionInfo {
   projectId: string;
   workspaceRoot: string;
   title: string;
+  titleStatus?: "pending" | "ready";
   updatedAt: string;
   status: string;
 }

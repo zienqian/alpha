@@ -11,6 +11,7 @@
   "unavailable": "Sending is currently unavailable",
   "skip": "Skip to conversation",
   "new": "New conversation",
+  "generatingTitle": "Generating title…",
   "history": "Conversation history",
   "cachedHistory": "Showing the last loaded history.",
   "retryHistory": "Retry loading history",

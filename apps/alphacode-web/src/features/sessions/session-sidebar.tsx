@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Folder, Monitor, Plus, Search, SquarePen, SquareTerminal, X } from "lucide-react";
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
+import { SessionTitle } from "@/features/sessions/session-title";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { Button } from "@/components/ui/button";
@@ -127,9 +128,9 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
                             <SidebarMenuSubItem key={session.id}>
                               <SidebarMenuSubButton asChild isActive={selectedSessionId === session.id}
                                 className="h-9 w-full translate-x-0 rounded-md border border-transparent pr-2 pl-7 text-[13px] text-sidebar-foreground/80 data-[active=true]:border-sidebar-border data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-foreground md:h-8">
-                                <button type="button" title={session.title} aria-current={selectedSessionId === session.id ? "page" : undefined}
+                                <button type="button" title={session.title} aria-label={session.title} aria-current={selectedSessionId === session.id ? "page" : undefined}
                                   onClick={() => { onSelectSession(session.id); setOpenMobile(false); }}>
-                                  <span>{session.title}</span>
+                                  <SessionTitle title={session.title} pending={session.titleStatus === "pending"} />
                                 </button>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>

@@ -62,7 +62,7 @@ export function useSessionWorkspace() {
     sessions: [
       ...localSessions.filter((session) => (session.folderId ?? sourceFolders[0]?.id) === folder.id),
       ...folder.sessions,
-    ].map(displaySession),
+    ].map(session => displaySession(creatingIds[session.id] ? { ...session, titleStatus: "pending" } : session)),
   }));
   const selectedFolder = folders.find((folder) => folder.sessions.some((session) => session.id === selectedSessionId));
   const selectedSession = !isLocal && history.data ? displaySession(sessionFromView(history.data))

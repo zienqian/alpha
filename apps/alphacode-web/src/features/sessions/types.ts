@@ -15,6 +15,7 @@ export interface SessionMessage {
 export interface Session {
   id: string;
   title: string;
+  titleStatus?: "pending" | "ready";
   description: string;
   messages: SessionMessage[];
   local?: boolean;
@@ -22,7 +23,7 @@ export interface Session {
 }
 
 export function sessionSummary(info: SessionInfo): Session {
-  return { id: info.id, title: info.title.trim(), description: "", messages: [] };
+  return { id: info.id, title: info.title.trim(), titleStatus: info.titleStatus, description: "", messages: [] };
 }
 
 export function sessionFromView(view: SessionView): Session {

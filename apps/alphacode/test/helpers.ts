@@ -6,6 +6,7 @@ import type { Fetch } from "@alpha/provider";
 import type { AppConfig } from "../src/config";
 
 export interface RequestBody {
+  stream?: boolean;
   model: string;
   messages: { role: string; content: string }[];
   tools: { function: { name: string } }[];
@@ -62,13 +63,15 @@ export async function waitFor(predicate: () => boolean | Promise<boolean>, timeo
   }
 }
 
-export async function fixture(reply: (body: RequestBody, index: number) => Response) {
+export async function fixture(reply: (body: RequestBody, index: number) => Response,
+  titleReply: (body: RequestBody, signal?: AbortSignal | null) => Response | Promise<Response> = () => Response.json({ choices: [{ message: { content: "Fixture conversation" }, finish_reason: "stop" }] })) {
   const root = await mkdtemp(join(tmpdir(), "alphacode-test-"));
   const workspaceRoot = join(root, "workspace");
   await mkdir(workspaceRoot);
   await writeFile(join(workspaceRoot, "AGENTS.md"), "Project fixture instruction: use concise answers.");
   await writeFile(join(workspaceRoot, "hello.txt"), "hello-from-workspace");
   const requests: RequestBody[] = [];
+  const titleRequests: RequestBody[] = [];
   const config: AppConfig = {
     configDirectory: join(root, "config"),
     skills: { sharedDirectories: false, claudeDirectories: false, trustedProjects: [], disabledNames: [] },
@@ -78,13 +81,14 @@ export async function fixture(reply: (body: RequestBody, index: number) => Respo
   const fetch: Fetch = async (_url, init) => {
     init?.signal?.throwIfAborted();
     const body = JSON.parse(String(init?.body)) as RequestBody;
+    if (!body.stream) { titleRequests.push(body); return titleReply(body, init?.signal); }
     requests.push(body);
     return reply(body, requests.length);
   };
   try {
     const chat = await createApplication(config, { provider: { fetch } });
     return {
-      chat, config, requests,
+      chat, config, requests, titleRequests,
       async dispose() {
         await chat.close();
         await rm(root, { recursive: true, force: true });

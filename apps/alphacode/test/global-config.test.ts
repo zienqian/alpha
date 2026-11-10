@@ -111,7 +111,9 @@ test("global instructions precede project and user instructions; defaults persis
   const chats: Chat[] = [];
   const requests: RequestBody[] = [];
   const provider = { fetch: async (_url: unknown, init?: RequestInit) => {
-    requests.push(JSON.parse(String(init?.body)) as RequestBody);
+    const body = JSON.parse(String(init?.body)) as RequestBody;
+    if (!body.stream) return Response.json({ choices: [{ message: { content: "Test conversation" }, finish_reason: "stop" }] });
+    requests.push(body);
     return textResponse("done");
   } };
   try {

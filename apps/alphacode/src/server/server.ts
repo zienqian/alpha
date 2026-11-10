@@ -96,7 +96,7 @@ export async function startServer(options: ServerOptions) {
     return {
       instanceId, sequence, modelId: chat.modelId, skills: chat.skills ?? [],
       session: { id: chat.sessionId, projectId: entry.projectId, workspaceRoot: chat.workspaceRoot,
-        title: state.sessionTitle, status: state.busy ? "running" : state.canSend ? "ready" : "blocked", updatedAt: entry.updatedAt },
+        title: state.sessionTitle, titleStatus: state.titleStatus, status: state.busy ? "running" : state.canSend ? "ready" : "blocked", updatedAt: entry.updatedAt },
       state: { ...state,
         messages: state.messages.map(message => !message.tool ? message : { ...message, tool: { ...message.tool,
           startedAt: message.tool.startedAt === undefined ? undefined : performance.timeOrigin + message.tool.startedAt,

@@ -60,6 +60,7 @@ export type RequestApproval = (action: ApprovalRequest, signal: AbortSignal) => 
 
 export interface ChatState {
   sessionTitle: string;
+  titleStatus?: "pending" | "ready";
   messages: readonly ChatMessage[];
   busy: boolean;
   closing: boolean;
@@ -93,6 +94,7 @@ export interface Chat {
 
 // The application consumes conversation events, not Agent or Session internals.
 export type ChatEvent =
+  | { type: "session.title"; title: string; status: "pending" | "ready" }
   | { type: "assistant.start"; id: string }
   | { type: "assistant.delta"; id: string; text: string }
   | { type: "assistant.commit"; id: string; text: string; tools?: readonly ToolRecord[] }
