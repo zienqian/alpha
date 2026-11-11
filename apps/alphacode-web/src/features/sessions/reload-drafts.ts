@@ -22,7 +22,8 @@ export function readReloadDrafts(): ReloadDrafts | undefined {
       || !Array.isArray(value.localSessions) || !value.localSessions.every((item: { id?: unknown; folderId?: unknown }) =>
         typeof item?.id === "string" && item.id.startsWith("local-") && (item.folderId === undefined || typeof item.folderId === "string"))
       || !value.drafts || typeof value.drafts !== "object" || !Object.values(value.drafts).every(item =>
-        item && typeof item === "object" && "text" in item && typeof item.text === "string" && "attachments" in item && Array.isArray(item.attachments) && item.attachments.length === 0)) return undefined;
+        item && typeof item === "object" && "text" in item && typeof item.text === "string" && "attachments" in item && Array.isArray(item.attachments) && item.attachments.length === 0
+        && (!("permissionMode" in item) || item.permissionMode === undefined || item.permissionMode === "ask" || item.permissionMode === "auto" || item.permissionMode === "full"))) return undefined;
     return value;
   } catch { return undefined; }
 }

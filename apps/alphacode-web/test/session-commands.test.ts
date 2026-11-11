@@ -30,6 +30,7 @@ function setup() {
     send: vi.fn<SessionGateway["send"]>(async (_id, requestId) => ({ requestId, status: "accepted" })),
     cancel: vi.fn(async () => undefined),
     answerApproval: vi.fn(async () => undefined),
+    setPermissionMode: vi.fn<SessionGateway["setPermissionMode"]>(async (id, mode) => ({ ...view(id, 2), state: { ...view(id).state, permissionMode: mode } })),
   };
   const accepted = vi.fn();
   const invalidateList = vi.fn();
@@ -42,6 +43,53 @@ function setup() {
 }
 
 describe("session commands", () => {
+  it("serializes permission changes with sends while keeping other sessions independent", async () => {
+    const { commands, gateway, snapshots } = setup();
+    const saved = deferred<SessionView>();
+    gateway.setPermissionMode.mockReturnValueOnce(saved.promise);
+    const changing = commands.setPermissionMode("one", "full");
+    expect(commands.canRefresh()).toBe(false);
+    expect(commands.getState("one").permissionSaving).toBe(true);
+    expect(snapshots.get("one")?.state.permissionMode).toBe("ask");
+    expect(await commands.setPermissionMode("one", "auto")).toBe(false);
+    await commands.send("one", "wait for permissions");
+    await commands.send("two", "independent");
+    expect(gateway.send).toHaveBeenCalledExactlyOnceWith("two", expect.any(String), "independent");
+    const next = view("one", 2);
+    next.state.permissionMode = "full";
+    saved.resolve(next);
+    expect(await changing).toBe(true);
+    expect(snapshots.get("one")?.state.permissionMode).toBe("full");
+    expect(commands.getState("one")).toMatchObject({ permissionSaving: false, controlling: false });
+    expect(commands.canRefresh()).toBe(true);
+  });
+
+  it("keeps newer CLI permissions when an older permission response arrives", async () => {
+    const { commands, gateway, snapshots } = setup();
+    const saved = deferred<SessionView>();
+    gateway.setPermissionMode.mockReturnValueOnce(saved.promise);
+    const changing = commands.setPermissionMode("one", "full");
+    const cli = view("one", 3);
+    cli.state.permissionMode = "auto";
+    snapshots.set("one", cli);
+    const response = view("one", 2);
+    response.state.permissionMode = "full";
+    saved.resolve(response);
+    expect(await changing).toBe(false);
+    expect(snapshots.get("one")?.state.permissionMode).toBe("auto");
+  });
+
+  it("preserves permissions on failure and does not allow changes during unresolved sends", async () => {
+    const { commands, gateway, snapshots } = setup();
+    gateway.setPermissionMode.mockRejectedValueOnce(new TypeError("offline"));
+    expect(await commands.setPermissionMode("one", "full")).toBe(false);
+    expect(snapshots.get("one")?.state.permissionMode).toBe("ask");
+    expect(commands.getState("one")).toMatchObject({ permissionSaving: false, error: { kind: "permission" } });
+    await commands.send("one", "hello");
+    expect(await commands.setPermissionMode("one", "auto")).toBe(false);
+    expect(gateway.setPermissionMode).toHaveBeenCalledTimes(1);
+  });
+
   it("locks duplicate sends per session while allowing another session to submit", async () => {
     const { commands, gateway, accepted } = setup();
     const receipt = deferred<RequestReceipt>();

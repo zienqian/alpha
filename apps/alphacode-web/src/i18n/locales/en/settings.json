@@ -6,5 +6,32 @@
   "system": "System",
   "language": "Language",
   "chinese": "简体中文",
-  "english": "English"
+  "english": "English",
+  "permissions": {
+    "label": "Approval mode",
+    "title": "How should AlphaCode act?",
+    "change": "Change approval mode: {{mode}}",
+    "saving": "Saving…",
+    "busy": "Approval mode can be changed after this task finishes",
+    "unavailable": "Approval mode is unavailable until the conversation is ready",
+    "more": "Learn more",
+    "less": "Show less",
+    "saveFailed": "Could not confirm the permission change. Check the current mode and try again.",
+    "help": "This setting applies only to this conversation and syncs with the CLI. Ask and Auto allow workspace file tools. Auto only approves predefined routine commands. Full access skips tool approval within the permissions of the AlphaCode process; it does not grant additional system access.",
+    "ask": {
+      "short": "Ask for approval",
+      "name": "Ask for approval",
+      "description": "Ask before running commands; allow workspace file tools"
+    },
+    "auto": {
+      "short": "Auto approval",
+      "name": "Approve for me",
+      "description": "Approve routine commands; ask before other commands"
+    },
+    "full": {
+      "short": "Full access",
+      "name": "Full access",
+      "description": "Allow all tools and commands with current process permissions"
+    }
+  }
 }

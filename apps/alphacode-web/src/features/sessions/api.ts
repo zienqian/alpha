@@ -3,6 +3,8 @@ import type { Notice, LocalResult } from "@/i18n/presentation";
 
 // Browser-owned projections of server/protocol.ts and chat/contracts.ts.
 // Keep this module free of CLI, runtime and Bun imports.
+export type PermissionMode = "ask" | "auto" | "full";
+
 export interface SessionInfo {
   id: string;
   projectId: string;
@@ -60,7 +62,7 @@ export interface SessionView {
     closing: boolean;
     settingsSaving: boolean;
     phase: string;
-    permissionMode: "ask" | "auto" | "full";
+    permissionMode: PermissionMode;
     approval?: {
       name: string;
       preview: { type: "command"; shell: string; cwd: string; command: string } | { type: "tool" };
@@ -122,6 +124,8 @@ export const cancelRequest = (id: string, requestId: string) =>
   requestJson(`${sessionPath(id)}/cancel`, AbortSignal.timeout(15_000), { requestId });
 export const answerApproval = (id: string, requestId: string, approvalId: string, allow: boolean) =>
   requestJson(`${sessionPath(id)}/approval`, AbortSignal.timeout(15_000), { requestId, approvalId, allow });
+export const setPermissionMode = (id: string, mode: PermissionMode) =>
+  requestJson<SessionView>(`${sessionPath(id)}/permission`, AbortSignal.timeout(15_000), { mode });
 
 export function actionErrorMessage(t: Translate, error: unknown) {
   if (error instanceof SessionApiError) {

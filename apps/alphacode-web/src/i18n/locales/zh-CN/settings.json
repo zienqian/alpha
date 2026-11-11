@@ -6,5 +6,32 @@
   "system": "跟随系统",
   "language": "语言",
   "chinese": "简体中文",
-  "english": "English"
+  "english": "English",
+  "permissions": {
+    "label": "审批模式",
+    "title": "应如何批准 AlphaCode 操作？",
+    "change": "切换审批模式：{{mode}}",
+    "saving": "正在保存…",
+    "busy": "本次任务结束后可切换审批模式",
+    "unavailable": "会话就绪后可切换审批模式",
+    "more": "了解更多",
+    "less": "收起说明",
+    "saveFailed": "未能确认权限变更，请检查当前模式后重试。",
+    "help": "设置仅对当前会话生效，并与 CLI 同步。请求批准和帮我批准均允许工作区文件工具；帮我批准仅自动放行预定义的常规命令。完全访问跳过工具审批，仍受 AlphaCode 进程的系统权限限制，不会获得额外的系统权限。",
+    "ask": {
+      "short": "请求批准",
+      "name": "请求批准",
+      "description": "执行命令前询问，允许工作区文件工具"
+    },
+    "auto": {
+      "short": "帮我批准",
+      "name": "帮我批准",
+      "description": "自动批准常规命令，其他命令需询问"
+    },
+    "full": {
+      "short": "完全访问",
+      "name": "完全访问权限",
+      "description": "以当前进程权限允许全部工具和命令"
+    }
+  }
 }

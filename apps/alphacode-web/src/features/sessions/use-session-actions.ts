@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "@/i18n/react";
-import type { SessionView } from "@/features/sessions/api";
+import type { PermissionMode, SessionView } from "@/features/sessions/api";
 import { SessionCommands } from "@/features/sessions/application/session-commands";
 import { cacheSession, sessionKeys } from "@/features/sessions/application/session-cache";
 import { useSessionGateway } from "@/features/sessions/application/session-gateway-provider";
@@ -30,6 +30,8 @@ export function useSessionActions(view: SessionView | undefined, selectedId: str
     error: presentActionError(t, state.error),
     pending: state.pending,
     controlling: state.controlling,
+    permissionSaving: Boolean(state.permissionSaving),
+    setPermissionMode: (id: string, mode: PermissionMode) => commands.setPermissionMode(id, mode),
     retry: () => { void commands.retry(selectedId); },
     cancel: () => { void commands.control(selectedId, view, "cancel"); },
     approve: (allow: boolean) => { void commands.control(selectedId, view, "approval", allow); },

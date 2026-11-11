@@ -1,4 +1,4 @@
-import type { SessionView } from "@/features/sessions/api";
+import type { PermissionMode, SessionView } from "@/features/sessions/api";
 import { isUncertainSubmission, type SessionActionError } from "@/features/sessions/domain/errors";
 import { hasAdvanced, type PendingRequest } from "@/features/sessions/domain/request";
 import type { SessionGateway } from "./session-gateway";
@@ -7,6 +7,7 @@ export interface SessionCommandState {
   pending?: PendingRequest;
   error?: SessionActionError;
   controlling: boolean;
+  permissionSaving?: boolean;
 }
 
 export interface SessionCommandCache {
@@ -26,7 +27,7 @@ export class SessionCommands {
   private readonly listeners = new Set<() => void>();
 
   constructor(
-    private readonly gateway: Pick<SessionGateway, "get" | "send" | "cancel" | "answerApproval">,
+    private readonly gateway: Pick<SessionGateway, "get" | "send" | "cancel" | "answerApproval" | "setPermissionMode">,
     private readonly cache: SessionCommandCache,
     private readonly onAccepted: (id: string, input: string) => void,
   ) {}
@@ -59,7 +60,7 @@ export class SessionCommands {
   }
 
   async send(id: string, input: string) {
-    if (this.sending.has(id)) return;
+    if (this.sending.has(id) || this.controlling.has(id)) return;
     const previous = this.getState(id).pending;
     if (previous && previous.status !== "uncertain") return;
     const current = this.cache.get(id);
@@ -95,6 +96,27 @@ export class SessionCommands {
   retry(id: string) {
     const request = this.getState(id).pending;
     if (request?.status === "uncertain") return this.send(id, request.input);
+  }
+
+  async setPermissionMode(id: string, mode: PermissionMode): Promise<boolean> {
+    const view = this.cache.get(id);
+    if (!view || this.controlling.has(id) || this.sending.has(id) || this.getState(id).pending
+      || view.state.busy || view.state.closing || view.state.settingsSaving || view.state.approval || !view.state.canSend) return false;
+    if (view.state.permissionMode === mode) return true;
+    this.controlling.add(id);
+    this.update(id, { controlling: true, permissionSaving: true, error: undefined });
+    try {
+      // The server snapshot is authoritative, including when SSE arrives first.
+      this.cache.write(await this.gateway.setPermissionMode(id, mode));
+      return this.cache.get(id)?.state.permissionMode === mode;
+    } catch (cause) {
+      this.update(id, { error: { cause, kind: "permission" } });
+      await this.refresh(id).catch(() => undefined);
+      return false;
+    } finally {
+      this.controlling.delete(id);
+      this.update(id, { controlling: false, permissionSaving: false });
+    }
   }
 
   async control(id: string, view: SessionView | undefined, kind: "cancel" | "approval", allow = false) {

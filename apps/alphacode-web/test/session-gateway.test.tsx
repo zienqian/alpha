@@ -25,6 +25,7 @@ it("injects query, stream, command and search capabilities without using the HTT
     send: vi.fn<SessionGateway["send"]>(async (_id, requestId) => ({ requestId, status: "accepted" })),
     cancel: vi.fn<SessionGateway["cancel"]>(async () => undefined),
     answerApproval: vi.fn<SessionGateway["answerApproval"]>(async () => undefined),
+    setPermissionMode: vi.fn<SessionGateway["setPermissionMode"]>(async (id, mode) => ({ ...snapshot(id), state: { ...snapshot(id).state, permissionMode: mode } })),
     subscribeIndex: vi.fn<SessionGateway["subscribeIndex"]>(async () => undefined),
     subscribeSession: vi.fn<SessionGateway["subscribeSession"]>(async (id, receive, signal, connection) => {
       subscriptions.set(id, { receive, signal });

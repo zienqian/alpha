@@ -63,9 +63,11 @@ export function App() {
     {view?.state.approval && <SessionApproval approval={view.state.approval}
       disabled={!workspace.connected || workspace.actions.controlling || !view.approvalId} onAnswer={workspace.actions.approve} />}
     <PromptInput draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
+      permissionMode={workspace.permissionMode} onPermissionChange={workspace.changePermission}
+      canChangePermission={workspace.canChangePermission} permissionSaving={workspace.actions.permissionSaving || Boolean(view?.state.settingsSaving)}
       onSend={() => void workspace.send()} canSend={workspace.canSend} busy={workspace.busy} submitting={workspace.submitting}
       onCancel={workspace.actions.cancel} canCancel={workspace.connected && !workspace.actions.controlling && Boolean(view?.requestId) && view?.state.phase !== "stopping"}
-      status={isWelcome ? selectedFolder?.name ?? t("workspace:registerProject") : !workspace.connected ? connectionLabel : workspace.busy ? view?.state.phase === "stopping" ? t("sessions:stopping") : t("sessions:running") : view?.state.canSend ? "" : t("sessions:unavailable")} />
+      status={isWelcome ? selectedFolder?.name ?? t("workspace:registerProject") : !workspace.connected ? connectionLabel : workspace.busy ? view?.state.phase === "stopping" ? t("sessions:stopping") : "" : view?.state.canSend ? "" : t("sessions:unavailable")} />
   </>;
 
   return (

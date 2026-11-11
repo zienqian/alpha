@@ -4,12 +4,17 @@ import { ArrowUp, LoaderCircle, Square, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
 import type { SessionDraft } from "@/features/sessions/use-session-workspace";
+import type { PermissionMode } from "@/features/sessions/api";
+import { SessionPermissions } from "@/features/sessions/session-permissions";
 
 // AI Elements Prompt Input pattern; the server owns accepted conversation state.
-export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend, busy, submitting, onCancel, canCancel, status }: {
+export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend, busy, submitting, onCancel, canCancel, status,
+  permissionMode, onPermissionChange, canChangePermission, permissionSaving }: {
   draft: SessionDraft; onChange: (patch: Partial<SessionDraft>) => void; focusRequest?: number;
   onSend: () => void; canSend: boolean; busy: boolean; submitting?: boolean;
   onCancel: () => void; canCancel: boolean; status: string;
+  permissionMode?: PermissionMode; onPermissionChange: (mode: PermissionMode) => void;
+  canChangePermission: boolean; permissionSaving: boolean;
 }) {
   const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -45,6 +50,8 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
           }}
           className="min-h-20 max-h-48 px-4 pt-3.5 pb-2 text-base leading-6 placeholder:text-muted-foreground md:text-sm" />
         <InputGroupAddon align="block-end" className="gap-2 px-2.5 pt-1 pb-2.5">
+          <SessionPermissions mode={permissionMode} onChange={onPermissionChange} disabled={!canChangePermission}
+            saving={permissionSaving} busy={busy || Boolean(submitting)} />
           <span id="composer-status" role="status" className="ml-auto truncate px-1 text-xs font-normal">{submitting ? t("sessions:submitting") : status}</span>
           {busy ? <InputGroupButton variant="default" size="icon-sm" disabled={!canCancel} aria-label={t("sessions:stop")} onClick={onCancel}>
             <Square className="size-3.5" aria-hidden="true" />

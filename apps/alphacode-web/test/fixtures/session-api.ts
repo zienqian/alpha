@@ -62,10 +62,16 @@ export function mockSessionApi() {
       infos.push(created.session); views.set(created.session.id, created);
       return Response.json(created, { status: 201 });
     }
-    const action = /^\/api\/sessions\/([^/]+)\/(requests|cancel|approval)$/.exec(path);
+    const action = /^\/api\/sessions\/([^/]+)\/(requests|cancel|approval|permission)$/.exec(path);
     if (action?.[1]) {
       const current = view(action[1]);
       const body = JSON.parse(String(init.body));
+      if (action[2] === "permission") {
+        if (current.state.busy || current.state.settingsSaving || !current.state.canSend) return Response.json({ code: "SESSION_BUSY" }, { status: 409 });
+        current.state = { ...current.state, permissionMode: body.mode };
+        publish(current.session.id);
+        return Response.json(current);
+      }
       if (action[2] === "requests") {
         current.requestId = body.requestId;
         current.state = { ...current.state, busy: true, canSend: false, phase: "thinking",

@@ -2,7 +2,7 @@ import { SessionApiError } from "@/features/sessions/api";
 
 export interface SessionActionError {
   cause?: unknown;
-  kind?: "interrupted" | "uncertain";
+  kind?: "interrupted" | "uncertain" | "permission";
 }
 
 export function shouldRetryQuery(failures: number, error: Error) {
