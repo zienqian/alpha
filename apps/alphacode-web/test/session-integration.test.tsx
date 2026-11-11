@@ -172,7 +172,7 @@ describe("server session integration", () => {
     api.infos.push({ id: "new", projectId: "docs", workspaceRoot: "docs", title: "CLI 新建会话", updatedAt: "2026-11-09T04:00:00.000Z", status: "ready" });
     await act(async () => api.publish("project-notes"));
     expect(await screen.findByRole("button", { name: "CLI 新建会话" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "继续 搭建前端工作区" })).toBeTruthy();
+    expect(within(screen.getByRole("region", { name: "从这里，开始构建。" })).getByText("alphacode-web")).toBeTruthy();
     expect(screen.getByRole("button", { name: "新对话" }).getAttribute("aria-current")).toBe("page");
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("继续当前项目");
   });

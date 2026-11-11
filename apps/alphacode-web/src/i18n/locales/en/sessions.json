@@ -31,8 +31,6 @@
   "stop": "Stop generation",
   "send": "Send message",
   "removeBeforeSending": "Attachments cannot be sent yet. Remove them before sending text.",
-  "continue": "Continue a conversation",
-  "viewHistory": "View history",
   "empty": {
     "title": "No messages yet",
     "description": "Enter a message below to start a conversation."
@@ -58,7 +56,6 @@
   "retryList": "Retry loading list",
   "none": "No conversations",
   "startCli": "No conversations yet. Start one in the CLI.",
-  "liveSaved": "Saved conversations · Live sync",
   "searchDescription": "Search conversation titles, paths and messages in all workspaces. Use the arrow keys to select, Enter to open and Esc to close.",
   "searchContent": "Search conversation content",
   "searchPlaceholder": "Search all conversations…",
@@ -74,7 +71,6 @@
   "searchEmpty": "Start a conversation to search its history here.",
   "recent": "Recent conversations",
   "draftBadge": "Draft",
-  "continueNamed": "Continue {{title}}",
   "removeAttachment": "Remove attachment {{name}}",
   "messageCount_one": "{{count}} message",
   "messageCount_other": "{{count}} messages",

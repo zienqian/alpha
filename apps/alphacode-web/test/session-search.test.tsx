@@ -10,7 +10,7 @@ beforeEach(() => { window.history.replaceState(null, "", "/"); api = mockSession
 
 async function openSearch() {
   render(<AppProviders><App /></AppProviders>);
-  await screen.findByRole("button", { name: "继续 搭建前端工作区" });
+  await screen.findByText("此计算机");
   fireEvent.keyDown(window, { key: "k", metaKey: true });
   return screen.getByRole("combobox", { name: "搜索会话内容" });
 }
@@ -64,7 +64,7 @@ describe("full conversation search", () => {
   it("opens from the mobile search button and dismisses both dialogs after selection", async () => {
     vi.stubGlobal("innerWidth", 390);
     render(<AppProviders><App /></AppProviders>);
-    await screen.findByRole("button", { name: "继续 搭建前端工作区" });
+    await screen.findByText("此计算机");
     fireEvent.click(screen.getByRole("button", { name: "切换侧栏" }));
     fireEvent.click(screen.getByRole("button", { name: "搜索会话" }));
     const input = screen.getByRole("combobox");

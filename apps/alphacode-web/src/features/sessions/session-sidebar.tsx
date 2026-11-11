@@ -1,6 +1,6 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
-import { Folder, Monitor, Plus, Search, SquarePen, SquareTerminal, X, Blocks } from "lucide-react";
+import { Folder, Plus, Search, SquarePen, SquareTerminal, X, Blocks } from "lucide-react";
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
 import { SessionTitle } from "@/features/sessions/session-title";
@@ -8,7 +8,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu,
@@ -153,16 +152,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="h-11 flex-row items-center justify-between gap-2 px-3 py-1.5">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div tabIndex={0} className="flex min-w-0 items-center gap-2 rounded-sm text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-              <Monitor className="size-3.5" aria-hidden="true" />
-              <span className="text-[11px]">{t("workspace:local")}</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="top">{t("sessions:liveSaved")}</TooltipContent>
-        </Tooltip>
+      <SidebarFooter className="h-11 flex-row items-center justify-end gap-2 px-3 py-1.5">
         <div className="flex items-center"><LanguageToggle /><ThemeToggle /></div>
       </SidebarFooter>
     </Sidebar>

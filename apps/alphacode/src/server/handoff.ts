@@ -4,6 +4,8 @@ export type RestoredChat = Pick<ChatState, "messages" | "lastRunStatus" | "notic
 export interface SessionHandoff {
   projectId: string;
   sessionId: string;
+  // Optional for handoffs produced by workers from an earlier revision.
+  updatedAt?: string;
   persisted: boolean;
   state: RestoredChat;
 }

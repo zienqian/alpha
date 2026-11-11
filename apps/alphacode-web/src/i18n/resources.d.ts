@@ -69,8 +69,6 @@ export default interface Resources {
     "connecting": "Connecting…",
     "connectingPreserved": "Connecting to the live conversation. Existing content and drafts are preserved.",
     "connectionFailed": "Connection failed",
-    "continue": "Continue a conversation",
-    "continueNamed": "Continue {{title}}",
     "create": "New conversation",
     "draft": "Message draft",
     "draftAttachments": "Draft attachments",
@@ -84,7 +82,6 @@ export default interface Resources {
     "found_other": "Found {{count}} conversations",
     "generatingTitle": "Generating title…",
     "history": "Conversation history",
-    "liveSaved": "Saved conversations · Live sync",
     "loadingHistory": "Loading conversation history",
     "loadingList": "Loading conversations…",
     "localDraft": "Local draft",
@@ -143,8 +140,7 @@ export default interface Resources {
     "thinking": "Thinking",
     "type": "Conversation type",
     "unavailable": "Sending is currently unavailable",
-    "userMessage": "Your message",
-    "viewHistory": "View history"
+    "userMessage": "Your message"
   },
   "settings": {
     "appearance": "Appearance",
@@ -455,11 +451,11 @@ export default interface Resources {
   },
   "workspace": {
     "closeSidebar": "Close sidebar",
+    "computer": "This computer",
     "copyPath": "Copy workspace path",
     "createIn": "New conversation in {{name}}",
     "folder": "Folder {{name}}",
     "folders": "Folders and conversations",
-    "local": "Local workspace",
     "mobileDescription": "Search projects and select a conversation to view its history.",
     "mobileTitle": "Projects and conversations",
     "registerProject": "Register a project in the CLI first",

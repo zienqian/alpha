@@ -318,6 +318,41 @@ test("global session index includes registered projects and persisted histories,
   } finally { await fixture.dispose(); }
 });
 
+test("session recency survives reopening history and follows live activity", async () => {
+  const fixture = await serverFixture();
+  try {
+    const first = await fixture.connect();
+    const second = await fixture.connect();
+    for (const view of [first, second]) {
+      const path = `/api/sessions/${view.session.id}`;
+      await fixture.client().request(`${path}/requests`, { input: "save history", requestId: "saved-message" });
+      await waitFor(async () => {
+        const current = await fixture.client().request<SessionView>(path);
+        return !current.requestId && current.state.titleStatus !== "pending";
+      });
+    }
+    await fixture.restart();
+    const list = async () => (await fixture.browser().request<{ sessions: SessionInfo[] }>("/api/sessions")).sessions;
+    const saved = await list();
+    expect(saved.map(session => session.id)).toEqual([second.session.id, first.session.id]);
+    const path = `/api/sessions/${first.session.id}`;
+    const reopened = await fixture.browser().request<SessionView>(path);
+    expect(reopened.session.updatedAt).toBe(saved[1]?.updatedAt);
+    const stream = fixture.subscribe(first.session.id);
+    await waitFor(() => stream.values.length > 0);
+    expect(stream.values[0]?.session.updatedAt).toBe(reopened.session.updatedAt);
+    expect(await list()).toEqual(saved);
+
+    // Local commands update the live conversation without changing its archive.
+    await fixture.browser().request(`${path}/requests`, { input: "/skills", requestId: "live-activity" });
+    await waitFor(async () => !(await fixture.browser().request<SessionView>(path)).requestId);
+    const updated = await list();
+    expect(updated.map(session => session.id)).toEqual([first.session.id, second.session.id]);
+    expect(Date.parse(updated[0]?.updatedAt ?? "")).toBeGreaterThan(Date.parse(saved[0]?.updatedAt ?? ""));
+    await stream.close();
+  } finally { await fixture.dispose(); }
+});
+
 test("Web is lazy and opens a reusable session URL without browser authentication", async () => {
   const fixture = await serverFixture();
   try {

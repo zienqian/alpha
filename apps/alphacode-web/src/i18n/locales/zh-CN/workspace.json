@@ -16,7 +16,7 @@
   "closeSidebar": "关闭侧栏",
   "title": "工作区",
   "folders": "文件夹与会话",
-  "local": "本地工作区",
+  "computer": "此计算机",
   "mobileTitle": "项目与会话",
   "mobileDescription": "搜索项目，选择会话查看消息记录。",
   "folder": "文件夹 {{name}}",

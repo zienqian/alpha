@@ -1,12 +1,25 @@
 import { useTranslation } from "@/i18n/react";
 import type { Translate } from "@/i18n/instance";
 import { presentNote, presentStatus, presentToolDescription, presentToolOutput, presentToolError } from "@/i18n/presentation";
-import { ChevronRight, CircleAlert, CircleCheck, Clock3, ShieldQuestion, Terminal } from "lucide-react";
+import { BookOpen, ChevronRight, FilePenLine, FilePlus2, FileText, FolderOpen, Search, Terminal, Wrench } from "lucide-react";
 import { ChainOfThought } from "@/components/ai-elements/chain-of-thought";
 import { MorphingSpinner } from "@/components/ui/morphing-spinner";
 import { TraceDescription, TraceIcon, TraceLine, TraceTitle } from "@/components/ui/trace";
 import type { SessionMessage } from "@/features/sessions/types";
 import { hasActiveTools } from "@/features/sessions/domain/history";
+
+function toolIcon(name?: string) {
+  switch (name) {
+    case "read_file": return FileText;
+    case "create_file": return FilePlus2;
+    case "edit_file": return FilePenLine;
+    case "list_files": return FolderOpen;
+    case "search": return Search;
+    case "readSkill": return BookOpen;
+    case "run_command": return Terminal;
+    default: return Wrench;
+  }
+}
 
 function activityStatus(t: Translate, messages: SessionMessage[]) {
   const statuses = messages.map((message) => message.tool?.status);
@@ -41,8 +54,7 @@ export function ToolMessage({ message, active = false }: { message: SessionMessa
   const { t } = useTranslation();
   const running = active && tool?.status === "running";
   const failed = tool?.status === "failed" || tool?.status === "outcome_unknown";
-  const Icon = failed ? CircleAlert : tool?.status === "succeeded" ? CircleCheck
-    : tool?.status === "awaiting_approval" ? ShieldQuestion : tool?.status === "queued" ? Clock3 : Terminal;
+  const Icon = toolIcon(tool?.name);
   const label = (tool ? presentToolDescription(t, tool) : message.content) || t("tools:call");
   return (
     <details className="group/tool min-w-0 text-xs">
@@ -59,7 +71,7 @@ export function ToolMessage({ message, active = false }: { message: SessionMessa
         {(tool?.cwd || tool?.path) && <p className="break-all text-muted-foreground">{[tool.cwd, tool.path].filter(Boolean).join(" · ")}</p>}
         {tool?.command && <pre className="overflow-x-auto rounded bg-muted p-2"><code>{tool.command}</code></pre>}
         {(tool?.output || message.content) && <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words font-mono leading-5">{tool ? presentToolOutput(t, tool) || message.content : message.content}</pre>}
-        {tool?.error && <p className="whitespace-pre-wrap break-words text-destructive">{presentToolError(t, tool)}</p>}
+        {tool?.error && <p className="whitespace-pre-wrap break-words text-muted-foreground">{presentToolError(t, tool)}</p>}
         {(tool?.truncated || tool?.outputIncomplete || Boolean(tool?.omittedLines)) && <p className="text-muted-foreground">{tool?.omittedLines ? t("tools:omitted", { count: tool.omittedLines }) : t("tools:incomplete")}</p>}
         {message.note && <p className="text-muted-foreground">{presentNote(t, message)}</p>}
       </div>

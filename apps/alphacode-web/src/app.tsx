@@ -5,7 +5,6 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { sessionErrorMessage } from "@/features/sessions/api";
-import { ContinueSessions } from "@/features/sessions/continue-sessions";
 import { SessionContext } from "@/features/sessions/session-context";
 import { SessionSidebar } from "@/features/sessions/session-sidebar";
 import { SessionApproval } from "@/features/sessions/session-approval";
@@ -62,11 +61,12 @@ export function App() {
     {view?.state.approval && <SessionApproval approval={view.state.approval}
       disabled={!workspace.connected || workspace.actions.controlling || !view.approvalId} onAnswer={workspace.actions.approve} />}
     <PromptInput draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
+      folder={isWelcome ? selectedFolder : undefined}
       permissionMode={workspace.permissionMode} onPermissionChange={workspace.changePermission}
       canChangePermission={workspace.canChangePermission} permissionSaving={workspace.actions.permissionSaving || Boolean(view?.state.settingsSaving)}
       onSend={() => void workspace.send()} canSend={workspace.canSend} busy={workspace.busy} submitting={workspace.submitting}
       onCancel={workspace.actions.cancel} canCancel={workspace.connected && !workspace.actions.controlling && Boolean(view?.requestId) && view?.state.phase !== "stopping"}
-      status={isWelcome ? selectedFolder?.name ?? t("workspace:registerProject") : !workspace.connected ? connectionLabel : workspace.busy ? view?.state.phase === "stopping" ? t("sessions:stopping") : "" : view?.state.canSend ? "" : t("sessions:unavailable")} />
+      status={isWelcome ? selectedFolder ? "" : t("workspace:registerProject") : !workspace.connected ? connectionLabel : workspace.busy ? view?.state.phase === "stopping" ? t("sessions:stopping") : "" : view?.state.canSend ? "" : t("sessions:unavailable")} />
   </>;
 
   return (
@@ -99,7 +99,6 @@ export function App() {
                 <h1 id="welcome-title" className="text-[22px] leading-8 font-medium tracking-tight text-balance">{t("workspace:welcome")}</h1>
               </div>
               {composer}
-              <ContinueSessions folder={selectedFolder} onSelect={workspace.selectSession} />
             </div>
           </section>
         ) : (

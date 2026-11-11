@@ -71,15 +71,18 @@ test("managed updates wait for generation, preserve credentials and drafts, and 
     expect(await client.request("/api/info")).toMatchObject({ updateStatus: "pending", revision: "before" });
     response.text("finished before update"); response.end();
     await waitFor(async () => { const view = await client.request<SessionView>(secondPath); return !view.requestId && view.state.titleStatus !== "pending"; });
+    const completed = await client.request<SessionView>(secondPath);
     await supervisor.check();
     expect(supervisor.descriptor.origin).toBe(original.origin);
     expect(supervisor.descriptor.token).toBe(original.token);
     expect(supervisor.descriptor.instanceId).not.toBe(original.instanceId);
     const restored = await client.request<SessionView>(path);
+    expect(restored.session.updatedAt).toBe(local.session.updatedAt);
     expect(restored.state.permissionMode).toBe("full");
     expect(restored.state.messages).toEqual(local.state.messages);
     expect(restored.state.canSend).toBe(true);
     expect((await client.request<SessionView>(secondPath)).state.messages.some(message => message.text === "finished before update")).toBe(true);
+    expect((await client.request<SessionView>(secondPath)).session.updatedAt).toBe(completed.session.updatedAt);
     await waitFor(() => views.some(view => view.instanceId === supervisor.descriptor.instanceId));
     expect(await (await fetch(original.origin, { proxy: false })).text()).toContain('name="alphacode-revision" content="after"');
     const asset = /src="(\/assets\/[^"]+)"/.exec(htmlBefore)?.[1];

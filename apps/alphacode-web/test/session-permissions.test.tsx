@@ -23,7 +23,7 @@ async function choose(name: string, current = "请求批准") {
 describe("composer approval modes", () => {
   it("saves the selected mode via the real HTTP boundary and follows CLI snapshots", async () => {
     await open();
-    fireEvent.keyDown(trigger(), { key: "Enter" });
+    fireEvent.keyDown(await screen.findByRole("button", { name: "切换审批模式：请求批准" }), { key: "Enter" });
     expect((await screen.findByRole("menuitemradio", { name: /^请求批准/ })).getAttribute("aria-checked")).toBe("true");
     fireEvent.click(screen.getByRole("menuitem", { name: "了解更多" }));
     expect(screen.getByText(/设置仅对当前会话生效/)).toBeTruthy();
@@ -72,7 +72,7 @@ describe("composer approval modes", () => {
   it("keeps a local draft choice across navigation and applies it before the first send", async () => {
     window.history.replaceState(null, "", "/");
     render(<AppProviders><App /></AppProviders>);
-    await screen.findByRole("button", { name: "继续 搭建前端工作区" });
+    await screen.findByText("此计算机");
     fireEvent.change(input(), { target: { value: "以完全访问开始" } });
     await choose("完全访问权限");
     expect(api.fetch.mock.calls.some(([, init]) => init.method === "POST")).toBe(false);
@@ -94,7 +94,7 @@ describe("composer approval modes", () => {
     window.history.replaceState(null, "", "/");
     api.view("workspace-layout").state.permissionMode = "full";
     render(<AppProviders><App /></AppProviders>);
-    await screen.findByRole("button", { name: "继续 搭建前端工作区" });
+    await screen.findByText("此计算机");
     expect(trigger()).toBeTruthy();
     fireEvent.change(input(), { target: { value: "按当前显示的模式执行" } });
     fireEvent.keyDown(input(), { key: "Enter" });
@@ -110,7 +110,7 @@ describe("composer approval modes", () => {
     api.fetch.mockImplementation((url, init) => url.endsWith("/permission")
       ? Promise.resolve(Response.json({ code: "SESSION_BUSY" }, { status: 409 })) : fetch(url, init));
     render(<AppProviders><App /></AppProviders>);
-    await screen.findByRole("button", { name: "继续 搭建前端工作区" });
+    await screen.findByText("此计算机");
     await choose("完全访问权限");
     fireEvent.change(input(), { target: { value: "不要直接执行" } });
     fireEvent.keyDown(input(), { key: "Enter" });

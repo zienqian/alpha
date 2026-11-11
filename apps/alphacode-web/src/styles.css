@@ -181,6 +181,7 @@
 
   .welcome-stage {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(40px, 1fr) auto minmax(64px, 1.35fr);
   }
 

@@ -31,8 +31,6 @@
   "stop": "停止生成",
   "send": "发送消息",
   "removeBeforeSending": "附件暂不支持发送，请移除附件后发送文字。",
-  "continue": "继续会话",
-  "viewHistory": "查看记录",
   "empty": {
     "title": "这个会话还没有消息",
     "description": "在下方输入消息，开始对话。"
@@ -58,7 +56,6 @@
   "retryList": "重试加载列表",
   "none": "暂无会话",
   "startCli": "暂无会话，请先在 CLI 中开始对话。",
-  "liveSaved": "服务端会话 · 实时同步",
   "searchDescription": "搜索所有工作区的会话标题、路径和消息内容。使用上下方向键选择，Enter 打开，Esc 关闭。",
   "searchContent": "搜索会话内容",
   "searchPlaceholder": "搜索所有会话内容…",
@@ -74,7 +71,6 @@
   "searchEmpty": "开始对话后，可以在这里搜索历史内容。",
   "recent": "最近会话",
   "draftBadge": "草稿",
-  "continueNamed": "继续 {{title}}",
   "removeAttachment": "移除附件 {{name}}",
   "messageCount_other": "{{count}} 条",
   "found_other": "找到 {{count}} 个会话",

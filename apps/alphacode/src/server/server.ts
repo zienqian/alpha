@@ -100,9 +100,12 @@ export async function startServer(options: ServerOptions) {
   async function createEntry(projectId: string, sessionId?: string, restore?: SessionHandoff): Promise<Entry> {
     const config = registry.configs.get(projectId);
     if (!config) return fail(404, "PROJECT_NOT_FOUND");
+    const saved = sessionId ? await registry.store.read({ namespace: projectId, id: sessionId }) : undefined;
     const chat = await factory({ ...config, sessionId,
       permissionMode: restore?.state.permissionMode ?? config.permissionMode }, registry.credentials.get(projectId), restore);
-    const entry: Entry = { chat, projectId, admission: false, updatedAt: new Date().toISOString(), unsubscribe: () => undefined };
+    // Reading history or restoring a worker is not new conversation activity.
+    const entry: Entry = { chat, projectId, admission: false,
+      updatedAt: restore?.updatedAt ?? saved?.data.updatedAt ?? new Date().toISOString(), unsubscribe: () => undefined };
     entry.unsubscribe = chat.subscribe(() => {
       if (entry.approval !== chat.state.approval) {
         entry.approval = chat.state.approval;
@@ -234,7 +237,8 @@ export async function startServer(options: ServerOptions) {
       if (path === "/api/events" && request.method === "GET") { server.timeout(request, 0); return stream(() => ({ instanceId, sequence }), request.signal); }
       if (path === "/api/sessions" && request.method === "GET") {
         const sessions = await registry.list();
-        return Response.json({ sessions: sessions.map(item => { const entry = entries.get(item.id); return entry ? snapshot(entry).session : item; }) });
+        return Response.json({ sessions: sessions.map(item => { const entry = entries.get(item.id); return entry ? snapshot(entry).session : item; })
+          .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)) });
       }
       if (path === "/api/sessions/search" && request.method === "GET") {
         const query = (url.searchParams.get("q") ?? "").trim();
@@ -394,6 +398,7 @@ export async function startServer(options: ServerOptions) {
       for (const entry of entries.values()) {
         const state = snapshot(entry).state;
         sessions.push({ projectId: entry.projectId, sessionId: entry.chat.sessionId,
+          updatedAt: entry.updatedAt,
           persisted: Boolean(await registry.find(entry.chat.sessionId)),
           state: { messages: state.messages, permissionMode: state.permissionMode, lastRunStatus: state.lastRunStatus, notice: state.notice, error: state.error } });
       }

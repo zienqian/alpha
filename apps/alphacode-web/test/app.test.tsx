@@ -9,7 +9,7 @@ beforeEach(() => { window.history.replaceState(null, "", "/"); api = mockSession
 
 async function renderWorkspace() {
   const view = render(<AppProviders><App /></AppProviders>);
-  await screen.findByRole("button", { name: "继续 搭建前端工作区" });
+  await screen.findByText("此计算机");
   return view;
 }
 

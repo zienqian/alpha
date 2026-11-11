@@ -16,7 +16,7 @@
   "closeSidebar": "Close sidebar",
   "title": "Workspaces",
   "folders": "Folders and conversations",
-  "local": "Local workspace",
+  "computer": "This computer",
   "mobileTitle": "Projects and conversations",
   "mobileDescription": "Search projects and select a conversation to view its history.",
   "folder": "Folder {{name}}",
