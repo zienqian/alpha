@@ -57,7 +57,7 @@ export function mockSessionApi() {
       const { projectId } = JSON.parse(String(init.body));
       const template = infos.find(item => item.projectId === projectId);
       if (!template) throw new Error("Missing project fixture");
-      const created: SessionView = { ...view(template.id), session: { ...template, id: crypto.randomUUID(), title: "新会话" },
+      const created: SessionView = { ...view(template.id), session: { ...template, id: crypto.randomUUID(), title: "" },
         state: { ...view(template.id).state, messages: [] } };
       infos.push(created.session); views.set(created.session.id, created);
       return Response.json(created, { status: 201 });

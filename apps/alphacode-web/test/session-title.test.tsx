@@ -30,12 +30,24 @@ it("replaces the sidebar skeleton from live title events without disrupting the 
 it("keeps normal titles visible and caps a stale loading snapshot at eight seconds", () => {
   vi.useFakeTimers();
   try {
-    const view = render(<AppProviders><SessionTitle title="首条消息摘要" pending /></AppProviders>);
+    const view = render(<AppProviders><SessionTitle title="" pending /></AppProviders>);
     expect(screen.getByRole("status").textContent).toBe("正在生成标题…");
     act(() => { vi.advanceTimersByTime(8_000); });
     expect(screen.queryByRole("status")).toBeNull();
-    expect(screen.getByText("首条消息摘要")).toBeTruthy();
-    view.rerender(<AppProviders><SessionTitle title="新会话" pending={false} /></AppProviders>);
-    expect(screen.getByText("新会话")).toBeTruthy();
+    expect(screen.getByText("新对话")).toBeTruthy();
+    view.rerender(<AppProviders><SessionTitle title="已生成标题" pending={false} /></AppProviders>);
+    expect(screen.getByText("已生成标题")).toBeTruthy();
   } finally { vi.useRealTimers(); }
+});
+
+it("uses the same fallback for untitled saved conversations in the header, sidebar and search", async () => {
+  const api = mockSessionApi();
+  const id = "project-notes";
+  api.info(id).title = " ";
+  window.history.replaceState(null, "", `/?session=${id}`);
+  render(<AppProviders><App /></AppProviders>);
+  expect(await screen.findByRole("heading", { level: 1, name: "新对话" })).toBeTruthy();
+  expect((await screen.findByRole("button", { name: "新对话" })).getAttribute("aria-current")).toBe("page");
+  fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+  expect(await screen.findByRole("option", { name: /新对话/ })).toBeTruthy();
 });

@@ -28,7 +28,7 @@ function createLocalSession(id: string, folderId?: string): LocalSession {
 export function useSessionWorkspace() {
   const { t } = useTranslation();
   const displaySession = (session: Session): Session => ({ ...session,
-    title: session.title || t(session.local ? "sessions:new" : "sessions:untitled"),
+    title: session.title.trim() || t("sessions:new"),
     description: t(session.local ? "sessions:draftDescription" : "sessions:savedDescription"),
   });
   const client = useQueryClient();

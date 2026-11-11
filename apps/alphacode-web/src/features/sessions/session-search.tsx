@@ -98,7 +98,7 @@ function SearchContent({ folders, onSelect }: { folders: SessionFolder[]; onSele
           <MessageSquare className="search-result-icon" aria-hidden="true" />
           <div className="search-result-content">
             <div className="search-result-heading">
-              <span className="search-result-title" title={result.session.title || t("sessions:untitled")}><Highlight text={result.session.title || t("sessions:untitled")} query={normalized} /></span>
+              <span className="search-result-title" title={result.session.title.trim() || t("sessions:new")}><Highlight text={result.session.title.trim() || t("sessions:new")} query={normalized} /></span>
               {!normalized && <span className="search-project" title={result.session.workspaceRoot}>{result.session.workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1)}</span>}
               {result.matchCount > 0 && <span className="search-result-count">{t("sessions:matchCount", { count: result.matchCount })}</span>}
               {result.session.status === "local" && <span className="search-project">{t("sessions:draftBadge")}</span>}

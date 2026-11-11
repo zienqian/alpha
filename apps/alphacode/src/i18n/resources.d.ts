@@ -28,6 +28,7 @@ export default interface Resources {
       "placeholder": "Describe your task…"
     },
     "interrupt": " · esc to interrupt",
+    "newConversation": "New conversation",
     "note": {
       "incomplete": "Response incomplete",
       "preview": "Incomplete preview"

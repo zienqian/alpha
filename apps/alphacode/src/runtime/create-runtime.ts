@@ -18,7 +18,7 @@ import { isPermissionMode, readSessionSettings, sameSettings, settingsError, typ
 import { loadRuntimeSkills, prepareSkillInput, skillStatus } from "./skills";
 import { parseInput } from "../input";
 import { displayText } from "./tool-records";
-import { fallbackTitle, generateSessionTitle, titleTimeoutMs } from "./session-title";
+import { generateSessionTitle, titleTimeoutMs } from "./session-title";
 
 export async function createRuntime(config: AppConfig, options: {
   approve?: RequestApproval;
@@ -36,7 +36,8 @@ export async function createRuntime(config: AppConfig, options: {
   const subscriptions = new Map<(event: ChatEvent) => void, (() => void) | undefined>();
   let initialize: (input?: string) => Promise<{ agent: Agent; session: Session }>;
   let messages: ChatMessage[] = [];
-  let title = "AlphaCode";
+  // An absent title stays empty in storage; each client localizes its fallback.
+  let title = "";
   let titleInput: string | undefined;
   let initialTitle: string | undefined;
   let titleStarted = false;
@@ -64,7 +65,7 @@ export async function createRuntime(config: AppConfig, options: {
       }
       const snapshot = await session.getSnapshot();
       messages = restoreMessages(snapshot.data);
-      title = displayText(snapshot.data.title, 80) || "AlphaCode";
+      title = displayText(snapshot.data.title, 80);
     }
     const model = createProvider({ providers: { main: {
       adapter: "openai-completions",
@@ -78,11 +79,10 @@ export async function createRuntime(config: AppConfig, options: {
     initialize = async (input) => {
       // A new CLI/Web session is only a draft until a valid prompt reaches here.
       if (!session) {
-        const heading = fallbackTitle(input ?? "");
         session = await activeManager.createSession({ id: sessionId,
-          title: heading, metadata: { alphacode: { ...settings } },
+          title: "", metadata: { alphacode: { ...settings } },
         });
-        title = initialTitle = heading;
+        title = initialTitle = "";
         titleInput = input;
         emitTitle("ready");
       }

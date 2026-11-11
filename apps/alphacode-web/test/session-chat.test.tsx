@@ -26,12 +26,12 @@ describe("live conversation", () => {
     expect(screen.getByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
     const navigation = screen.getByRole("navigation", { name: "文件夹与会话" });
     expect(within(navigation).queryByRole("button", { name: "AlphaCode" })).toBeNull();
-    expect(within(navigation).queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(within(navigation).queryByRole("button", { name: "新对话" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "这个会话还没有消息" })).toBeNull();
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
 
     fireEvent.change(input(), { target: { value: "第一条消息" } });
-    expect(within(navigation).getByRole("button", { name: "新会话" }).getAttribute("aria-current")).toBe("page");
+    expect(within(navigation).getByRole("button", { name: "新对话" }).getAttribute("aria-current")).toBe("page");
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
     await waitFor(() => expect(sends()).toHaveLength(1));
@@ -39,7 +39,7 @@ describe("live conversation", () => {
     expect(api.fetch.mock.calls.some(([url, init]) => url === "/api/sessions" && init.method === "POST")).toBe(false);
     expect(await screen.findByText("第一条消息", {}, { timeout: 5000 })).toBeTruthy();
     expect(within(navigation).getByRole("button", { name: "AlphaCode" }).getAttribute("aria-current")).toBe("page");
-    expect(within(navigation).queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(within(navigation).queryByRole("button", { name: "新对话" })).toBeNull();
   });
 
   it("keeps an empty /web project's composer usable after choosing a new draft", async () => {
@@ -47,7 +47,7 @@ describe("live conversation", () => {
     api.infos.splice(0);
     await open();
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
-    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     fireEvent.change(input(), { target: { value: "保留当前项目" } });
     expect((screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.getByRole("button", { name: "文件夹 docs" })).toBeTruthy();
@@ -58,15 +58,15 @@ describe("live conversation", () => {
     api.view(id).state.messages = [];
     api.infos.splice(api.infos.findIndex(info => info.id === id), 1);
     await open();
-    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     fireEvent.change(input(), { target: { value: "尚未发送的草稿" } });
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
     await screen.findByRole("heading", { name: "一个简单、专注的工作区" });
-    fireEvent.click(screen.getByRole("button", { name: "新会话" }));
+    fireEvent.click(screen.getByRole("button", { name: "新对话" }));
     expect(input().value).toBe("尚未发送的草稿");
     expect(new URL(window.location.href).searchParams.get("session")).toBe(id);
     fireEvent.change(input(), { target: { value: "" } });
-    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
   });
 
@@ -82,7 +82,7 @@ describe("live conversation", () => {
     expect(await screen.findByText("从终端开始")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "从这里，开始构建。" })).toBeNull();
     expect(screen.getByRole("button", { name: "项目说明与约定" }).getAttribute("aria-current")).toBe("page");
-    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
   });
 
   it("keeps history retry available if an empty /web draft fails to refresh", async () => {
@@ -92,7 +92,7 @@ describe("live conversation", () => {
     api.overrides.set(path, () => Response.json({ code: "SESSION_NOT_FOUND" }, { status: 404 }));
     await act(async () => { focusManager.setFocused(false); focusManager.setFocused(true); });
     const retry = await screen.findByRole("button", { name: "重试加载历史" });
-    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     api.overrides.delete(path);
     fireEvent.click(retry);
     expect(await screen.findByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
@@ -142,7 +142,7 @@ describe("live conversation", () => {
     expect(api.view(createdId).session.projectId).toBe(api.info("workspace-layout").projectId);
     expect(await screen.findByText("新的任务")).toBeTruthy();
     await waitFor(() => expect(input().value).toBe(""));
-    expect(within(screen.getByRole("navigation", { name: "文件夹与会话" })).getAllByRole("button", { name: "新会话" })).toHaveLength(1);
+    expect(within(screen.getByRole("navigation", { name: "文件夹与会话" })).getAllByRole("button", { name: "新对话" })).toHaveLength(1);
   });
 
   it("retries an uncertain submission with exactly the same ID and original input without clearing edited text", async () => {

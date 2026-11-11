@@ -3,10 +3,6 @@ import { displayText } from "./tool-records";
 
 export const titleTimeoutMs = 8_000;
 
-export function fallbackTitle(input: string): string {
-  return displayText(input, 48) || "AlphaCode";
-}
-
 export async function generateSessionTitle(model: LanguageModel, input: string, signal: AbortSignal): Promise<string | undefined> {
   const result = await model.generate({
     messages: [

@@ -43,5 +43,6 @@
     "failed": "Failed after {{duration}} · {{time}}",
     "completed": "Worked for {{duration}} · {{time}}",
     "other": "Ended after {{duration}} · {{time}}"
-  }
+  },
+  "newConversation": "New conversation"
 }

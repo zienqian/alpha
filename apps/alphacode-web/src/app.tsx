@@ -1,6 +1,5 @@
 import { useTranslation } from "@/i18n/react";
 import { lazy, Suspense, useEffect, useState, type ComponentProps, type CSSProperties } from "react";
-import { FolderOpen } from "lucide-react";
 import { PromptInput } from "@/components/ai-elements/prompt-input";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -87,14 +86,8 @@ export function App() {
         <header className="flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
           <SidebarTrigger aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground" />
           <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px]">
-            {!isWelcome && (
-              <span className="hidden min-w-0 max-w-40 items-center gap-1.5 text-muted-foreground sm:flex" title={selectedFolder?.path}>
-                <FolderOpen className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{selectedFolder?.name}</span>
-              </span>
-            )}
-            {!isWelcome && <span className="hidden text-border sm:inline" aria-hidden="true">/</span>}
             {isWelcome ? <span className="truncate text-muted-foreground">{t("sessions:new")}</span> : (
-              <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title ?? t("sessions:history")}</h1>
+              <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title || t("sessions:new")}</h1>
             )}
           </div>
           <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} />

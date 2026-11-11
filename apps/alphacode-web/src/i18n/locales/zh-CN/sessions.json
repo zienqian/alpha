@@ -10,7 +10,7 @@
   "sendHint": "Enter 发送 · Shift+Enter 换行",
   "unavailable": "会话暂不可发送",
   "skip": "跳转到会话内容",
-  "new": "新会话",
+  "new": "新对话",
   "generatingTitle": "正在生成标题…",
   "history": "会话记录",
   "cachedHistory": "当前显示上次加载的记录。",
@@ -85,7 +85,6 @@
     "assistant": "助手",
     "tool": "工具"
   },
-  "untitled": "未命名会话",
   "savedDescription": "已保存的会话",
   "draftDescription": "仅保存在当前页面的草稿"
 }

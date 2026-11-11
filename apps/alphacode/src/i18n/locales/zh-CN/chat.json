@@ -43,5 +43,6 @@
     "failed": "{{duration}} 后失败 · {{time}}",
     "completed": "工作了 {{duration}} · {{time}}",
     "other": "{{duration}} 后结束 · {{time}}"
-  }
+  },
+  "newConversation": "新对话"
 }

@@ -143,7 +143,6 @@ export default interface Resources {
     "thinking": "Thinking",
     "type": "Conversation type",
     "unavailable": "Sending is currently unavailable",
-    "untitled": "Untitled conversation",
     "userMessage": "Your message",
     "viewHistory": "View history"
   },

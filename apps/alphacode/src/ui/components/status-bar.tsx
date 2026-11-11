@@ -1,8 +1,10 @@
 import { useTerminalDimensions } from "@opentui/react";
 import { formatWorkspacePath } from "../workspace-path";
 import { colors } from "../theme";
+import { useTranslation } from "../../i18n/react";
 
 export function StatusBar(props: { modelId: string; workspaceRoot: string; sessionTitle: string }) {
+  const { t } = useTranslation();
   const dimensions = useTerminalDimensions();
   const workspace = formatWorkspacePath(props.workspaceRoot);
   return (
@@ -14,7 +16,7 @@ export function StatusBar(props: { modelId: string; workspaceRoot: string; sessi
         height={1} truncate wrapMode="none">{workspace}</text>
       <text fg={colors.muted} flexShrink={0}>·</text>
       <text id="session-title" fg={colors.muted} flexShrink={1} minWidth={0} maxWidth={dimensions.width < 60 ? "35%" : "40%"}
-        height={1} truncate wrapMode="none">{props.sessionTitle}</text>
+        height={1} truncate wrapMode="none">{props.sessionTitle.trim() || t("chat:newConversation")}</text>
     </box>
   );
 }

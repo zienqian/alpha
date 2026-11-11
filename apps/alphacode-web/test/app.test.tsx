@@ -21,7 +21,7 @@ describe("Session workspace", () => {
     expect(screen.getByRole("textbox", { name: "消息草稿" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "添加上下文附件" })).toBeNull();
     expect(screen.queryByLabelText("添加附件")).toBeNull();
-    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
   });
 
   it("renders folder navigation and the initial Markdown conversation", async () => {
@@ -41,7 +41,7 @@ describe("Session workspace", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("项目说明与约定");
     expect(await screen.findByRole("heading", { name: "开发约定" })).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "一个简单、专注的工作区" })).toBeNull();
-    expect(screen.getByRole("heading", { level: 1 }).parentElement?.textContent).toContain("docs");
+    expect(screen.getByRole("heading", { level: 1 }).parentElement?.textContent).toBe("项目说明与约定");
     expect(screen.getByRole("button", { name: "项目说明与约定" }).getAttribute("aria-current")).toBe("page");
     expect(screen.getByRole("button", { name: "搭建前端工作区" }).hasAttribute("aria-current")).toBe(false);
   });
@@ -131,8 +131,8 @@ describe("Session workspace", () => {
   it("creates a new local draft without losing the previous text", async () => {
     await renderWorkspace();
     fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "实现新的导航" } });
-    const originalDraft = screen.getByRole("button", { name: "新会话" });
-    expect(originalDraft.textContent).toBe("新会话");
+    const originalDraft = screen.getByRole("button", { name: "新对话" });
+    expect(originalDraft.textContent).toBe("新对话");
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("");
     fireEvent.click(originalDraft);
@@ -143,7 +143,7 @@ describe("Session workspace", () => {
     await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
     fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
-    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "消息草稿" }));
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
   });
@@ -152,11 +152,11 @@ describe("Session workspace", () => {
     await renderWorkspace();
     const input = screen.getByRole("textbox", { name: "消息草稿" });
     fireEvent.change(input, { target: { value: "   " } });
-    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     fireEvent.change(input, { target: { value: "开始新的任务" } });
-    expect(screen.getByRole("button", { name: "新会话" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("button", { name: "新对话" }).getAttribute("aria-current")).toBe("page");
     fireEvent.change(input, { target: { value: "" } });
-    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
   });
 

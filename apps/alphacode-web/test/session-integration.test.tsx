@@ -46,7 +46,7 @@ describe("server session integration", () => {
     const messages = within(screen.getByRole("list", { name: "会话消息" })).getAllByRole("article");
     expect(messages.map((message) => message.getAttribute("aria-label"))).toEqual(["你的消息", "AlphaCode 的回复", "工具活动"]);
     expect(screen.getByRole("button", { name: "项目说明与约定" }).getAttribute("aria-current")).toBe("page");
-    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     const activity = screen.getByRole("button", { name: /执行过程 · 1 步/ });
     expect(activity.getAttribute("aria-expanded")).toBe("false");
     expect(activity.textContent).toContain("1 项失败");
@@ -173,7 +173,7 @@ describe("server session integration", () => {
     await act(async () => api.publish("project-notes"));
     expect(await screen.findByRole("button", { name: "CLI 新建会话" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "继续 搭建前端工作区" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "新会话" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("button", { name: "新对话" }).getAttribute("aria-current")).toBe("page");
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("继续当前项目");
   });
 
