@@ -22,6 +22,7 @@ export function presentNote(t: Translate, message: { note?: string; noteCode?: s
   if (message.tool) return presentStatus(t, message.tool.status);
   if (message.noteCode === "INCOMPLETE_PREVIEW") return t("chat:note.preview");
   if (message.noteCode === "RESPONSE_INCOMPLETE") return t("chat:note.incomplete");
+  if (message.noteCode === "RESPONSE_STEERED") return t("chat:note.steered");
   if (message.noteCode && Object.hasOwn(outcomes, message.noteCode)) return t(outcomes[message.noteCode as keyof typeof outcomes]);
   return message.note ?? "";
 }

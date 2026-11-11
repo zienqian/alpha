@@ -3,6 +3,29 @@ import { Database } from "bun:sqlite";
 import { createApplication } from "../src/application";
 import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "./helpers";
 
+test("steering before the first text leaves no empty replies and saves a single continued turn", async () => {
+  const stream = controlledStream();
+  const app = await fixture((_body, index) => index === 1 ? stream.response : textResponse("guided result"));
+  try {
+    const running = app.chat.send("original");
+    await waitFor(() => app.requests.length === 1 && Boolean(app.chat.canSteer));
+    expect(await app.chat.steer?.("new direction")).toBe(true);
+    await running;
+    expect(app.chat.state.messages.map(message => message.text)).toEqual(["original", "new direction", "guided result"]);
+    expect(app.chat.state.lastRunStatus).toBe("completed");
+    expect(app.chat.state.error).toBeUndefined();
+    await app.chat.close();
+    const db = new Database(app.config.databasePath, { readonly: true });
+    try {
+      const row = db.query("SELECT body FROM sessions WHERE id = ?").get(app.chat.sessionId) as { body: string };
+      const saved = JSON.parse(row.body);
+      expect(saved.turns).toHaveLength(1);
+      expect(saved.turns[0].messages.map((message: { content?: string; text?: string }) => message.content ?? message.text))
+        .toEqual(["original", "new direction", "guided result"]);
+    } finally { db.close(); }
+  } finally { stream.end(); await app.dispose(); }
+});
+
 test("Provider → ADK → coding tools → streaming reply → SQLite; subsequent prompts retain context", async () => {
   const stream = controlledStream();
   const app = await fixture((_body, index) => index === 1

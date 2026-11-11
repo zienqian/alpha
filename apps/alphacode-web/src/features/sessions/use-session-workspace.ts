@@ -143,15 +143,16 @@ export function useSessionWorkspace() {
   const permissionMode = isLocal ? draft.permissionMode ?? "ask" : history.data?.state.permissionMode;
   const canChangePermission = !creatingIds[selectedSessionId] && !actions.pending && !actions.controlling
     && (isLocal ? Boolean(selectedFolder) : connected && Boolean(history.data?.state.canSend)
-      && !busy && !history.data?.state.closing && !history.data?.state.settingsSaving && !history.data?.state.approval);
+      && !busy && !history.data?.state.queuedRequests?.length && !history.data?.state.closing && !history.data?.state.settingsSaving && !history.data?.state.approval);
   function changePermission(mode: PermissionMode) {
     if (!canChangePermission) return;
     if (isLocal) updateDraft({ permissionMode: mode });
     else void actions.setPermissionMode(selectedSessionId, mode);
   }
   const canSend = Boolean(draft.text.trim()) && !draft.attachments.length && !actions.pending
-    && !actions.controlling && !creatingIds[selectedSessionId] && (isLocal ? Boolean(selectedFolder) : connected && Boolean(history.data?.state.canSend)
-      && !busy && !history.data?.state.closing && !history.data?.state.settingsSaving);
+    && !actions.controlling && !creatingIds[selectedSessionId] && (isLocal ? Boolean(selectedFolder) : connected
+      && Boolean(history.data?.state.canQueue || (!busy && history.data?.state.canSend))
+      && !history.data?.state.closing && !history.data?.state.settingsSaving);
 
   async function send() {
     if (!canSend || creating.current.has(selectedSessionId)) return;

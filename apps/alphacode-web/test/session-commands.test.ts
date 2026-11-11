@@ -29,6 +29,7 @@ function setup() {
     }),
     send: vi.fn<SessionGateway["send"]>(async (_id, requestId) => ({ requestId, status: "accepted" })),
     cancel: vi.fn(async () => undefined),
+    updateQueue: vi.fn<SessionGateway["updateQueue"]>(async id => view(id, 2)),
     answerApproval: vi.fn(async () => undefined),
     setPermissionMode: vi.fn<SessionGateway["setPermissionMode"]>(async (id, mode) => ({ ...view(id, 2), state: { ...view(id).state, permissionMode: mode } })),
   };

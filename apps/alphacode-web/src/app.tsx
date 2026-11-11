@@ -8,6 +8,7 @@ import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionContext } from "@/features/sessions/session-context";
 import { SessionSidebar } from "@/features/sessions/session-sidebar";
 import { SessionApproval } from "@/features/sessions/session-approval";
+import { SessionQueue } from "@/features/sessions/session-queue";
 import { useSessionWorkspace } from "@/features/sessions/use-session-workspace";
 import { ServerUpdate } from "@/features/sessions/server-update";
 import { presentNotice } from "@/i18n/presentation";
@@ -60,6 +61,9 @@ export function App() {
     </div>}
     {view?.state.approval && <SessionApproval approval={view.state.approval}
       disabled={!workspace.connected || workspace.actions.controlling || !view.approvalId} onAnswer={workspace.actions.approve} />}
+    <SessionQueue key={selectedSessionId} requests={view?.state.queuedRequests} disabled={!workspace.connected || workspace.actions.controlling}
+      canSteer={Boolean(view?.state.canSteer)} onRemove={workspace.actions.cancelQueued} onEdit={workspace.actions.editQueued}
+      onMove={workspace.actions.moveQueued} onSteer={workspace.actions.steerQueued} />
     <PromptInput draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
       folder={isWelcome ? selectedFolder : undefined}
       permissionMode={workspace.permissionMode} onPermissionChange={workspace.changePermission}

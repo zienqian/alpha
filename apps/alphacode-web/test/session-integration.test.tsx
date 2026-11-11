@@ -181,7 +181,7 @@ describe("server session integration", () => {
     window.history.replaceState(null, "", "/?session=project-notes");
     renderApp();
     await screen.findByRole("heading", { name: "开发约定" });
-    fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
+    fireEvent.click(screen.getByRole("button", { name: "在 docs 中新建会话" }));
     expect(new URL(window.location.href).searchParams.has("session")).toBe(false);
     expect(screen.getByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
     act(() => window.history.back());

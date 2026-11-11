@@ -114,7 +114,7 @@ describe("Session workspace", () => {
     render(<AppProviders><App /></AppProviders>);
     expect(screen.getByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
     expect(await screen.findByText("暂无会话，请先在 CLI 中开始对话。")).toBeTruthy();
-    expect((screen.getByRole("button", { name: "新建会话" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "新建会话" })).toBeNull();
   });
 
   it("opens a mobile drawer and closes it after selecting a session", async () => {
@@ -133,7 +133,7 @@ describe("Session workspace", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "实现新的导航" } });
     const originalDraft = screen.getByRole("button", { name: "新对话" });
     expect(originalDraft.textContent).toBe("新对话");
-    fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
+    fireEvent.click(screen.getByRole("button", { name: "在 alphacode-web 中新建会话" }));
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("");
     fireEvent.click(originalDraft);
     expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("实现新的导航");
@@ -141,8 +141,8 @@ describe("Session workspace", () => {
 
   it("does not create duplicate empty drafts and focuses the composer", async () => {
     await renderWorkspace();
-    fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
-    fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
+    fireEvent.click(screen.getByRole("button", { name: "在 alphacode-web 中新建会话" }));
+    fireEvent.click(screen.getByRole("button", { name: "在 alphacode-web 中新建会话" }));
     expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "消息草稿" }));
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);

@@ -1,9 +1,11 @@
 import type { Agent } from "@alpha/adk/core";
 import type { ChatEvent, ToolRecord } from "../chat/contracts";
 import { completeToolRecord, createToolRecord } from "./tool-records";
+import { skillInputDisplay } from "../input";
 
 export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => void): () => void {
   let currentModel: string | undefined;
+  let initialUser = true;
   const records = new Map<string, ToolRecord>();
   const lookup = (assistantId: string, callId: string) => {
     const key = `${assistantId}:${callId}`;
@@ -17,6 +19,7 @@ export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => v
     switch (event.type) {
       case "run.start":
         currentModel = undefined;
+        initialUser = true;
         records.clear();
         break;
       case "model.start":
@@ -27,6 +30,12 @@ export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => v
         listener({ type: "assistant.delta", id: event.modelCallId, text: event.text });
         break;
       case "message.commit": {
+        if (event.role === "user") {
+          const message = agent.state.messages.find(message => message.id === event.messageId);
+          if (!initialUser && message?.role === "user") listener({ type: "user.message", id: message.id, text: skillInputDisplay(message.content) });
+          initialUser = false;
+          break;
+        }
         if (event.role !== "assistant" || !currentModel) break;
         const message = agent.state.messages.find(message => message.id === event.messageId);
         if (message?.role === "assistant") {

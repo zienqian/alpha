@@ -65,6 +65,10 @@ export interface ChatState {
   busy: boolean;
   closing: boolean;
   canSend: boolean;
+  /** The server can accept another message while this turn is running. */
+  canQueue?: boolean;
+  queuedRequests?: readonly { requestId: string; input: string; steering?: boolean }[];
+  canSteer?: boolean;
   status: string;
   phase: ChatPhase;
   lastRunStatus?: ChatRunStatus;
@@ -79,6 +83,8 @@ export interface ChatState {
 }
 
 export interface Chat {
+  readonly canSteer?: boolean;
+  steer?(input: string): Promise<boolean>;
   readonly skills?: readonly ChatSkill[];
   readonly state: ChatState;
   readonly modelId: string;
@@ -94,16 +100,19 @@ export interface Chat {
 
 // The application consumes conversation events, not Agent or Session internals.
 export type ChatEvent =
+  | { type: "user.message"; id: string; text: string }
   | { type: "session.title"; title: string; status: "pending" | "ready" }
   | { type: "assistant.start"; id: string }
   | { type: "assistant.delta"; id: string; text: string }
   | { type: "assistant.commit"; id: string; text: string; tools?: readonly ToolRecord[] }
-  | { type: "assistant.end"; id: string; outcome: ChatRunStatus | "tool_calls" }
+  | { type: "assistant.end"; id: string; outcome: ChatRunStatus | "tool_calls" | "steered" }
   | { type: "tool.start"; tool: ToolRecord }
   | { type: "tool.end"; tool: ToolRecord }
   | { type: "run.end"; status: ChatRunStatus };
 
 export interface ChatRuntime {
+  readonly canSteer?: boolean;
+  steer?(input: string): Promise<boolean>;
   readonly sessionTitle: string;
   readonly skills?: readonly ChatSkill[];
   readonly modelId: string;

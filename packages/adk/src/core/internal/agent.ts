@@ -22,16 +22,50 @@ export function createAgentInstance<C>(config: {
   let status: AgentState['status'] = 'idle', closing = false;
   let current: Run<C> | undefined, currentPromise: Promise<RunResult> | undefined, closePromise: Promise<void> | undefined;
   let invocation: AbortController | undefined, boundaryFailed = false;
+  let steeringOpen = false;
+  let interruptible: AbortController | undefined;
+  const steering: { input: string; resolve: (consumed: boolean) => void }[] = [];
+  async function withSteering<T>(operation: (signal: AbortSignal, release: () => void) => Promise<T>): Promise<T> {
+    const controller = new AbortController();
+    interruptible = controller;
+    const release = () => { if (interruptible === controller) interruptible = undefined; };
+    if (steering.length) controller.abort();
+    try { return await operation(controller.signal, release); }
+    finally { release(); }
+  }
   async function drive(run: Run<C>, input: string, signal?: AbortSignal): Promise<RunResult> {
     let natural: AssistantMessage | undefined;
     try {
       run.begin(signal); run.check();
       run.commit(history.commitUser(input)); run.check();
+      steeringOpen = true;
       natural = await loop.execute({
-        callModel: () => callModel(run, registry.model, instructions, registry.tools, registry.hooks),
-        callTool: (assistantId, callId) => callTool(run, registry.toolMap, registry.hooks, assistantId, callId),
+        hasSteering: () => steering.length > 0,
+        skipTools(assistantId) {
+          for (const pending of history.pending.filter(p => p.assistantId === assistantId)) {
+            run.check();
+            run.toolResult(assistantId, pending.call.id, '[Skipped for steering.]', 'not_executed');
+          }
+        },
+        applySteering() {
+          run.check();
+          let consumed = false;
+          while (steering.length) {
+            const next = steering[0];
+            if (!next) break;
+            // Tool results are committed before reaching this boundary.
+            run.commit(history.commitUser(next.input));
+            steering.shift(); next.resolve(true); consumed = true;
+            run.check();
+          }
+          return consumed;
+        },
+        callModel: () => withSteering(signal => callModel(run, registry.model, instructions, registry.tools, registry.hooks, signal)),
+        callTool: (assistantId, callId) => withSteering((signal, release) => callTool(run, registry.toolMap, registry.hooks, assistantId, callId, signal, release)),
       });
     } catch (cause) { run.fail(cause); }
+    steeringOpen = false;
+    for (const pending of steering.splice(0)) pending.resolve(false);
     const result = await run.finish(natural);
     if (!registry.boundary) status = closing ? 'closed' : 'idle';
     run.emit({ type: 'run.end', status: result.status }, { usage: result.usage, errorCode: result.status === 'failed' ? result.error.code : undefined });
@@ -80,7 +114,8 @@ export function createAgentInstance<C>(config: {
   return Object.freeze({
     id,
     get state(): AgentState {
-      return Object.freeze({ status, historyStatus: history.blocked ? 'blocked' : 'ready',
+      return Object.freeze({ status, canSteer: steeringOpen && status === 'running' && !closing,
+        historyStatus: history.blocked ? 'blocked' : 'ready',
         boundaryStatus: boundaryFailed ? 'failed' : registry.boundary ? 'ready' : 'none', messages: history.messages });
     },
     prompt(input: string, options?: PromptOptions): Promise<RunResult> {
@@ -116,6 +151,17 @@ export function createAgentInstance<C>(config: {
           result => { done(); resolve(result); }, cause => { done(); reject(registry.boundary ? boundaryError(cause) : safeError(cause, 'INTERNAL_INVARIANT')); },
         );
         return promise;
+      } catch (cause) { return Promise.reject(safeError(cause, 'INPUT_INVALID')); }
+    },
+    steer(input: string): Promise<boolean> {
+      try {
+        assertNotReentrant(events.dispatching);
+        ensure(text(input), 'INPUT_INVALID');
+        if (!steeringOpen || status !== 'running' || closing) return Promise.resolve(false);
+        return new Promise(resolve => {
+          steering.push({ input, resolve });
+          interruptible?.abort();
+        });
       } catch (cause) { return Promise.reject(safeError(cause, 'INPUT_INVALID')); }
     },
     subscribe: events.subscribe,

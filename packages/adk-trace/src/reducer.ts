@@ -198,7 +198,7 @@ export function reduceEvent(
           offset,
           event.outcome === "failed"
             ? "error"
-            : event.outcome === "cancelled"
+            : event.outcome === "cancelled" || event.outcome === "steered"
               ? "cancelled"
               : "ok",
         );

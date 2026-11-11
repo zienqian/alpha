@@ -52,12 +52,13 @@ input 同时提供 Standard Schema 校验和 Standard JSON Schema 输入描述�
 ## 运行约定
 
 - 一个 Agent 同时只接受一个 prompt；并发请求 reject，不排队。
-- text-delta 是预览；仅完整 finish 且流正常结束后提交 assistant，并从其 toolCalls 执行。
+- text-delta 是预览；正常情况下仅完整 finish 且流正常结束后提交 assistant，并从其 toolCalls 执行。引导中断时可将已显示文字保存为 `incompleteReason: "steered"` 的 assistant；不保存未完成的工具参数或 provider continuation。
 - 工具结果按 assistantId + callId 配对。effect 默认 unknown；write / unknown 工具抛错会将历史标为 blocked。
 - 已返回的工具即使后处理失败，也保留 succeeded 事实；内核不重试工具。
 - abort / timeout / close 请求协作停止，等待受理中的工作结束；不合作的扩展可能一直等待。
 - 初始化 signal 成功创建后解除关联；prompt.signal 仅影响当前 run。
 - waitForIdle 等待整个 prompt，包括边界准备和保存尝试；close 还会逆序等待插件释放。重复 close 返回同一 Promise。
+- `agent.state.canSteer` 为 true 时，`agent.steer(input)` 中断当前模型生成并向同一 run 追加用户消息，然后以新 signal 和完整历史续跑。中断只影响当前模型请求或工具准备/审批，不将 run 标记为 cancelled；`model.end.outcome: "steered"` 区分这种切换。已开始的工具及结果处理必须先完成，同批未开始的调用写入 `not_executed` 结果后跳过，不自动重跑已执行工具。多个引导按接收顺序提交。返回的 Promise 在提交时为 true，若本轮结束/取消前未提交则为 false，不泄漏到下一次 prompt。true 表示消息已进入历史，不代表模型执行或保存成功；仍应等待当前 prompt 的结果。引导遵循相同的上下文容量、模型调用和运行期限限制，并随当前 run 的快照保存。显式 abort/close/timeout 优先于续跑。模型和准备钩子必须响应 AbortSignal；不合作的扩展仍会被等待，避免后台工作与续跑重叠。中断请求未报告的 token 用量不计入已知用量。
 - 历史是进程内只读快照；未安装运行边界时，replaceMessages 在 idle 时原子替换完整历史，拒绝未知结果与未配对调用。安装边界后外部替换被 HISTORY_MANAGED 拒绝。
 - prompt 可传稳定的 requestId；省略时为新请求生成 ID。只有安装实现去重的边界（例如 Session 插件）才有跨调用去重语义，裸 core 不承诺该能力。
 - 事件同步有序，无消费者队列或持久化保证；观察者错误独立报告。同步重入产生的停止事件在当前分发后顺序通知。

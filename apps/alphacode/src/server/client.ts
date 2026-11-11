@@ -23,6 +23,7 @@ export function remoteChat(client: AlphaClient, initial: SessionView, launch = o
       finishedAt: message.tool.finishedAt === undefined ? undefined : message.tool.finishedAt - performance.timeOrigin,
     } }),
     canSend: connected && !closed && view.state.canSend,
+    canQueue: connected && !closed && Boolean(view.state.canQueue),
     activeRunStartedAt: view.state.activeRunStartedAt === undefined ? undefined : view.state.activeRunStartedAt - performance.timeOrigin,
     error: notice ?? view.state.error, notice: noticeData ?? view.state.notice,
     connection: connected ? "connected" : "reconnecting",

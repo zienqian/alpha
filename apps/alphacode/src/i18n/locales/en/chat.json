@@ -1,5 +1,6 @@
 {
   "note": {
+    "steered": "Redirected by new instructions",
     "incomplete": "Response incomplete",
     "preview": "Incomplete preview"
   },
@@ -18,7 +19,9 @@
     "description": "Explore a project, fix a bug, or build something new."
   },
   "composer": {
-    "busy": "Working… draft your next message",
+    "busy": "Working… Enter to queue your next message",
+    "queueCount_one": "{{count}} message queued",
+    "queueCount_other": "{{count}} messages queued",
     "placeholder": "Describe your task…"
   },
   "commands": {

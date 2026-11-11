@@ -1,4 +1,5 @@
 {
+  "queueConflict": "This queued message was edited elsewhere. Your edits are kept; reopen the editor to use the latest version.",
   "subscribe": "Cannot subscribe to this conversation. Run /web again in the CLI.",
   "search": "Cannot search conversations. Check that the local server is running.",
   "busy": "This conversation is busy. Try again shortly.",

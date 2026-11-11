@@ -6,7 +6,7 @@ import { freezeArguments, record, textBytes } from './json';
 import { callKey, createToolResult } from './messages';
 import { placeholder } from './history';
 
-export function callTool<C>(run: Run<C>, tools: ReadonlyMap<string, Tool<C>>, hooks: Hooks<C>, assistantId: string, callId: string): Promise<ToolResultMessage> {
+export function callTool<C>(run: Run<C>, tools: ReadonlyMap<string, Tool<C>>, hooks: Hooks<C>, assistantId: string, callId: string, steeringSignal: AbortSignal, finishPreparation: () => void): Promise<ToolResultMessage> {
   run.check();
   const key = callKey(assistantId, callId), completed = run.completed.get(key);
   if (completed) return Promise.resolve(completed);
@@ -14,14 +14,17 @@ export function callTool<C>(run: Run<C>, tools: ReadonlyMap<string, Tool<C>>, ho
     ensure(run.assistants.has(assistantId), 'CALL_NOT_PENDING');
     const pending = run.history.getPending(assistantId, callId);
     ensure(pending, 'CALL_NOT_PENDING');
-    let execution: ToolExecution = 'not_executed', content: string, resultCommitted = false;
+    let execution: ToolExecution = 'not_executed', content: string, resultCommitted = false, started = false;
+    const preparationContext = Object.freeze({ ...run.context, signal: AbortSignal.any([run.context.signal, steeringSignal]) });
+    const checkPreparation = () => { run.check(); preparationContext.signal.throwIfAborted(); };
     const tool = tools.get(pending.call.name);
     try {
+      checkPreparation();
       ensure(tool, 'TOOL_NOT_FOUND');
       let prepared: PreparedTool<C>;
-      try { prepared = await tool.prepare(pending.call.arguments, run.context.signal); }
+      try { prepared = await tool.prepare(pending.call.arguments, preparationContext.signal); }
       catch { throw error('TOOL_INPUT_INVALID'); }
-      run.check();
+      checkPreparation();
       ensure(record(prepared) && typeof prepared.execute === 'function', 'TOOL_INPUT_INVALID');
       const args = freezeArguments(prepared.arguments);
       Object.freeze(prepared);
@@ -29,8 +32,8 @@ export function callTool<C>(run: Run<C>, tools: ReadonlyMap<string, Tool<C>>, ho
       let denied = false;
       for (const hook of hooks.authorizeTool ?? []) {
         let decision;
-        try { decision = await hook(call, run.context); } catch { throw error('HOOK_FAILED'); }
-        run.check();
+        try { decision = await hook(call, preparationContext); } catch { throw error('HOOK_FAILED'); }
+        checkPreparation();
         ensure(record(decision) && (decision.action === 'allow' || decision.action === 'deny'), 'HOOK_FAILED');
         if (decision.action === 'deny') {
           ensure(typeof decision.reason === 'string', 'HOOK_FAILED');
@@ -39,9 +42,13 @@ export function callTool<C>(run: Run<C>, tools: ReadonlyMap<string, Tool<C>>, ho
       }
       if (denied) { execution = 'denied'; content = '[Tool execution denied.]'; }
       else {
+        // From this point the tool may have effects. Steering can skip later
+        // calls, but only an explicit run cancellation may abort this one.
+        finishPreparation();
         run.reserveTool();
         run.emit({ type: 'tool.start', assistantId, callId, name: pending.call.name }, { effect: tool.info.effect });
         run.check();
+        started = true;
         pending.fallback = tool.info.effect === 'read' ? 'failed' : 'outcome_unknown';
         execution = pending.fallback;
         let output: string;
@@ -67,6 +74,11 @@ export function callTool<C>(run: Run<C>, tools: ReadonlyMap<string, Tool<C>>, ho
       run.check();
       return result;
     } catch (cause) {
+      if (!started && !resultCommitted && !run.intent && steeringSignal.aborted) {
+        const result = run.toolResult(assistantId, callId, '[Skipped for steering.]', 'not_executed');
+        run.check();
+        return result;
+      }
       run.fail(cause instanceof Stop ? cause : safeError(cause, 'TOOL_FAILED'));
       if (!resultCommitted) run.toolResult(assistantId, callId, placeholder, execution);
       throw new Stop();

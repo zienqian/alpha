@@ -26,6 +26,8 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals, restored?
   let closePromise: Promise<void> | undefined;
   return {
     get state() { return state; },
+    get canSteer() { return state.busy && !state.closing && Boolean(runtime.canSteer); },
+    steer(input) { return runtime.steer?.(input) ?? Promise.resolve(false); },
     modelId: runtime.modelId,
     workspaceRoot: runtime.workspaceRoot,
     sessionId: runtime.sessionId,

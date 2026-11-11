@@ -34,6 +34,10 @@ export function useSessionActions(view: SessionView | undefined, selectedId: str
     setPermissionMode: (id: string, mode: PermissionMode) => commands.setPermissionMode(id, mode),
     retry: () => { void commands.retry(selectedId); },
     cancel: () => { void commands.control(selectedId, view, "cancel"); },
+    cancelQueued: (requestId: string) => { void commands.cancelQueued(selectedId, requestId); },
+    editQueued: (requestId: string, input: string, expectedInput: string) => commands.updateQueue(selectedId, { action: "edit", requestId, input, expectedInput }),
+    moveQueued: (requestId: string, beforeRequestId: string | null) => commands.updateQueue(selectedId, { action: "move", requestId, beforeRequestId }),
+    steerQueued: (requestId: string) => commands.updateQueue(selectedId, { action: "steer", requestId }),
     approve: (allow: boolean) => { void commands.control(selectedId, view, "approval", allow); },
   };
 }

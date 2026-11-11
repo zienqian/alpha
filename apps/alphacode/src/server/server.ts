@@ -22,13 +22,17 @@ interface Entry {
   projectId: string;
   updatedAt: string;
   requestId?: string;
-  admission: boolean;
+  admission?: Promise<void>;
+  queue: QueuedRequest[];
+  draining?: Promise<void>;
+  activeRun?: Promise<void>;
   approval?: ApprovalRequest;
   approvalId?: string;
   unsubscribe: () => void;
 }
 
 interface Journal extends RequestReceipt { hash: string; instanceId: string }
+interface QueuedRequest { input: string; journal: Journal; file: string; steering?: boolean }
 
 export interface ServerOptions {
   databasePath: string;
@@ -104,7 +108,7 @@ export async function startServer(options: ServerOptions) {
     const chat = await factory({ ...config, sessionId,
       permissionMode: restore?.state.permissionMode ?? config.permissionMode }, registry.credentials.get(projectId), restore);
     // Reading history or restoring a worker is not new conversation activity.
-    const entry: Entry = { chat, projectId, admission: false,
+    const entry: Entry = { chat, projectId, queue: [],
       updatedAt: restore?.updatedAt ?? saved?.data.updatedAt ?? new Date().toISOString(), unsubscribe: () => undefined };
     entry.unsubscribe = chat.subscribe(() => {
       if (entry.approval !== chat.state.approval) {
@@ -141,6 +145,9 @@ export async function startServer(options: ServerOptions) {
       session: { id: chat.sessionId, projectId: entry.projectId, workspaceRoot: chat.workspaceRoot,
         title: state.sessionTitle, titleStatus: state.titleStatus, status: state.busy ? "running" : state.canSend ? "ready" : "blocked", updatedAt: entry.updatedAt },
       state: { ...state,
+        canQueue: canAccept(entry),
+        canSteer: canAccept(entry) && Boolean(chat.canSteer),
+        queuedRequests: entry.queue.map(({ journal, input, steering }) => ({ requestId: journal.requestId, input, ...(steering ? { steering } : {}) })),
         messages: state.messages.map(message => !message.tool ? message : { ...message, tool: { ...message.tool,
           startedAt: message.tool.startedAt === undefined ? undefined : performance.timeOrigin + message.tool.startedAt,
           finishedAt: message.tool.finishedAt === undefined ? undefined : performance.timeOrigin + message.tool.finishedAt,
@@ -183,12 +190,107 @@ export async function startServer(options: ServerOptions) {
     return new Response(body, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-store", "X-Accel-Buffering": "no" } });
   }
 
+  function canAccept(entry: Entry) {
+    const state = entry.chat.state;
+    return !stopping && !state.closing && !state.settingsSaving && state.phase !== "stopping"
+      && (state.canSend || state.busy);
+  }
+
+  function drain(entry: Entry) {
+    if (entry.draining || stopping || !entry.queue.length || entry.queue[0]?.steering || !entry.chat.state.canSend || entry.chat.state.closing) return;
+    const work = Promise.resolve().then(async () => {
+      while (!stopping && entry.queue.length && !entry.queue[0]?.steering && entry.chat.state.canSend && !entry.chat.state.closing) {
+        const next = entry.queue.shift();
+        if (!next) break;
+        entry.requestId = next.journal.requestId;
+        changed();
+        try {
+          // send resolves only after the runtime has finished saving this turn.
+          entry.activeRun = entry.chat.send(next.input, next.journal.requestId);
+          await entry.activeRun;
+          await writeJson(next.file, { ...next.journal, status: "settled" });
+        } finally {
+          entry.requestId = undefined;
+          entry.activeRun = undefined;
+          changed();
+        }
+      }
+    }).catch(() => { console.error("REQUEST_FINALIZATION_FAILED"); }).finally(() => {
+      entry.draining = undefined;
+      running.delete(work);
+      changed();
+      drain(entry);
+    });
+    entry.draining = work;
+    running.add(work);
+  }
+
+  async function interruptQueued(entry: Entry, requestId: string, closing = false) {
+    const index = entry.queue.findIndex(item => item.journal.requestId === requestId);
+    if (index < 0) return false;
+    if (!closing && entry.queue[index]?.steering) fail(409, "SESSION_BUSY");
+    const [queued] = entry.queue.splice(index, 1);
+    if (!queued) return false;
+    changed();
+    await writeJson(queued.file, { ...queued.journal, status: "interrupted" });
+    return true;
+  }
+
+  function updateQueue(entry: Entry, body: Record<string, unknown>) {
+    const requestId = requiredString(body, "requestId", 100);
+    const queued = entry.queue.find(item => item.journal.requestId === requestId);
+    if (!queued) return fail(409, "STALE_REQUEST");
+    if (body.action === "steer" && queued.steering) return Response.json(snapshot(entry));
+    if (queued.steering || entry.chat.state.closing || stopping) return fail(409, "SESSION_BUSY");
+    if (body.action === "edit") {
+      const input = requiredString(body, "input");
+      const expectedInput = requiredString(body, "expectedInput");
+      if (queued.input !== expectedInput && queued.input !== input) return fail(409, "QUEUE_CONFLICT");
+      // Admission hashes keep the original submission identity for retries.
+      // Only the still-pending payload changes; executed history is immutable.
+      queued.input = input;
+    } else if (body.action === "move") {
+      const before = body.beforeRequestId;
+      if (before !== null && typeof before !== "string") return fail(400, "INVALID_REQUESTID");
+      if (before === requestId) return Response.json(snapshot(entry));
+      if (before !== null && !entry.queue.some(item => item.journal.requestId === before)) return fail(409, "STALE_REQUEST");
+      entry.queue.splice(entry.queue.indexOf(queued), 1);
+      entry.queue.splice(before === null ? entry.queue.length : entry.queue.findIndex(item => item.journal.requestId === before), 0, queued);
+    } else if (body.action === "steer") {
+      const active = entry.activeRun;
+      if (!active || !canAccept(entry) || !entry.chat.canSteer || !entry.chat.steer) return fail(409, "STALE_REQUEST");
+      queued.steering = true;
+      const work = entry.chat.steer(queued.input).then(async consumed => {
+        if (!consumed) return;
+        const index = entry.queue.indexOf(queued);
+        if (index >= 0) entry.queue.splice(index, 1);
+        changed();
+        // The steering message is part of the current persisted turn.
+        await active;
+        await writeJson(queued.file, { ...queued.journal, status: "settled" });
+      }).catch(() => { console.error("QUEUE_STEERING_FAILED"); }).finally(() => {
+        queued.steering = false;
+        running.delete(work);
+        changed();
+        drain(entry);
+      });
+      running.add(work);
+    } else return fail(400, "INVALID_QUEUE_ACTION");
+    changed();
+    return Response.json(snapshot(entry));
+  }
+
   async function send(entry: Entry, body: Record<string, unknown>) {
     const requestId = requiredString(body, "requestId", 100);
     const input = requiredString(body, "input");
     if (!/^[a-zA-Z0-9_-]+$/.test(requestId)) fail(400, "INVALID_REQUESTID");
-    if (entry.admission) fail(409, "SESSION_BUSY");
-    entry.admission = true;
+    // Serialize admissions from all clients, including duplicate retries. Model
+    // execution runs separately so admitting a message never waits for a reply.
+    const previousAdmission = entry.admission;
+    let release!: () => void;
+    const admission = new Promise<void>(resolve => { release = resolve; });
+    entry.admission = admission;
+    await previousAdmission;
     try {
       const file = join(receipts, `${digest(`${entry.chat.sessionId}:${requestId}`)}.json`);
       const hash = digest(input);
@@ -198,21 +300,17 @@ export async function startServer(options: ServerOptions) {
         const status = previous.status === "accepted" && previous.instanceId !== instanceId ? "interrupted" : previous.status;
         return Response.json({ requestId, status });
       }
-      if (entry.chat.state.busy || entry.chat.state.settingsSaving || !entry.chat.state.canSend) fail(409, "SESSION_BUSY");
+      if (!canAccept(entry)) fail(409, "SESSION_BUSY");
       const journal: Journal = { requestId, hash, status: "accepted", instanceId };
       await writeJson(file, journal);
-      entry.requestId = requestId;
-      const work = entry.chat.send(input, requestId).then(async () => {
-        await writeJson(file, { ...journal, status: "settled" });
-      }).catch(() => { console.error("REQUEST_FINALIZATION_FAILED"); }).finally(() => {
-        if (entry.requestId === requestId) entry.requestId = undefined;
-        running.delete(work);
-        changed();
-      });
-      running.add(work);
+      entry.queue.push({ input, journal, file });
+      drain(entry);
       changed();
       return Response.json({ requestId, status: "accepted" }, { status: 202 });
-    } finally { entry.admission = false; }
+    } finally {
+      release();
+      if (entry.admission === admission) entry.admission = undefined;
+    }
   }
 
   async function route(request: Request, server: Bun.Server<undefined>): Promise<Response> {
@@ -286,7 +384,7 @@ export async function startServer(options: ServerOptions) {
         await webDirectory;
         return Response.json({ url: `${origin}/?session=${encodeURIComponent(entry.chat.sessionId)}` });
       }
-      const match = /^\/api\/sessions\/([^/]+)(?:\/(events|requests|cancel|approval|permission))?$/.exec(path);
+      const match = /^\/api\/sessions\/([^/]+)(?:\/(events|requests|cancel|approval|permission|queue))?$/.exec(path);
       if (match?.[1]) {
         const entry = await open(decodeURIComponent(match[1]));
         const action = match[2];
@@ -295,8 +393,12 @@ export async function startServer(options: ServerOptions) {
         if (request.method !== "POST") fail(405, "METHOD_NOT_ALLOWED");
         const body = await jsonBody(request);
         if (action === "requests") return send(entry, body);
+        if (action === "queue") return updateQueue(entry, body);
         if (action === "cancel" || action === "approval") {
-          if (requiredString(body, "requestId", 100) !== entry.requestId || !entry.chat.state.busy) fail(409, "STALE_REQUEST");
+          const requestId = requiredString(body, "requestId", 100);
+          if (action === "cancel" && await interruptQueued(entry, requestId)) return Response.json({ ok: true });
+          if (action === "cancel" && body.queuedOnly === true) fail(409, "STALE_REQUEST");
+          if (requestId !== entry.requestId || !entry.chat.state.busy) fail(409, "STALE_REQUEST");
           if (action === "cancel") entry.chat.cancel();
           else {
             if (!entry.approvalId || body.approvalId !== entry.approvalId || typeof body.allow !== "boolean") fail(409, "STALE_APPROVAL");
@@ -307,7 +409,7 @@ export async function startServer(options: ServerOptions) {
         }
         if (action === "permission") {
           if (!isPermissionMode(body.mode)) return fail(400, "INVALID_PERMISSION");
-          if (entry.admission || entry.chat.state.busy || entry.chat.state.settingsSaving || !await entry.chat.setPermissionMode(body.mode)) fail(409, "SESSION_BUSY");
+          if (entry.admission || entry.queue.length || entry.chat.state.busy || entry.chat.state.settingsSaving || !await entry.chat.setPermissionMode(body.mode)) fail(409, "SESSION_BUSY");
           return Response.json(snapshot(entry));
         }
       }
@@ -363,7 +465,7 @@ export async function startServer(options: ServerOptions) {
   const idleMs = options.idleMs ?? 60000;
   const settled = () => !operations && !opening.size && !running.size && [...entries.values()].every(entry => {
     const state = entry.chat.state;
-    return !entry.admission && !entry.requestId && !state.busy && !state.closing && !state.settingsSaving && !state.approval && state.titleStatus !== "pending" && state.canSend;
+    return !entry.admission && !entry.queue.length && !entry.requestId && !state.busy && !state.closing && !state.settingsSaving && !state.approval && state.titleStatus !== "pending" && state.canSend;
   });
   const idle = setInterval(() => {
     if (!closed && !stopping && !updating && !connections && settled() && Date.now() - lastActivity >= idleMs) {
@@ -375,7 +477,10 @@ export async function startServer(options: ServerOptions) {
     stopping ??= (async () => {
       while (operations > 0) await Bun.sleep(10);
       await Promise.all([...opening.values()].map(work => work.catch(() => undefined)));
-      for (const entry of entries.values()) await entry.chat.close();
+      for (const entry of entries.values()) {
+        for (const queued of [...entry.queue]) await interruptQueued(entry, queued.journal.requestId, true);
+        await entry.chat.close();
+      }
       await Promise.all([...running]);
       for (const entry of entries.values()) entry.unsubscribe();
       detachTrace();

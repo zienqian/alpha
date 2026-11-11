@@ -16,6 +16,7 @@
   "src/chat/messages.ts": {
     "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
     "messages": [
+      "Hard-coded string \"Redirected by new instructions\".",
       "Hard-coded string \"Request refused by the model\".",
       "Hard-coded string \"Response incomplete\".",
       "Hard-coded string \"Outcome unknown\".",
@@ -63,6 +64,7 @@
   "src/runtime/history.ts": {
     "reason": "Protocol v2 compatibility text; clients use structured codes for localized presentation.",
     "messages": [
+      "Hard-coded string \"Redirected by new instructions\".",
       "Hard-coded string \"Response incomplete\".",
       "Hard-coded string \"Tool call\"."
     ]

@@ -117,6 +117,30 @@ test("React unmount removes keyboard, resize and animation listeners across repe
   } finally { await ui.dispose(); }
 });
 
+test("the terminal submits queued input while busy and preserves input while disconnected", async () => {
+  const source = viewChat("Queue input");
+  const sent: string[] = [];
+  source.chat.send = async input => { sent.push(input); };
+  const ui = await createTestRenderer({ width: 100, height: 24, kittyKeyboard: true });
+  try {
+    flushSync(() => createRoot(ui.renderer).render(<TerminalLanguageProvider locale={{ language: "en", formatLocale: "en-US" }}><App chat={source.chat} onExit={() => undefined} /></TerminalLanguageProvider>));
+    source.update({ busy: true, canSend: false, canQueue: true, queuedRequests: [{ requestId: "queued", input: "Already queued" }] });
+    await ui.mockInput.typeText("Next message");
+    ui.mockInput.pressEnter();
+    expect(sent).toEqual(["Next message"]);
+    await ui.renderOnce();
+    expect(ui.captureCharFrame()).toContain("1 message queued");
+    expect(ui.captureCharFrame()).toContain("Already queued");
+    source.update({ canQueue: false, connection: "reconnecting" });
+    await ui.mockInput.typeText("Keep draft");
+    ui.mockInput.pressEnter();
+    expect(sent).toHaveLength(1);
+    source.update({ canQueue: true, connection: "connected" });
+    ui.mockInput.pressEnter();
+    expect(sent).toEqual(["Next message", "Keep draft"]);
+  } finally { await ui.dispose(); }
+});
+
 test("native keyboard events keep menu selection and Escape priority before React commits", async () => {
   const source = viewChat("Rapid input");
   let cancelled = 0;

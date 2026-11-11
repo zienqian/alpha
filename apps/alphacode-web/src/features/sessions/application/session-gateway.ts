@@ -1,4 +1,4 @@
-import type { PermissionMode, RequestReceipt, SessionInfo, SessionSearchResult, SessionView } from "@/features/sessions/api";
+import type { PermissionMode, QueueAction, RequestReceipt, SessionInfo, SessionSearchResult, SessionView } from "@/features/sessions/api";
 
 export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "error";
 export interface SessionIndexEvent { instanceId: string; sequence: number }
@@ -10,7 +10,8 @@ export interface SessionGateway {
   get(id: string, signal: AbortSignal): Promise<SessionView>;
   search(query: string, signal: AbortSignal): Promise<SessionSearchResult[]>;
   send(id: string, requestId: string, input: string): Promise<RequestReceipt>;
-  cancel(id: string, requestId: string): Promise<unknown>;
+  cancel(id: string, requestId: string, queuedOnly?: boolean): Promise<unknown>;
+  updateQueue(id: string, action: QueueAction): Promise<SessionView>;
   answerApproval(id: string, requestId: string, approvalId: string, allow: boolean): Promise<unknown>;
   setPermissionMode(id: string, mode: PermissionMode): Promise<SessionView>;
   subscribeIndex(receive: (event: SessionIndexEvent) => void, signal: AbortSignal): Promise<void>;

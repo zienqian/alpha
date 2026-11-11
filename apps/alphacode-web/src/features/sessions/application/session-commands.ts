@@ -1,4 +1,4 @@
-import type { PermissionMode, SessionView } from "@/features/sessions/api";
+import type { PermissionMode, QueueAction, SessionView } from "@/features/sessions/api";
 import { isUncertainSubmission, type SessionActionError } from "@/features/sessions/domain/errors";
 import { hasAdvanced, type PendingRequest } from "@/features/sessions/domain/request";
 import type { SessionGateway } from "./session-gateway";
@@ -27,7 +27,7 @@ export class SessionCommands {
   private readonly listeners = new Set<() => void>();
 
   constructor(
-    private readonly gateway: Pick<SessionGateway, "get" | "send" | "cancel" | "answerApproval" | "setPermissionMode">,
+    private readonly gateway: Pick<SessionGateway, "get" | "send" | "cancel" | "answerApproval" | "setPermissionMode" | "updateQueue">,
     private readonly cache: SessionCommandCache,
     private readonly onAccepted: (id: string, input: string) => void,
   ) {}
@@ -98,10 +98,42 @@ export class SessionCommands {
     if (request?.status === "uncertain") return this.send(id, request.input);
   }
 
+  async cancelQueued(id: string, requestId: string) {
+    if (this.controlling.has(id) || !this.cache.get(id)?.state.queuedRequests?.some(item => item.requestId === requestId)) return;
+    this.controlling.add(id);
+    this.update(id, { controlling: true, error: undefined });
+    try {
+      await this.gateway.cancel(id, requestId, true);
+    } catch (cause) {
+      this.update(id, { error: { cause } });
+    } finally {
+      await this.refresh(id).catch(() => undefined);
+      this.controlling.delete(id);
+      this.update(id, { controlling: false });
+    }
+  }
+
+  async updateQueue(id: string, action: QueueAction): Promise<boolean> {
+    if (this.controlling.has(id)) return false;
+    this.controlling.add(id);
+    this.update(id, { controlling: true, error: undefined });
+    try {
+      this.cache.write(await this.gateway.updateQueue(id, action));
+      return true;
+    } catch (cause) {
+      this.update(id, { error: { cause } });
+      await this.refresh(id).catch(() => undefined);
+      return false;
+    } finally {
+      this.controlling.delete(id);
+      this.update(id, { controlling: false });
+    }
+  }
+
   async setPermissionMode(id: string, mode: PermissionMode): Promise<boolean> {
     const view = this.cache.get(id);
     if (!view || this.controlling.has(id) || this.sending.has(id) || this.getState(id).pending
-      || view.state.busy || view.state.closing || view.state.settingsSaving || view.state.approval || !view.state.canSend) return false;
+      || view.state.busy || view.state.queuedRequests?.length || view.state.closing || view.state.settingsSaving || view.state.approval || !view.state.canSend) return false;
     if (view.state.permissionMode === mode) return true;
     this.controlling.add(id);
     this.update(id, { controlling: true, permissionSaving: true, error: undefined });

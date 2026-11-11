@@ -12,9 +12,11 @@ import { startServer } from "../src/server/server";
 import { digest, serverPaths, writeJson } from "../src/server/storage";
 import { openBrowser } from "../src/server/web";
 import type { AppConfig } from "../src/config";
+import type { Chat } from "../src/chat/contracts";
 import { controlledStream, textResponse, toolResponse, waitFor, type RequestBody } from "./helpers";
 
-async function serverFixture(reply: (body: RequestBody, count: number) => Response = () => textResponse("hello"), idleMs = 60000) {
+async function serverFixture(reply: (body: RequestBody, count: number) => Response = () => textResponse("hello"), idleMs = 60000,
+  wrap: (chat: Chat) => Chat = chat => chat) {
   const root = await mkdtemp(join(tmpdir(), "alphacode-server-test-"));
   const workspaceRoot = join(root, "workspace");
   const webRoot = join(root, "web");
@@ -33,12 +35,12 @@ async function serverFixture(reply: (body: RequestBody, count: number) => Respon
   const options = { databasePath: paths.database, directory: paths.directory, idleMs,
     createChat: async (input: AppConfig) => {
       creations++;
-      return createApplication(input, { provider: { fetch: async (_url, init) => {
+      return wrap(await createApplication(input, { provider: { fetch: async (_url, init) => {
         const body = JSON.parse(String(init?.body)) as RequestBody;
         if (!body.stream) return Response.json({ choices: [{ message: { content: "Test conversation" }, finish_reason: "stop" }] });
         calls.push(body);
         return reply(body, calls.length);
-      } } });
+      } } }));
     },
     enableWeb: async () => { webBuilds++; return webRoot; },
   };
@@ -201,7 +203,6 @@ test("one runtime streams to CLI and Web; detach does not cancel; duplicate requ
     const duplicate = await fixture.browser().request<RequestReceipt>(`/api/sessions/${id}/requests`, { input: "shared request", requestId: "same-request" });
     expect(duplicate.status).toBe("accepted");
     await expect(fixture.client().request(`/api/sessions/${id}/requests`, { input: "different", requestId: "same-request" })).rejects.toMatchObject({ status: 409, code: "REQUEST_ID_CONFLICT" });
-    await expect(fixture.client().request(`/api/sessions/${id}/requests`, { input: "concurrent", requestId: "other-request" })).rejects.toMatchObject({ status: 409 });
     model.text(" final"); model.end();
     await waitFor(() => web.values.at(-1)?.state.busy === false && web.values.at(-1)?.state.messages.at(-1)?.text === "live draft final");
     expect(fixture.calls).toHaveLength(1);
@@ -216,6 +217,220 @@ test("one runtime streams to CLI and Web; detach does not cancel; duplicate requ
     expect((await fixture.client().request<RequestReceipt>(`/api/sessions/${id}/requests`, { input: "shared request", requestId: "same-request" })).status).toBe("settled");
     expect(fixture.calls).toHaveLength(1);
   } finally { model.end(); await cli.close(); await fixture.dispose(); }
+});
+
+test("CLI and Web queue messages in FIFO order, deduplicate admission and preserve prior replies", async () => {
+  const first = controlledStream(), second = controlledStream();
+  const fixture = await serverFixture((_body, count) => count === 1 ? first.response : count === 2 ? second.response : textResponse("third reply"));
+  const initial = await fixture.connect();
+  const path = `/api/sessions/${initial.session.id}`;
+  const cli = remoteChat(fixture.client(), initial);
+  try {
+    await waitFor(() => cli.state.canSend);
+    await cli.send("first input", "first");
+    await waitFor(() => fixture.calls.length === 1 && cli.state.canQueue === true);
+    const receipts = await Promise.all([fixture.browser(), fixture.client()].map(client =>
+      client.request<RequestReceipt>(`${path}/requests`, { input: "second input", requestId: "second" })));
+    expect(receipts.map(receipt => receipt.status)).toEqual(["accepted", "accepted"]);
+    await cli.send("third input", "third");
+    await waitFor(() => cli.state.queuedRequests?.length === 2);
+    const snapshot = await fixture.browser().request<SessionView>(path);
+    expect(snapshot.requestId).toBe("first");
+    expect(snapshot.state.queuedRequests).toEqual([
+      { requestId: "second", input: "second input" }, { requestId: "third", input: "third input" },
+    ]);
+    expect(snapshot.state.messages.filter(message => message.role === "user").map(message => message.text)).toEqual(["first input"]);
+    expect(fixture.calls).toHaveLength(1);
+    await expect(fixture.client().request(`${path}/requests`, { input: "changed", requestId: "second" }))
+      .rejects.toMatchObject({ code: "REQUEST_ID_CONFLICT" });
+    // Detaching every current client does not own or discard the queue.
+    await cli.close();
+    first.text("first reply"); first.end();
+    await waitFor(() => fixture.calls.length === 2);
+    expect(fixture.calls[1]?.messages.map(message => message.content)).toContain("first reply");
+    const running = await fixture.browser().request<SessionView>(path);
+    expect(running.requestId).toBe("second");
+    expect(running.state.queuedRequests?.map(item => item.requestId)).toEqual(["third"]);
+    // A stale queue-remove action must never stop a request that has started.
+    await expect(fixture.browser().request(`${path}/cancel`, { requestId: "second", queuedOnly: true }))
+      .rejects.toMatchObject({ code: "STALE_REQUEST" });
+    second.text("second reply"); second.end();
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    const done = await fixture.browser().request<SessionView>(path);
+    expect(done.state.messages.map(message => message.text)).toEqual([
+      "first input", "first reply", "second input", "second reply", "third input", "third reply",
+    ]);
+    expect(done.state.queuedRequests).toEqual([]);
+    expect(fixture.calls).toHaveLength(3);
+    expect((await fixture.client().request<RequestReceipt>(`${path}/requests`, { input: "second input", requestId: "second" })).status).toBe("settled");
+  } finally { first.end(); second.end(); await cli.close(); await fixture.dispose(); }
+});
+
+test("removing a queued request leaves the current turn and other sessions running; stopping advances the queue", async () => {
+  const model = controlledStream();
+  const fixture = await serverFixture((_body, count) => count === 1 ? model.response : textResponse("finished"));
+  try {
+    const initial = await fixture.connect();
+    const path = `/api/sessions/${initial.session.id}`;
+    await fixture.client().request(`${path}/requests`, { input: "active", requestId: "active" });
+    await waitFor(() => fixture.calls.length === 1);
+    for (const requestId of ["remove", "keep"]) {
+      await fixture.browser().request(`${path}/requests`, { input: requestId, requestId });
+    }
+    await fixture.browser().request(`${path}/cancel`, { requestId: "remove", queuedOnly: true });
+    const view = await fixture.client().request<SessionView>(path);
+    expect(view.requestId).toBe("active");
+    expect(view.state.busy).toBe(true);
+    expect(view.state.queuedRequests?.map(item => item.requestId)).toEqual(["keep"]);
+    expect((await fixture.client().request<RequestReceipt>(`${path}/requests`, { input: "remove", requestId: "remove" })).status).toBe("interrupted");
+    const other = await fixture.browser().request<SessionView>("/api/sessions", { projectId: initial.session.projectId });
+    const otherPath = `/api/sessions/${other.session.id}`;
+    await fixture.browser().request(`${otherPath}/requests`, { input: "independent", requestId: "independent" });
+    await waitFor(async () => !(await fixture.client().request<SessionView>(otherPath)).requestId);
+    expect(fixture.calls).toHaveLength(2);
+    await fixture.browser().request(`${path}/cancel`, { requestId: "active" });
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    const finished = await fixture.client().request<SessionView>(path);
+    expect(finished.state.queuedRequests).toEqual([]);
+    expect(finished.state.messages.filter(message => message.role === "user").map(message => message.text)).toEqual(["active", "keep"]);
+    expect(fixture.calls).toHaveLength(3);
+  } finally { model.end(); await fixture.dispose(); }
+});
+
+test("queued messages can be edited and reordered without changing admission identity or current history", async () => {
+  const model = controlledStream();
+  const fixture = await serverFixture((_body, count) => count === 1 ? model.response : textResponse("reply"));
+  try {
+    const initial = await fixture.connect();
+    const path = `/api/sessions/${initial.session.id}`;
+    await fixture.client().request(`${path}/requests`, { input: "active", requestId: "active" });
+    await waitFor(() => fixture.calls.length === 1);
+    for (const requestId of ["one", "two", "three"]) await fixture.client().request(`${path}/requests`, { input: requestId, requestId });
+    const edit = { action: "edit", requestId: "two", input: "edited two", expectedInput: "two" };
+    await fixture.browser().request(`${path}/queue`, edit);
+    await fixture.browser().request(`${path}/queue`, edit); // Lost acknowledgement retry is idempotent.
+    await expect(fixture.client().request(`${path}/queue`, { ...edit, input: "stale edit" })).rejects.toMatchObject({ code: "QUEUE_CONFLICT" });
+    await fixture.browser().request(`${path}/queue`, { action: "move", requestId: "three", beforeRequestId: "one" });
+    await fixture.browser().request(`${path}/queue`, { action: "move", requestId: "one", beforeRequestId: null });
+    const view = await fixture.client().request<SessionView>(path);
+    expect(view.state.queuedRequests?.map(item => item.input)).toEqual(["three", "edited two", "one"]);
+    expect(view.requestId).toBe("active");
+    expect(view.state.messages.filter(message => message.role === "user").map(message => message.text)).toEqual(["active"]);
+    expect((await fixture.client().request<RequestReceipt>(`${path}/requests`, { input: "two", requestId: "two" })).status).toBe("accepted");
+    model.text("done"); model.end();
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    const done = await fixture.client().request<SessionView>(path);
+    expect(done.state.messages.filter(message => message.role === "user").map(message => message.text)).toEqual(["active", "three", "edited two", "one"]);
+    await expect(fixture.client().request(`${path}/queue`, edit)).rejects.toMatchObject({ code: "STALE_REQUEST" });
+    expect(fixture.calls).toHaveLength(4);
+  } finally { model.end(); await fixture.dispose(); }
+});
+
+test("steering interrupts an open model stream and persists the continued run without replay", async () => {
+  const first = controlledStream(), guided = controlledStream();
+  const fixture = await serverFixture((_body, count) => count === 1 ? first.response : count === 2 ? guided.response : textResponse("queued reply"));
+  try {
+    const initial = await fixture.connect();
+    const path = `/api/sessions/${initial.session.id}`;
+    await fixture.client().request(`${path}/requests`, { input: "original task", requestId: "active" });
+    await waitFor(async () => Boolean((await fixture.client().request<SessionView>(path)).state.canSteer));
+    first.text("initial preview");
+    await waitFor(async () => (await fixture.client().request<SessionView>(path)).state.messages.some(message => message.text === "initial preview"));
+    for (const requestId of ["later", "guide"]) await fixture.client().request(`${path}/requests`, { input: requestId, requestId });
+    const steering = await fixture.browser().request<SessionView>(`${path}/queue`, { action: "steer", requestId: "guide" });
+    expect(steering.state.queuedRequests?.find(item => item.requestId === "guide")?.steering).toBe(true);
+    // Never complete the original stream: steering must close it and resume.
+    await waitFor(() => fixture.calls.length === 2);
+    const during = await fixture.client().request<SessionView>(path);
+    expect(during.requestId).toBe("active");
+    expect(during.state.busy).toBe(true);
+    expect(during.state.error).toBeUndefined();
+    expect(during.state.messages.find(message => message.text === "initial preview")?.noteCode).toBe("RESPONSE_STEERED");
+    await expect(fixture.client().request(`${path}/queue`, { action: "edit", requestId: "guide", expectedInput: "guide", input: "changed" }))
+      .rejects.toMatchObject({ code: "STALE_REQUEST" });
+    expect(during.state.queuedRequests?.map(item => item.requestId)).toEqual(["later"]);
+    expect(during.state.messages.filter(message => message.role === "user").map(message => message.text)).toEqual(["original task", "guide"]);
+    expect(fixture.calls[1]?.messages.at(-1)?.content).toBe("guide");
+    expect((await fixture.client().request<RequestReceipt>(`${path}/requests`, { input: "guide", requestId: "guide" })).status).toBe("accepted");
+    guided.text("guided result"); guided.end();
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    await fixture.restart();
+    const restored = await fixture.client().request<SessionView>(path);
+    expect(restored.state.messages.map(message => message.text)).toEqual(["original task", "initial preview", "guide", "guided result", "later", "queued reply"]);
+    expect(restored.state.messages.find(message => message.text === "initial preview")?.noteCode).toBe("RESPONSE_STEERED");
+    expect((await fixture.client().request<RequestReceipt>(`${path}/requests`, { input: "guide", requestId: "guide" })).status).toBe("settled");
+    expect(fixture.calls).toHaveLength(3);
+  } finally { first.end(); guided.end(); await fixture.dispose(); }
+});
+
+test("steering withdraws a pending approval and continues without executing the command", async () => {
+  const fixture = await serverFixture((_body, count) => count === 1
+    ? toolResponse("run_command", { command: "echo should-not-run" }) : textResponse("updated plan"));
+  try {
+    const initial = await fixture.connect();
+    const path = `/api/sessions/${initial.session.id}`;
+    await fixture.client().request(`${path}/requests`, { input: "original", requestId: "active" });
+    await waitFor(async () => Boolean((await fixture.client().request<SessionView>(path)).approvalId));
+    const approval = await fixture.client().request<SessionView>(path);
+    await fixture.client().request(`${path}/requests`, { input: "do not run that command", requestId: "guide" });
+    await fixture.client().request(`${path}/queue`, { action: "steer", requestId: "guide" });
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    const view = await fixture.client().request<SessionView>(path);
+    expect(view.state.lastRunStatus).toBe("completed");
+    expect(view.approvalId).toBeUndefined();
+    expect(view.state.approval).toBeUndefined();
+    expect(view.state.messages.find(message => message.tool)?.tool?.status).toBe("not_executed");
+    expect(view.state.messages.at(-1)?.text).toBe("updated plan");
+    expect(fixture.calls).toHaveLength(2);
+    expect(fixture.calls[1]?.messages.at(-1)?.content).toBe("do not run that command");
+    await expect(fixture.client().request(`${path}/approval`, {
+      requestId: "active", approvalId: approval.approvalId, allow: true,
+    })).rejects.toMatchObject({ code: "STALE_REQUEST" });
+  } finally { await fixture.dispose(); }
+});
+
+test("a blocked runtime keeps queued messages visible without running them or accepting more", async () => {
+  const model = controlledStream();
+  let blocked = false;
+  const fixture = await serverFixture(() => model.response, 60000, chat => ({
+    ...chat,
+    get state() { return { ...chat.state, canSend: !blocked && chat.state.canSend }; },
+    async send(input, requestId) { await chat.send(input, requestId); blocked = true; },
+  }));
+  try {
+    const initial = await fixture.connect();
+    const path = `/api/sessions/${initial.session.id}`;
+    await fixture.client().request(`${path}/requests`, { input: "active", requestId: "active" });
+    await waitFor(() => fixture.calls.length === 1);
+    await fixture.client().request(`${path}/requests`, { input: "waiting", requestId: "waiting" });
+    model.text("saved state cannot be confirmed"); model.end();
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    const view = await fixture.client().request<SessionView>(path);
+    expect(view.state.canQueue).toBe(false);
+    expect(view.state.queuedRequests).toEqual([{ requestId: "waiting", input: "waiting" }]);
+    expect(fixture.server.canReload()).toBe(false);
+    await expect(fixture.client().request(`${path}/requests`, { input: "extra", requestId: "extra" }))
+      .rejects.toMatchObject({ code: "SESSION_BUSY" });
+    await fixture.client().request(`${path}/cancel`, { requestId: "waiting", queuedOnly: true });
+    expect((await fixture.client().request<SessionView>(path)).state.queuedRequests).toEqual([]);
+    expect(fixture.calls).toHaveLength(1);
+  } finally { model.end(); await fixture.dispose(); }
+});
+
+test("server shutdown interrupts queued receipts without executing them after restart", async () => {
+  const model = controlledStream();
+  const fixture = await serverFixture(() => model.response);
+  try {
+    const initial = await fixture.connect();
+    const path = `/api/sessions/${initial.session.id}`;
+    await fixture.client().request(`${path}/requests`, { input: "active", requestId: "active" });
+    await waitFor(() => fixture.calls.length === 1);
+    await fixture.client().request(`${path}/requests`, { input: "queued", requestId: "queued" });
+    await fixture.restart();
+    expect((await fixture.client().request<RequestReceipt>(`${path}/requests`, { input: "queued", requestId: "queued" })).status).toBe("interrupted");
+    expect((await fixture.client().request<SessionView>(path)).state.queuedRequests).toEqual([]);
+    expect(fixture.calls).toHaveLength(1);
+  } finally { model.end(); await fixture.dispose(); }
 });
 
 test("Web starts a shared conversation and CLI continues it with the same runtime and history", async () => {
@@ -337,7 +552,7 @@ test("session recency survives reopening history and follows live activity", asy
     expect(saved.map(session => session.id)).toEqual([second.session.id, first.session.id]);
     const path = `/api/sessions/${first.session.id}`;
     const reopened = await fixture.browser().request<SessionView>(path);
-    expect(reopened.session.updatedAt).toBe(saved[1]?.updatedAt);
+    expect(saved[1]?.updatedAt).toBe(reopened.session.updatedAt);
     const stream = fixture.subscribe(first.session.id);
     await waitFor(() => stream.values.length > 0);
     expect(stream.values[0]?.session.updatedAt).toBe(reopened.session.updatedAt);

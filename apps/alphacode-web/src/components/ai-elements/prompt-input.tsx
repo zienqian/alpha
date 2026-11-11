@@ -25,7 +25,7 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
   }, [focusRequest]);
 
   return (
-    <div className="w-full">
+    <div className="relative z-10 w-full">
       {folder && <div className="mx-2 -mb-3 flex min-w-0 items-center gap-4 rounded-t-xl bg-muted/60 px-3 pt-2.5 pb-5 text-xs text-muted-foreground sm:mx-3">
         <span className="flex min-w-0 items-center gap-2" title={folder.path}>
           <Folder className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{folder.name}</span>
@@ -48,7 +48,7 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
           </InputGroupAddon>
         )}
         <InputGroupTextarea ref={textareaRef} aria-label={t("sessions:draft")} aria-describedby="composer-status"
-          placeholder={t("sessions:placeholder")} value={draft.text}
+          placeholder={t(busy ? "sessions:queuePlaceholder" : "sessions:placeholder")} value={draft.text}
           onChange={(event) => onChange({ text: event.target.value })}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) {
@@ -61,9 +61,11 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
           <SessionPermissions mode={permissionMode} onChange={onPermissionChange} disabled={!canChangePermission}
             saving={permissionSaving} busy={busy || Boolean(submitting)} />
           <span id="composer-status" role="status" className="ml-auto truncate px-1 text-xs font-normal">{submitting ? t("sessions:submitting") : status}</span>
-          {busy ? <InputGroupButton variant="default" size="icon-sm" disabled={!canCancel} aria-label={t("sessions:stop")} onClick={onCancel}>
+          {busy && <InputGroupButton variant={draft.text.trim() ? "ghost" : "default"} size="icon-sm" disabled={!canCancel} aria-label={t("sessions:stop")} onClick={onCancel}>
             <Square className="size-3.5" aria-hidden="true" />
-          </InputGroupButton> : <InputGroupButton variant="default" size="icon-sm" disabled={!canSend} aria-label={t("sessions:send")} onClick={onSend}>
+          </InputGroupButton>}
+          {(!busy || Boolean(draft.text.trim())) && <InputGroupButton variant="default" size="icon-sm" className="rounded-full" disabled={!canSend}
+            aria-label={t(busy ? "sessions:enqueue" : "sessions:send")} title={t(busy ? "sessions:enqueue" : "sessions:send")} onClick={onSend}>
             {submitting ? <LoaderCircle className="size-3.5 motion-safe:animate-spin" aria-hidden="true" /> : <ArrowUp className="size-3.5" aria-hidden="true" />}
           </InputGroupButton>}
         </InputGroupAddon>

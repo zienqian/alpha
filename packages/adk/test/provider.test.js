@@ -38,6 +38,42 @@ const cases = {
   ],
 };
 
+const previews = {
+  'openai-completions': [{ choices: [{ delta: { content: 'visible preview' }, finish_reason: null }] }],
+  'openai-responses': [{ type: 'response.output_text.delta', delta: 'visible preview' }],
+  'anthropic-messages': [{ type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'visible preview' } }],
+};
+describe('steering closes the provider stream before resuming with portable history', () => {
+  for (const [adapter, events] of Object.entries(previews)) test(adapter, async () => {
+    const entered = deferred(), bodies = [], signals = [];
+    let closed = false;
+    const provider = createProvider({ providers: { main: {
+      adapter, options: { baseURL: 'https://fixture.invalid/v1', apiKey: { env: 'FIXTURE_KEY' }, ...(adapter === 'anthropic-messages' ? { maxOutputTokens: 100 } : {}) },
+      models: { chat: { id: 'fixture-model' } },
+    } } }, { getEnv: () => 'fixture-not-a-real-secret', fetch: async (_url, init) => {
+      bodies.push(JSON.parse(init.body)); signals.push(init.signal);
+      if (bodies.length > 1) { assert.equal(closed, true); return sse(cases[adapter][1]); }
+      return new Response(new ReadableStream({
+        start(controller) { controller.enqueue(new TextEncoder().encode(events.map(e => `data: ${JSON.stringify(e)}\n\n`).join(''))); },
+        cancel() { closed = true; },
+      }), { headers: { 'content-type': 'text/event-stream' } });
+    } });
+    const agent = await createAgent({ model: provider.use('main', 'chat'), instructions: 'Use verified facts.' });
+    agent.subscribe(event => { if (event.type === 'model.delta') entered.resolve(); });
+    const work = agent.prompt('original');
+    await entered.promise;
+    assert.equal(await agent.steer('new direction'), true);
+    assert.equal((await work).status, 'completed');
+    assert.equal(bodies.length, 2);
+    assert.equal(signals[0].aborted, true);
+    assert.equal(signals[1].aborted, false);
+    assert.ok(JSON.stringify(bodies[1]).includes('visible preview'));
+    assert.ok(JSON.stringify(bodies[1]).includes('new direction'));
+    assert.equal(agent.state.messages[1].incompleteReason, 'steered');
+    await agent.close();
+  });
+});
+
 describe('existing Provider implementations drive the complete ADK loop without a bridge', () => {
   for (const [adapter, replies] of Object.entries(cases)) {
     test(adapter, async () => {

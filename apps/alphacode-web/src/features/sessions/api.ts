@@ -59,6 +59,9 @@ export interface SessionView {
     busy: boolean;
     status: string;
     canSend: boolean;
+    canQueue?: boolean;
+    queuedRequests?: readonly { requestId: string; input: string; steering?: boolean }[];
+    canSteer?: boolean;
     closing: boolean;
     settingsSaving: boolean;
     phase: string;
@@ -116,12 +119,19 @@ export async function searchSessions(query: string, signal: AbortSignal) {
 
 export const sessionPath = (id: string) => `/api/sessions/${encodeURIComponent(id)}`;
 export interface RequestReceipt { requestId: string; status: "accepted" | "settled" | "interrupted" }
+export type QueueAction = { requestId: string } & (
+  | { action: "edit"; input: string; expectedInput: string }
+  | { action: "move"; beforeRequestId: string | null }
+  | { action: "steer" }
+);
+export const updateQueue = (id: string, action: QueueAction) =>
+  requestJson<SessionView>(`${sessionPath(id)}/queue`, AbortSignal.timeout(15_000), action);
 export const createSession = (projectId: string) =>
   requestJson<SessionView>("/api/sessions", AbortSignal.timeout(15_000), { projectId });
 export const sendRequest = (id: string, requestId: string, input: string) =>
   requestJson<RequestReceipt>(`${sessionPath(id)}/requests`, AbortSignal.timeout(15_000), { requestId, input });
-export const cancelRequest = (id: string, requestId: string) =>
-  requestJson(`${sessionPath(id)}/cancel`, AbortSignal.timeout(15_000), { requestId });
+export const cancelRequest = (id: string, requestId: string, queuedOnly?: boolean) =>
+  requestJson(`${sessionPath(id)}/cancel`, AbortSignal.timeout(15_000), { requestId, ...(queuedOnly ? { queuedOnly } : {}) });
 export const answerApproval = (id: string, requestId: string, approvalId: string, allow: boolean) =>
   requestJson(`${sessionPath(id)}/approval`, AbortSignal.timeout(15_000), { requestId, approvalId, allow });
 export const setPermissionMode = (id: string, mode: PermissionMode) =>
@@ -130,6 +140,7 @@ export const setPermissionMode = (id: string, mode: PermissionMode) =>
 export function actionErrorMessage(t: Translate, error: unknown) {
   if (error instanceof SessionApiError) {
     if (error.code === "SESSION_BUSY") return t("errors:busy");
+    if (error.code === "QUEUE_CONFLICT") return t("errors:queueConflict");
     if (error.code === "STALE_APPROVAL" || error.code === "STALE_REQUEST") return t("errors:stale");
     if (error.status === 403) return t("errors:access");
     if (error.status === 413 || error.code === "INVALID_INPUT") return t("errors:input");

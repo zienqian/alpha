@@ -198,6 +198,14 @@ export async function createRuntime(config: AppConfig, options: {
     get sessionTitle() { return title; },
     messages,
     get permissionMode() { return settings.permissionMode; },
+    get canSteer() { return !closing && !cancelled && Boolean(agent?.state.canSteer); },
+    async steer(input) {
+      if (closing || cancelled || !agent?.state.canSteer) return false;
+      const command = parseInput(input);
+      if (command.kind === "command" && ["skills", "permission"].includes(command.name)) return false;
+      const prepared = await prepareSkillInput(input, loadedSkills.skills, preparation?.signal ?? new AbortController().signal);
+      return !closing && !cancelled && agent.state.canSteer ? agent.steer(prepared) : false;
+    },
     setPermissionMode(mode) {
       if (!isPermissionMode(mode)) return Promise.reject(settingsError("SESSION_SETTINGS_INVALID"));
       if (closing || running || changing || session?.state.persistence?.status === "pending") return Promise.reject(settingsError("SESSION_BUSY"));

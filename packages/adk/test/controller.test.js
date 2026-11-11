@@ -19,10 +19,11 @@ test('internal duplicate calls return the same result without repeating effects 
   const message = createAssistant(request(call()), 'a1', 32);
   history.commitAssistant(message); run.recordAssistant(message);
   let count = 0; const tools = new Map([['lookup', tool(() => { count++; return 'ok'; })]]);
-  const first = await callTool(run, tools, {}, 'a1', 'c1'), eventCount = seen.length;
-  assert.equal(await callTool(run, tools, {}, 'a1', 'c1'), first);
+  const signal = new AbortController().signal, ready = () => {};
+  const first = await callTool(run, tools, {}, 'a1', 'c1', signal, ready), eventCount = seen.length;
+  assert.equal(await callTool(run, tools, {}, 'a1', 'c1', signal, ready), first);
   assert.equal(count, 1); assert.equal(seen.length, eventCount);
-  await assert.rejects(callTool(run, tools, {}, 'forged', 'c1'));
+  await assert.rejects(callTool(run, tools, {}, 'forged', 'c1', signal, ready));
   assert.equal((await run.finish()).error.code, 'CALL_NOT_PENDING');
 });
 

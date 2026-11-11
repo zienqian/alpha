@@ -24,14 +24,17 @@ export default interface Resources {
       "other": "Ended after {{duration}} · {{time}}"
     },
     "composer": {
-      "busy": "Working… draft your next message",
-      "placeholder": "Describe your task…"
+      "busy": "Working… Enter to queue your next message",
+      "placeholder": "Describe your task…",
+      "queueCount_one": "{{count}} message queued",
+      "queueCount_other": "{{count}} messages queued"
     },
     "interrupt": " · esc to interrupt",
     "newConversation": "New conversation",
     "note": {
       "incomplete": "Response incomplete",
-      "preview": "Incomplete preview"
+      "preview": "Incomplete preview",
+      "steered": "Redirected by new instructions"
     },
     "outcome": {
       "cancelled": "Stopped",

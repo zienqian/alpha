@@ -3,7 +3,8 @@ export default interface Resources {
   "chat": {
     "note": {
       "incomplete": "Response incomplete",
-      "preview": "Incomplete preview"
+      "preview": "Incomplete preview",
+      "steered": "Redirected by new instructions"
     },
     "outcome": {
       "cancelled": "Stopped",
@@ -45,6 +46,7 @@ export default interface Resources {
     "openBrowser": "Open this URL in your browser: {{url}}",
     "operation": "Action failed ({{code}}). Refresh and try again.",
     "permissionSave": "Could not save permissions: {{code}}. Previous permissions remain active.",
+    "queueConflict": "This queued message was edited elsewhere. Your edits are kept; reopen the editor to use the latest version.",
     "retryUncertain": "The request outcome is uncertain. Retrying reuses the original request so the server can deduplicate it.",
     "search": "Cannot search conversations. Check that the local server is running.",
     "sessionNotFound": "This conversation does not exist or was deleted.",
@@ -62,6 +64,7 @@ export default interface Resources {
     "awaitConnection": "Waiting to reconnect",
     "cachedHistory": "Showing the last loaded history.",
     "cachedList": "Showing the last loaded list.",
+    "cancelEdit": "Cancel",
     "clearSearch": "Clear search",
     "closeSearch": "Close search",
     "closeSummary": "Close conversation summary",
@@ -74,10 +77,12 @@ export default interface Resources {
     "draftAttachments": "Draft attachments",
     "draftBadge": "Draft",
     "draftDescription": "Draft saved only in this page",
+    "editQueued": "Edit message",
     "empty": {
       "description": "Enter a message below to start a conversation.",
       "title": "No messages yet"
     },
+    "enqueue": "Add to queue",
     "found_one": "Found {{count}} conversation",
     "found_other": "Found {{count}} conversations",
     "generatingTitle": "Generating title…",
@@ -98,10 +103,20 @@ export default interface Resources {
     "notLoaded": "Not loaded",
     "persistence": "Sent messages are saved by the server. Unsent drafts stay in this page and are cleared on refresh. Attachments cannot be uploaded yet.",
     "placeholder": "Describe your task…",
+    "queueCount_one": "{{count}} message queued · Sends after the current reply",
+    "queueCount_other": "{{count}} messages queued · Sent in order after the current reply",
+    "queueEditExpired": "This message is no longer queued. Your edits are kept here to copy.",
+    "queueLabel": "Queued messages",
+    "queuePlaceholder": "Enter your next message to add it to the queue…",
+    "queuedMenu": "More actions for queued message {{position}}",
     "recent": "Recent conversations",
     "reconnecting": "Reconnecting…",
     "removeAttachment": "Remove attachment {{name}}",
     "removeBeforeSending": "Attachments cannot be sent yet. Remove them before sending text.",
+    "removeFromQueue": "Remove from queue",
+    "removeQueued": "Remove queued message {{position}}",
+    "reorderHint": "Drag to reorder, or use the up and down arrow keys",
+    "reorderQueued": "Reorder queued message {{position}}",
     "replying": "Replying",
     "resultCount": "Search results · {{count}}",
     "retryHistory": "Retry loading history",
@@ -114,6 +129,7 @@ export default interface Resources {
       "user": "You"
     },
     "running": "Running…",
+    "saveEdit": "Save",
     "saved": "Saved conversation",
     "savedDescription": "Saved conversation",
     "saving": "Saving conversation",
@@ -132,6 +148,10 @@ export default interface Resources {
     "sendHint": "Enter to send · Shift+Enter for a new line",
     "skip": "Skip to conversation",
     "startCli": "No conversations yet. Start one in the CLI.",
+    "steer": "Steer",
+    "steerHint": "Interrupt generation and continue with this message; tools already running finish first",
+    "steerQueued": "Steer with queued message {{position}}",
+    "steering": "Steering…",
     "stop": "Stop generation",
     "stopping": "Stopping…",
     "stoppingShort": "Stopping",

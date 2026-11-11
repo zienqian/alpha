@@ -46,7 +46,7 @@ describe("live conversation", () => {
     api.view(id).state.messages = [];
     api.infos.splice(0);
     await open();
-    fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
+    fireEvent.click(screen.getByRole("button", { name: "在 docs 中新建会话" }));
     expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     fireEvent.change(input(), { target: { value: "保留当前项目" } });
     expect((screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement).disabled).toBe(false);
@@ -125,6 +125,38 @@ describe("live conversation", () => {
     fireEvent.click(screen.getByRole("button", { name: "停止生成" }));
     await waitFor(() => expect(api.fetch.mock.calls.find(([url]) => url === `${path}/cancel`)?.[1].body).toBe(JSON.stringify({ requestId: request.requestId })));
     await waitFor(() => expect((screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement).disabled).toBe(false));
+  });
+
+  it("queues successive messages during a reply, restores the queue on navigation and removes only the selected item", async () => {
+    await open();
+    fireEvent.change(input(), { target: { value: "当前任务" } });
+    fireEvent.keyDown(input(), { key: "Enter" });
+    await waitFor(() => expect(input().value).toBe(""));
+    const activeId = api.view(id).requestId;
+    fireEvent.change(input(), { target: { value: "第一条排队消息" } });
+    fireEvent.keyDown(input(), { key: "Enter", isComposing: true });
+    fireEvent.keyDown(input(), { key: "Enter", shiftKey: true });
+    expect(sends()).toHaveLength(1);
+    fireEvent.keyDown(input(), { key: "Enter" });
+    await waitFor(() => expect(input().value).toBe(""));
+    await screen.findByText("第一条排队消息");
+    fireEvent.change(input(), { target: { value: "第二条排队消息" } });
+    fireEvent.click(screen.getByRole("button", { name: "加入队列" }));
+    await waitFor(() => expect(input().value).toBe(""));
+    expect(sends()).toHaveLength(3);
+    expect(api.view(id).requestId).toBe(activeId);
+    expect(screen.getByText("2 条消息排队中 · 当前回复结束后依次发送")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
+    expect(screen.queryByRole("region", { name: "待发送消息" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
+    await screen.findByText("第二条排队消息");
+    const queuedId = api.view(id).state.queuedRequests?.[0]?.requestId;
+    fireEvent.click(screen.getByRole("button", { name: "移除第 1 条排队消息" }));
+    await waitFor(() => expect(screen.queryByText("第一条排队消息")).toBeNull());
+    expect(screen.getByText("第二条排队消息")).toBeTruthy();
+    expect(api.view(id).requestId).toBe(activeId);
+    expect(api.fetch.mock.calls.find(([url]) => url === `${path}/cancel`)?.[1].body)
+      .toBe(JSON.stringify({ requestId: queuedId, queuedOnly: true }));
   });
 
   it("creates a real session in the selected project before submitting its first message", async () => {

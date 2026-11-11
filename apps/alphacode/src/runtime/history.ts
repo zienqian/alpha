@@ -14,7 +14,8 @@ export function restoreMessages(data: SessionData): ChatMessage[] {
       else if (message.role === "assistant") {
         messages.push({
           id: message.id, role: "assistant", text: message.text,
-          ...(message.incompleteReason ? { note: "Response incomplete", noteCode: "RESPONSE_INCOMPLETE" } : {}),
+          ...(message.incompleteReason === "steered" ? { note: "Redirected by new instructions", noteCode: "RESPONSE_STEERED" }
+            : message.incompleteReason ? { note: "Response incomplete", noteCode: "RESPONSE_INCOMPLETE" } : {}),
         });
         for (const call of message.toolCalls) {
           const tool = createToolRecord(message.id, call);

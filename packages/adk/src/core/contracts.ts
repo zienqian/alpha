@@ -105,6 +105,7 @@ export type RunResult = {
 );
 export interface AgentState {
   readonly status: 'idle' | 'running' | 'cancelling' | 'closed';
+  readonly canSteer?: boolean;
   readonly historyStatus: 'ready' | 'blocked';
   /** Unexpected boundary failure quarantines future calls without rewriting the completed run. */
   readonly boundaryStatus: 'none' | 'ready' | 'failed';
@@ -164,7 +165,7 @@ export type AgentEvent = EventMeta & (
   | { type: 'model.start'; modelCallId: string }
   | { type: 'model.delta'; modelCallId: string; text: string }
   | { type: 'model.end'; modelCallId: string;
-      outcome: GenerateResult['outcome'] | 'failed' | 'cancelled' }
+      outcome: GenerateResult['outcome'] | 'failed' | 'cancelled' | 'steered' }
   | { type: 'tool.start'; assistantId: string; callId: string; name: string }
   | { type: 'tool.end'; assistantId: string; callId: string; execution: ToolExecution }
   | { type: 'message.commit'; messageId: string; role: Message['role'] }
@@ -189,6 +190,8 @@ export interface Agent<C = undefined> {
   readonly id: string;
   readonly state: AgentState;
   prompt(input: string, options?: PromptOptions): Promise<RunResult>;
+  /** Interrupt generation and continue this run with new input. Started tools settle; unstarted tools are skipped. False means the input was not consumed. */
+  steer(input: string): Promise<boolean>;
   subscribe(listener: (event: AgentEvent) => void): () => void;
   abort(reason?: string): void;
   waitForIdle(): Promise<void>;

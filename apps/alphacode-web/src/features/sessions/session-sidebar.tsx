@@ -1,6 +1,6 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
-import { Folder, Plus, Search, SquarePen, SquareTerminal, X, Blocks } from "lucide-react";
+import { Folder, Plus, Search, SquareTerminal, X, Blocks } from "lucide-react";
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
 import { SessionTitle } from "@/features/sessions/session-title";
@@ -83,10 +83,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
           <SquareTerminal className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
           {/* i18next-instrument-ignore-next-line — Product name. */}
           <span className="text-sm font-semibold tracking-tight">AlphaCode</span>
-          <Button variant="ghost" size="icon-sm" className="ml-auto text-muted-foreground" onClick={() => startSession()} disabled={!folders.length} aria-label={t("sessions:create")} title={t("sessions:create")}>
-            <SquarePen className="size-3.5" aria-hidden="true" />
-          </Button>
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground md:hidden" aria-label={t("workspace:closeSidebar")} onClick={() => setOpenMobile(false)}>
+          <Button variant="ghost" size="icon-sm" className="ml-auto text-muted-foreground md:hidden" aria-label={t("workspace:closeSidebar")} onClick={() => setOpenMobile(false)}>
             <X aria-hidden="true" />
           </Button>
         </div>

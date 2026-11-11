@@ -25,6 +25,7 @@ export function App(props: { chat: Chat; onExit: () => void }) {
     };
   }, [props.chat]);
   const state = useSyncExternalStore(chatStore.subscribe, chatStore.getSnapshot);
+  const queuedRequests = state.queuedRequests ?? [];
   const dimensions = useTerminalDimensions();
   const commandOpen = useRef(false);
   const setCommandOpen = useCallback((open: boolean) => { commandOpen.current = open; }, []);
@@ -37,9 +38,15 @@ export function App(props: { chat: Chat; onExit: () => void }) {
         {state.approval && <ApprovalPanel request={state.approval} maxHeight={Math.max(4, Math.min(9, dimensions.height - 13))} />}
         {state.error && <text fg={colors.error} flexShrink={0} maxHeight={2}>{presentNotice(t, state.notice, state.error)}</text>}
         <ComposerStatus state={state} />
+        {queuedRequests.length > 0 && <box flexDirection="column" flexShrink={0}>
+          <text fg={colors.muted}>{t("chat:composer.queueCount", { count: queuedRequests.length })}</text>
+          {queuedRequests.slice(0, 3).map((request, index) => <text key={request.requestId} fg={colors.muted} maxHeight={1}>
+            {index + 1}. {request.input.replace(/\s+/g, " ")}
+          </text>)}
+        </box>}
         <Composer
           skills={props.chat.skills}
-          busy={state.busy} canSend={state.canSend}
+          busy={state.busy} canSend={state.canSend} canQueue={state.canQueue}
           focused={!state.approval && !state.closing}
           permissionMode={state.permissionMode}
           settingsSaving={state.settingsSaving}

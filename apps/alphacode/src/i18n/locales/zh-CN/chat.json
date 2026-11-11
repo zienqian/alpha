@@ -1,5 +1,6 @@
 {
   "note": {
+    "steered": "已按新指令调整",
     "incomplete": "回复不完整",
     "preview": "不完整预览"
   },
@@ -18,7 +19,8 @@
     "description": "探索项目、修复问题，或创造新事物。"
   },
   "composer": {
-    "busy": "处理中…可以起草下一条消息",
+    "busy": "处理中…按 Enter 将下一条消息加入队列",
+    "queueCount_other": "{{count}} 条消息排队中",
     "placeholder": "描述任务…"
   },
   "commands": {

@@ -40,7 +40,8 @@ Web 按单机使用、信任本机进程的前提设计，不使用浏览器登�
 | GET | `/api/sessions/:id` | SessionView 全量快照 |
 | GET | `/api/sessions/:id/events` | SSE SessionView，全量替换客户端投影 |
 | POST | `/api/sessions/:id/requests` | `{requestId, input}`；202 `{requestId, status:"accepted"}`，不代表执行成功或已保存 |
-| POST | `/api/sessions/:id/cancel` | `{requestId}`；仅取消当前指定请求 |
+| POST | `/api/sessions/:id/queue` | `{requestId, action:"edit", input, expectedInput}` / `{requestId, action:"move", beforeRequestId:string\|null}` / `{requestId, action:"steer"}`；返回 SessionView |
+| POST | `/api/sessions/:id/cancel` | `{requestId, queuedOnly?}`；取消指定的当前请求或排队消息；`queuedOnly:true` 只移除尚未开始的消息，已开始返回 409 |
 | POST | `/api/sessions/:id/approval` | `{requestId, approvalId, allow}`；一次性决策，过时/重复决策 409 |
 | POST | `/api/sessions/:id/permission` | `{mode:"ask"\|"auto"\|"full"}`；运行中禁止修改 |
 | POST | `/api/web` | 原生专用：`{sessionId}` → `{url:"http://127.0.0.1:<port>/?session=<sessionId>"}`，懒加载静态资源 |
@@ -53,9 +54,13 @@ Web 按单机使用、信任本机进程的前提设计，不使用浏览器登�
 
 SSE `id` 为 `instanceId:sequence`。连接后直接给出全量快照，慢客户端仅保留一个待发送快照，15 秒心跳也携带快照。客户端重连重新订阅即可；这是快照恢复，不是持久化事件日志，也不宣称支持 Last-Event-ID 历史重放。wire 中 activeRunStartedAt、tool.startedAt/finishedAt 为 epoch 毫秒；TUI adapter 转回本进程 monotonic 时间。
 
-requestId 由客户端创建，同会话重复 ID、相同原始输入不会再次调用模型；修改输入返回 409。server 在调用 runtime 前持久化原始输入 hash 的 admission 回执，并把相同 requestId 传入 Session 层。回执不保存请求正文。已收到的 admission 不随网络断线撤回；客户端不得把响应超时当作“未执行”。正在落盘的并发 admission 可返回 SESSION_BUSY，使用原 ID 重试而不是生成新 ID。
+requestId 由客户端创建，同会话重复 ID、相同原始输入不会再次调用模型或重复入队；修改输入返回 409。server 在调用 runtime 前持久化原始输入 hash 的 admission 回执，并把相同 requestId 传入 Session 层。回执不保存请求正文。已收到的 admission 不随网络断线撤回；客户端不得把响应超时当作“未执行”。同会话并发 admission 按接收顺序串行落盘，执行中的新消息进入服务端内存队列；不同会话独立执行。
+
+快照中的 `state.queuedRequests` 包含尚未执行的 `{requestId,input}`，`state.canQueue` 表示当前能否接收新消息；`requestId` 始终指向当前执行的请求。前一轮运行和保存完成后自动依次发送，执行前不插入消息历史。网页刷新、切换会话和客户端断开不会丢弃队列。停止只取消当前请求，后续队列继续；可逐条移除排队消息。设置保存、正在停止、关闭或会话不可继续时禁止入队；运行结束后若保存失败或执行状态不明，队列保留但不执行，仍可移除。后台自动更新和空闲退出等待队列清空；完整关闭或重启会中断尚未执行的消息，对应回执返回 interrupted，不自动重放。
 
 完成后回执变为 settled；这表示处理已结束，成功/失败、是否可继续以 SessionView.state 为准。重启后仍是 accepted 的回执返回 interrupted，不自动重跑。执行中崩溃仍可能留下外部工具副作用，不能承诺工具 exactly-once；Session 的 pending/blocked 恢复规则保持不变。请求回执目前不自动清理，避免过期后重复执行。
+
+排队编辑只修改未执行的正文，保留原 admission hash 供原请求重试去重；`expectedInput` 不匹配时返回 `QUEUE_CONFLICT`。移动到 `beforeRequestId` 前，null 表示末尾。已执行的消息不能编辑或重排。`state.canSteer` 表示当前运行能接收引导；点击引导后该条消息标记 `steering:true`，ADK 中断当前模型流或工具准备/审批，保留已显示文字和已完成结果，再追加引导并续跑。正在执行的工具先完成，同批未开始的调用写入 not_executed 后跳过。其内容属于当前运行，不创建新 run，也不自动重跑工具；消息从队列移除，回执在当前运行保存结束后 settled。若本轮停止前未消费引导，消息留在原队列位置。尚在等待引导的消息不能编辑、移动或删除。
 
 ## 验证
 

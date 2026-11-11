@@ -11,6 +11,7 @@ export function Composer(props: {
   skills?: readonly ChatSkill[];
   busy: boolean;
   canSend: boolean;
+  canQueue?: boolean;
   focused: boolean;
   permissionMode: PermissionMode;
   settingsSaving: boolean;
@@ -81,7 +82,7 @@ export function Composer(props: {
           input.current?.gotoBufferEnd();
           contentChanged();
         } else if (command.name === "/permission") openPermission();
-        else if (command.name === "/web" || (props.canSend && !props.busy)) {
+        else if (command.name === "/web" || props.canQueue || (props.canSend && !props.busy)) {
           input.current?.setText("");
           contentChanged();
           props.onSubmit(command.name);
@@ -98,7 +99,7 @@ export function Composer(props: {
   const submit = () => {
     const text = input.current?.plainText;
     if (text?.trim() === "/permission") { openPermission(); return; }
-    if (!text?.trim() || (text.trim() !== "/web" && (!props.canSend || props.busy))) return;
+    if (!text?.trim() || (text.trim() !== "/web" && !props.canQueue && (!props.canSend || props.busy))) return;
     input.current?.setText("");
     contentChanged();
     props.onSubmit(text);

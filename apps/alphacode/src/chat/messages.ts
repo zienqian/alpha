@@ -46,6 +46,8 @@ export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
   const change = (id: string, patch: (message: ChatMessage) => Partial<ChatMessage>) =>
     state.messages.map(message => message.id === id ? { ...message, ...patch(message) } : message);
   switch (event.type) {
+    case "user.message":
+      return { ...state, messages: [...state.messages, { id: event.id, role: "user", text: event.text }] };
     case "session.title":
       return { ...state, sessionTitle: event.title, titleStatus: event.status };
     case "assistant.start":
@@ -56,14 +58,19 @@ export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
     case "assistant.commit":
       return { ...state, ...(event.tools?.length ? { phase: "queued" as const, status: "Preparing tools…" } : {}),
         messages: upsertTools(change(event.id, () => ({ text: event.text })), event.tools ?? []) };
-    case "assistant.end":
+    case "assistant.end": {
+      const outcome = event.outcome;
+      if (outcome === "steered") return { ...state, messages: state.messages
+        .filter(message => message.id !== event.id || message.text.length > 0)
+        .map(message => message.id === event.id ? { ...message, streaming: false, note: "Redirected by new instructions", noteCode: "RESPONSE_STEERED" } : message) };
       return { ...state, messages: change(event.id, () => ({
         streaming: false,
-        noteCode: event.outcome === "failed" || event.outcome === "cancelled" ? "INCOMPLETE_PREVIEW"
-          : event.outcome === "completed" || event.outcome === "tool_calls" ? undefined : event.outcome,
-        note: event.outcome === "failed" || event.outcome === "cancelled" ? "Incomplete preview"
-          : event.outcome === "completed" || event.outcome === "tool_calls" ? undefined : statusLabels[event.outcome],
+        noteCode: outcome === "failed" || outcome === "cancelled" ? "INCOMPLETE_PREVIEW"
+          : outcome === "completed" || outcome === "tool_calls" ? undefined : outcome,
+        note: outcome === "failed" || outcome === "cancelled" ? "Incomplete preview"
+          : outcome === "completed" || outcome === "tool_calls" ? undefined : statusLabels[outcome],
       })) };
+    }
     case "tool.start": {
       const previous = state.messages.find(message => message.id === event.tool.id)?.tool;
       if (previous && !pending(previous)) return state;

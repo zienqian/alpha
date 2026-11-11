@@ -62,10 +62,25 @@ export function mockSessionApi() {
       infos.push(created.session); views.set(created.session.id, created);
       return Response.json(created, { status: 201 });
     }
-    const action = /^\/api\/sessions\/([^/]+)\/(requests|cancel|approval|permission)$/.exec(path);
+    const action = /^\/api\/sessions\/([^/]+)\/(requests|cancel|approval|permission|queue)$/.exec(path);
     if (action?.[1]) {
       const current = view(action[1]);
       const body = JSON.parse(String(init.body));
+      if (action[2] === "queue") {
+        const queue = [...(current.state.queuedRequests ?? [])];
+        const index = queue.findIndex(item => item.requestId === body.requestId);
+        const item = queue[index];
+        if (!item) return Response.json({ code: "STALE_REQUEST" }, { status: 409 });
+        if (body.action === "edit") queue[index] = { ...item, input: body.input };
+        if (body.action === "move") {
+          queue.splice(index, 1);
+          queue.splice(body.beforeRequestId === null ? queue.length : queue.findIndex(item => item.requestId === body.beforeRequestId), 0, item);
+        }
+        if (body.action === "steer") queue[index] = { ...item, steering: true };
+        current.state = { ...current.state, queuedRequests: queue };
+        publish(current.session.id);
+        return Response.json(current);
+      }
       if (action[2] === "permission") {
         if (current.state.busy || current.state.settingsSaving || !current.state.canSend) return Response.json({ code: "SESSION_BUSY" }, { status: 409 });
         current.state = { ...current.state, permissionMode: body.mode };
@@ -73,11 +88,21 @@ export function mockSessionApi() {
         return Response.json(current);
       }
       if (action[2] === "requests") {
+        if (current.state.busy) {
+          current.state = { ...current.state, queuedRequests: [...(current.state.queuedRequests ?? []), { requestId: body.requestId, input: body.input }] };
+          publish(current.session.id);
+          return Response.json({ requestId: body.requestId, status: "accepted" }, { status: 202 });
+        }
         current.requestId = body.requestId;
-        current.state = { ...current.state, busy: true, canSend: false, phase: "thinking",
+        current.state = { ...current.state, busy: true, canSend: false, canQueue: true, canSteer: true, phase: "thinking",
           messages: [...current.state.messages, { id: body.requestId, role: "user", text: body.input }] };
         publish(current.session.id);
         return Response.json({ requestId: body.requestId, status: "accepted" }, { status: 202 });
+      }
+      if (action[2] === "cancel" && body.queuedOnly) {
+        current.state = { ...current.state, queuedRequests: current.state.queuedRequests?.filter(item => item.requestId !== body.requestId) };
+        publish(current.session.id);
+        return Response.json({ ok: true });
       }
       current.state = { ...current.state, approval: undefined,
         ...(action[2] === "cancel" ? { busy: false, canSend: true, phase: "idle" } : {}) };
