@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTerminalDimensions } from "@opentui/react";
-import type { ChatState } from "../../chat/contracts";
+import type { ChatState } from "@alpha/alphacode-app-server/contracts";
 import { colors } from "../theme";
 import { formatDuration } from "../duration";
 import { ShimmerText } from "./shimmer-text";

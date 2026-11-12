@@ -88,4 +88,4 @@ bun run --cwd apps/alphacode-web ui:add input card dialog
 - `vite.config.ts`、`tsconfig*.json`、`package.json`：开发、构建和检查配置。
 - `test/`：接口夹具、URL 定位、按需查询、取消与切换竞态、错误与重试、刷新、空历史、工具输出、首页与草稿、移动端、主题、Markdown 安全性及基础组件测试。
 
-本包保持 React / React DOM 19.3.1，使用 `@vitejs/plugin-react` 构建、React Testing Library 测试。CLI/TUI、本地 server 和历史设计文档保留；独立客户端包已移除，CLI 需要的通信实现位于 `apps/alphacode/src/server`。历史方案不代表当前前端已实现的功能。
+本包保持 React / React DOM 19.3.1，使用 `@vitejs/plugin-react` 构建、React Testing Library 测试。CLI/TUI 与独立本地 App Server 共存；服务和原生客户端通信实现位于 `apps/alphacode-app-server`，Web 继续使用同源 HTTP/SSE。历史方案不代表当前前端已实现的功能。

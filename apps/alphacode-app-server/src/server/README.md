@@ -1,6 +1,6 @@
-# Local server API v1
+# Local server API v2
 
-`index.tsx → connectApplication → ensureServer → remoteChat` 是正常 CLI 启动链路；`createApplication` 保留为进程内 runtime/controller 工厂，由 server 使用，现有离线测试也继续使用它。通信实现保留在应用内部，不再提供独立客户端包。Web 通过同源 GET 读取历史，通过 SSE 与 CLI 同步当前会话，支持在已登记项目中新建、发送、取消及审批。浏览器不导入 CLI、Bun、SQLite 或 Agent。
+`index.tsx → connectApplication → ensureServer → remoteChat` 是正常 CLI 启动链路；`createApplication` 保留为进程内 runtime/controller 工厂，由 server 使用，现有离线测试也继续使用它。服务与通信实现位于业务应用 `apps/alphacode-app-server`，CLI 通过其 `/client` 入口接入，也可用 `bun run dev:server` 单独启动。Web 通过同源 GET 读取历史，通过 SSE 与 CLI 同步当前会话，支持在已登记项目中新建、发送、取消及审批。浏览器不导入 CLI、Bun、SQLite 或 Agent。
 
 ## 生命周期
 
@@ -64,4 +64,4 @@ requestId 由客户端创建，同会话重复 ID、相同原始输入不会再�
 
 ## 验证
 
-在应用目录执行 `bun test test/server.test.ts test/server-lifecycle.test.ts test/server-update.test.ts`。测试使用真实 loopback HTTP、SQLite、独立 server 进程和受控模型流，不访问付费模型。覆盖双端流式快照、重连、恢复历史、请求去重、审批竞争、跨项目索引、免登录访问、可复用会话链接、Host/Origin/JSON 校验、跨站拒绝、原生专用接口鉴权、空闲退出、并发启动和陈旧 PID 恢复，以及自动更新等待生成、固定地址、草稿/凭据交接、新代码失败回退和旧服务识别。Web 的 DOM 测试在 `apps/alphacode-web/test`。
+在服务应用目录执行 `bun test test/server.test.ts test/server-lifecycle.test.ts test/server-update.test.ts`。测试使用真实 loopback HTTP、SQLite、独立 server 进程和受控模型流，不访问付费模型。覆盖双端流式快照、重连、恢复历史、请求去重、审批竞争、跨项目索引、免登录访问、可复用会话链接、Host/Origin/JSON 校验、跨站拒绝、原生专用接口鉴权、空闲退出、并发启动和陈旧 PID 恢复，以及自动更新等待生成、固定地址、草稿/凭据交接、新代码失败回退和旧服务识别。Web 的 DOM 测试在 `apps/alphacode-web/test`。

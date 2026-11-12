@@ -1,7 +1,7 @@
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
 import { finished } from "node:stream/promises";
-import type { Chat } from "../chat/contracts";
+import type { Chat } from "@alpha/alphacode-app-server/contracts";
 import { App } from "./app";
 import { VscodeImageOutput } from "./vscode-output";
 import { TerminalLanguageProvider } from "./i18n-provider";

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { testRender } from "./render";
 import type { TextareaRenderable } from "@opentui/core";
-import type { Chat } from "../src/chat/contracts";
+import type { Chat } from "@alpha/alphacode-app-server/contracts";
 import { App } from "../src/ui/app";
 
 test("skill completion, arguments, list command and slash escape reach the dispatcher", async () => {
@@ -39,4 +39,9 @@ test("skill completion, arguments, list command and slash escape reach the dispa
     ui.mockInput.pressEnter();
     expect(sent.at(-1)).toBe("//literal");
   } finally { await ui.dispose(); }
+});
+
+test("command suggestions include only invocable matching skills", async () => {
+  const { matchingCommands } = await import("../src/ui/commands");
+  expect(matchingCommands("/rev", [{ name: "review", description: "Review", userInvocable: true }, { name: "review-private", description: "Private", userInvocable: false }]).map(command => command.name)).toEqual(["/review"]);
 });

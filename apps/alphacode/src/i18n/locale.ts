@@ -1,7 +1,6 @@
-export type LanguagePreference = "system" | "en" | "zh-CN";
+import type { LanguagePreference } from "@alpha/alphacode-app-server/settings";
+export { isLanguagePreference, type LanguagePreference } from "@alpha/alphacode-app-server/settings";
 export interface Locale { language: "en" | "zh-CN"; formatLocale: string }
-export const isLanguagePreference = (value: unknown): value is LanguagePreference =>
-  value === "system" || value === "en" || value === "zh-CN";
 
 export function resolveLocale(preference: LanguagePreference, candidates: readonly string[] = []): Locale {
   if (preference !== "system") return { language: preference, formatLocale: preference === "en" ? "en-US" : "zh-CN" };

@@ -1,0 +1,87 @@
+{
+  "name": "@alpha/alphacode-app-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./client": {
+      "alpha-source": "./src/client.ts",
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js"
+    },
+    "./contracts": {
+      "alpha-source": "./src/chat/contracts.ts",
+      "types": "./dist/chat/contracts.d.ts",
+      "import": "./dist/chat/contracts.js"
+    },
+    "./protocol": {
+      "alpha-source": "./src/server/protocol.ts",
+      "types": "./dist/server/protocol.d.ts",
+      "import": "./dist/server/protocol.js"
+    },
+    "./config": {
+      "alpha-source": "./src/config.ts",
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    },
+    "./settings": {
+      "alpha-source": "./src/global-config.ts",
+      "types": "./dist/global-config.d.ts",
+      "import": "./dist/global-config.js"
+    },
+    "./errors": {
+      "alpha-source": "./src/errors.ts",
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.js"
+    },
+    "./testing": {
+      "alpha-source": "./src/testing.ts",
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "alphacode-app-server": "./dist/main.js"
+  },
+  "scripts": {
+    "dev": "bun --no-env-file --conditions=alpha-source src/main.ts",
+    "start": "bun --no-env-file dist/main.js",
+    "build": "bun --bun run tsrs -p tsconfig.json",
+    "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit && bun --bun run tsrs -p test/tsconfig.json --noEmit",
+    "lint": "bun --bun run eslint src test",
+    "test": "bun test ./test --timeout 30000"
+  },
+  "dependencies": {
+    "@alpha/adk": "workspace:*",
+    "@alpha/adk-session": "workspace:*",
+    "@alpha/adk-trace": "workspace:*",
+    "@alpha/coding-agent": "workspace:*",
+    "@alpha/provider": "workspace:*",
+    "https-proxy-agent": "9.1.0",
+    "proxy-from-env": "2.1.0",
+    "yaml": "2.9.0",
+    "yauzl": "3.4.0"
+  },
+  "devDependencies": {
+    "@types/proxy-from-env": "1.0.4",
+    "@types/yauzl": "3.4.0"
+  },
+  "engines": {
+    "bun": ">=1.4.4"
+  },
+  "nx": {
+    "tags": [
+      "layer:app-server"
+    ],
+    "targets": {
+      "typecheck": {
+        "dependsOn": [
+          "build"
+        ]
+      }
+    }
+  }
+}

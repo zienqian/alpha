@@ -1,4 +1,6 @@
-import { isLanguagePreference, type LanguagePreference } from "./i18n/locale";
+export type LanguagePreference = "system" | "en" | "zh-CN";
+export const isLanguagePreference = (value: unknown): value is LanguagePreference =>
+  value === "system" || value === "en" || value === "zh-CN";
 import { mkdir, open, writeFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { parseDocument } from "yaml";

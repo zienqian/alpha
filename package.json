@@ -13,6 +13,8 @@
   "scripts": {
     "dev": "bun --no-env-file ./apps/alphacode/bin/alphacode.ts --watch",
     "dev:web": "bun run --cwd apps/alphacode-web dev",
+    "dev:server": "bun --no-env-file --conditions=alpha-source ./apps/alphacode-app-server/src/main.ts",
+    "start:server": "bun --no-env-file ./apps/alphacode-app-server/dist/main.js",
     "build:web": "bun run --cwd apps/alphacode-web build",
     "link:dev": "bun link --cwd apps/alphacode",
     "start": "bun --env-file=.env.local ./apps/alphacode/dist/index.js",

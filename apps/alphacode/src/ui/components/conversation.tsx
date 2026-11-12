@@ -3,7 +3,7 @@ import { presentNote, presentLocalResult } from "../../i18n/presentation";
 import { SyntaxStyle } from "@opentui/core";
 import { useRenderer } from "@opentui/react";
 import { useLayoutEffect, useState } from "react";
-import type { ChatMessage } from "../../chat/contracts";
+import type { ChatMessage } from "@alpha/alphacode-app-server/contracts";
 import { colors, markdownStyles } from "../theme";
 import { Welcome } from "./welcome";
 import { ToolRecordView } from "./tool-record";

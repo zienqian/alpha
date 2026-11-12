@@ -5,8 +5,7 @@ import { Writable } from "node:stream";
 import { testRender } from "./render";
 import { measureEditText, type ImageRenderable, type TextRenderable } from "@opentui/core";
 import { setRendererCapabilities } from "@opentui/core/testing";
-import type { Chat, ChatState } from "../src/chat/contracts";
-import { createToolRecord, completeToolRecord } from "../src/runtime/tool-records";
+import type { Chat, ChatState, ToolRecord } from "@alpha/alphacode-app-server/contracts";
 import { App } from "../src/ui/app";
 import { composerActivity } from "../src/ui/components/composer-status";
 import { ShimmerText } from "../src/ui/components/shimmer-text";
@@ -22,7 +21,8 @@ const t = createI18n("en").getFixedT(null, namespaces);
 const stateFor = (): ChatState => ({ sessionTitle: "New session", messages: [], busy: true, closing: false, canSend: false, status: "Generating…", phase: "thinking", permissionMode: "ask", settingsSaving: false });
 
 test("composer status follows the active turn, approval, stopping and persistence instead of a previous tool result", () => {
-  const tool = { ...createToolRecord("a", { id: "c", name: "read_file", arguments: { path: "a" } }), status: "succeeded" as const, finishedAt: 1 };
+  const tool: ToolRecord = { id: "a:c", assistantId: "a", callId: "c", name: "read_file", path: "a", target: "a",
+    description: "Read file: a", descriptionSource: "fallback", status: "succeeded", finishedAt: 1 };
   const state: ChatState = { ...stateFor(), messages: [{ id: tool.id, role: "tool", text: tool.name, tool }] };
   expect(composerActivity(t, state).text).toBe("Reviewing results…");
   state.messages = [...state.messages, { id: "new", role: "user", text: "next" }];
@@ -47,9 +47,10 @@ test("shimmer keeps whole Chinese/emoji/combining graphemes, terminal widths and
 });
 
 test("flat tool records and the composer status render above the input without disrupting a draft or narrow layout", async () => {
-  const tool = completeToolRecord(createToolRecord("assistant", { id: "call", name: "run_command", arguments: {
-    command: "bun test", description: "验证消息状态",
-  } }), { execution: "succeeded", content: JSON.stringify({ ok: false, code: "COMMAND_EXIT_NONZERO", detail: { exitCode: 1, stdout: "one test failed" } }) });
+  const tool: ToolRecord = { id: "assistant:call", assistantId: "assistant", callId: "call", name: "run_command",
+    command: "bun test", target: "bun test", description: "验证消息状态", descriptionSource: "model", status: "failed",
+    error: "COMMAND_EXIT_NONZERO", errorCode: "COMMAND_EXIT_NONZERO", exitCode: 1,
+    output: "one test failed", outputLines: ["one test failed"] };
   tool.startedAt = 0;
   tool.finishedAt = 3660000;
   let state: ChatState = { ...stateFor(), messages: [{ id: "user", role: "user", text: "check" }, { id: tool.id, role: "tool", text: tool.name, tool }] };

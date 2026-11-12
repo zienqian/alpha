@@ -3,10 +3,10 @@ import { Database } from "bun:sqlite";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import { createApplication } from "../src/application";
-import type { Chat } from "../src/chat/contracts";
+import { createApplication } from "@alpha/alphacode-app-server/testing";
+import type { Chat } from "@alpha/alphacode-app-server/contracts";
 import { loadConfig, readConfig } from "../src/config";
-import { parseGlobalConfig } from "../src/global-config";
+import { parseGlobalConfig } from "@alpha/alphacode-app-server/settings";
 import { textResponse, type RequestBody } from "./helpers";
 
 const yaml = `provider:

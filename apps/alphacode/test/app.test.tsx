@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { testRender } from "./render";
 import type { ScrollBoxRenderable, TextareaRenderable } from "@opentui/core";
-import type { Chat, ChatState } from "../src/chat/contracts";
+import type { Chat, ChatState } from "@alpha/alphacode-app-server/contracts";
 import { App } from "../src/ui/app";
 import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "./helpers";
 

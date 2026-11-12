@@ -1,5 +1,5 @@
 const result = await Bun.build({
-  entrypoints: ["./src/index.tsx", "./src/server/main.ts", "./src/server/worker.ts"],
+  entrypoints: ["./src/index.tsx"],
   outdir: "./dist",
   target: "bun",
   packages: "external",

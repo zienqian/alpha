@@ -4,9 +4,7 @@ import { serverPaths } from "./storage";
 import { serverLayout } from "./revision";
 import { startSupervisor } from "./supervisor";
 
-async function main() {
-  const databasePath = process.argv[2];
-  if (!databasePath) throw new Error("DATABASE_REQUIRED");
+export async function runManagedServer(databasePath: string) {
   const paths = await serverPaths(databasePath);
   const release = await acquireLease(paths.directory, randomUUID());
   if (!release) return;
@@ -25,7 +23,12 @@ async function main() {
     const signal = () => { void stop().catch(() => { console.error("SERVER_CLOSE_FAILED"); }); };
     process.on("SIGTERM", signal);
     process.on("SIGINT", signal);
+    return { descriptor: supervisor.descriptor, descriptorPath: paths.descriptor, close: stop };
   } catch (error) { await stop(); throw error; }
 }
 
-void main().catch(() => { console.error("SERVER_START_FAILED"); process.exitCode = 1; });
+if (import.meta.main) {
+  const databasePath = process.argv[2];
+  if (!databasePath) { console.error("DATABASE_REQUIRED"); process.exitCode = 1; }
+  else void runManagedServer(databasePath).catch(() => { console.error("SERVER_START_FAILED"); process.exitCode = 1; });
+}

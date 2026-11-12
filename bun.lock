@@ -24,24 +24,38 @@
         "alphacode": "./bin/alphacode.ts",
       },
       "dependencies": {
+        "@alpha/alphacode-app-server": "workspace:*",
+        "@opentui/core": "0.8.1",
+        "@opentui/react": "0.8.1",
+        "i18next": "27.0.1",
+        "react": "19.3.1",
+        "react-i18next": "18.0.1",
+      },
+      "devDependencies": {
+        "@alpha/adk-session": "workspace:*",
+        "@alpha/provider": "workspace:*",
+        "@types/react": "19.3.0",
+      },
+    },
+    "apps/alphacode-app-server": {
+      "name": "@alpha/alphacode-app-server",
+      "version": "0.0.0",
+      "bin": {
+        "alphacode-app-server": "./dist/main.js",
+      },
+      "dependencies": {
         "@alpha/adk": "workspace:*",
         "@alpha/adk-session": "workspace:*",
         "@alpha/adk-trace": "workspace:*",
         "@alpha/coding-agent": "workspace:*",
         "@alpha/provider": "workspace:*",
-        "@opentui/core": "0.8.1",
-        "@opentui/react": "0.8.1",
         "https-proxy-agent": "9.1.0",
-        "i18next": "27.0.1",
         "proxy-from-env": "2.1.0",
-        "react": "19.3.1",
-        "react-i18next": "18.0.1",
         "yaml": "2.9.0",
         "yauzl": "3.4.0",
       },
       "devDependencies": {
         "@types/proxy-from-env": "1.0.4",
-        "@types/react": "19.3.0",
         "@types/yauzl": "3.4.0",
       },
     },
@@ -160,6 +174,8 @@
     "@alpha/adk-trace": ["@alpha/adk-trace@workspace:packages/adk-trace"],
 
     "@alpha/alphacode": ["@alpha/alphacode@workspace:apps/alphacode"],
+
+    "@alpha/alphacode-app-server": ["@alpha/alphacode-app-server@workspace:apps/alphacode-app-server"],
 
     "@alpha/alphacode-web": ["@alpha/alphacode-web@workspace:apps/alphacode-web"],
 

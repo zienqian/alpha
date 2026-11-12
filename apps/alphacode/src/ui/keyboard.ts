@@ -1,5 +1,5 @@
 import { useKeyboard } from "@opentui/react";
-import type { Chat } from "../chat/contracts";
+import type { Chat } from "@alpha/alphacode-app-server/contracts";
 
 export function useChatKeyboard(chat: Chat, onExit: () => void, commandOpen: () => boolean = () => false): void {
   useKeyboard(key => {

@@ -162,10 +162,10 @@ test("a compatible legacy daemon allows CLI startup and chatting without requiri
 test("code revisions are stable and include local source plus the built web entry", async () => {
   const temporaryFiles = await temporary();
   const { root } = temporaryFiles;
-  const app = join(root, "apps/alphacode");
+  const app = join(root, "apps/alphacode-app-server");
   const web = join(root, "apps/alphacode-web/dist");
   await mkdir(join(app, "src"), { recursive: true });
-  await mkdir(join(root, "packages"));
+  await mkdir(join(root, "packages"), { recursive: true });
   await mkdir(web, { recursive: true });
   await writeFile(join(app, "src/main.ts"), "first");
   for (const file of [join(app, "package.json"), join(root, "bun.lock"), join(root, "bunfig.toml"), join(web, "index.html")]) await writeFile(file, "initial");

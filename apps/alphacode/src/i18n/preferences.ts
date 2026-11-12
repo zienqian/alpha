@@ -1,4 +1,4 @@
-import { ConfigurationError } from "../errors";
+import { ConfigurationError } from "@alpha/alphacode-app-server/errors";
 import { isLanguagePreference, resolveLocale, type LanguagePreference } from "./locale";
 
 export function parseLanguageArgs(args: readonly string[]) {

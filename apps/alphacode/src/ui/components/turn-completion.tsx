@@ -1,4 +1,4 @@
-import type { ChatMessage } from "../../chat/contracts";
+import type { ChatMessage } from "@alpha/alphacode-app-server/contracts";
 import { formatDuration } from "../duration";
 import { colors } from "../theme";
 import { useTranslation } from "../../i18n/react";

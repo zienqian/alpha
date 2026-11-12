@@ -2,10 +2,10 @@ import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { basename, dirname, join, relative } from "node:path";
 
-// Resolve from both src/server and bundled dist/server (or dist/index.js).
+// The server owns its source and build layout independently of any client app.
 export async function serverLayout(start = import.meta.dir) {
   let app = start;
-  while (basename(app) !== "alphacode") {
+  while (basename(app) !== "alphacode-app-server") {
     const parent = dirname(app);
     if (parent === app) throw new Error("SERVER_LAYOUT_NOT_FOUND");
     app = parent;
@@ -15,7 +15,7 @@ export async function serverLayout(start = import.meta.dir) {
   return { app, root, development,
     main: join(app, development ? "src/server/main.ts" : "dist/server/main.js"),
     worker: join(app, development ? "src/server/worker.ts" : "dist/server/worker.js"),
-    web: join(app, "../alphacode-web/dist"),
+    web: join(root, "apps/alphacode-web/dist"),
     config: join(root, "bunfig.toml"),
   };
 }

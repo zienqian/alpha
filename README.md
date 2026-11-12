@@ -17,11 +17,13 @@ bun run dev
 - `packages/adk-session`：可选的会话管理与 Memory / SQLite 归档扩展。
 - `packages/coding-agent`：六个独立静态工具、cwd 上下文和跨平台 Shell 执行。
 - `packages/provider`：模型提供商配置和适配。
+- `apps/alphacode-app-server`：独立本地应用服务，负责会话、Agent 执行、审批和 HTTP/SSE；[独立启动与接口](apps/alphacode-app-server/README.md)。
+- `apps/alphacode-web`：React Web 客户端，与 CLI 共享服务和会话。
 - `apps/example-agent`：组装 Provider 与 ADK 的示例，默认离线运行。
-- `apps/alphacode`：OpenTUI + React 终端编程 Agent，提供用户输入与 Markdown 流式回复。
+- `apps/alphacode`：OpenTUI + React 终端客户端，通过 App Server 提供用户输入与 Markdown 流式回复。
 - `docs`：调研与技术方案。
 
-依赖方向：应用组装 Coding、Session、ADK 和 Provider；Coding 复用 core 工厂与插件，Session 仅引用 core 公开类型，两者不互相依赖。ADK 仅通过公开类型单向依赖 Provider，内核不反向依赖扩展。使用 Nx 标签、ESLint 与产物测试检查跨包和运行时边界。ADK 的唯一业务入口是 `@alpha/adk/core`。
+依赖方向：AlphaCode App Server 在应用层组装 Coding、Session、ADK 和 Provider；CLI 通过服务的客户端接口接入，Web 使用 HTTP/SSE。基础包不反向依赖 AlphaCode 业务。Coding 复用 core 工厂与插件，Session 仅引用 core 公开类型，两者不互相依赖。ADK 仅通过公开类型单向依赖 Provider，内核不反向依赖扩展。使用 Nx 标签、ESLint 与产物测试检查跨包和运行时边界。ADK 的唯一业务入口是 `@alpha/adk/core`。
 
 ## 本地开发
 

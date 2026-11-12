@@ -1,4 +1,4 @@
-import type { ApprovalRequest } from "../../chat/contracts";
+import type { ApprovalRequest } from "@alpha/alphacode-app-server/contracts";
 import { colors } from "../theme";
 import { useTranslation } from "../../i18n/react";
 

@@ -19,10 +19,22 @@ export default [
           { sourceTag: 'layer:trace', onlyDependOnLibsWithTags: ['layer:trace', 'layer:adk'] },
           { sourceTag: 'layer:coding', onlyDependOnLibsWithTags: ['layer:coding', 'layer:adk', 'layer:provider', 'layer:session'] },
           { sourceTag: 'layer:app', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider', 'layer:session', 'layer:coding', 'layer:trace'] },
+          { sourceTag: 'layer:alphacode-cli', onlyDependOnLibsWithTags: ['layer:app-server', 'layer:provider', 'layer:session'] },
+          { sourceTag: 'layer:app-server', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider', 'layer:session', 'layer:coding', 'layer:trace'] },
           { sourceTag: 'layer:web', onlyDependOnLibsWithTags: ['layer:trace'] }
         ]
       }]
     }
+  },
+  {
+    files: ['apps/alphacode/src/**/*.ts', 'apps/alphacode/src/**/*.tsx'],
+    rules: { 'no-restricted-syntax': ['error', {
+      selector: String.raw`:matches(ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration, ImportExpression, TSImportType) > Literal.source[value=/^[.]{1,2}\u002F.*[.][cm]?[jt]sx?$/]`,
+      message: 'Omit code file extensions in relative import/export paths.'
+    }, {
+      selector: String.raw`:matches(ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration, ImportExpression, TSImportType) > Literal.source[value=/^@alpha\u002Falphacode-app-server($|\u002Ftesting$)/]`,
+      message: 'Production clients connect to the AlphaCode service; business factories are only for integration tests.'
+    }] }
   },
   {
     files: ['apps/alphacode-web/src/**/*.ts', 'apps/alphacode-web/src/**/*.tsx'],
@@ -43,7 +55,7 @@ export default [
     rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/adk' }, { name: '@alpha/adk/core', allowTypeImports: true }], patterns: [{ group: ['@alpha/adk/*', '!@alpha/adk/core', '@alpha/adk/src/**', '@alpha/adk-session', '@alpha/adk-session/**', '@alpha/provider', '@alpha/provider/**', 'bun:*', 'node:*', './sqlite/**', '../sqlite/**'] }] }] }
   },
   {
-    files: ['apps/alphacode/src/chat/**/*.ts'],
+    files: ['apps/alphacode-app-server/src/chat/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [{
         group: ['i18next', 'react-i18next', '**/i18n/instance', '**/i18n/bootstrap', '@alpha/**', '@opentui/**', 'react', 'react/**', 'react-dom', 'react-dom/**', 'bun:*', 'node:fs', 'node:fs/**', '**/runtime/**', '**/ui/**', '**/application', '**/config'],
@@ -54,14 +66,14 @@ export default [
   {
     files: ['apps/alphacode/src/ui/**/*.ts', 'apps/alphacode/src/ui/**/*.tsx'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [{
-        group: ['@alpha/**', 'bun:*', '**/runtime/**', '**/application', '**/config', '**/chat/controller', '**/chat/approval', '**/chat/messages'],
+      'no-restricted-imports': ['error', { paths: [{ name: '@alpha/alphacode-app-server' }, { name: '@alpha/alphacode-app-server/contracts', allowTypeImports: true }], patterns: [{
+        group: ['@alpha/**', '!@alpha/alphacode-app-server', '@alpha/alphacode-app-server/**', '!@alpha/alphacode-app-server/contracts', 'bun:*', '**/runtime/**', '**/application', '**/config', '**/chat/controller', '**/chat/approval', '**/chat/messages'],
         message: 'UI consumes Chat contracts and callbacks; keep runtime and controller implementations outside components.'
       }] }]
     }
   },
   {
-    files: ['apps/alphacode/src/runtime/**/*.ts'],
+    files: ['apps/alphacode-app-server/src/runtime/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [{
         group: ['i18next', 'react-i18next', '**/i18n/instance', '**/i18n/bootstrap', '@opentui/**', 'react', 'react/**', 'react-dom', 'react-dom/**', '**/ui/**', '**/application', '**/chat/controller', '**/chat/approval', '**/chat/messages'],
@@ -70,11 +82,21 @@ export default [
     }
   },
   {
-    files: ['apps/alphacode/src/server/**/*.ts'],
+    files: ['apps/alphacode-app-server/src/server/**/*.ts'],
     rules: { 'no-restricted-imports': ['error', { patterns: [{
       group: ['i18next', 'react-i18next', '**/i18n/instance', '**/i18n/bootstrap', '**/i18n/presentation'],
       message: 'The server publishes language-independent state; clients translate it.'
     }] }] }
+  },
+  {
+    files: ['apps/alphacode-app-server/src/**/*.ts'],
+    rules: { 'no-restricted-syntax': ['error', {
+      selector: String.raw`:matches(ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration, ImportExpression, TSImportType) > Literal.source[value=/^[.]{1,2}\u002F.*[.][cm]?[jt]sx?$/]`,
+      message: 'Omit code file extensions in relative import/export paths.'
+    }, {
+      selector: String.raw`:matches(ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration, ImportExpression, TSImportType) > Literal.source[value=/(^react($|\/)|^react-dom($|\/)|^@opentui\/|^i18next$|^react-i18next$|^@alpha\/alphacode$|apps\/|\/ui\/|\/i18n\/)/]`,
+      message: 'App server must run independently of terminal and browser UI.'
+    }] }
   },
   {
     files: ['packages/coding-agent/src/**/*.ts'],

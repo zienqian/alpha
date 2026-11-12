@@ -20,32 +20,24 @@
     "i18n:review": "bun ../../scripts/check-i18n.ts --record-review"
   },
   "dependencies": {
-    "@alpha/adk": "workspace:*",
-    "@alpha/adk-session": "workspace:*",
-    "@alpha/adk-trace": "workspace:*",
-    "@alpha/coding-agent": "workspace:*",
-    "@alpha/provider": "workspace:*",
     "@opentui/core": "0.8.1",
     "@opentui/react": "0.8.1",
-    "https-proxy-agent": "9.1.0",
     "i18next": "27.0.1",
-    "proxy-from-env": "2.1.0",
     "react": "19.3.1",
     "react-i18next": "18.0.1",
-    "yaml": "2.9.0",
-    "yauzl": "3.4.0"
+    "@alpha/alphacode-app-server": "workspace:*"
   },
   "devDependencies": {
-    "@types/proxy-from-env": "1.0.4",
     "@types/react": "19.3.0",
-    "@types/yauzl": "3.4.0"
+    "@alpha/provider": "workspace:*",
+    "@alpha/adk-session": "workspace:*"
   },
   "engines": {
     "bun": ">=1.4.4"
   },
   "nx": {
     "tags": [
-      "layer:app"
+      "layer:alphacode-cli"
     ]
   }
 }

@@ -34,13 +34,13 @@ AlphaCode 建议采用 **i18next + react-i18next 作为运行时，JSON 作为�
 | Web 的 ESLint 规则禁止导入 `@alpha/**`、Bun、Node 和 CLI 内部模块 | V1 不新增跨端共享运行时包，也不为国际化放宽这些规则 | [依赖边界](C:/Users/ziyang/project/alpha/eslint.config.js) |
 | Web 已有 Query 与 Theme Provider，并处理 localStorage 不可用的情况 | 语言 Provider 可采用类似的应用级生命周期 | [应用 Provider](C:/Users/ziyang/project/alpha/apps/alphacode-web/src/components/providers.tsx)、[主题 Provider](C:/Users/ziyang/project/alpha/apps/alphacode-web/src/components/theme-provider.tsx) |
 | Web 中文硬编码分散在 JSX、错误映射、默认标题和辅助文本中 | 扫描需覆盖普通文本、属性、工具函数和状态初始化 | [Web 入口](C:/Users/ziyang/project/alpha/apps/alphacode-web/src/app.tsx)、[API 投影与错误映射](C:/Users/ziyang/project/alpha/apps/alphacode-web/src/features/sessions/api.ts)、[会话投影](C:/Users/ziyang/project/alpha/apps/alphacode-web/src/features/sessions/types.ts) |
-| TUI 的英文文案既在组件里，也在 controller、runtime 中 | 不能只替换组件里的字符串 | [状态组件](C:/Users/ziyang/project/alpha/apps/alphacode/src/ui/components/composer-status.tsx)、[会话 controller](C:/Users/ziyang/project/alpha/apps/alphacode/src/chat/controller.ts) |
+| TUI 的英文文案既在组件里，也在 controller、runtime 中 | 不能只替换组件里的字符串 | [状态组件](C:/Users/ziyang/project/alpha/apps/alphacode/src/ui/components/composer-status.tsx)、[会话 controller](C:/Users/ziyang/project/alpha/apps/alphacode-app-server/src/chat/controller.ts) |
 
 ### 2.2 需要先处理的数据问题
 
-当前 `ChatState.status` 混合了固定英文提示和工具描述；`ChatMessage.note` 也可能直接保存英文。服务端快照将这些内容发给各客户端，TUI 还存在与 `"Ready"` 比较的展示逻辑。应让业务判断依赖 `phase`、运行结果、工具状态和业务 code，固定文案留到渲染时生成。[Chat 数据契约](C:/Users/ziyang/project/alpha/apps/alphacode/src/chat/contracts.ts)、[状态投影](C:/Users/ziyang/project/alpha/apps/alphacode/src/chat/messages.ts)、[服务端快照](C:/Users/ziyang/project/alpha/apps/alphacode/src/server/server.ts)
+当前 `ChatState.status` 混合了固定英文提示和工具描述；`ChatMessage.note` 也可能直接保存英文。服务端快照将这些内容发给各客户端，TUI 还存在与 `"Ready"` 比较的展示逻辑。应让业务判断依赖 `phase`、运行结果、工具状态和业务 code，固定文案留到渲染时生成。[Chat 数据契约](C:/Users/ziyang/project/alpha/apps/alphacode-app-server/src/chat/contracts.ts)、[状态投影](C:/Users/ziyang/project/alpha/apps/alphacode-app-server/src/chat/messages.ts)、[服务端快照](C:/Users/ziyang/project/alpha/apps/alphacode-app-server/src/server/server.ts)
 
-工具记录已有 `descriptionSource: model | fallback`，可以区分模型描述与应用生成的描述。不过 Web 自有投影尚未声明这个字段和 `target`，实施时应补全。`Run command: …`、`File updated.`、省略行标记等应用生成内容也需要独立于工具原始输出处理。[工具记录投影](C:/Users/ziyang/project/alpha/apps/alphacode/src/runtime/tool-records.ts)
+工具记录已有 `descriptionSource: model | fallback`，可以区分模型描述与应用生成的描述。不过 Web 自有投影尚未声明这个字段和 `target`，实施时应补全。`Run command: …`、`File updated.`、省略行标记等应用生成内容也需要独立于工具原始输出处理。[工具记录投影](C:/Users/ziyang/project/alpha/apps/alphacode-app-server/src/runtime/tool-records.ts)
 
 当前工作区的 Web 代码已包含发送、审批和实时连接逻辑，README 的部分描述仍停留在只读历史阶段。迁移清单应以实施时的源码为准，将这些新增流程一并纳入文案盘点。
 
@@ -262,9 +262,9 @@ V1 的终端语言在启动时确定，配置修改在下次启动生效；不�
 
 ### 8.2 兼容与历史数据
 
-当前协议版本为 2。首轮采用**可选字段的增量扩展**，保留旧 `status`、`error`、`note` 等字段的原有含义；新增字段不要求旧客户端识别。发布前验证旧客户端与新 server、新客户端与旧 server 的组合。只有删除旧字段或改变既有字段语义时，才另行提升协议版本并按照现有生命周期机制要求重启。[协议声明](C:/Users/ziyang/project/alpha/apps/alphacode/src/server/protocol.ts)、[版本检查](C:/Users/ziyang/project/alpha/apps/alphacode/src/server/lifecycle.ts)
+当前协议版本为 2。首轮采用**可选字段的增量扩展**，保留旧 `status`、`error`、`note` 等字段的原有含义；新增字段不要求旧客户端识别。发布前验证旧客户端与新 server、新客户端与旧 server 的组合。只有删除旧字段或改变既有字段语义时，才另行提升协议版本并按照现有生命周期机制要求重启。[协议声明](C:/Users/ziyang/project/alpha/apps/alphacode-app-server/src/server/protocol.ts)、[版本检查](C:/Users/ziyang/project/alpha/apps/alphacode-app-server/src/server/lifecycle.ts)
 
-历史恢复路径已根据归档事件构建展示记录，应优先在该投影处恢复状态语义，不迁移数据库中的自然语言正文。无法从旧记录可靠恢复的内容按原文展示，不能将所有等于某个英文短语的历史消息都当作系统文案替换。[历史恢复](C:/Users/ziyang/project/alpha/apps/alphacode/src/runtime/history.ts)
+历史恢复路径已根据归档事件构建展示记录，应优先在该投影处恢复状态语义，不迁移数据库中的自然语言正文。无法从旧记录可靠恢复的内容按原文展示，不能将所有等于某个英文短语的历史消息都当作系统文案替换。[历史恢复](C:/Users/ziyang/project/alpha/apps/alphacode-app-server/src/runtime/history.ts)
 
 新 Web 的自有 API 投影与 TUI 契约同步维护；Web 仍不直接导入 CLI 文件。语言切换不触碰 `requestId`、`approvalId`、`sequence`、事件去重和工具执行状态。
 

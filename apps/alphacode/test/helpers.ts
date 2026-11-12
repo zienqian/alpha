@@ -1,7 +1,7 @@
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createApplication } from "../src/application";
+import { createApplication } from "@alpha/alphacode-app-server/testing";
 import type { Fetch } from "@alpha/provider";
 import type { AppConfig } from "../src/config";
 

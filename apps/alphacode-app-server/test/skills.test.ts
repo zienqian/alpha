@@ -12,7 +12,6 @@ import { createRuntime } from "../src/runtime/create-runtime";
 import { loadRuntimeSkills, prepareSkillInput } from "../src/runtime/skills";
 import { parseGlobalConfig, type SkillsSettings } from "../src/global-config";
 import { parseInput, skillInputDisplay, skillInputPrefix } from "../src/input";
-import { matchingCommands } from "../src/ui/commands";
 import { completeToolRecord, createToolRecord } from "../src/runtime/tool-records";
 import { textResponse, toolResponse, type RequestBody } from "./helpers";
 
@@ -216,5 +215,4 @@ test("input limits reject before model execution; history envelopes are display-
   expect(workspace.hasSession(runtime.sessionId)).toBe(false);
   for (const input of [skillInputPrefix + "not json", skillInputPrefix + JSON.stringify({ kind: "alpha.skill-input", version: 2, displayText: "hidden" })]) expect(skillInputDisplay(input)).toBe(input);
   expect(parseInput("  /review  arg ")).toMatchObject({ name: "review", arguments: " arg ", displayText: "  /review  arg " });
-  expect(matchingCommands("/rev", [{ name: "review", description: "Review", userInvocable: true }, { name: "review-private", description: "Private", userInvocable: false }]).map(command => command.name)).toEqual(["/review"]);
 });

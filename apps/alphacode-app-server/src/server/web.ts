@@ -1,12 +1,12 @@
 import { spawn } from "node:child_process";
 import { cp, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { serverLayout } from "./revision";
 
 export async function enableWeb() {
-  const app = join((await serverLayout()).app, "..", "alphacode-web");
-  const directory = join(app, "dist");
+  const directory = (await serverLayout()).web;
+  const app = dirname(directory);
   if (!await Bun.file(join(directory, "index.html")).exists()) {
     const build = Bun.spawn([process.execPath, "run", "build"], { cwd: app, stdout: "ignore", stderr: "ignore", windowsHide: true });
     if (await build.exited !== 0) throw Object.assign(new Error("Build the Web UI with bun run build:web before using /web."), { status: 503, code: "WEB_BUILD_FAILED" });

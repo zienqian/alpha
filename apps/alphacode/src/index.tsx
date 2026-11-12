@@ -1,5 +1,5 @@
 import { ConfigurationError, loadConfig } from "./config";
-import { errorCode } from "./errors";
+import { errorCode } from "@alpha/alphacode-app-server/errors";
 import { bootstrapTranslator, configurationMessage, startupLocale } from "./i18n/bootstrap";
 import { resolveLocale } from "./i18n/locale";
 import { resolveCliLocale } from "./i18n/preferences";
@@ -15,7 +15,7 @@ try {
   } else {
     const config = await loadConfig();
     locale = resolveCliLocale(process.env, process.argv.slice(2), config.language);
-    const [{ connectApplication }, { runTerminal }] = await Promise.all([import("./server/client"), import("./ui/terminal")]);
+    const [{ connectApplication }, { runTerminal }] = await Promise.all([import("@alpha/alphacode-app-server/client"), import("./ui/terminal")]);
     const chat = await connectApplication(config);
     try {
       await runTerminal(chat, locale);

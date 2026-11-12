@@ -1,29 +1,13 @@
-import type { LanguagePreference } from "./i18n/locale";
 import { parseLanguageArgs, resolveCliLocale } from "./i18n/preferences";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import type { PermissionMode } from "./chat/contracts";
-import { ConfigurationError } from "./errors";
-import { readGlobalConfig, type GlobalDefaults, type SkillsSettings } from "./global-config";
+import { ConfigurationError } from "@alpha/alphacode-app-server/errors";
+import { readGlobalConfig, type GlobalDefaults } from "@alpha/alphacode-app-server/settings";
 
-export { ConfigurationError } from "./errors";
+export { ConfigurationError } from "@alpha/alphacode-app-server/errors";
 
-export interface AppConfig {
-  language?: LanguagePreference;
-  skills?: SkillsSettings;
-  workspaceRoot: string;
-  databasePath: string;
-  modelId: string;
-  baseURL: string;
-  apiKeyEnv: string;
-  noAuth: boolean;
-  sessionId?: string;
-  permissionMode?: PermissionMode;
-  configDirectory?: string;
-  globalInstructions?: string;
-  globalInstructionsPath?: string;
-  traceEnabled?: boolean;
-}
+export type { AppConfig } from "@alpha/alphacode-app-server/config";
+import type { AppConfig } from "@alpha/alphacode-app-server/config";
 
 function expandHome(path: string): string {
   return path === "~" ? homedir() : /^~[/\\]/.test(path) ? join(homedir(), path.slice(2)) : path;

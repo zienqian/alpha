@@ -2,7 +2,7 @@ import { useTranslation } from "../../i18n/react";
 import type { Translate } from "../../i18n/instance";
 import { presentStatus, presentToolDescription, presentToolOutput, presentToolError } from "../../i18n/presentation";
 import { bold, fg, StyledText } from "@opentui/core";
-import type { ToolRecord } from "../../chat/contracts";
+import type { ToolRecord } from "@alpha/alphacode-app-server/contracts";
 import { colors } from "../theme";
 import { formatDuration } from "../duration";
 

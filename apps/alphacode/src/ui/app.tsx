@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useSyncExternalStore } from "react";
 import { useTerminalDimensions } from "@opentui/react";
-import type { Chat } from "../chat/contracts";
+import type { Chat } from "@alpha/alphacode-app-server/contracts";
 import { ApprovalPanel } from "./components/approval-panel";
 import { Composer } from "./components/composer";
 import { ComposerStatus } from "./components/composer-status";

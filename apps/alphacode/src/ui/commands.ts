@@ -1,5 +1,5 @@
 import type { Translate } from "../i18n/instance";
-import type { ChatSkill } from "../chat/contracts";
+import type { ChatSkill } from "@alpha/alphacode-app-server/contracts";
 
 export const commands = [
   { name: "/web", description: "chat:commands.web" },

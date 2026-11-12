@@ -494,12 +494,12 @@ readSkill 复用现有 files.ts 的有界读取和严格根检查；parse.ts 供
 | 文件 | 修改 |
 | --- | --- |
 | `apps/alphacode/src/config.ts`、`global-config.ts` | skills 配置与可信根规则 |
-| `apps/alphacode/src/runtime/skills.ts` | 根组装、loadSkills、诊断映射、显式命令的读取与输入编码 |
-| `apps/alphacode/src/runtime/create-runtime.ts` | 初始化时加载一次、传 skills、准备阶段取消与并发门禁 |
-| `apps/alphacode/src/runtime/history.ts` | 显式输入短命令展示，保留完整正文 |
-| `apps/alphacode/src/runtime/tool-records.ts` | 增加 known tool name readSkill，解析业务失败，展示名称与路径 |
+| `apps/alphacode-app-server/src/runtime/skills.ts` | 根组装、loadSkills、诊断映射、显式命令的读取与输入编码 |
+| `apps/alphacode-app-server/src/runtime/create-runtime.ts` | 初始化时加载一次、传 skills、准备阶段取消与并发门禁 |
+| `apps/alphacode-app-server/src/runtime/history.ts` | 显式输入短命令展示，保留完整正文 |
+| `apps/alphacode-app-server/src/runtime/tool-records.ts` | 增加 known tool name readSkill，解析业务失败，展示名称与路径 |
 | `apps/alphacode/src/input.ts`、`chat/controller.ts` | 纯命令解析、保留 Skill 参数、准备失败状态 |
-| `apps/alphacode/src/chat/contracts.ts`、`ui/commands.ts`、`ui/components/composer.tsx` | `/skills` 列表、Skill 命令补全、真正按命令种类分发 |
+| `apps/alphacode-app-server/src/chat/contracts.ts`、`ui/commands.ts`、`ui/components/composer.tsx` | `/skills` 列表、Skill 命令补全、真正按命令种类分发 |
 
 当前 composer 把斜杠命令截获并按 permission 处理，必须同时改分发，不能只增加菜单项。菜单来自同一份元数据，过滤 userInvocable=false；模型摘要则过滤 disableModelInvocation=true，不混用两种开关。
 

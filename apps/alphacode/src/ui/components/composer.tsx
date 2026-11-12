@@ -2,7 +2,7 @@ import { useTranslation } from "../../i18n/react";
 import type { TextareaRenderable } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { useLayoutEffect, useRef, useState } from "react";
-import type { ChatSkill, PermissionMode } from "../../chat/contracts";
+import type { ChatSkill, PermissionMode } from "@alpha/alphacode-app-server/contracts";
 import { matchingCommands, permissionOptions } from "../commands";
 import { CommandPanel } from "./command-panel";
 import { colors } from "../theme";

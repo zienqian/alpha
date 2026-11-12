@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { StrictMode } from "react";
 import { createRoot, flushSync } from "@opentui/react";
 import { createTestRenderer } from "@opentui/core/testing";
-import type { Chat, ChatState } from "../src/chat/contracts";
+import type { Chat, ChatState } from "@alpha/alphacode-app-server/contracts";
 import { App } from "../src/ui/app";
 import { testRender } from "./render";
 
