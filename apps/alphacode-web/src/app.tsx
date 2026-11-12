@@ -64,7 +64,7 @@ export function App() {
     <SessionQueue key={selectedSessionId} requests={view?.state.queuedRequests} disabled={!workspace.connected || workspace.actions.controlling}
       canSteer={Boolean(view?.state.canSteer)} onRemove={workspace.actions.cancelQueued} onEdit={workspace.actions.editQueued}
       onMove={workspace.actions.moveQueued} onSteer={workspace.actions.steerQueued} />
-    <PromptInput draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
+    <PromptInput key={`composer-${selectedSessionId}`} draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
       folder={isWelcome ? selectedFolder : undefined}
       permissionMode={workspace.permissionMode} onPermissionChange={workspace.changePermission}
       canChangePermission={workspace.canChangePermission} permissionSaving={workspace.actions.permissionSaving || Boolean(view?.state.settingsSaving)}

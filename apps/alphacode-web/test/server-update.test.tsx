@@ -59,7 +59,7 @@ describe("Server updates", () => {
     expect(readReloadDrafts()?.drafts.saved?.text).toBe("其他会话的草稿");
     render(<AppProviders><App /></AppProviders>);
     const composer = await screen.findByRole("textbox", { name: "消息草稿" });
-    expect((composer as HTMLTextAreaElement).value).toBe("正在编辑的文字");
+    expect(composer.textContent).toBe("正在编辑的文字");
     expect(readReloadDrafts()).toBeUndefined();
   });
 

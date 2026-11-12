@@ -1,3 +1,4 @@
+import { replaceDraft } from "./fixtures/draft-editor";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { focusManager } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -14,10 +15,35 @@ async function open() {
   await waitFor(() => expect(api.streams.get(`${path}/events`)?.size).toBe(1));
   return app;
 }
-const input = () => screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement;
+const input = () => screen.getByRole("textbox", { name: "消息草稿" });
 const sends = () => api.fetch.mock.calls.filter(([url]) => url.endsWith("/requests"));
 
 describe("live conversation", () => {
+  it("sends Markdown from the rich editor and clears it after acceptance", async () => {
+    await open();
+    const source = "# 任务\n\n**保留原文**\n\n- 第一项\n- 第二项\n\n```ts\nconst ready = true;\n```";
+    replaceDraft(input(), source);
+    const preview = input();
+    expect(await within(preview).findByRole("heading", { name: "任务" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+    await waitFor(() => expect(sends()).toHaveLength(1));
+    expect(JSON.parse(String(sends()[0]?.[1].body)).input).toBe(source);
+    await waitFor(() => expect(input().textContent).toBe(""));
+  });
+
+  it("keeps formatted drafts scoped to their conversation after navigation", async () => {
+    await open();
+    const source = "**这个会话的草稿**";
+    replaceDraft(input(), source);
+    expect(within(input()).getByText("这个会话的草稿").tagName).toBe("STRONG");
+    fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
+    await screen.findByRole("heading", { name: "一个简单、专注的工作区" });
+    expect(input().textContent).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
+    expect(input().textContent).toBe("这个会话的草稿");
+    expect(sends()).toHaveLength(0);
+  });
+
   it("opens an empty /web draft without a sidebar placeholder and sends in the shared CLI session", async () => {
     api.view(id).state.messages = [];
     api.view(id).session.title = "AlphaCode";
@@ -30,7 +56,7 @@ describe("live conversation", () => {
     expect(screen.queryByRole("heading", { name: "这个会话还没有消息" })).toBeNull();
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
 
-    fireEvent.change(input(), { target: { value: "第一条消息" } });
+    replaceDraft(input(), "第一条消息");
     expect(within(navigation).getByRole("button", { name: "新对话" }).getAttribute("aria-current")).toBe("page");
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
@@ -48,7 +74,7 @@ describe("live conversation", () => {
     await open();
     fireEvent.click(screen.getByRole("button", { name: "在 docs 中新建会话" }));
     expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
-    fireEvent.change(input(), { target: { value: "保留当前项目" } });
+    replaceDraft(input(), "保留当前项目");
     expect((screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.getByRole("button", { name: "文件夹 docs" })).toBeTruthy();
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
@@ -59,13 +85,13 @@ describe("live conversation", () => {
     api.infos.splice(api.infos.findIndex(info => info.id === id), 1);
     await open();
     expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
-    fireEvent.change(input(), { target: { value: "尚未发送的草稿" } });
+    replaceDraft(input(), "尚未发送的草稿");
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
     await screen.findByRole("heading", { name: "一个简单、专注的工作区" });
     fireEvent.click(screen.getByRole("button", { name: "新对话" }));
-    expect(input().value).toBe("尚未发送的草稿");
+    expect(input().textContent).toBe("尚未发送的草稿");
     expect(new URL(window.location.href).searchParams.get("session")).toBe(id);
-    fireEvent.change(input(), { target: { value: "" } });
+    replaceDraft(input(), "");
     expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
   });
@@ -100,17 +126,17 @@ describe("live conversation", () => {
 
   it("sends once, renders CLI deltas immediately, keeps the next draft, and cancels the shared request", async () => {
     await open();
-    fireEvent.change(input(), { target: { value: "你好 server" } });
+    replaceDraft(input(), "你好 server");
     const button = screen.getByRole("button", { name: "发送消息" });
     fireEvent.click(button); fireEvent.click(button);
     await waitFor(() => expect(sends()).toHaveLength(1));
-    await waitFor(() => expect(input().value).toBe(""));
+    await waitFor(() => expect(input().textContent).toBe(""));
     expect(await screen.findByText("你好 server", {}, { timeout: 5000 })).toBeTruthy();
     expect(screen.getByText("正在思考")).toBeTruthy();
     const request = JSON.parse(String(sends()[0]?.[1].body));
     expect(request.requestId).toBeTruthy();
     expect(sends()[0]?.[1]).toMatchObject({ method: "POST", credentials: "omit", redirect: "error", headers: { "Content-Type": "application/json" } });
-    fireEvent.change(input(), { target: { value: "下一条草稿" } });
+    replaceDraft(input(), "下一条草稿");
     await act(async () => {
       api.view(id).state.messages = [...api.view(id).state.messages, { id: "reply", role: "assistant", text: "**流式", streaming: true }];
       api.publish(id);
@@ -121,7 +147,7 @@ describe("live conversation", () => {
       api.publish(id);
     });
     expect(await screen.findByText("流式回复")).toBeTruthy();
-    expect(input().value).toBe("下一条草稿");
+    expect(input().textContent).toBe("下一条草稿");
     fireEvent.click(screen.getByRole("button", { name: "停止生成" }));
     await waitFor(() => expect(api.fetch.mock.calls.find(([url]) => url === `${path}/cancel`)?.[1].body).toBe(JSON.stringify({ requestId: request.requestId })));
     await waitFor(() => expect((screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement).disabled).toBe(false));
@@ -129,20 +155,20 @@ describe("live conversation", () => {
 
   it("queues successive messages during a reply, restores the queue on navigation and removes only the selected item", async () => {
     await open();
-    fireEvent.change(input(), { target: { value: "当前任务" } });
+    replaceDraft(input(), "当前任务");
     fireEvent.keyDown(input(), { key: "Enter" });
-    await waitFor(() => expect(input().value).toBe(""));
+    await waitFor(() => expect(input().textContent).toBe(""));
     const activeId = api.view(id).requestId;
-    fireEvent.change(input(), { target: { value: "第一条排队消息" } });
+    replaceDraft(input(), "第一条排队消息");
     fireEvent.keyDown(input(), { key: "Enter", isComposing: true });
     fireEvent.keyDown(input(), { key: "Enter", shiftKey: true });
     expect(sends()).toHaveLength(1);
     fireEvent.keyDown(input(), { key: "Enter" });
-    await waitFor(() => expect(input().value).toBe(""));
+    await waitFor(() => expect(input().textContent).toBe(""));
     await screen.findByText("第一条排队消息");
-    fireEvent.change(input(), { target: { value: "第二条排队消息" } });
+    replaceDraft(input(), "第二条排队消息");
     fireEvent.click(screen.getByRole("button", { name: "加入队列" }));
-    await waitFor(() => expect(input().value).toBe(""));
+    await waitFor(() => expect(input().textContent).toBe(""));
     expect(sends()).toHaveLength(3);
     expect(api.view(id).requestId).toBe(activeId);
     expect(screen.getByText("2 条消息排队中 · 当前回复结束后依次发送")).toBeTruthy();
@@ -163,7 +189,7 @@ describe("live conversation", () => {
     window.history.replaceState(null, "", "/");
     render(<AppProviders><App /></AppProviders>);
     await screen.findByRole("button", { name: "搭建前端工作区" });
-    fireEvent.change(input(), { target: { value: "新的任务" } });
+    replaceDraft(input(), "新的任务");
     fireEvent.keyDown(input(), { key: "Enter" });
     await waitFor(() => expect(sends()).toHaveLength(1));
     const createdId = new URL(window.location.href).searchParams.get("session");
@@ -173,29 +199,29 @@ describe("live conversation", () => {
     if (!createdId) throw new Error("Missing created session");
     expect(api.view(createdId).session.projectId).toBe(api.info("workspace-layout").projectId);
     expect(await screen.findByText("新的任务")).toBeTruthy();
-    await waitFor(() => expect(input().value).toBe(""));
+    await waitFor(() => expect(input().textContent).toBe(""));
     expect(within(screen.getByRole("navigation", { name: "文件夹与会话" })).getAllByRole("button", { name: "新对话" })).toHaveLength(1);
   });
 
   it("retries an uncertain submission with exactly the same ID and original input without clearing edited text", async () => {
     await open();
     api.overrides.set(`${path}/requests`, () => { throw new TypeError("connection lost after admission"); });
-    fireEvent.change(input(), { target: { value: "原请求" } });
+    replaceDraft(input(), "原请求");
     fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
     await screen.findByRole("button", { name: "重试发送" });
-    expect(input().value).toBe("原请求");
-    fireEvent.change(input(), { target: { value: "保留后续草稿" } });
+    expect(input().textContent).toBe("原请求");
+    replaceDraft(input(), "保留后续草稿");
     api.overrides.delete(`${path}/requests`);
     fireEvent.click(screen.getByRole("button", { name: "重试发送" }));
     await waitFor(() => expect(sends()).toHaveLength(2));
     expect(sends()[1]?.[1].body).toBe(sends()[0]?.[1].body);
     expect(await screen.findByText("原请求")).toBeTruthy();
-    expect(input().value).toBe("保留后续草稿");
+    expect(input().textContent).toBe("保留后续草稿");
   });
 
   it("submits on Enter but not Shift+Enter or IME confirmation", async () => {
     await open();
-    fireEvent.change(input(), { target: { value: "中文输入" } });
+    replaceDraft(input(), "中文输入");
     fireEvent.keyDown(input(), { key: "Enter", shiftKey: true });
     fireEvent.keyDown(input(), { key: "Enter", isComposing: true });
     fireEvent.keyDown(input(), { key: "Enter", keyCode: 229 });
@@ -208,21 +234,21 @@ describe("live conversation", () => {
     await open();
     let finish!: (response: Response) => void;
     api.overrides.set(`${path}/requests`, () => new Promise(resolve => { finish = resolve; }));
-    fireEvent.change(input(), { target: { value: "原会话消息" } });
+    replaceDraft(input(), "原会话消息");
     fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
     await waitFor(() => expect(sends()).toHaveLength(1));
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
-    fireEvent.change(input(), { target: { value: "另一会话草稿" } });
+    replaceDraft(input(), "另一会话草稿");
     await act(async () => finish(Response.json({ requestId: JSON.parse(String(sends()[0]?.[1].body)).requestId, status: "accepted" })));
     expect(new URL(window.location.href).searchParams.get("session")).toBe("workspace-layout");
-    expect(input().value).toBe("另一会话草稿");
+    expect(input().textContent).toBe("另一会话草稿");
     fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
-    expect(input().value).toBe("");
+    expect(input().textContent).toBe("");
   });
 
   it("disables sending while disconnected and resumes from a full snapshot", async () => {
     await open();
-    fireEvent.change(input(), { target: { value: "断线保留草稿" } });
+    replaceDraft(input(), "断线保留草稿");
     await act(async () => {
       for (const controller of api.streams.get(`${path}/events`) ?? []) controller.close();
       api.streams.get(`${path}/events`)?.clear();
@@ -230,7 +256,7 @@ describe("live conversation", () => {
     await waitFor(() => expect((screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement).disabled).toBe(true));
     api.view(id).state.messages = [{ id: "during-disconnect", role: "assistant", text: "断线期间完成的回复" }];
     expect(await screen.findByText("断线期间完成的回复", {}, { timeout: 3000 })).toBeTruthy();
-    expect(input().value).toBe("断线保留草稿");
+    expect(input().textContent).toBe("断线保留草稿");
     expect((screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement).disabled).toBe(false);
     expect(api.fetch.mock.calls.some(([url]) => url.endsWith("/cancel"))).toBe(false);
   });

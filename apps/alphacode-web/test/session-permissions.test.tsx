@@ -1,3 +1,4 @@
+import { replaceDraft } from "./fixtures/draft-editor";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { App } from "@/app";
@@ -8,7 +9,7 @@ let api: ReturnType<typeof mockSessionApi>;
 const id = "project-notes";
 const path = `/api/sessions/${id}`;
 beforeEach(() => { window.history.replaceState(null, "", `/?session=${id}`); api = mockSessionApi(); });
-const input = () => screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement;
+const input = () => screen.getByRole("textbox", { name: "消息草稿" });
 const trigger = (name = "请求批准") => screen.getByRole("button", { name: `切换审批模式：${name}` });
 const sends = () => api.fetch.mock.calls.filter(([url]) => url.endsWith("/requests"));
 async function open() {
@@ -44,7 +45,7 @@ describe("composer approval modes", () => {
     await open();
     let resolve!: (response: Response) => void;
     api.overrides.set(`${path}/permission`, () => new Promise<Response>(done => { resolve = done; }));
-    fireEvent.change(input(), { target: { value: "保留草稿" } });
+    replaceDraft(input(), "保留草稿");
     await choose("完全访问权限");
     expect((screen.getByRole("button", { name: "正在保存…" }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement).disabled).toBe(true);
@@ -53,7 +54,7 @@ describe("composer approval modes", () => {
     await act(async () => { resolve(Response.json({ code: "SESSION_BUSY" }, { status: 409 })); });
     expect(await screen.findByText("未能确认权限变更，请检查当前模式后重试。")).toBeTruthy();
     expect(trigger()).toBeTruthy();
-    expect(input().value).toBe("保留草稿");
+    expect(input().textContent).toBe("保留草稿");
     api.overrides.delete(`${path}/permission`);
     await choose("帮我批准");
     await waitFor(() => expect(trigger("帮我批准")).toBeTruthy());
@@ -73,7 +74,7 @@ describe("composer approval modes", () => {
     window.history.replaceState(null, "", "/");
     render(<AppProviders><App /></AppProviders>);
     await screen.findByText("此计算机");
-    fireEvent.change(input(), { target: { value: "以完全访问开始" } });
+    replaceDraft(input(), "以完全访问开始");
     await choose("完全访问权限");
     expect(api.fetch.mock.calls.some(([, init]) => init.method === "POST")).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
@@ -96,7 +97,7 @@ describe("composer approval modes", () => {
     render(<AppProviders><App /></AppProviders>);
     await screen.findByText("此计算机");
     expect(trigger()).toBeTruthy();
-    fireEvent.change(input(), { target: { value: "按当前显示的模式执行" } });
+    replaceDraft(input(), "按当前显示的模式执行");
     fireEvent.keyDown(input(), { key: "Enter" });
     await waitFor(() => expect(sends()).toHaveLength(1));
     const permission = api.fetch.mock.calls.find(([url]) => url.endsWith("/permission"));
@@ -112,11 +113,11 @@ describe("composer approval modes", () => {
     render(<AppProviders><App /></AppProviders>);
     await screen.findByText("此计算机");
     await choose("完全访问权限");
-    fireEvent.change(input(), { target: { value: "不要直接执行" } });
+    replaceDraft(input(), "不要直接执行");
     fireEvent.keyDown(input(), { key: "Enter" });
     expect(await screen.findByText("未能确认权限变更，请检查当前模式后重试。")).toBeTruthy();
     expect(sends()).toHaveLength(0);
-    expect(input().value).toBe("不要直接执行");
+    expect(input().textContent).toBe("不要直接执行");
     await waitFor(() => expect(trigger()).toBeTruthy());
   });
 });

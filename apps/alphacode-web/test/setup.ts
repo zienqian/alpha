@@ -11,6 +11,9 @@ beforeEach(() => {
     disconnect = vi.fn();
   });
   HTMLElement.prototype.scrollIntoView = vi.fn();
+  // ProseMirror measures the caret when pasting and moving through formatted blocks.
+  Range.prototype.getClientRects = vi.fn(() => [] as unknown as DOMRectList);
+  Range.prototype.getBoundingClientRect = vi.fn(() => new DOMRect());
   vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
     matches: query.includes("max-width") && window.innerWidth < 768,
     media: query,

@@ -1,3 +1,4 @@
+import { replaceDraft } from "./fixtures/draft-editor";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "./render";
 import { App } from "@/app";
@@ -121,12 +122,12 @@ describe("Skills marketplace", () => {
     api.overrides.set(`/api/skills?projectId=${projectId}`, () => Response.json(fixture()));
     render(<AppProviders><App /></AppProviders>);
     await screen.findByRole("heading", { name: "项目说明与约定", level: 1 });
-    fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "保留我的草稿" } });
+    replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "保留我的草稿");
     fireEvent.click(screen.getByRole("button", { name: "Skills 市场" }));
     await screen.findByRole("heading", { name: "Skills 市场", level: 1 });
     expect(new URL(window.location.href).searchParams.get("view")).toBe("skills");
     fireEvent.click(screen.getByRole("button", { name: "返回会话" }));
-    expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("保留我的草稿");
+    expect((screen.getByRole("textbox", { name: "消息草稿" })).textContent).toBe("保留我的草稿");
     expect(new URL(window.location.href).searchParams.has("view")).toBe(false);
   });
 });

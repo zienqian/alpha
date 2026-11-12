@@ -1,3 +1,4 @@
+import { replaceDraft } from "./fixtures/draft-editor";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { focusManager } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -151,7 +152,7 @@ describe("server session integration", () => {
     window.history.replaceState(null, "", "/?session=project-notes");
     renderApp();
     await screen.findByRole("heading", { name: "开发约定" });
-    fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "保留我的草稿" } });
+    replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "保留我的草稿");
     api.overrides.set("/api/sessions/project-notes", () => Response.json({ code: "NOT_FOUND" }, { status: 404 }));
     await act(async () => { focusManager.setFocused(false); focusManager.setFocused(true); });
     expect(await screen.findByText("当前显示上次加载的记录。")).toBeTruthy();
@@ -160,21 +161,21 @@ describe("server session integration", () => {
     api.view("project-notes").state.messages = [{ id: "new", role: "assistant", text: "CLI 新增的回复" }];
     fireEvent.click(screen.getByRole("button", { name: "重试加载历史" }));
     expect(await screen.findByText("CLI 新增的回复")).toBeTruthy();
-    expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("保留我的草稿");
+    expect((screen.getByRole("textbox", { name: "消息草稿" })).textContent).toBe("保留我的草稿");
     expect(screen.queryByText("当前显示上次加载的记录。")).toBeNull();
   });
 
   it("refreshes the index without moving local drafts when project order changes", async () => {
     renderApp();
     await screen.findByRole("button", { name: "搭建前端工作区" });
-    fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "继续当前项目" } });
+    replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "继续当前项目");
     api.info("project-notes").updatedAt = "2026-11-09T03:00:00.000Z";
     api.infos.push({ id: "new", projectId: "docs", workspaceRoot: "docs", title: "CLI 新建会话", updatedAt: "2026-11-09T04:00:00.000Z", status: "ready" });
     await act(async () => api.publish("project-notes"));
     expect(await screen.findByRole("button", { name: "CLI 新建会话" })).toBeTruthy();
     expect(within(screen.getByRole("region", { name: "从这里，开始构建。" })).getByText("alphacode-web")).toBeTruthy();
     expect(screen.getByRole("button", { name: "新对话" }).getAttribute("aria-current")).toBe("page");
-    expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("继续当前项目");
+    expect((screen.getByRole("textbox", { name: "消息草稿" })).textContent).toBe("继续当前项目");
   });
 
   it("restores the chosen conversation on browser navigation and clears the URL for local drafts", async () => {

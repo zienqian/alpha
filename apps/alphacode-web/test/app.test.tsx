@@ -1,3 +1,4 @@
+import { replaceDraft } from "./fixtures/draft-editor";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "@/app";
@@ -60,12 +61,12 @@ describe("Session workspace", () => {
   it("keeps drafts separate for each session", async () => {
     await renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "下一步检查布局" } });
+    replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "下一步检查布局");
     fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
-    expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("");
-    fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "整理项目文档" } });
+    expect((screen.getByRole("textbox", { name: "消息草稿" })).textContent).toBe("");
+    replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "整理项目文档");
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
-    expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("下一步检查布局");
+    expect((screen.getByRole("textbox", { name: "消息草稿" })).textContent).toBe("下一步检查布局");
     expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
   });
 
@@ -130,13 +131,13 @@ describe("Session workspace", () => {
 
   it("creates a new local draft without losing the previous text", async () => {
     await renderWorkspace();
-    fireEvent.change(screen.getByRole("textbox", { name: "消息草稿" }), { target: { value: "实现新的导航" } });
+    replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "实现新的导航");
     const originalDraft = screen.getByRole("button", { name: "新对话" });
     expect(originalDraft.textContent).toBe("新对话");
     fireEvent.click(screen.getByRole("button", { name: "在 alphacode-web 中新建会话" }));
-    expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("");
+    expect((screen.getByRole("textbox", { name: "消息草稿" })).textContent).toBe("");
     fireEvent.click(originalDraft);
-    expect((screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement).value).toBe("实现新的导航");
+    expect((screen.getByRole("textbox", { name: "消息草稿" })).textContent).toBe("实现新的导航");
   });
 
   it("does not create duplicate empty drafts and focuses the composer", async () => {
@@ -151,11 +152,11 @@ describe("Session workspace", () => {
   it("only lists a local draft while it has input, without creating a server session", async () => {
     await renderWorkspace();
     const input = screen.getByRole("textbox", { name: "消息草稿" });
-    fireEvent.change(input, { target: { value: "   " } });
+    replaceDraft(input, "   ");
     expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
-    fireEvent.change(input, { target: { value: "开始新的任务" } });
+    replaceDraft(input, "开始新的任务");
     expect(screen.getByRole("button", { name: "新对话" }).getAttribute("aria-current")).toBe("page");
-    fireEvent.change(input, { target: { value: "" } });
+    replaceDraft(input, "");
     expect(screen.queryByRole("button", { name: "新对话" })).toBeNull();
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
   });

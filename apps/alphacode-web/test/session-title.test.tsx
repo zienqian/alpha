@@ -1,3 +1,4 @@
+import { replaceDraft } from "./fixtures/draft-editor";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { App } from "@/app";
@@ -15,8 +16,8 @@ it("replaces the sidebar skeleton from live title events without disrupting the 
   await waitFor(() => expect(api.streams.get(`/api/sessions/${id}/events`)?.size).toBe(1));
   expect(row.querySelector('[data-slot="skeleton"]')).toBeTruthy();
   expect(row.getAttribute("aria-current")).toBe("page");
-  const input = screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement;
-  fireEvent.change(input, { target: { value: "保留下一条草稿" } });
+  const input = screen.getByRole("textbox", { name: "消息草稿" });
+  replaceDraft(input, "保留下一条草稿");
   await act(async () => {
     Object.assign(api.info(id), { title: "完善项目文档", titleStatus: "ready" });
     api.publish(id);
@@ -24,7 +25,7 @@ it("replaces the sidebar skeleton from live title events without disrupting the 
   const ready = await screen.findByRole("button", { name: "完善项目文档" });
   expect(ready.querySelector('[data-slot="skeleton"]')).toBeNull();
   expect(ready.getAttribute("aria-current")).toBe("page");
-  expect(input.value).toBe("保留下一条草稿");
+  expect(input.textContent).toBe("保留下一条草稿");
 });
 
 it("keeps normal titles visible and caps a stale loading snapshot at eight seconds", () => {

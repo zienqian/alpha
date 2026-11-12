@@ -179,6 +179,62 @@
     transition: border-color 160ms ease-out;
   }
 
+  .composer-editor {
+    white-space: pre-wrap;
+    caret-color: var(--foreground);
+    scrollbar-gutter: stable;
+  }
+
+  .composer-editor p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    @apply pointer-events-none float-left h-0 text-muted-foreground;
+  }
+
+  .markdown.composer-editor p {
+    @apply my-1;
+  }
+
+  .composer-editor li > p {
+    @apply m-0;
+  }
+
+  .composer-editor pre {
+    @apply my-3 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5;
+    white-space: pre;
+  }
+
+  .composer-editor .tableWrapper {
+    @apply my-3 max-w-full overflow-x-auto rounded-md border;
+  }
+
+  .composer-editor td, .composer-editor th {
+    @apply relative min-w-24;
+  }
+
+  .composer-editor .selectedCell {
+    @apply bg-accent;
+  }
+
+  .composer-editor ul[data-type="taskList"] {
+    @apply list-none pl-0;
+  }
+
+  .composer-editor li[data-type="taskItem"] {
+    @apply flex items-start gap-2 pl-0;
+  }
+
+  .composer-editor li[data-type="taskItem"] > div {
+    @apply min-w-0 flex-1;
+  }
+
+  .composer-editor li[data-type="taskItem"] input {
+    @apply accent-primary;
+  }
+
+  .composer-editor .ProseMirror-selectednode {
+    @apply outline-2 outline-ring;
+  }
+
   .welcome-stage {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

@@ -1,12 +1,13 @@
 import { useTranslation } from "@/i18n/react";
-import { useEffect, useRef } from "react";
 import { ArrowUp, Folder, LaptopMinimal, LoaderCircle, Square, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupButton } from "@/components/ui/input-group";
 import type { SessionDraft } from "@/features/sessions/use-session-workspace";
 import type { SessionFolder } from "@/features/sessions/types";
 import type { PermissionMode } from "@/features/sessions/api";
 import { SessionPermissions } from "@/features/sessions/session-permissions";
+
+import { MarkdownEditor } from "@/components/ai-elements/markdown-editor";
 
 // AI Elements Prompt Input pattern; the server owns accepted conversation state.
 export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend, busy, submitting, onCancel, canCancel, status,
@@ -19,11 +20,6 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
   folder?: Pick<SessionFolder, "name" | "path">;
 }) {
   const { t } = useTranslation();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    if (focusRequest > 0) textareaRef.current?.focus();
-  }, [focusRequest]);
-
   return (
     <div className="relative z-10 w-full">
       {folder && <div className="mx-2 -mb-3 flex min-w-0 items-center gap-4 rounded-t-xl bg-muted/60 px-3 pt-2.5 pb-5 text-xs text-muted-foreground sm:mx-3">
@@ -47,20 +43,13 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
             ))}
           </InputGroupAddon>
         )}
-        <InputGroupTextarea ref={textareaRef} aria-label={t("sessions:draft")} aria-describedby="composer-status"
-          placeholder={t(busy ? "sessions:queuePlaceholder" : "sessions:placeholder")} value={draft.text}
-          onChange={(event) => onChange({ text: event.target.value })}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) {
-              event.preventDefault();
-              if (canSend) onSend();
-            }
-          }}
-          className="min-h-20 max-h-48 px-4 pt-3.5 pb-2 text-base leading-6 placeholder:text-muted-foreground md:text-sm" />
+        <MarkdownEditor value={draft.text} onChange={text => onChange({ text })}
+          label={t("sessions:draft")} placeholder={t(busy ? "sessions:queuePlaceholder" : "sessions:placeholder")}
+          focusRequest={focusRequest} onSend={onSend} canSend={canSend} />
         <InputGroupAddon align="block-end" className="gap-2 px-2.5 pt-1 pb-2.5">
           <SessionPermissions mode={permissionMode} onChange={onPermissionChange} disabled={!canChangePermission}
             saving={permissionSaving} busy={busy || Boolean(submitting)} />
-          <span id="composer-status" role="status" className="ml-auto truncate px-1 text-xs font-normal">{submitting ? t("sessions:submitting") : status}</span>
+          <span id="composer-status" role="status" className="ml-auto min-w-0 truncate px-1 text-xs font-normal">{submitting ? t("sessions:submitting") : status}</span>
           {busy && <InputGroupButton variant={draft.text.trim() ? "ghost" : "default"} size="icon-sm" disabled={!canCancel} aria-label={t("sessions:stop")} onClick={onCancel}>
             <Square className="size-3.5" aria-hidden="true" />
           </InputGroupButton>}

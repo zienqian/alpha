@@ -1,3 +1,4 @@
+import { replaceDraft } from "./fixtures/draft-editor";
 import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "@/app";
@@ -61,13 +62,13 @@ describe("internationalization", () => {
       approval: { name: "run_command", preview: { type: "command", shell: "pwsh", cwd: "C:\\中文", command: "echo hello" } } };
     render(<AppProviders><App /></AppProviders>);
     await screen.findByText("echo hello");
-    const input = screen.getByRole("textbox", { name: "消息草稿" }) as HTMLTextAreaElement;
-    fireEvent.change(input, { target: { value: "未发送 <draft>" } });
+    const input = screen.getByRole("textbox", { name: "消息草稿" });
+    replaceDraft(input, "未发送 <draft>");
     const connections = api.fetch.mock.calls.filter(([url]) => url.endsWith("/events")).length;
     fireEvent.keyDown(screen.getByRole("button", { name: "语言" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitemradio", { name: "English" }));
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Message draft" })).toBe(input));
-    expect(input.value).toBe("未发送 <draft>");
+    expect(input.textContent).toBe("未发送 <draft>");
     expect(screen.getByText("echo hello")).toBeTruthy();
     expect(view.requestId).toBe("running-request"); expect(view.approvalId).toBe("pending-approval");
     expect(api.fetch.mock.calls.filter(([, init]) => init.method === "POST")).toHaveLength(0);
