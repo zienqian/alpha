@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { chmod, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, delimiter, dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -9,13 +9,19 @@ import { cliBridge, cliCommandName } from "../src/cli-command";
 import { installCliCommand } from "../src/install-cli";
 
 const runtime = process.env.ALPHACODE_APP_TEST_RUNTIME;
+async function temporaryDirectory() {
+  // macOS exposes /var through /private/var. Bun resolves imported modules to
+  // their real paths, so fixture paths and child working directories must agree.
+  return mkdtemp(join(await realpath(tmpdir()), "alphacode-app-package-test-"));
+}
+
 async function cleanup(root: string) {
-  if (dirname(resolve(root)) !== resolve(tmpdir()) || !basename(root).startsWith("alphacode-app-package-test-")) throw new Error("Unsafe cleanup");
+  if (dirname(resolve(root)) !== await realpath(tmpdir()) || !basename(root).startsWith("alphacode-app-package-test-")) throw new Error("Unsafe cleanup");
   await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
 }
 test.skipIf(!runtime)("packaged Bun starts outside the repository and serves sessions, Skills, Trace and SSE", async () => {
   if (!runtime) return;
-  const root = await mkdtemp(join(tmpdir(), "alphacode-app-package-test-"));
+  const root = await temporaryDirectory();
   const bun = join(runtime, "bin", process.platform === "win32" ? "bun.exe" : "bun");
   const child = Bun.spawn([bun, "--no-env-file", "--conditions=alpha-source", join(runtime, "apps/alphacode-app-server/src/main.ts"), "--database", join(root, "sessions.db")], {
     cwd: root, env: { ...process.env, ALPHACODE_HOME: join(root, "home"), ALPHACODE_DB: undefined },
@@ -72,7 +78,7 @@ test.skipIf(!runtime)("packaged Bun starts outside the repository and serves ses
 
 test.skipIf(!runtime)("relocated App CLI works without global Bun and delegates to a later user installation", async () => {
   if (!runtime) return;
-  const root = await mkdtemp(join(tmpdir(), "alphacode-app-package-test-"));
+  const root = await temporaryDirectory();
   try {
     const moved = join(root, "moved runtime with spaces");
     await cp(runtime, moved, { recursive: true });
