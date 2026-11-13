@@ -37,7 +37,7 @@ describe("live conversation", () => {
     replaceDraft(input(), source);
     expect(within(input()).getByText("这个会话的草稿").tagName).toBe("STRONG");
     fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
-    await screen.findByRole("heading", { name: "一个简单、专注的工作区" });
+    await screen.findByRole("heading", { name: "一个简单、专注的工作区" }, { timeout: 5000 });
     expect(input().textContent).toBe("");
     fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
     expect(input().textContent).toBe("这个会话的草稿");

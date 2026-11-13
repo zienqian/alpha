@@ -76,6 +76,9 @@ function SidebarProvider({
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === "function" ? value(open) : value
+      if (!openState && document.activeElement?.closest('[data-slot="sidebar-container"]')) {
+        document.querySelector<HTMLButtonElement>('[data-slot="sidebar-trigger"]')?.focus()
+      }
       if (setOpenProp) {
         setOpenProp(openState)
       } else {
@@ -188,7 +191,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className="w-(--sidebar-width) bg-(--glass-surface) p-0 text-sidebar-foreground [&>button]:hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -222,10 +225,9 @@ function Sidebar({
       <m.div
         data-slot="sidebar-gap"
         initial={false}
-        animate={{ width: offcanvas ? 0 : icon ? compactWidth : "var(--sidebar-width)" }}
-        transition={transition}
+        style={{ width: offcanvas ? 0 : icon ? compactWidth : "var(--sidebar-width)" }}
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent",
+          "sidebar-width-transition relative w-(--sidebar-width) bg-transparent",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
             ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
@@ -237,16 +239,17 @@ function Sidebar({
         data-slot="sidebar-container"
         initial={false}
         animate={{ x: offcanvas ? side === "left" ? "-100%" : "100%" : "0%" }}
+        style={{ width: icon ? compactWidth : "var(--sidebar-width)" }}
         transition={transition}
         inert={offcanvas}
         aria-hidden={offcanvas || undefined}
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) md:flex",
+          "sidebar-width-transition fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) md:flex",
           side === "left"
             ? "left-0"
             : "right-0",
           variant === "floating" || variant === "inset"
-            ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
+            ? "p-2"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
           className
         )}
@@ -254,7 +257,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow-sm"
+          className={cn("flex h-full w-full flex-col", variant !== "floating" && "bg-sidebar")}
         >
           {children}
         </div>
@@ -270,7 +273,7 @@ function SidebarTrigger({
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { t } = useTranslation();
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, open, openMobile, isMobile } = useSidebar()
 
   return (
     <Button
@@ -278,6 +281,7 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon-sm"
+      aria-expanded={isMobile ? openMobile : open}
       className={className}
       onClick={(event) => {
         onClick?.(event)

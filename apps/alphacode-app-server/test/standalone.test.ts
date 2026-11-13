@@ -52,6 +52,15 @@ for (const built of [false, true]) {
       const descriptor = JSON.parse(await readFile(event.descriptorPath, "utf8")) as ServerDescriptor;
       expect(text).not.toContain(descriptor.token);
       expect((await ensureServer(databasePath)).instanceId).toBe(descriptor.instanceId);
+      // The desktop launcher discovers the same server and exits without
+      // printing its native bearer token or starting a second supervisor.
+      const ensured = launch(root, built, ["--ensure", "--database", databasePath]);
+      const ensuredOutput = new Response(ensured.child.stdout).text();
+      expect(await ensured.child.exited).toBe(0);
+      const ensuredText = await ensuredOutput;
+      expect(JSON.parse(ensuredText)).toMatchObject({ event: "ready", pid: descriptor.pid, descriptorPath: event.descriptorPath });
+      expect(ensuredText).not.toContain(descriptor.token);
+      expect(await ensured.stderr).toBe("");
       const client = createNativeClient(descriptor);
       expect(await client.request("/api/sessions")).toEqual({ sessions: [] });
       chat = await connectApplication({ workspaceRoot: root, databasePath, configDirectory: join(root, "home"),

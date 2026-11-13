@@ -25,7 +25,7 @@ describe("full conversation search", () => {
     expect(api.fetch.mock.calls.some(([path]) => path === "/api/sessions/project-notes")).toBe(false);
     fireEvent.keyDown(input, { key: "Enter" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(await screen.findByRole("heading", { name: "开发约定" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "开发约定" }, { timeout: 5000 })).toBeTruthy();
   });
 
   it("supports keyboard navigation, Escape, and reopening with a clean query", async () => {

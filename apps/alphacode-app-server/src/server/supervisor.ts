@@ -13,6 +13,7 @@ interface Options {
   layout: Layout;
   getRevision?: () => Promise<string>;
   pollMs?: number;
+  retryMs?: number;
   onIdle?: () => void;
 }
 
@@ -76,6 +77,8 @@ export async function startSupervisor(options: Options) {
   let currentRevision = await revision();
   let observed = currentRevision;
   let failedRevision: string | undefined;
+  let retryAt = 0;
+  let failures = 0;
   let descriptor: ServerDescriptor;
   let closed = false;
   let checking: Promise<void> | undefined;
@@ -83,7 +86,7 @@ export async function startSupervisor(options: Options) {
     const worker = launch(options.layout, event => {
       if (worker !== current || closed) return;
       if (event === "idle" || event === "exit") options.onIdle?.();
-      if (event === "retry") { failedRevision = undefined; void check(); }
+      if (event === "retry") { retryAt = 0; void check(); }
     });
     return worker;
   };
@@ -105,7 +108,8 @@ export async function startSupervisor(options: Options) {
   async function update() {
     const next = await revision();
     if (next === currentRevision) { observed = next; await status("current"); return; }
-    if (next === failedRevision) return;
+    if (next === failedRevision && Date.now() < retryAt) return;
+    if (next !== failedRevision) failures = 0;
     await status("pending");
     // Require two stable observations so a save/build does not reload halfway.
     if (next !== observed) { observed = next; return; }
@@ -126,10 +130,12 @@ export async function startSupervisor(options: Options) {
       await activate(candidate, handoff);
       current = candidate;
       failedRevision = undefined;
+      failures = 0;
       await previous.dispose();
     } catch {
       currentRevision = previousRevision;
       failedRevision = next;
+      retryAt = Date.now() + Math.min((options.retryMs ?? 5000) * 2 ** Math.min(failures++, 3), 30000);
       // Keep the old worker alive until replacement succeeds. If the new code
       // cannot restore sessions, its cached old code can reopen the same port.
       try { await candidate.request("stop"); } catch { /* Startup may have failed before listening. */ }

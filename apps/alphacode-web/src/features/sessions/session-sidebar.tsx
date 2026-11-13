@@ -1,12 +1,13 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
-import { Folder, Plus, Search, SquareTerminal, X, Blocks } from "lucide-react";
+import { Folder, Plus, Search, SquareTerminal, X, Blocks, SquarePen, RefreshCw } from "lucide-react";
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
 import { SessionTitle } from "@/features/sessions/session-title";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -34,8 +35,23 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set());
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
-  const { setOpenMobile, isMobile, openMobile } = useSidebar();
+  const searchReturnTarget = useRef<HTMLButtonElement | null>(null);
+  const folderTriggers = useRef(new Map<string, HTMLButtonElement>());
+  const folderFocusRequest = useRef<string | null>(null);
+  const { setOpenMobile, isMobile, openMobile, state, setOpen } = useSidebar();
+  const compact = !isMobile && state === "collapsed";
   const activeFolderId = folders.find((folder) => folder.sessions.some((session) => session.id === selectedSessionId))?.id;
+
+  useEffect(() => {
+    if (searchOpen) searchReturnTarget.current = searchTriggerRef.current;
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (!compact && folderFocusRequest.current) {
+      folderTriggers.current.get(folderFocusRequest.current)?.focus();
+      folderFocusRequest.current = null;
+    }
+  }, [compact]);
 
   useEffect(() => {
     if (!activeFolderId) return;
@@ -77,9 +93,38 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
 
   return (
     <>
-    <Sidebar aria-label={t("workspace:sidebar")} variant="sidebar">
+    <Sidebar aria-label={t("workspace:sidebar")} variant="floating" collapsible="icon" className="workspace-sidebar">
+      {compact ? <>
+        <SidebarHeader className="items-center gap-2 px-1.5 pt-3 pb-2">
+          {/* i18next-instrument-ignore-next-line — Product name. */}
+          <SquareTerminal className="mb-2 size-5 text-sidebar-foreground" strokeWidth={1.7} aria-label="AlphaCode" />
+          <Tooltip><TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:new")} disabled={folders.length === 0} onClick={() => startSession()}><SquarePen aria-hidden="true" /></Button>
+          </TooltipTrigger><TooltipContent side="right">{t("sessions:new")}</TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild>
+            <Button ref={searchTriggerRef} variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen} onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></Button>
+          </TooltipTrigger><TooltipContent side="right">{t("sessions:search")}</TooltipContent></Tooltip>
+          {onOpenSkills && <Tooltip><TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="rail-action" aria-label={t("skills:market.title")} aria-current={skillsActive ? "page" : undefined} onClick={onOpenSkills}><Blocks aria-hidden="true" /></Button>
+          </TooltipTrigger><TooltipContent side="right">{t("skills:market.title")}</TooltipContent></Tooltip>}
+        </SidebarHeader>
+        <SidebarContent className="items-center gap-2 px-1.5 py-3 group-data-[collapsible=icon]:overflow-y-auto" style={{ scrollbarGutter: "auto", scrollbarWidth: "none" }}>
+          <div className="rail-divider" />
+          <nav aria-label={t("workspace:folders")} className="flex flex-col gap-2">
+            {folders.map(folder => <Tooltip key={folder.id}><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="rail-action" aria-label={t("workspace:folder", { name: folder.name })} aria-expanded={false}
+                data-active={!skillsActive && activeFolderId === folder.id}
+                onClick={() => { folderFocusRequest.current = folder.id; setFolderOpen(folder.id, true); setOpen(true); }}><Folder strokeWidth={1.7} aria-hidden="true" /></Button>
+            </TooltipTrigger><TooltipContent side="right">{folder.name}</TooltipContent></Tooltip>)}
+            {error && <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:retryList")} disabled={refreshing} onClick={onRefresh}><RefreshCw aria-hidden="true" /></Button>
+            </TooltipTrigger><TooltipContent side="right">{t("sessions:retryList")}</TooltipContent></Tooltip>}
+          </nav>
+        </SidebarContent>
+        <SidebarFooter className="items-center gap-2 px-1.5 py-3"><LanguageToggle /><ThemeToggle /></SidebarFooter>
+      </> : <>
       <SidebarHeader className="gap-0 p-0">
-        <div className="flex h-11 items-center gap-2 pr-2.5 pl-4">
+        <div className="flex h-11 items-center gap-2.5 pr-2.5 pl-4">
           <SquareTerminal className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
           {/* i18next-instrument-ignore-next-line — Product name. */}
           <span className="text-sm font-semibold tracking-tight">AlphaCode</span>
@@ -88,12 +133,12 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
           </Button>
         </div>
         <div className="space-y-1 px-2.5 pt-2">
-        <Button ref={searchTriggerRef} variant="ghost" className="h-9 w-full justify-start gap-2 rounded-md px-2.5 text-[13px] font-normal text-muted-foreground md:h-8" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
+        <Button ref={searchTriggerRef} variant="ghost" className="sidebar-search h-9 w-full justify-start gap-2 rounded-lg px-2.5 text-[13px] font-normal text-muted-foreground" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
           onClick={() => setSearchOpen(true)}>
           <Search className="size-3.5" aria-hidden="true" /><span>{t("sessions:search")}</span>
           <kbd className="ml-auto rounded border border-sidebar-border px-1 font-sans text-[10px] leading-4 text-muted-foreground">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}</kbd>
         </Button>
-        {onOpenSkills && <Button variant="ghost" className="h-9 w-full justify-start gap-2 rounded-md px-2.5 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-foreground md:h-8"
+        {onOpenSkills && <Button variant="ghost" className="h-9 w-full justify-start gap-2 rounded-lg px-2.5 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-foreground"
           aria-current={skillsActive ? "page" : undefined} onClick={() => { onOpenSkills(); setOpenMobile(false); }}>
           <Blocks className="size-3.5" aria-hidden="true" /><span>{t("skills:market.title")}</span>
         </Button>}
@@ -117,7 +162,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
                     <SidebarMenuItem>
                       <div className="group/folder-header relative w-full">
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton title={folder.path} aria-label={t("workspace:folder", { name: folder.name })} className="h-8 w-full gap-2 rounded-md pr-8 pl-2 text-xs text-muted-foreground group-hover/folder-header:bg-sidebar-accent md:h-7">
+                          <SidebarMenuButton ref={element => { if (element) folderTriggers.current.set(folder.id, element); else folderTriggers.current.delete(folder.id); }} title={folder.path} aria-label={t("workspace:folder", { name: folder.name })} className="h-8 w-full gap-2 rounded-md pr-8 pl-2 text-xs text-muted-foreground group-hover/folder-header:bg-sidebar-accent md:h-7">
                             <Folder className="size-3.5!" strokeWidth={1.7} aria-hidden="true" />
                             <span className="font-medium">{folder.name}</span>
                           </SidebarMenuButton>
@@ -129,7 +174,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
                           {folder.sessions.map((session) => (
                             <SidebarMenuSubItem key={session.id}>
                               <SidebarMenuSubButton asChild isActive={!skillsActive && selectedSessionId === session.id}
-                                className="h-9 w-full translate-x-0 rounded-md border border-transparent pr-2 pl-7 text-[13px] text-sidebar-foreground/80 data-[active=true]:border-sidebar-border data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-foreground md:h-8">
+                                className="session-nav-item h-9 w-full translate-x-0 rounded-lg pr-2 pl-7 text-[13px] text-sidebar-foreground/80 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8">
                                 <button type="button" title={session.title} aria-label={session.title} aria-current={!skillsActive && selectedSessionId === session.id ? "page" : undefined}
                                   onClick={() => { onSelectSession(session.id); setOpenMobile(false); }}>
                                   <SessionTitle title={session.title} pending={session.titleStatus === "pending"} />
@@ -152,11 +197,13 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
       <SidebarFooter className="h-11 flex-row items-center justify-end gap-2 px-3 py-1.5">
         <div className="flex items-center"><LanguageToggle /><ThemeToggle /></div>
       </SidebarFooter>
+      </>}
     </Sidebar>
     <SessionSearch open={searchOpen} onOpenChange={setSearchOpen} folders={folders}
       onSelectSession={(id) => { onSelectSession(id); setOpenMobile(false); }}
       onCloseFocus={() => {
-        if (isMobile ? openMobile : searchTriggerRef.current && !searchTriggerRef.current.closest("[inert]")) searchTriggerRef.current?.focus();
+        const target = searchReturnTarget.current;
+        if (target?.isConnected && !target.closest("[inert]") && (!isMobile || openMobile)) target.focus();
         else document.querySelector<HTMLButtonElement>('[data-slot="sidebar-trigger"]')?.focus();
       }} />
     </>

@@ -13,6 +13,10 @@
   "scripts": {
     "dev": "bun --no-env-file ./apps/alphacode/bin/alphacode.ts --watch",
     "dev:web": "bun run --cwd apps/alphacode-web dev",
+    "dev:app": "bun run --cwd apps/alphacode-app dev",
+    "build:app": "bun run --cwd apps/alphacode-app build",
+    "package:app": "bun run --cwd apps/alphacode-app package",
+    "test:app": "bun run --cwd apps/alphacode-app test",
     "dev:server": "bun --no-env-file --conditions=alpha-source ./apps/alphacode-app-server/src/main.ts",
     "start:server": "bun --no-env-file ./apps/alphacode-app-server/dist/main.js",
     "build:web": "bun run --cwd apps/alphacode-web build",
@@ -26,6 +30,7 @@
     "i18n:check": "bun --bun run tsrs -p scripts/tsconfig.json --noEmit && bun --bun run eslint scripts && bun test ./scripts/i18n-tools.test.ts && bun --bun run nx run-many -t i18n-check",
     "i18n:types": "bun --bun run nx run-many -t i18n-types"
   },
+  "trustedDependencies": ["electron"],
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@nx/eslint-plugin": "24.0.4",

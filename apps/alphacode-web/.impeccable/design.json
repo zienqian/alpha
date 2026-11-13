@@ -1,0 +1,720 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-13T05:06:58.558Z",
+  "title": "Design System: AlphaCode Web",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "tonalRamp": [
+          "oklch(0.150 0.1457 258.96)",
+          "oklch(0.264 0.1457 258.96)",
+          "oklch(0.379 0.1457 258.96)",
+          "oklch(0.493 0.1457 258.96)",
+          "oklch(0.607 0.1457 258.96)",
+          "oklch(0.721 0.1457 258.96)",
+          "oklch(0.836 0.1457 258.96)",
+          "oklch(0.950 0.1457 258.96)"
+        ]
+      },
+      "primary-foreground": {
+        "tonalRamp": [
+          "oklch(0.150 0.0000 89.88)",
+          "oklch(0.264 0.0000 89.88)",
+          "oklch(0.379 0.0000 89.88)",
+          "oklch(0.493 0.0000 89.88)",
+          "oklch(0.607 0.0000 89.88)",
+          "oklch(0.721 0.0000 89.88)",
+          "oklch(0.836 0.0000 89.88)",
+          "oklch(0.950 0.0000 89.88)"
+        ]
+      },
+      "background": {
+        "tonalRamp": [
+          "oklch(0.150 0.0029 264.54)",
+          "oklch(0.264 0.0029 264.54)",
+          "oklch(0.379 0.0029 264.54)",
+          "oklch(0.493 0.0029 264.54)",
+          "oklch(0.607 0.0029 264.54)",
+          "oklch(0.721 0.0029 264.54)",
+          "oklch(0.836 0.0029 264.54)",
+          "oklch(0.950 0.0029 264.54)"
+        ]
+      },
+      "foreground": {
+        "tonalRamp": [
+          "oklch(0.150 0.0198 264.19)",
+          "oklch(0.264 0.0198 264.19)",
+          "oklch(0.379 0.0198 264.19)",
+          "oklch(0.493 0.0198 264.19)",
+          "oklch(0.607 0.0198 264.19)",
+          "oklch(0.721 0.0198 264.19)",
+          "oklch(0.836 0.0198 264.19)",
+          "oklch(0.950 0.0198 264.19)"
+        ]
+      },
+      "card": {
+        "tonalRamp": [
+          "oklch(0.150 0.0000 89.88)",
+          "oklch(0.264 0.0000 89.88)",
+          "oklch(0.379 0.0000 89.88)",
+          "oklch(0.493 0.0000 89.88)",
+          "oklch(0.607 0.0000 89.88)",
+          "oklch(0.721 0.0000 89.88)",
+          "oklch(0.836 0.0000 89.88)",
+          "oklch(0.950 0.0000 89.88)"
+        ]
+      },
+      "popover": {
+        "tonalRamp": [
+          "oklch(0.150 0.0029 264.54)",
+          "oklch(0.264 0.0029 264.54)",
+          "oklch(0.379 0.0029 264.54)",
+          "oklch(0.493 0.0029 264.54)",
+          "oklch(0.607 0.0029 264.54)",
+          "oklch(0.721 0.0029 264.54)",
+          "oklch(0.836 0.0029 264.54)",
+          "oklch(0.950 0.0029 264.54)"
+        ]
+      },
+      "secondary": {
+        "tonalRamp": [
+          "oklch(0.150 0.0092 258.34)",
+          "oklch(0.264 0.0092 258.34)",
+          "oklch(0.379 0.0092 258.34)",
+          "oklch(0.493 0.0092 258.34)",
+          "oklch(0.607 0.0092 258.34)",
+          "oklch(0.721 0.0092 258.34)",
+          "oklch(0.836 0.0092 258.34)",
+          "oklch(0.950 0.0092 258.34)"
+        ]
+      },
+      "muted": {
+        "tonalRamp": [
+          "oklch(0.150 0.0063 255.48)",
+          "oklch(0.264 0.0063 255.48)",
+          "oklch(0.379 0.0063 255.48)",
+          "oklch(0.493 0.0063 255.48)",
+          "oklch(0.607 0.0063 255.48)",
+          "oklch(0.721 0.0063 255.48)",
+          "oklch(0.836 0.0063 255.48)",
+          "oklch(0.950 0.0063 255.48)"
+        ]
+      },
+      "muted-foreground": {
+        "tonalRamp": [
+          "oklch(0.150 0.0272 256.17)",
+          "oklch(0.264 0.0272 256.17)",
+          "oklch(0.379 0.0272 256.17)",
+          "oklch(0.493 0.0272 256.17)",
+          "oklch(0.607 0.0272 256.17)",
+          "oklch(0.721 0.0272 256.17)",
+          "oklch(0.836 0.0272 256.17)",
+          "oklch(0.950 0.0272 256.17)"
+        ]
+      },
+      "accent": {
+        "tonalRamp": [
+          "oklch(0.150 0.0109 256.70)",
+          "oklch(0.264 0.0109 256.70)",
+          "oklch(0.379 0.0109 256.70)",
+          "oklch(0.493 0.0109 256.70)",
+          "oklch(0.607 0.0109 256.70)",
+          "oklch(0.721 0.0109 256.70)",
+          "oklch(0.836 0.0109 256.70)",
+          "oklch(0.950 0.0109 256.70)"
+        ]
+      },
+      "border": {
+        "tonalRamp": [
+          "oklch(0.150 0.0122 259.82)",
+          "oklch(0.264 0.0122 259.82)",
+          "oklch(0.379 0.0122 259.82)",
+          "oklch(0.493 0.0122 259.82)",
+          "oklch(0.607 0.0122 259.82)",
+          "oklch(0.721 0.0122 259.82)",
+          "oklch(0.836 0.0122 259.82)",
+          "oklch(0.950 0.0122 259.82)"
+        ]
+      },
+      "input": {
+        "tonalRamp": [
+          "oklch(0.150 0.0174 256.29)",
+          "oklch(0.264 0.0174 256.29)",
+          "oklch(0.379 0.0174 256.29)",
+          "oklch(0.493 0.0174 256.29)",
+          "oklch(0.607 0.0174 256.29)",
+          "oklch(0.721 0.0174 256.29)",
+          "oklch(0.836 0.0174 256.29)",
+          "oklch(0.950 0.0174 256.29)"
+        ]
+      },
+      "ring": {
+        "tonalRamp": [
+          "oklch(0.150 0.1223 257.32)",
+          "oklch(0.264 0.1223 257.32)",
+          "oklch(0.379 0.1223 257.32)",
+          "oklch(0.493 0.1223 257.32)",
+          "oklch(0.607 0.1223 257.32)",
+          "oklch(0.721 0.1223 257.32)",
+          "oklch(0.836 0.1223 257.32)",
+          "oklch(0.950 0.1223 257.32)"
+        ]
+      },
+      "sidebar": {
+        "tonalRamp": [
+          "oklch(0.150 0.0080 253.85)",
+          "oklch(0.264 0.0080 253.85)",
+          "oklch(0.379 0.0080 253.85)",
+          "oklch(0.493 0.0080 253.85)",
+          "oklch(0.607 0.0080 253.85)",
+          "oklch(0.721 0.0080 253.85)",
+          "oklch(0.836 0.0080 253.85)",
+          "oklch(0.950 0.0080 253.85)"
+        ]
+      },
+      "sidebar-foreground": {
+        "tonalRamp": [
+          "oklch(0.150 0.0272 259.15)",
+          "oklch(0.264 0.0272 259.15)",
+          "oklch(0.379 0.0272 259.15)",
+          "oklch(0.493 0.0272 259.15)",
+          "oklch(0.607 0.0272 259.15)",
+          "oklch(0.721 0.0272 259.15)",
+          "oklch(0.836 0.0272 259.15)",
+          "oklch(0.950 0.0272 259.15)"
+        ]
+      },
+      "sidebar-accent": {
+        "tonalRamp": [
+          "oklch(0.150 0.0219 256.73)",
+          "oklch(0.264 0.0219 256.73)",
+          "oklch(0.379 0.0219 256.73)",
+          "oklch(0.493 0.0219 256.73)",
+          "oklch(0.607 0.0219 256.73)",
+          "oklch(0.721 0.0219 256.73)",
+          "oklch(0.836 0.0219 256.73)",
+          "oklch(0.950 0.0219 256.73)"
+        ]
+      },
+      "sidebar-accent-foreground": {
+        "tonalRamp": [
+          "oklch(0.150 0.1071 256.64)",
+          "oklch(0.264 0.1071 256.64)",
+          "oklch(0.379 0.1071 256.64)",
+          "oklch(0.493 0.1071 256.64)",
+          "oklch(0.607 0.1071 256.64)",
+          "oklch(0.721 0.1071 256.64)",
+          "oklch(0.836 0.1071 256.64)",
+          "oklch(0.950 0.1071 256.64)"
+        ]
+      },
+      "sidebar-border": {
+        "tonalRamp": [
+          "oklch(0.150 0.0173 256.28)",
+          "oklch(0.264 0.0173 256.28)",
+          "oklch(0.379 0.0173 256.28)",
+          "oklch(0.493 0.0173 256.28)",
+          "oklch(0.607 0.0173 256.28)",
+          "oklch(0.721 0.0173 256.28)",
+          "oklch(0.836 0.0173 256.28)",
+          "oklch(0.950 0.0173 256.28)"
+        ]
+      },
+      "shell": {
+        "tonalRamp": [
+          "oklch(0.150 0.0109 256.70)",
+          "oklch(0.264 0.0109 256.70)",
+          "oklch(0.379 0.0109 256.70)",
+          "oklch(0.493 0.0109 256.70)",
+          "oklch(0.607 0.0109 256.70)",
+          "oklch(0.721 0.0109 256.70)",
+          "oklch(0.836 0.0109 256.70)",
+          "oklch(0.950 0.0109 256.70)"
+        ]
+      },
+      "glass-surface": {
+        "tonalRamp": [
+          "oklch(0.150 0.0062 255.47)",
+          "oklch(0.264 0.0062 255.47)",
+          "oklch(0.379 0.0062 255.47)",
+          "oklch(0.493 0.0062 255.47)",
+          "oklch(0.607 0.0062 255.47)",
+          "oklch(0.721 0.0062 255.47)",
+          "oklch(0.836 0.0062 255.47)",
+          "oklch(0.950 0.0062 255.47)"
+        ]
+      },
+      "glass-edge": {
+        "tonalRamp": [
+          "oklch(0.150 0.0000 89.88)",
+          "oklch(0.264 0.0000 89.88)",
+          "oklch(0.379 0.0000 89.88)",
+          "oklch(0.493 0.0000 89.88)",
+          "oklch(0.607 0.0000 89.88)",
+          "oklch(0.721 0.0000 89.88)",
+          "oklch(0.836 0.0000 89.88)",
+          "oklch(0.950 0.0000 89.88)"
+        ]
+      },
+      "destructive": {
+        "tonalRamp": [
+          "oklch(0.150 0.2450 27.32)",
+          "oklch(0.264 0.2450 27.32)",
+          "oklch(0.379 0.2450 27.32)",
+          "oklch(0.493 0.2450 27.32)",
+          "oklch(0.607 0.2450 27.32)",
+          "oklch(0.721 0.2450 27.32)",
+          "oklch(0.836 0.2450 27.32)",
+          "oklch(0.950 0.2450 27.32)"
+        ]
+      },
+      "primary-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0999 256.66)",
+          "oklch(0.264 0.0999 256.66)",
+          "oklch(0.379 0.0999 256.66)",
+          "oklch(0.493 0.0999 256.66)",
+          "oklch(0.607 0.0999 256.66)",
+          "oklch(0.721 0.0999 256.66)",
+          "oklch(0.836 0.0999 256.66)",
+          "oklch(0.950 0.0999 256.66)"
+        ]
+      },
+      "primary-foreground-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0440 258.28)",
+          "oklch(0.264 0.0440 258.28)",
+          "oklch(0.379 0.0440 258.28)",
+          "oklch(0.493 0.0440 258.28)",
+          "oklch(0.607 0.0440 258.28)",
+          "oklch(0.721 0.0440 258.28)",
+          "oklch(0.836 0.0440 258.28)",
+          "oklch(0.950 0.0440 258.28)"
+        ]
+      },
+      "background-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0121 264.33)",
+          "oklch(0.264 0.0121 264.33)",
+          "oklch(0.379 0.0121 264.33)",
+          "oklch(0.493 0.0121 264.33)",
+          "oklch(0.607 0.0121 264.33)",
+          "oklch(0.721 0.0121 264.33)",
+          "oklch(0.836 0.0121 264.33)",
+          "oklch(0.950 0.0121 264.33)"
+        ]
+      },
+      "foreground-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0092 258.34)",
+          "oklch(0.264 0.0092 258.34)",
+          "oklch(0.379 0.0092 258.34)",
+          "oklch(0.493 0.0092 258.34)",
+          "oklch(0.607 0.0092 258.34)",
+          "oklch(0.721 0.0092 258.34)",
+          "oklch(0.836 0.0092 258.34)",
+          "oklch(0.950 0.0092 258.34)"
+        ]
+      },
+      "card-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0162 259.79)",
+          "oklch(0.264 0.0162 259.79)",
+          "oklch(0.379 0.0162 259.79)",
+          "oklch(0.493 0.0162 259.79)",
+          "oklch(0.607 0.0162 259.79)",
+          "oklch(0.721 0.0162 259.79)",
+          "oklch(0.836 0.0162 259.79)",
+          "oklch(0.950 0.0162 259.79)"
+        ]
+      },
+      "popover-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0178 262.23)",
+          "oklch(0.264 0.0178 262.23)",
+          "oklch(0.379 0.0178 262.23)",
+          "oklch(0.493 0.0178 262.23)",
+          "oklch(0.607 0.0178 262.23)",
+          "oklch(0.721 0.0178 262.23)",
+          "oklch(0.836 0.0178 262.23)",
+          "oklch(0.950 0.0178 262.23)"
+        ]
+      },
+      "secondary-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0233 261.20)",
+          "oklch(0.264 0.0233 261.20)",
+          "oklch(0.379 0.0233 261.20)",
+          "oklch(0.493 0.0233 261.20)",
+          "oklch(0.607 0.0233 261.20)",
+          "oklch(0.721 0.0233 261.20)",
+          "oklch(0.836 0.0233 261.20)",
+          "oklch(0.950 0.0233 261.20)"
+        ]
+      },
+      "muted-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0177 262.24)",
+          "oklch(0.264 0.0177 262.24)",
+          "oklch(0.379 0.0177 262.24)",
+          "oklch(0.493 0.0177 262.24)",
+          "oklch(0.607 0.0177 262.24)",
+          "oklch(0.721 0.0177 262.24)",
+          "oklch(0.836 0.0177 262.24)",
+          "oklch(0.950 0.0177 262.24)"
+        ]
+      },
+      "muted-foreground-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0244 258.37)",
+          "oklch(0.264 0.0244 258.37)",
+          "oklch(0.379 0.0244 258.37)",
+          "oklch(0.493 0.0244 258.37)",
+          "oklch(0.607 0.0244 258.37)",
+          "oklch(0.721 0.0244 258.37)",
+          "oklch(0.836 0.0244 258.37)",
+          "oklch(0.950 0.0244 258.37)"
+        ]
+      },
+      "accent-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0272 259.15)",
+          "oklch(0.264 0.0272 259.15)",
+          "oklch(0.379 0.0272 259.15)",
+          "oklch(0.493 0.0272 259.15)",
+          "oklch(0.607 0.0272 259.15)",
+          "oklch(0.721 0.0272 259.15)",
+          "oklch(0.836 0.0272 259.15)",
+          "oklch(0.950 0.0272 259.15)"
+        ]
+      },
+      "border-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0234 258.37)",
+          "oklch(0.264 0.0234 258.37)",
+          "oklch(0.379 0.0234 258.37)",
+          "oklch(0.493 0.0234 258.37)",
+          "oklch(0.607 0.0234 258.37)",
+          "oklch(0.721 0.0234 258.37)",
+          "oklch(0.836 0.0234 258.37)",
+          "oklch(0.950 0.0234 258.37)"
+        ]
+      },
+      "input-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0301 257.68)",
+          "oklch(0.264 0.0301 257.68)",
+          "oklch(0.379 0.0301 257.68)",
+          "oklch(0.493 0.0301 257.68)",
+          "oklch(0.607 0.0301 257.68)",
+          "oklch(0.721 0.0301 257.68)",
+          "oklch(0.836 0.0301 257.68)",
+          "oklch(0.950 0.0301 257.68)"
+        ]
+      },
+      "ring-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0999 256.66)",
+          "oklch(0.264 0.0999 256.66)",
+          "oklch(0.379 0.0999 256.66)",
+          "oklch(0.493 0.0999 256.66)",
+          "oklch(0.607 0.0999 256.66)",
+          "oklch(0.721 0.0999 256.66)",
+          "oklch(0.836 0.0999 256.66)",
+          "oklch(0.950 0.0999 256.66)"
+        ]
+      },
+      "sidebar-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0183 262.19)",
+          "oklch(0.264 0.0183 262.19)",
+          "oklch(0.379 0.0183 262.19)",
+          "oklch(0.493 0.0183 262.19)",
+          "oklch(0.607 0.0183 262.19)",
+          "oklch(0.721 0.0183 262.19)",
+          "oklch(0.836 0.0183 262.19)",
+          "oklch(0.950 0.0183 262.19)"
+        ]
+      },
+      "sidebar-foreground-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0186 258.35)",
+          "oklch(0.264 0.0186 258.35)",
+          "oklch(0.379 0.0186 258.35)",
+          "oklch(0.493 0.0186 258.35)",
+          "oklch(0.607 0.0186 258.35)",
+          "oklch(0.721 0.0186 258.35)",
+          "oklch(0.836 0.0186 258.35)",
+          "oklch(0.950 0.0186 258.35)"
+        ]
+      },
+      "sidebar-accent-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0556 258.63)",
+          "oklch(0.264 0.0556 258.63)",
+          "oklch(0.379 0.0556 258.63)",
+          "oklch(0.493 0.0556 258.63)",
+          "oklch(0.607 0.0556 258.63)",
+          "oklch(0.721 0.0556 258.63)",
+          "oklch(0.836 0.0556 258.63)",
+          "oklch(0.950 0.0556 258.63)"
+        ]
+      },
+      "sidebar-accent-foreground-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0531 258.04)",
+          "oklch(0.264 0.0531 258.04)",
+          "oklch(0.379 0.0531 258.04)",
+          "oklch(0.493 0.0531 258.04)",
+          "oklch(0.607 0.0531 258.04)",
+          "oklch(0.721 0.0531 258.04)",
+          "oklch(0.836 0.0531 258.04)",
+          "oklch(0.950 0.0531 258.04)"
+        ]
+      },
+      "sidebar-border-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0310 257.68)",
+          "oklch(0.264 0.0310 257.68)",
+          "oklch(0.379 0.0310 257.68)",
+          "oklch(0.493 0.0310 257.68)",
+          "oklch(0.607 0.0310 257.68)",
+          "oklch(0.721 0.0310 257.68)",
+          "oklch(0.836 0.0310 257.68)",
+          "oklch(0.950 0.0310 257.68)"
+        ]
+      },
+      "shell-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0150 261.62)",
+          "oklch(0.264 0.0150 261.62)",
+          "oklch(0.379 0.0150 261.62)",
+          "oklch(0.493 0.0150 261.62)",
+          "oklch(0.607 0.0150 261.62)",
+          "oklch(0.721 0.0150 261.62)",
+          "oklch(0.836 0.0150 261.62)",
+          "oklch(0.950 0.0150 261.62)"
+        ]
+      },
+      "glass-surface-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0224 259.37)",
+          "oklch(0.264 0.0224 259.37)",
+          "oklch(0.379 0.0224 259.37)",
+          "oklch(0.493 0.0224 259.37)",
+          "oklch(0.607 0.0224 259.37)",
+          "oklch(0.721 0.0224 259.37)",
+          "oklch(0.836 0.0224 259.37)",
+          "oklch(0.950 0.0224 259.37)"
+        ]
+      },
+      "glass-edge-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.0495 262.61)",
+          "oklch(0.264 0.0495 262.61)",
+          "oklch(0.379 0.0495 262.61)",
+          "oklch(0.493 0.0495 262.61)",
+          "oklch(0.607 0.0495 262.61)",
+          "oklch(0.721 0.0495 262.61)",
+          "oklch(0.836 0.0495 262.61)",
+          "oklch(0.950 0.0495 262.61)"
+        ]
+      },
+      "destructive-dark": {
+        "tonalRamp": [
+          "oklch(0.150 0.1910 22.22)",
+          "oklch(0.264 0.1910 22.22)",
+          "oklch(0.379 0.1910 22.22)",
+          "oklch(0.493 0.1910 22.22)",
+          "oklch(0.607 0.1910 22.22)",
+          "oklch(0.721 0.1910 22.22)",
+          "oklch(0.836 0.1910 22.22)",
+          "oklch(0.950 0.1910 22.22)"
+        ]
+      }
+    },
+    "shadows": [
+      {
+        "name": "glass-light",
+        "value": "0 3px 12px rgb(31 49 77 / 4%), inset 0 1px 0 var(--glass-edge)",
+        "purpose": "浅色导航。"
+      },
+      {
+        "name": "glass-dark",
+        "value": "0 3px 12px rgb(0 0 0 / 12%), inset 0 1px 0 var(--glass-edge)",
+        "purpose": "深色导航。"
+      },
+      {
+        "name": "surface-light",
+        "value": "0 2px 8px rgb(31 49 77 / 4%)",
+        "purpose": "浅色画布。"
+      },
+      {
+        "name": "surface-dark",
+        "value": "0 2px 8px rgb(0 0 0 / 12%)",
+        "purpose": "深色画布。"
+      },
+      {
+        "name": "composer-light",
+        "value": "0 4px 20px -8px rgb(31 49 77 / 15%)",
+        "purpose": "浅色输入区。"
+      },
+      {
+        "name": "composer-dark",
+        "value": "0 5px 24px -8px rgb(0 0 0 / 30%)",
+        "purpose": "深色输入区。"
+      },
+      {
+        "name": "overlay-light",
+        "value": "0 18px 48px -12px rgb(24 38 60 / 22%)",
+        "purpose": "浅色浮层。"
+      },
+      {
+        "name": "overlay-dark",
+        "value": "0 18px 48px -12px rgb(0 0 0 / 50%)",
+        "purpose": "深色浮层。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "sidebar-width",
+        "value": "width 220ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "CSS 桌面展开与图标轨切换。"
+      },
+      {
+        "name": "surface-ease",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "搜索和表面切换。"
+      },
+      {
+        "name": "surface-enter",
+        "value": "180ms",
+        "purpose": "搜索 opacity 0→1、y -4→0、scale .985→1。"
+      },
+      {
+        "name": "surface-exit",
+        "value": "120ms",
+        "purpose": "搜索 opacity 1→0、y 0→-2、scale 1→.99。"
+      },
+      {
+        "name": "drawer-spring",
+        "value": "spring(stiffness: 520, damping: 44, mass: 0.85)",
+        "purpose": "移动抽屉位移；退出 180ms。"
+      },
+      {
+        "name": "collapsible",
+        "value": "160ms enter / 120ms exit",
+        "purpose": "分组和工具的 CSS 高度动画。"
+      },
+      {
+        "name": "loading",
+        "value": "5s cubic-bezier(0.42, 0, 0.58, 1) infinite",
+        "purpose": "圆环与无限符号；断线和减少动态效果时静止。"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "主要按钮",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "发送与主要操作。",
+      "html": "<button class=\"ds-button ds-primary\">添加 Skill</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border:0;border-radius:var(--radius-md,8px);font:500 12px system-ui,sans-serif;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);outline-offset:2px}.ds-button:disabled{opacity:.5;pointer-events:none}.ds-primary{background:var(--primary,#3269be);color:var(--primary-foreground,#fff)}.ds-primary:hover{background:color-mix(in srgb,var(--primary,#3269be) 90%,transparent)}"
+    },
+    {
+      "name": "次要按钮",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "选中筛选及次要操作。",
+      "html": "<button class=\"ds-button ds-secondary\" aria-pressed=\"true\">全部</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border:0;border-radius:var(--radius-md,8px);font:500 12px system-ui,sans-serif;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);outline-offset:2px}.ds-button:disabled{opacity:.5;pointer-events:none}.ds-secondary{background:var(--secondary,#e9edf3);color:var(--secondary-foreground,#343d4b)}.ds-secondary:hover{background:color-mix(in srgb,var(--secondary,#e9edf3) 80%,transparent)}"
+    },
+    {
+      "name": "幽灵按钮",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "低强调工具栏操作。",
+      "html": "<button class=\"ds-button ds-ghost\">返回对话</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border:0;border-radius:var(--radius-md,8px);font:500 12px system-ui,sans-serif;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);outline-offset:2px}.ds-button:disabled{opacity:.5;pointer-events:none}.ds-ghost{background:transparent;color:var(--foreground,#252a34)}.ds-ghost:hover{background:var(--accent,#e6ebf2);color:var(--accent-foreground,#283c59)}"
+    },
+    {
+      "name": "描边按钮",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "重试等辅助操作。",
+      "html": "<button class=\"ds-button ds-outline\">重试</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border:0;border-radius:var(--radius-md,8px);font:500 12px system-ui,sans-serif;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);outline-offset:2px}.ds-button:disabled{opacity:.5;pointer-events:none}.ds-outline{border:1px solid var(--border,#dce1e9);background:var(--background,#fafbfd);color:var(--foreground,#252a34);box-shadow:0 1px 2px rgb(0 0 0 / 5%)}.ds-outline:hover{background:var(--accent,#e6ebf2);color:var(--accent-foreground,#283c59)}"
+    },
+    {
+      "name": "文本输入",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Skills 链接等普通表单输入。",
+      "html": "<input class=\"ds-input\" aria-label=\"Skill 链接\" placeholder=\"Skill 链接\" />",
+      "css": ".ds-input{height:36px;width:100%;padding:4px 12px;border:1px solid var(--input,#d1d9e4);border-radius:var(--radius-md,8px);background:transparent;color:var(--foreground,#252a34);font:14px system-ui,sans-serif;box-shadow:0 1px 2px rgb(0 0 0 / 5%)}.ds-input::placeholder{color:var(--muted-foreground,#616c7b)}.ds-input:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);border-color:var(--ring,#4b7dc4)}.ds-input:disabled{opacity:.5;cursor:not-allowed}"
+    },
+    {
+      "name": "磨砂导航",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "展开侧栏的当前会话。",
+      "html": "<nav class=\"ds-nav\" aria-label=\"会话\"><button class=\"ds-nav-item\" aria-current=\"page\">新对话</button></nav>",
+      "css": ".ds-nav{width:248px;padding:10px;border-radius:14px;background:var(--glass-surface,rgb(246 249 253 / 72%));box-shadow:var(--glass-shadow,0 3px 12px rgb(31 49 77 / 4%));backdrop-filter:blur(24px) saturate(135%)}.ds-nav-item{width:100%;height:32px;padding:0 8px 0 28px;border:0;border-radius:8px;text-align:left;background:var(--sidebar-accent,#dce6f4);color:var(--sidebar-accent-foreground,#28538d);font:500 13px system-ui,sans-serif;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sidebar-ring,#4b7dc4) 12%,transparent);cursor:pointer}.ds-nav-item:focus-visible{outline:2px solid var(--ring,#4b7dc4);outline-offset:2px}"
+    },
+    {
+      "name": "Skill 状态",
+      "kind": "chip",
+      "refersTo": "skill-status",
+      "description": "已安装条目的只读状态。",
+      "html": "<span class=\"ds-status\">可用</span>",
+      "css": ".ds-status{display:inline-flex;border:1px solid transparent;border-radius:4px;padding:2px 6px;background:var(--muted,#eef1f5);color:var(--foreground,#252a34);font:10px/12px system-ui,sans-serif}"
+    },
+    {
+      "name": "对话输入区",
+      "kind": "custom",
+      "refersTo": "composer",
+      "description": "实色编辑表面，玻璃不进入编辑内容。",
+      "html": "<div class=\"ds-composer\"><textarea class=\"ds-editor\" aria-label=\"消息\" placeholder=\"发送消息\"></textarea><div class=\"ds-tools\"><button class=\"ds-send\" aria-label=\"发送\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 12 7-7 7 7M12 19V5\"/></svg></button></div></div>",
+      "css": ".ds-composer{width:min(680px,100%);border:1px solid var(--input,#d1d9e4);border-radius:var(--radius-2xl,18px);background:var(--card,#fff);box-shadow:var(--composer-shadow,0 4px 20px -8px rgb(31 49 77 / 15%));overflow:hidden}.ds-composer:focus-within{border-color:color-mix(in srgb,var(--ring,#4b7dc4) 60%,transparent);outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 15%,transparent)}.ds-editor{display:block;width:100%;min-height:80px;max-height:192px;padding:14px 16px 8px;border:0;background:transparent;color:var(--foreground,#252a34);resize:vertical;font:14px/24px system-ui,sans-serif;outline:none}.ds-editor::placeholder{color:var(--muted-foreground,#616c7b)}.ds-tools{display:flex;justify-content:flex-end;padding:4px 10px 10px}.ds-send{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:9999px;background:var(--primary,#3269be);color:var(--primary-foreground,#fff);cursor:pointer}.ds-send:hover{opacity:.9}.ds-send:focus-visible{outline:2px solid var(--ring,#4b7dc4);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "安静的开发工作台",
+    "overview": "面向持续阅读、切换项目和操作开发任务的 Operate 工作区。冷银浅色、石墨深色和少量蓝色建立层级；窄图标轨、轻薄磨砂导航与实色内容画布构成统一外壳。浏览器与 Electron 共用 Web 组件、翻译和主题。",
+    "keyCharacteristics": [
+      "紧凑尺度",
+      "阅读区实色",
+      "玻璃限于导航和浮层",
+      "蓝色表示主要操作、选中与焦点",
+      "保留功能、文案和 i18n"
+    ],
+    "rules": [
+      {
+        "name": "局部玻璃规则",
+        "body": "正文、代码、表单和输入框保持实色。磨砂仅用于导航和浮层，以文字对比度和边界清晰为先。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do 在 Web 包维护共享视觉与语义变量。",
+      "Do 保留键盘入口、焦点返回、稳定滚动空间和减少动态效果。",
+      "Do 核对浅深主题、展开、图标轨、移动抽屉与搜索。"
+    ],
+    "donts": [
+      "Don't 把收起侧栏变成完全消失的导航。",
+      "Don't 把玻璃扩展到正文、代码和输入区。",
+      "Don't 伪造模型、执行状态或工具结果。"
+    ]
+  }
+}

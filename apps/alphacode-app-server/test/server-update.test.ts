@@ -99,7 +99,7 @@ test("managed updates wait for generation, preserve credentials and drafts, and 
   }
 }, 60000);
 
-test("an invalid replacement leaves the current worker and unsent session available", async () => {
+test("an invalid replacement rolls back and automatically retries without a page action", async () => {
   const temporaryFiles = await temporary();
   const paths = await serverPaths(join(temporaryFiles.root, "sessions.db"));
   const layout = await serverLayout();
@@ -107,7 +107,7 @@ test("an invalid replacement leaves the current worker and unsent session availa
   await writeFile(worker, `import ${JSON.stringify(pathToFileURL(layout.worker).href)};`);
   let revision = "valid";
   const supervisor = await startSupervisor({ databasePath: paths.database, directory: paths.directory, descriptorPath: paths.descriptor,
-    layout: { ...layout, worker }, getRevision: async () => revision, pollMs: 60000 });
+    layout: { ...layout, worker }, getRevision: async () => revision, pollMs: 60000, retryMs: 0 });
   try {
     const client = createNativeClient(supervisor.descriptor);
     const instanceId = supervisor.descriptor.instanceId;
@@ -130,9 +130,10 @@ test("an invalid replacement leaves the current worker and unsent session availa
     expect(await client.request("/api/info")).toMatchObject({ revision: "valid", updateStatus: "failed" });
     expect((await client.request<SessionView>(`/api/sessions/${draft.session.id}`)).state.canSend).toBe(true);
     await writeFile(worker, `import ${JSON.stringify(pathToFileURL(layout.worker).href)};`);
-    revision = "fixed";
-    await supervisor.check(); await supervisor.check();
-    expect(await client.request("/api/info")).toMatchObject({ revision: "fixed", updateStatus: "current" });
+    // The same revision can succeed after a transient load/restore failure.
+    // No POST /api/server/update or new revision is needed to retry it.
+    await supervisor.check();
+    expect(await client.request("/api/info")).toMatchObject({ revision: "restore-failed", updateStatus: "current" });
   } finally { await supervisor.close(); await temporaryFiles.dispose(); }
 }, 60000);
 

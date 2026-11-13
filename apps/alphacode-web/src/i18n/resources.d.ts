@@ -484,13 +484,6 @@ export default interface Resources {
     "toggleSidebar": "Toggle sidebar",
     "toggleSidebarHint": "Toggle sidebar (Ctrl / ⌘ + B)",
     "unselected": "No workspace selected",
-    "updateDraftFailed": "Drafts could not be preserved. Remove attachments, or copy your drafts before refreshing manually.",
-    "updateFailed": "The update could not finish. The current version is still running. You can retry the update.",
-    "updatePending": "An update is available. The server will update after tasks and saves finish.",
-    "updateReady": "The server has updated. Refresh to load the new interface and keep your text drafts.",
-    "updateRefresh": "Keep drafts and refresh",
-    "updateRetry": "Retry update",
-    "updateWaitForSend": "The server has updated. Finish the current action or resolve uncertain sends in their conversations before refreshing.",
     "welcome": "Start building here."
   }
 }

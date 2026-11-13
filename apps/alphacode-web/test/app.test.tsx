@@ -176,4 +176,21 @@ describe("Session workspace", () => {
     fireEvent.keyDown(window, { key: "b", ctrlKey: true });
     expect(sidebar?.getAttribute("data-state")).toBe("expanded");
   });
+
+  it("keeps search, skills and project navigation usable in the collapsed rail", async () => {
+    const { container } = await renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "切换侧栏" }));
+    expect(screen.queryByRole("button", { name: "搭建前端工作区" })).toBeNull();
+    expect(screen.getByRole("button", { name: "新对话" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Skills 市场" })).toBeTruthy();
+    const search = screen.getByRole("button", { name: "搜索会话" });
+    fireEvent.click(search);
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "搜索会话内容" }), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(search));
+    fireEvent.click(screen.getByRole("button", { name: "文件夹 alphacode-web" }));
+    expect(container.querySelector('[data-slot="sidebar"][data-state]')?.getAttribute("data-state")).toBe("expanded");
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "文件夹 alphacode-web" }));
+    expect(screen.getByRole("button", { name: "搭建前端工作区" })).toBeTruthy();
+  });
 });

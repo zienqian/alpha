@@ -1,12 +1,5 @@
 {
   "registerProject": "请先在 CLI 登记项目",
-  "updatePending": "发现更新，将在当前任务和保存完成后自动更新后台。",
-  "updateWaitForSend": "后台已更新。请先完成当前操作，或在对应会话确认发送结果，再刷新界面。",
-  "updateReady": "后台已更新。刷新可加载新界面，文字草稿会保留。",
-  "updateFailed": "后台更新未完成，当前版本继续运行。可以重试更新。",
-  "updateDraftFailed": "暂时无法保留草稿。请先移除附件，或复制草稿后手动刷新。",
-  "updateRefresh": "保留草稿并刷新",
-  "updateRetry": "重试更新",
   "toggleSidebar": "切换侧栏",
   "toggleSidebarHint": "切换侧栏 (Ctrl / ⌘ + B)",
   "welcome": "从这里，开始构建。",

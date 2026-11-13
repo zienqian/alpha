@@ -11,6 +11,10 @@ bun run dev
 
 开发模式直接运行最新源码，无需先 build。想在其他项目目录使用，先在本仓库执行一次 `bun run link:dev`，再打开终端进入目标项目，执行 `alphacode`。此命令链接到当前仓库；更新代码后退出重开即可，`alphacode --watch` 可自动重启。模型配置沿用仓库 `.env.local`，首次使用可参考 `.env.example`。[完整开发命令](apps/alphacode/README.md)
 
+## 桌面应用 AlphaCode
+
+`bun run dev:app` 启动 AlphaCode Electron 桌面客户端，直接复用现有 React Web 界面；保存前端代码自动热更新，修改桌面主进程自动重启。`bun run dev:web` 启动带真实 API 代理的浏览器开发服务。`bun run build:app` 构建页面与桌面入口；`bun run package:app` 生成包含 Electron、Bun、App Server 和 ripgrep 的独立应用目录，Windows 入口为 `apps/alphacode-app/dist/AlphaCode-win32-x64/AlphaCode.exe`。开发使用 Bun。会话与 Agent 能力继续复用同一个 App Server。[运行方式、测试及打包边界](apps/alphacode-app/README.md)。
+
 ## 目录
 
 - `packages/adk`：Agent 开发框架。
@@ -19,6 +23,7 @@ bun run dev
 - `packages/provider`：模型提供商配置和适配。
 - `apps/alphacode-app-server`：独立本地应用服务，负责会话、Agent 执行、审批和 HTTP/SSE；[独立启动与接口](apps/alphacode-app-server/README.md)。
 - `apps/alphacode-web`：React Web 客户端，与 CLI 共享服务和会话。
+- `apps/alphacode-app`：Electron 桌面外壳，加载 `alphacode-web` 构建产物并连接 Bun App Server。
 - `apps/example-agent`：组装 Provider 与 ADK 的示例，默认离线运行。
 - `apps/alphacode`：OpenTUI + React 终端客户端，通过 App Server 提供用户输入与 Markdown 流式回复。
 - `docs`：调研与技术方案。
@@ -43,6 +48,8 @@ bun run graph
 `bun run graph` 打开 Nx 项目依赖图。Provider 使用方法见 [Provider README](packages/provider/README.md)。包名为内部占位名称，目前均为 private；尚未配置发布或 CI。
 
 使用 `bun run test` 执行 Nx 的完整测试任务（先构建依赖）。终端和库包测试使用 `bun:test`，Web 使用 Vitest、jsdom 和 React Testing Library；任务由 Bun 执行。真实模型测试通过各包的 `test:live` 或显式脚本运行，不在普通测试中自动请求模型。
+
+桌面源码工程名为 `alphacode-app`，对外产品名为 AlphaCode。Nx 任务构建 Electron 主进程并检查 TypeScript；`bun run test:app` 验证桌面协议、服务连接和 SSE。
 
 Session 使用 Bun 内置的 `bun:sqlite`，无需第三方 SQLite 驱动或原生模块安装。`@alpha/coding-agent` 直接接收 cwd，进程通过 `cross-spawn` 启动，按 OpenCode 路线选择 Shell 和处理取消。`node:fs`、`node:path` 等是 Bun 支持的标准库 API。
 

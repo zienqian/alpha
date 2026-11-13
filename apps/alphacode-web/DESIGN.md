@@ -1,78 +1,199 @@
-# AlphaCode Web 设计约定
+---
+name: AlphaCode Web
+description: 克制的开发工作台，冷银与石墨底色，局部磨砂导航。
+colors:
+  primary: "#3269be"
+  primary-foreground: "#ffffff"
+  background: "#fafbfd"
+  foreground: "#252a34"
+  card: "#ffffff"
+  popover: "#f9fafc"
+  secondary: "#e9edf3"
+  muted: "#eef1f5"
+  muted-foreground: "#616c7b"
+  accent: "#e6ebf2"
+  border: "#dce1e9"
+  input: "#d1d9e4"
+  ring: "#4b7dc4"
+  sidebar: "#edf1f6"
+  sidebar-foreground: "#343d4b"
+  sidebar-accent: "#dce6f4"
+  sidebar-accent-foreground: "#28538d"
+  sidebar-border: "#d8e0eb"
+  shell: "#e6ebf2"
+  glass-surface: "rgb(246 249 253 / 72%)"
+  glass-edge: "rgb(255 255 255 / 80%)"
+  destructive: "oklch(0.577 0.245 27.325)"
+  primary-dark: "#8bb7f4"
+  primary-foreground-dark: "#18263b"
+  background-dark: "#202329"
+  foreground-dark: "#e7ebf1"
+  card-dark: "#282d35"
+  popover-dark: "#292e37"
+  secondary-dark: "#303743"
+  muted-dark: "#2b3039"
+  muted-foreground-dark: "#a3adbc"
+  accent-dark: "#343d4b"
+  border-dark: "#363e4a"
+  input-dark: "#465161"
+  ring-dark: "#8bb7f4"
+  sidebar-dark: "#222730"
+  sidebar-foreground-dark: "#d7dfeb"
+  sidebar-accent-dark: "#304360"
+  sidebar-accent-foreground-dark: "#c6ddff"
+  sidebar-border-dark: "#394454"
+  shell-dark: "#171b22"
+  glass-surface-dark: "rgb(38 45 56 / 72%)"
+  glass-edge-dark: "rgb(204 222 255 / 9%)"
+  destructive-dark: "oklch(0.704 0.191 22.216)"
+typography:
+  headline:
+    fontSize: "22px"
+    fontWeight: 500
+    lineHeight: "32px"
+    letterSpacing: "-0.025em"
+  body:
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif'
+    fontSize: "14px"
+    lineHeight: "24px"
+  navigation:
+    fontSize: "13px"
+  label:
+    fontSize: "12px"
+  metadata:
+    fontSize: "11px"
+  input-mobile:
+    fontSize: "16px"
+    lineHeight: "24px"
+rounded:
+  sm: "6px"
+  md: "8px"
+  lg: "10px"
+  xl: "14px"
+  2xl: "18px"
+  overlay: "12px"
+  search: "16px"
+spacing:
+  xs: "4px"
+  sm: "8px"
+  md: "12px"
+  lg: "16px"
+  xl: "24px"
+  2xl: "32px"
+components:
+  button-primary:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.primary-foreground}"
+    rounded: "{rounded.md}"
+    height: "28px"
+    padding: "0 10px"
+    typography: "{typography.label}"
+  button-secondary:
+    backgroundColor: "{colors.secondary}"
+    rounded: "{rounded.md}"
+    height: "28px"
+    padding: "0 10px"
+    typography: "{typography.label}"
+  button-ghost:
+    rounded: "{rounded.md}"
+    height: "28px"
+    padding: "0 10px"
+    typography: "{typography.label}"
+  button-outline:
+    backgroundColor: "{colors.background}"
+    rounded: "{rounded.md}"
+    height: "28px"
+    padding: "0 10px"
+    typography: "{typography.label}"
+  input:
+    rounded: "{rounded.md}"
+    height: "36px"
+    padding: "4px 12px"
+  navigation-active:
+    backgroundColor: "{colors.sidebar-accent}"
+    textColor: "{colors.sidebar-accent-foreground}"
+    rounded: "{rounded.md}"
+    height: "32px"
+    typography: "{typography.navigation}"
+  skill-status:
+    backgroundColor: "{colors.muted}"
+    textColor: "{colors.foreground}"
+    padding: "2px 6px"
+  composer:
+    backgroundColor: "{colors.card}"
+    rounded: "{rounded.2xl}"
+    width: "680px"
+---
 
-## 当前方向
+# Design System: AlphaCode Web
 
-紧凑、安静的开发工作台，使用 shadcn/ui New York / Neutral 与官方 AI Elements。用户指出仅缩小尺寸仍不够精致，要求研究开源项目设计。本轮实看 T3 Code、OpenCode 的官方界面图和 Lobe UI 的输入组件，重点改进任务导航、上下文归属及操作层级。当前工作区属于 Operate 模式。
+## Overview
 
-## 开源参考与取舍（2026-11-09）
+**Creative North Star:「安静的开发工作台」**
 
-- [T3 Code](https://t3.codes/)：主参考。任务导航有清楚的文字主次，消息流安静，工作上下文集中在独立面板。AlphaCode 使用紧凑项目分组、按需显现的操作和非模态上下文面板。只显示现有真实数据，不模拟执行状态、分支或工具结果。
-- [OpenCode Desktop](https://dev.opencode.ai/desktop)：输入区的模型操作与项目/环境上下文分层。AlphaCode 通过侧栏项目分组与上下文面板展示项目归属，输入框下方不重复展示。
-- [Lobe UI ChatInputArea](https://ui.lobehub.com/components/chat/chat-input-area)：参考文字输入、工具操作与辅助信息的分组。保留 shadcn/ui 技术体系，不引入另一套组件库。
+面向持续阅读、切换项目和操作开发任务的 Operate 工作区。冷银浅色、石墨深色和少量蓝色建立层级；窄图标轨、轻薄磨砂导航与实色内容画布构成统一外壳。VS Code Modern UI 与 iOS 27 是用户提出的视觉参考，不代表复制其产品规范。
 
-对照后的问题：此前标题、说明与通用提示词让首页像组件示例；项目选择远离输入区；常驻复制按钮和分割线缺少主次；上下文只能分散地寻找。本次用已有会话提供任务连续性，以真实路径、消息数量和附件承载上下文。
+本文件按当前实现更新（2026-11-13）。`src/styles.css` 是运行时主题的来源；前言记录复用的实际值，`-dark` 表示 `.dark` 下同名 CSS 变量。阴影、材质、动效、断点与组件预览位于 `.impeccable/design.json`。浏览器与 Electron 共用本包的组件、翻译和主题。
 
-## 布局与尺度
+**Key Characteristics:** 紧凑尺度；阅读区实色；玻璃限于导航和浮层；蓝色表示主要操作、选中与焦点；保留现有功能、文案和 i18n。
 
-- 左侧 240px 固定项目导航，右侧完整会话画布。官方 Sidebar 标准边框分区，不使用 inset 大圆角外壳。
-- 侧栏列表使用 `scrollbar-gutter: stable both-edges` 对称预留原生滚动条空间，会话按钮取消默认的 1px 左移，确保选中背景左右留白相等，滚动条出现或消失时宽度不跳动。
-- 消息正文不重复展示说话人名称，用户气泡靠右、助手 Markdown 平铺。每轮 AI 回复结束后，仅最后一个非空正文块显示复制操作；中间说明、工具步骤之间的正文及生成中的回复不显示复制按钮或占位。用户消息保留独立复制，操作行方向跟随消息；空助手消息不生成标题或复制占位。连续工具调用用默认折叠的单行活动摘要呈现，保留数量与异常状态，展开后是紧凑无卡片的记录列表，各条输出可继续展开。会话中的工具失败或结果未知沿用中性色，不用红色强调；左侧图标区分读取、创建、编辑、列出文件、搜索、读取 Skill 和命令执行，未知工具使用通用工具图标，实际执行中显示加载动画；右侧保留状态文字，详情保留退出码与错误信息。
-- 消息、代码块与工作区路径的复制操作统一使用 `icon-xs`：24px 按钮、12px 图标，沿用次要图标操作的圆角、灰度和悬停反馈，不在各处单独覆盖尺寸。
-- 工具栏图标统一 `icon-sm`：28px 按钮、14px 图标；文字操作统一 `sm`：28px 高、12px 字号。输入区按钮直接复用同一套 Button 尺度。导航和菜单项为桌面 32px、窄屏 36px，13px 字号；辅助说明 12px、元信息 11px。
-- 下拉菜单与上下文浮层统一 8px 圆角、细边框及中等投影；菜单标题 12px，图标 14px。空状态采用 14px 标题与 12px 说明，避免比会话正文更醒目。按钮、搜索和输入控件使用 2px 键盘焦点环。
-- 品牌栏与会话顶栏统一 44px。品牌 14px，图标 18px；顶栏仅显示当前对话标题，不显示文件夹图标、名称或路径分隔线。右上角不显示同步状态文字，摘要入口使用列表式图标，面板默认收起、点击展开。
-- 品牌栏不显示新建入口，搜索独占一行；项目分组内可直接创建该项目的草稿。文件夹行 28px / 12px，会话行 32px / 13px，工作区标签 11px。文件夹折叠标题占满分组宽度，整行可点击，不显示展开/收起箭头；新建按钮固定在标题行最右侧，仅悬停或焦点进入标题行时显示，不挤占折叠点击区域。取消树状连线，选中会话保留细边框，底色与分组标题的悬停色统一使用 `sidebar-accent`。新草稿输入时标题保持“新对话”。消息复制仅在悬停当前消息或键盘聚焦消息内控件时显示，显隐不改变消息布局。
-- 会话搜索弹窗适配 [cmdk 官方 Vercel 示例](https://github.com/dip/cmdk/blob/main/website/styles/cmdk/vercel.scss)的视觉样式，来源与 MIT 声明保留在 `session-search.css`。面板最大 640px、随视口收缩，内部留白 8px、圆角 12px；输入文字桌面 17px、移动端 16px，输入区下方保留分隔线与 16px 间距。列表有分组标题，最近会话行至少 48px 高、8px 圆角、桌面左右留白 16px，展示项目标签与选中项的 Enter 键帽；全文结果行按内容增高，展示路径和高亮片段。列表高度随内容收缩，330px 封顶后滚动，面板不超过 80dvh；不保留旧说明页脚。沿用现有浅色/深色主题变量，仅搜索内的次要文字采用 94% `muted-foreground` 与 6% `foreground` 混合以保证对比度；此适配只约束搜索弹窗。
-- 新任务入口左对齐，内容最大 680px；标题 22px，无营销副标题，输入框默认约 124px 高、14px 圆角。仅新对话在输入框上方显示浅灰信息栏，展示当前文件夹和“此计算机”，文件夹名过长时截断、悬停显示完整路径；开始对话后隐藏，输入框状态位不重复显示文件夹名。侧栏底部移除“本地工作区”及同步提示，仅保留语言与主题切换。新对话输入框下方不显示“继续会话”或历史记录列表；已有对话从侧栏或会话搜索打开。
-- 输入文字桌面 14px，触屏 16px 以避免移动浏览器自动放大。附件和发送操作 28px，模型状态 12px。草稿保存限制就近说明。
-- 输入区使用所见即所得 Markdown 编辑，输入或粘贴标题、列表、加粗、代码等语法时直接呈现格式；草稿与发送内容仍为 Markdown。沿用会话 Markdown 的主题和排版，编辑区最大 192px，长代码和表格局部滚动；Shift+Enter 按当前段落、列表或代码块继续编辑。
-- 输入框暂不提供添加附件入口，也不显示 Enter / Shift+Enter 键盘提示；保留 Enter 发送、Shift+Enter 换行及输入法确认行为，连接异常、提交中和生成中状态仍正常显示。
-- 按用户要求移除输入框下方的文件夹选择、路径和“仅本页保存”提示，不保留空行占位。项目草稿从侧栏分组新建；上下文面板显示真实路径、消息数量、会话类型、附件和文件大小，提供路径复制；当前未接入的模型和执行功能不伪造。
-- 历史消息与输入框共用 680px 内容对齐线；外层含左右 32px 留白，最大 744px。消息独立滚动，输入区留在底部。
-- 历史消息、加载/错误提示与底部输入区预留一致的原生滚动条空间，防止内容列横向错位。列表尾部操作保留固定宽度，悬停时不挤动标题；长项目名和会话标题单行截断。
-- 纵向滚动统一在 `styles.css` 扩展 `overflow-auto`、`overflow-y-auto`、`overflow-scroll`、`overflow-y-scroll`，预留稳定滚动条空间，响应式/状态变体与 `@apply` 同样生效。自定义 CSS 滚动区域也使用这些工具类；原生 textarea 采用相同规则。自动滚动不切换 `scrollbar-width`，避免折叠、流式更新时正文宽度变化。纯横向滚动和裁切容器不额外留白；底部输入区继续显式预留与消息区一致的 gutter。
-- 移动端使用 Sheet 导航和更宽的触控空间，标题保持 22px；隐藏冗余路径，容器随视口收缩。长代码与表格局部滚动。
+## Colors
 
-## 视觉语言
+### Primary
 
-官方中性黑白色阶，浅灰侧栏、白色主画布；深色模式延续同一套语义变量。普通控件 6–8px 圆角，消息气泡 12px，输入区 14px。减少横向分割线，使用表面色阶、字重、对齐和局部留白建立层级；浮层保留原生边框与投影。键盘焦点、滚动条、选中文字与输入光标均跟随主题。动画仅用于状态转换，并尊重 reduced motion。
+克制的蓝色用于发送、主要操作、链接和键盘焦点；当前项目/会话以 `sidebar-accent` 为底，搭配 `sidebar-accent-foreground`。不以高饱和大色块占据工作区。
 
-## 动效
+### Neutral
 
-- Motion for React 负责桌面侧栏、移动抽屉和搜索弹窗；使用 `LazyMotion` 异步加载 `domAnimation`，组件从 `motion/react-m` 导入，不加载拖拽或布局测量功能。
-- 桌面侧栏和移动抽屉使用高阻尼、无回弹的弹簧，快速反向操作从当前进度继续；面板通过 transform 移动。桌面仅占位宽度随之变化，保留正文重排；默认展开不播放首屏动画，收起后导航立即退出键盘焦点序列。
-- 搜索入场 180ms、退场 120ms，缩放限制在 98.5%–100%、位移最多 4px；抽屉退场 180ms。Radix 保留焦点管理、Escape 和遮罩行为，退场由 `AnimatePresence` 完成，移动端关闭后将焦点交还主界面的侧栏按钮。
-- 项目分组与工具步骤沿用 CSS 高度动画，展开 160ms、收起 120ms；摘要浮层与回到底部按钮采用相同的快速减速节奏。消息正文与流式增量不播放入场动画。
-- `MotionConfig reducedMotion="user"` 尊重系统偏好；侧栏占位宽度在减少动态效果时立即更新，现有 CSS reduced-motion 规则继续生效。
-- 集中参数：`src/lib/motion.ts`。集成依据：[Motion 与 Radix](https://motion.dev/docs/radix)、[减少包体积](https://motion.dev/docs/react-reduce-bundle-size)、[无障碍动效](https://motion.dev/docs/react-accessibility)。
+`shell` 承托外壳，`background` 是内容画布，`card` 用于输入区，`popover` 用于浮层。正文、次要说明和细边框分别使用 `foreground`、`muted-foreground`、`border`，浅深主题保持同一语义关系。选中文字、光标及原生滚动条跟随主题。错误提示使用 `destructive`；工具失败和未知结果仍以中性文字、图标及真实退出码表达。权限模式等现有业务状态色保持组件语义。
 
-## 交互与产品事实
+## Typography
 
-新会话首次发送有效消息后，服务端用当前模型独立生成一次简短标题，不阻塞正文回复，也不把标题写入聊天记录。未发送的草稿保持“新对话”；标题生成期间侧栏使用单行、固定高度的柔和骨架屏，保留选中态、点击与可访问名称。生成完成后原位替换；8 秒超时或失败统一显示“新对话”，断线的过期快照也会自动显示此兜底标题，不无限加载。骨架屏遵循减少动态效果偏好。标题通过现有 SSE 同步，正文保存结束后落盘；恢复历史不重新生成或覆盖已有标题。
+使用系统无衬线字体栈，中文跟随苹方或微软雅黑，路径和代码使用等宽字体。标题保持中等字重，不引入营销型大字或额外展示字体。
 
-默认本地新会话；真实历史按需打开。搜索、文件夹折叠、按项目新建草稿、附件添加/移除和主题切换均可操作。Ctrl/⌘ K 搜索，Ctrl/⌘ B 折叠导航。每个会话保有独立草稿，首次发送创建服务端会话；通过 SSE 与 CLI 同步回复、工具活动、取消及审批。断线禁用发送并保留内容，结果不明时可复用原请求重试。附件暂不上传，含附件的草稿明确提示移除后发送文字。
+页面标题使用 `headline`，会话正文和桌面编辑器使用 `body`，导航及顶栏使用 `navigation`，按钮说明使用 `label`，项目标签与工具状态使用 `metadata`。品牌为半粗体（14px）；搜索输入桌面（17px）、窄屏（16px）。触屏编辑器与普通输入控件保留 `input-mobile`，避免浏览器自动放大。
 
-保留官方 AI Elements 的 Message、Bubble、Message Scroller 和 Prompt Input 组合；历史渲染器、Markdown 和语法高亮按需加载。支持安全 Markdown、代码复制及复制失败反馈。
+## Layout
 
-回复过程使用官方 AI Elements Chain of Thought 的 Trace 组合。发送后立即在消息列表末尾显示“正在思考”，首字到达、正文流式输出时在同一个尾部状态区显示“正在回复”，始终位于正文与备注之后；空助手增量不生成占位行。连续工具调用按步骤展示，执行时默认展开，回复开始或步骤结束后自动收起；用户手动展开或收起后保持其选择。工具执行期间由工具组展示实际进度，避免重复的回复 loading。仅展示服务端提供的工具记录与状态，不编造思考内容。停止、保存、断线沿用尾部状态区切换文案；生成结束移除活动提示。Trace 使用 12px 正文、11px 状态、14px 图标，支持键盘操作与减少动态效果偏好。
+- 桌面侧栏占位（264px），内含磨砂导航（248px）与两侧间距（各 8px）；收起后占位（72px），内含图标轨（56px）。收起保留新对话、搜索、Skills、项目、语言与主题入口。
+- 画布距顶部、右侧、底部各留（8px），与侧栏内表面间距同为（8px）。品牌栏与会话/Skills 顶栏为（44px）；顶栏只显示页面标题与必要操作。
+- 新对话和历史正文共用内容宽度（680px）。历史外层最大（744px），桌面左右留白（32px），窄屏左右留白（20px）。历史独立滚动，输入区固定在下方；新对话入口在弹性网格中略高于垂直中心。Skills 内容容器最大（896px）。
+- 桌面项目标题行（28px）、会话行（32px）；窄屏分别为（32px）和（36px）。长项目名和会话标题单行截断，尾部操作预留空间，悬停不挤动文本。
+- 小于（768px）使用抽屉导航（288px）；画布取消外边距、外圆角及投影，顶栏增至（52px），顶栏和导航底部按钮至少（36px）。搜索在小于（640px）时调整输入和结果留白。
+- 纵向滚动工具类与原生 textarea 保留稳定滚动条空间；历史、提示及输入区共用对齐线。展开侧栏列表对称预留 gutter，图标轨隐藏滚动条但仍可滚动。长代码与表格局部横向滚动。
 
-Loading 图标沿用 AlphaCode TUI 的圆环 → ∞ → 反向圆环变形路径、五秒循环及 ease-in-out 节奏；由浏览器 CSS 驱动，断线时静止，减少动态效果模式不播放。思考、回复和工具执行共用该图标。历史工具步骤跨轮保留，重新打开会话仍可按原始位置展开查看。
+## Elevation & Depth
 
-## 官方来源
+**局部玻璃规则。** 正文、代码、表单和输入框保持实色。磨砂仅用于侧栏、移动抽屉、菜单、摘要和搜索弹层，以文字对比度和边界清晰为先。
 
-2026-11-09 核对：AI Elements 已迁入 shadcn/ui，组件以官方组合模式使用。
+导航使用 `glass-surface`，模糊与饱和度（24px / 135%），无外描边，以顶部内高光建立材质。菜单与摘要使用接近实色的 popover 混色（92%）、模糊（20px / 130%）；搜索使用（94%）与（24px / 130%）。不添加装饰性光斑或彩色渐变。
 
-- https://ui.shadcn.com/docs/ai-elements
-- https://ui.shadcn.com/docs/ai-elements/radix/chat
-- https://ui.shadcn.com/docs/ai-elements/radix/message
-- https://ui.shadcn.com/docs/ai-elements/radix/prompt-input
-- https://ui.shadcn.com/docs/ai-elements/radix/chain-of-thought
-- https://ui.shadcn.com/docs/components/radix/trace
-- https://ui.shadcn.com/docs/components/radix/sidebar
-- https://ui.shadcn.com/docs/dark-mode/vite
+阴影分为导航 `glass-shadow`、画布 `surface-shadow`、输入区 `composer-shadow`、浮层 `overlay-shadow`，精确值见 sidecar。缺少 backdrop-filter 或请求减少透明度时，导航回退至实色 `sidebar`。
 
-`ui/message`、`message-scroller`、`bubble`、`input-group`、`empty`、`dropdown-menu` 由固定版本 shadcn CLI 安装。New York registry 尚无 Code Block 及高亮 hook，使用官方 Radix Rhea registry 源码，适配 import、Lucide 图标与项目主题。
+桌面宽度使用 CSS（220ms，`cubic-bezier(0.2, 0.8, 0.2, 1)`），默认展开不播放首屏动画。Motion 的 LazyMotion / domAnimation 负责移动抽屉和搜索：抽屉使用高阻尼弹簧并以（180ms）退场；搜索入场（180ms）、退场（120ms），轻微缩放与至多（4px）位移。分组/工具折叠沿用 CSS 高度动画（展开 160ms、收起 120ms）。消息正文和流式增量不播放入场动画。
 
-## 验证
+`MotionConfig reducedMotion="user"` 与 CSS reduced-motion 共同尊重系统偏好。Radix 保留焦点、Escape 及遮罩行为；收起导航或关闭移动抽屉时将必要焦点交还主界面按钮。圆环 → ∞ → 反向圆环的加载图标保持（5s）循环，断线及减少动态效果时静止。
 
-实现后批量检查桌面、移动端、历史会话和深色主题；修改一批发现的问题后至多再确认一次。功能检查覆盖导航、搜索、独立草稿、附件、按项目新建草稿、侧栏打开历史会话、上下文面板及键盘操作。
+## Shapes
+
+基础圆角由 CSS `--radius`（10px）派生。普通控件使用 `md`，导航图标按钮使用 `lg`；导航、画布和用户消息使用 `xl`；输入区使用 `2xl`。菜单/摘要使用 `overlay`，搜索使用 `search`。移动抽屉仅右侧圆角（18px）；发送按钮为圆形。减少无意义分割线，以表面色阶、对齐和留白组织内容。
+
+## Components
+
+- **按钮与焦点：** 工具栏 `icon-sm`（28px / 14px 图标），文字 `sm`（28px / 12px 字号）；复制 `icon-xs`（24px / 12px 图标）；图标轨操作（36px / 16px 图标）。复用 Button 的主要、次要、描边和幽灵变体，不逐处覆盖尺度。键盘焦点环（2px），禁用状态降低透明度并阻止操作。
+- **导航：** 搜索独占一行，品牌栏不重复新建操作。项目整行可折叠，无树状连线或展开箭头；新建按钮在悬停或焦点进入时出现。选中会话使用浅蓝底与低对比内描边。图标轨有 tooltip 和可访问名称，点击项目会展开对应分组并将焦点移至其标题，不更换当前会话。底部只保留语言和主题。Ctrl/⌘ K 搜索，Ctrl/⌘ B 切换侧栏。
+- **搜索：** cmdk 弹层最大（640px）、不超过（80dvh），内部留白（8px）；列表随内容收缩，通常上限（330px）。最近会话行至少（48px），全文结果按内容增高，保留项目、路径及命中片段。次要文字混合 muted-foreground 与 foreground（94% / 6%），此处理仅限搜索。没有说明页脚。
+- **输入区：** 独立实色表面与柔和阴影，编辑区高（80–192px）。新对话上方显示当前文件夹和“此计算机”，路径在悬停时显示；开始对话后隐藏。输入区下方不重复路径、保存提示或历史列表。所见即所得 Markdown 与历史共用排版，发送内容仍为 Markdown；Enter 发送、Shift+Enter 编辑换行，保留输入法确认。暂不展示附件添加按钮及键盘提示；已有附件仍可移除，并提示移除后发送文字。
+- **消息与工具：** 用户消息靠右，助手 Markdown 平铺，不重复说话人名称。复制仅在悬停或键盘聚焦时出现且不改变布局；每轮助手只在最后一个非空正文块显示，生成中及中间步骤不显示。工具用官方 Trace 的紧凑摘要，执行时展开、正文回复或结束后收起，保留用户手动选择；历史可重新展开。只呈现真实工具、数量、状态及输出。
+- **状态与上下文：** 思考、回复、停止、保存及断线复用消息尾部状态区；工具执行不重复显示 loading。标题生成期间使用单行固定高度骨架，保留选中、点击与可访问名称；失败或（8s）超时回退“新对话”。摘要默认关闭，显示真实路径、消息数量、类型及附件，提供路径复制。队列、权限、审批、重试和 Skills 筛选保留原有功能与翻译。
+
+组件来源保持项目内 shadcn/ui New York / Neutral 基础及官方 AI Elements 组合：
+[Chat](https://ui.shadcn.com/docs/ai-elements/radix/chat)、[Message](https://ui.shadcn.com/docs/ai-elements/radix/message)、[Prompt Input](https://ui.shadcn.com/docs/ai-elements/radix/prompt-input)、[Chain of Thought](https://ui.shadcn.com/docs/ai-elements/radix/chain-of-thought)、[Trace](https://ui.shadcn.com/docs/components/radix/trace)、[Sidebar](https://ui.shadcn.com/docs/components/radix/sidebar)、[Vite 深色主题](https://ui.shadcn.com/docs/dark-mode/vite)。Neutral 是 registry 来源，当前颜色以本包主题为准。`ui/message`、`message-scroller`、`bubble`、`input-group`、`empty`、`dropdown-menu` 由固定版本 CLI 引入；代码块与高亮 hook 来自官方 Radix Rhea registry，适配 import、Lucide 和主题。搜索保留 [cmdk Vercel 示例](https://github.com/dip/cmdk/blob/main/website/styles/cmdk/vercel.scss)的来源与 MIT 声明。早期 T3 Code、OpenCode、Lobe UI 仅为交互研究来源，视觉决策以本文件为准。
+
+## Do's and Don'ts
+
+- **Do** 在 Web 包维护共享视觉，复用语义变量、Button 尺度、i18n 及数据流；更新后核对浅深主题、展开、图标轨、移动抽屉和搜索。
+- **Do** 保留键盘入口、焦点返回、长文本截断、稳定滚动空间与 reduced-motion；检查草稿、队列、历史、上下文和 Skills 交互。
+- **Don't** 把收起侧栏变成完全消失的导航，或把玻璃扩展到正文、代码和输入区。
+- **Don't** 为视觉效果伪造模型、分支、执行状态或工具结果；真实服务端/SSE、独立草稿、附件限制及自动标题行为以实现和 README 为准。
+- **Don't** 沿用旧版固定 240px 侧栏、纯黑白主操作、无外壳圆角或桌面弹簧宽度动画规则。

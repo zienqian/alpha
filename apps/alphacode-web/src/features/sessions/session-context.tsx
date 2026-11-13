@@ -18,7 +18,7 @@ export function SessionContext({ folder, session, draft }: {
         </Button>
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content align="end" sideOffset={4} collisionPadding={12} aria-label={t("sessions:summary")} className="z-50 max-h-[var(--radix-popover-content-available-height)] w-72 max-w-[calc(100vw-24px)] origin-(--radix-popover-content-transform-origin) overflow-y-auto rounded-lg border bg-popover text-popover-foreground shadow-md outline-none duration-160 ease-[cubic-bezier(0.16,1,0.3,1)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-98 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-98 data-[state=closed]:duration-100">
+        <Popover.Content align="end" sideOffset={4} collisionPadding={12} aria-label={t("sessions:summary")} className="workspace-popover z-50 max-h-[var(--radix-popover-content-available-height)] w-72 max-w-[calc(100vw-24px)] origin-(--radix-popover-content-transform-origin) overflow-y-auto border text-popover-foreground outline-none duration-160 ease-[cubic-bezier(0.16,1,0.3,1)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-98 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-98 data-[state=closed]:duration-100">
           <div className="flex h-10 items-center justify-between border-b px-3">
             <h2 className="text-xs font-medium">{t("sessions:summary")}</h2>
             <Popover.Close asChild><Button variant="ghost" size="icon-xs" className="text-muted-foreground" aria-label={t("sessions:closeSummary")}><X aria-hidden="true" /></Button></Popover.Close>

@@ -1,12 +1,5 @@
 {
   "registerProject": "Register a project in the CLI first",
-  "updatePending": "An update is available. The server will update after tasks and saves finish.",
-  "updateWaitForSend": "The server has updated. Finish the current action or resolve uncertain sends in their conversations before refreshing.",
-  "updateReady": "The server has updated. Refresh to load the new interface and keep your text drafts.",
-  "updateFailed": "The update could not finish. The current version is still running. You can retry the update.",
-  "updateDraftFailed": "Drafts could not be preserved. Remove attachments, or copy your drafts before refreshing manually.",
-  "updateRefresh": "Keep drafts and refresh",
-  "updateRetry": "Retry update",
   "toggleSidebar": "Toggle sidebar",
   "toggleSidebarHint": "Toggle sidebar (Ctrl / ⌘ + B)",
   "welcome": "Start building here.",

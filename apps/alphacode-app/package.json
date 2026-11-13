@@ -1,0 +1,36 @@
+{
+  "name": "@alpha/alphacode-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "productName": "AlphaCode",
+  "description": "AlphaCode App Electron desktop client for the AlphaCode Web workspace",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "dev": "bun scripts/desktop.ts dev",
+    "dev:web": "bun scripts/dev.ts --web",
+    "build": "bun scripts/desktop.ts build",
+    "package": "bun scripts/package.ts",
+    "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit",
+    "lint": "bun --bun run eslint src scripts test",
+    "test": "bun test ./test"
+  },
+  "devDependencies": {
+    "@alpha/alphacode-app-server": "workspace:*",
+    "@alpha/alphacode-web": "workspace:*",
+    "@electron/packager": "20.3.0",
+    "@types/node": "26.6.6",
+    "electron": "45.3.1",
+    "vite": "8.3.6",
+    "vite-plugin-electron": "1.2.0"
+  },
+  "nx": {
+    "tags": ["layer:desktop"],
+    "targets": {
+      "package": {
+        "dependsOn": ["build"],
+        "cache": false
+      }
+    }
+  }
+}

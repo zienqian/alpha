@@ -45,7 +45,7 @@ export function SkillsMarket({ initialProjectId, onBack }: { initialProjectId?: 
   }
 
   return <>
-    <header className="flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
+    <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
       <SidebarTrigger aria-label={t("workspace:toggleSidebar")} className="text-muted-foreground" />
       <span className="flex-1 text-[13px] font-medium">{t("skills:market.title")}</span>
       <Button variant="ghost" size="sm" onClick={onBack}><ArrowLeft aria-hidden="true" />{t("skills:market.back")}</Button>

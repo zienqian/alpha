@@ -22,13 +22,13 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
   const { t } = useTranslation();
   return (
     <div className="relative z-10 w-full">
-      {folder && <div className="mx-2 -mb-3 flex min-w-0 items-center gap-4 rounded-t-xl bg-muted/60 px-3 pt-2.5 pb-5 text-xs text-muted-foreground sm:mx-3">
+      {folder && <div className="composer-context mb-3 flex min-w-0 items-center gap-4 px-1 text-xs text-muted-foreground">
         <span className="flex min-w-0 items-center gap-2" title={folder.path}>
           <Folder className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{folder.name}</span>
         </span>
         <span className="flex shrink-0 items-center gap-2"><LaptopMinimal className="size-3.5" aria-hidden="true" />{t("workspace:computer")}</span>
       </div>}
-      <InputGroup className="composer rounded-2xl border-input bg-background shadow-none has-[[data-slot=input-group-control]:focus-visible]:border-foreground/50 has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 dark:bg-[color-mix(in_oklab,var(--card)_50%,var(--background))]">
+      <InputGroup className="composer rounded-2xl border-input bg-card has-[[data-slot=input-group-control]:focus-visible]:border-ring/60 has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/15">
         {draft.attachments.length > 0 && (
           <InputGroupAddon align="block-start" className="flex-wrap gap-1.5 px-3 pt-3">
             {draft.attachments.map(({ id, file }) => (

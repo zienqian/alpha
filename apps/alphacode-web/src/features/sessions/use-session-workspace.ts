@@ -183,9 +183,20 @@ export function useSessionWorkspace() {
     }
   }
 
+  useEffect(() => {
+    if (!import.meta.hot || import.meta.env.MODE === "test") return;
+    // Fast Refresh keeps React state. For Vite's full-reload fallback, preserve
+    // text drafts only when no unresolved action would be lost or replayed.
+    const preserve = () => {
+      if (actions.canRefresh && !Object.values(creatingIds).some(Boolean)) {
+        preserveReloadDrafts({ selectedSessionId, localSessions: localSessions.map(({ id, folderId }) => ({ id, folderId })), drafts });
+      }
+    };
+    import.meta.hot.on("vite:beforeFullReload", preserve);
+    return () => import.meta.hot?.off("vite:beforeFullReload", preserve);
+  }, [selectedSessionId, localSessions, drafts, creatingIds, actions.canRefresh]);
+
   return { folders, selectedFolder, selectedSession, selectedSessionId, selectSession, draft, updateDraft,
-    preserveDrafts: () => preserveReloadDrafts({ selectedSessionId, localSessions: localSessions.map(({ id, folderId }) => ({ id, folderId })), drafts }),
-    canRefresh: actions.canRefresh && !Object.values(creatingIds).some(Boolean),
     newSession, focusRequest, isLocal, isWelcome, index, history, canSend, send, busy, connected, actions,
     permissionMode, canChangePermission, changePermission,
     submitting: creatingIds[selectedSessionId] || actions.pending?.status === "sending" || actions.pending?.status === "accepted",

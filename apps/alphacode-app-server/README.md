@@ -13,6 +13,8 @@ AlphaCode 的独立本地业务应用，位于 `apps/alphacode-app-server`。负
 ```powershell
 bun install
 bun run dev:server
+# 桌面启动器：发现/启动共享服务，输出 ready 后退出
+bun run dev:server --ensure
 # 显式选择另一份数据库
 bun run dev:server --database C:/work/alphacode/sessions.db
 
@@ -37,7 +39,7 @@ bun run start:server
 | `@alpha/alphacode-app-server/errors` | 配置错误与稳定错误码 |
 | `@alpha/alphacode-app-server/testing` | 仅供 AlphaCode 集成测试使用的业务工厂 |
 
-这些入口服务于同一 AlphaCode 产品的客户端集成。生产 CLI 通过 `/client` 连接服务，组件仅消费 `/contracts`；业务工厂没有根导出，lint 禁止生产 CLI 导入 `/testing`。基础包和其他应用不能反向依赖本服务。Web 继续使用同源 API，不加载 Bun、SQLite 或服务端实现。MyGo 可通过启动命令发现服务，再使用相同的 HTTP/SSE 接口；桌面窗口与原生桥接由桌面应用负责。
+这些入口服务于同一 AlphaCode 产品的客户端集成。生产 CLI 通过 `/client` 连接服务，组件仅消费 `/contracts`；业务工厂没有根导出，lint 禁止生产 CLI 导入 `/testing`。基础包和其他应用不能反向依赖本服务。Web 继续使用同源 API，不加载 Bun、SQLite 或服务端实现。[AlphaCode App](../alphacode-app/README.md) 使用 Electron 承载同一 Web 界面，主进程通过 `--ensure` 发现服务，读取私有 descriptor 并转发 HTTP/SSE；凭证不进入渲染器。`--ensure` 复用原租约与服务发现逻辑，CLI 和桌面不会创建各自的 Agent owner。
 
 ```ts
 import { ensureServer, createNativeClient } from "@alpha/alphacode-app-server/client";
@@ -58,3 +60,5 @@ bun --bun run nx run-many -t build,typecheck,lint,test --projects=@alpha/alphaco
 ```
 
 测试使用本地 HTTP、临时 SQLite 和离线模型夹具，覆盖独立进程启动、CLI 共享、流式快照、审批、恢复、队列与后台更新，不访问真实模型。
+
+源码变化由 supervisor 自动检测，在生成、审批、队列和保存完成后交接运行状态。新代码加载或恢复失败时继续使用原 worker，并按 5 / 10 / 20 / 30 秒退避自动重试（实际时间受检查周期影响）；后续源码修改会立即进入新一轮检测。页面不提供更新操作。前端开发使用 `bun run dev:web` 或 `bun run dev:app`，由 Vite 独立处理 HMR，不依赖后端版本轮询或手动刷新。
