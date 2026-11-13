@@ -112,7 +112,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
             <Button variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:new")} disabled={folders.length === 0} onClick={() => startSession()}><SquarePen aria-hidden="true" /></Button>
           </TooltipTrigger><TooltipContent side="right">{t("sessions:new")}</TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild>
-            <Button ref={searchTriggerRef} variant="secondary" size="icon" className="rail-action" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen} onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></Button>
+            <Button ref={searchTriggerRef} variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen} onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></Button>
           </TooltipTrigger><TooltipContent side="right">{t("sessions:search")}</TooltipContent></Tooltip>
           {onOpenSkills && <Tooltip><TooltipTrigger asChild>
             <Button variant="ghost" size="icon" className="rail-action" aria-label={t("skills:market.title")} aria-current={skillsActive ? "page" : undefined} onClick={onOpenSkills}><Blocks aria-hidden="true" /></Button>
@@ -135,7 +135,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
       </> : <>
       <SidebarHeader className="gap-0 p-0">
         <div className="space-y-1 px-2.5 pt-2">
-        <Button ref={searchTriggerRef} variant="secondary" className="h-9 w-full justify-start gap-2 rounded-lg px-2.5 text-[13px] font-normal" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
+        <Button ref={searchTriggerRef} variant="ghost" className="h-9 w-full justify-start gap-2 rounded-lg px-2.5 text-[13px] font-normal text-muted-foreground" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
           onClick={() => setSearchOpen(true)}>
           <Search className="size-3.5" aria-hidden="true" /><span>{t("sessions:search")}</span>
           <kbd className="ml-auto rounded border border-sidebar-border px-1 font-sans text-[10px] leading-4 text-muted-foreground">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}</kbd>
