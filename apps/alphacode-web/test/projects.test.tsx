@@ -29,13 +29,12 @@ it("moves an unsent draft to the chosen project and sends it using that project'
     && JSON.parse(String(init.body)).projectId === "docs")).toBe(true));
 });
 
-it("keeps a saved session in its original project when selecting another project", async () => {
+it("keeps a saved session in its original project when starting a session in another project", async () => {
   const api = await setup("/?session=project-notes");
   await screen.findByRole("heading", { name: "项目说明与约定" });
   const originalProject = api.view("project-notes").session.projectId;
   replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "旧会话的草稿");
-  fireEvent.keyDown(screen.getByRole("button", { name: "更改此聊天的项目" }), { key: "Enter" });
-  fireEvent.click(await screen.findByRole("menuitem", { name: /alphacode-web/ }));
+  fireEvent.click(screen.getByRole("button", { name: "在 alphacode-web 中新建会话" }));
   expect(screen.getByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
   expect(api.view("project-notes").session.projectId).toBe(originalProject);
   fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));

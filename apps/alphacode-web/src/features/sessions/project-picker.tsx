@@ -4,9 +4,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { useTranslation } from "@/i18n/react";
 import type { SessionFolder } from "./types";
 
-export function ProjectPicker({ folders, selectedId, onSelect, onCreate, disabled, compact = false }: {
+export function ProjectPicker({ folders, selectedId, onSelect, onCreate, disabled }: {
   folders: SessionFolder[]; selectedId?: string; onSelect: (id: string) => void;
-  onCreate: () => void; disabled?: boolean; compact?: boolean;
+  onCreate: () => void; disabled?: boolean;
 }) {
   const { t } = useTranslation();
   const selected = folders.find(folder => folder.id === selectedId);
@@ -14,8 +14,8 @@ export function ProjectPicker({ folders, selectedId, onSelect, onCreate, disable
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" size="sm" disabled={disabled} className="min-w-0 max-w-full gap-2 px-2 font-normal text-muted-foreground"
         aria-label={t("workspace:changeProject")} title={selected?.path}>
-        {!compact && <Folder className="shrink-0" aria-hidden="true" />}
-        <span className="truncate">{compact ? t("workspace:projects") : selected?.name ?? t("workspace:selectProject")}</span>
+        <Folder className="shrink-0" aria-hidden="true" />
+        <span className="truncate">{selected?.name ?? t("workspace:selectProject")}</span>
         <ChevronDown className="size-3 shrink-0" aria-hidden="true" />
       </Button>
     </DropdownMenuTrigger>

@@ -8,18 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarHeader, SidebarMenu,
   SidebarMenuButton, SidebarMenuItem, SidebarMenuSub,
   SidebarMenuSubItem, SidebarTrigger, useSidebar,
 } from "@/components/ui/sidebar";
 import type { SessionFolder } from "@/features/sessions/types";
-import { ProjectPicker } from "./project-picker";
 
 interface SessionSidebarProps {
   folders: SessionFolder[];
   selectedFolderId?: string;
-  onSelectProject: (id: string) => void;
   onCreateProject: () => void;
   selectedSessionId: string | undefined;
   onSelectSession: (sessionId: string) => void;
@@ -37,7 +35,7 @@ interface SessionSidebarProps {
   settingsActive: boolean;
 }
 
-export function SessionSidebar({ folders, selectedFolderId, onSelectProject, onCreateProject, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive }: SessionSidebarProps) {
+export function SessionSidebar({ folders, selectedFolderId, onCreateProject, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive }: SessionSidebarProps) {
   const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set());
@@ -166,7 +164,7 @@ export function SessionSidebar({ folders, selectedFolderId, onSelectProject, onC
       <SidebarContent className="pt-5" style={{ scrollbarGutter: "stable both-edges" }}>
         <SidebarGroup className="px-2.5 py-0">
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <ProjectPicker compact folders={folders} selectedId={activeFolderId} onSelect={id => { onSelectProject(id); setFolderOpen(id, true); setOpenMobile(false); }} onCreate={openProjectDialog} disabled={Boolean(selectedSessionId && creatingIds[selectedSessionId])} />
+            <SidebarGroupLabel className="h-7 text-muted-foreground">{t("workspace:projects")}</SidebarGroupLabel>
             <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button>
           </div>
           <SidebarGroupContent>
