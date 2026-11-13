@@ -4,7 +4,13 @@
     "used": "已用上下文",
     "system": "系统提示词",
     "tools": "工具定义",
-    "messages": "会话消息"
+    "messages": "会话消息",
+    "summary": "会话摘要",
+    "compacting": "正在压缩较早的上下文…",
+    "failed": "压缩失败，已保留原有上下文。",
+    "manual": "自动压缩已关闭或窗口大小未知。配置后可使用 /compact。",
+    "estimated": "Token 用量为估算值，可使用 /compact 压缩较早的消息。",
+    "budget": "输入预算：{{input}} · 输出预留：{{output}}"
   },
   "loadingHistory": "正在加载会话历史",
   "connected": "实时同步",

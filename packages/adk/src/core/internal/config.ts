@@ -65,7 +65,8 @@ export function copyTool<C>(source: Tool<C>): Tool<C> {
 export function copyModel(model: LanguageModel): LanguageModel {
   ensure(record(model) && text(model.provider) && text(model.modelId) && typeof model.generate === 'function' && typeof model.stream === 'function', 'CONFIG_INVALID');
   const { generate, stream, provider, modelId } = model;
-  return Object.freeze({ provider, modelId, generate: input => generate.call(model, input), stream: input => stream.call(model, input) } satisfies LanguageModel);
+  const metadata = model.metadata ? Object.freeze(structuredClone(model.metadata)) : undefined;
+  return Object.freeze({ provider, modelId, metadata, generate: input => generate.call(model, input), stream: input => stream.call(model, input) } satisfies LanguageModel);
 }
 export function assertNotReentrant(dispatching: boolean): void {
   if (dispatching) throw error('REENTRANT_MUTATION');

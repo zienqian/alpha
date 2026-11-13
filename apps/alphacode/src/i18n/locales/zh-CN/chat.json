@@ -27,7 +27,8 @@
     "empty": "无匹配命令 · Esc 返回",
     "web": "在浏览器中打开当前实时会话",
     "permission": "选择工具和命令的审批方式",
-    "skills": "列出可用技能和加载诊断"
+    "skills": "列出可用技能和加载诊断",
+    "compact": "压缩较早的上下文"
   },
   "activity": {
     "closing": "正在保存并退出…",
@@ -37,7 +38,8 @@
     "queued": "正在准备下一步…",
     "reviewing": "正在检查结果…",
     "working": "正在处理…",
-    "reconnecting": "正在重新连接本地服务…"
+    "reconnecting": "正在重新连接本地服务…",
+    "compacting": "正在压缩上下文"
   },
   "interrupt": " · esc 中断",
   "completion": {

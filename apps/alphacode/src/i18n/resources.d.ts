@@ -4,6 +4,7 @@ export default interface Resources {
     "activity": {
       "approval": "Waiting for approval",
       "closing": "Saving and exiting…",
+      "compacting": "Compacting context",
       "queued": "Preparing next step…",
       "reconnecting": "Reconnecting to local server…",
       "reviewing": "Reviewing results…",
@@ -12,6 +13,7 @@ export default interface Resources {
       "working": "Working…"
     },
     "commands": {
+      "compact": "Compact earlier context",
       "empty": "No matching commands · Esc Back",
       "permission": "Choose how tools and commands are approved",
       "skills": "List available skills and loading diagnostics",
@@ -100,6 +102,7 @@ export default interface Resources {
     "saving": "/permission · Saving…"
   },
   "skills": {
+    "compactResult": "Context compacted. Full conversation history is preserved.",
     "configure": "Configure skills in the global config.yaml. Project skills require an exact project path in skills.trustedProjects. Restart to reload.",
     "manualOnly": "Manual only",
     "modelOnly": "Model only",

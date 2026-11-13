@@ -36,7 +36,11 @@ export function createCodingPlugin<C>(context: CodingContext<C>, hasReadSkillToo
         if (decision === 'allow') retain();
         return decision === 'allow' ? { action: 'allow' } : { action: 'deny', reason: 'Coding policy denied the action.' };
       });
-      api.observe(event => { if (event.type === 'run.end') { state.plans.clear(); state.skillReads.clear(); } });
+      api.observe(event => { if (event.type === 'run.end') {
+        state.plans.clear(); state.skillReads.clear();
+        // Failed delivery/result processing must not leave a read capability for the next run.
+        if (event.status !== 'completed') state.observations.clear();
+      } });
     },
     dispose() { state.plans.clear(); state.observations.clear(); state.skillReads.clear(); },
   };

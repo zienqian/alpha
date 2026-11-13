@@ -9,6 +9,8 @@ export interface AppConfig {
   databasePath: string;
   modelId: string;
   contextWindow?: number;
+  maxOutputTokens?: number;
+  autoCompact?: boolean;
   baseURL: string;
   apiKeyEnv: string;
   noAuth: boolean;

@@ -28,7 +28,8 @@
     "empty": "No matching commands · Esc Back",
     "web": "Open this live session in your browser",
     "permission": "Choose how tools and commands are approved",
-    "skills": "List available skills and loading diagnostics"
+    "skills": "List available skills and loading diagnostics",
+    "compact": "Compact earlier context"
   },
   "activity": {
     "closing": "Saving and exiting…",
@@ -38,7 +39,8 @@
     "queued": "Preparing next step…",
     "reviewing": "Reviewing results…",
     "working": "Working…",
-    "reconnecting": "Reconnecting to local server…"
+    "reconnecting": "Reconnecting to local server…",
+    "compacting": "Compacting context"
   },
   "interrupt": " · Esc to interrupt",
   "completion": {

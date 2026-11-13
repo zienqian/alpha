@@ -5,6 +5,7 @@ export const commands = [
   { name: "/web", description: "chat:commands.web" },
   { name: "/permission", description: "chat:commands.permission" },
   { name: "/skills", description: "chat:commands.skills" },
+  { name: "/compact", description: "chat:commands.compact" },
 ] as const;
 
 export const permissionOptions = [

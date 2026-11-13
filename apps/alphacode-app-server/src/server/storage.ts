@@ -48,6 +48,7 @@ export async function createRegistry(databasePath: string, directory: string) {
         projectName: input.projectName ?? configs.get(projectId)?.projectName,
         modelId: input.modelId, baseURL: input.baseURL, apiKeyEnv: input.apiKeyEnv, noAuth: input.noAuth,
         contextWindow: input.contextWindow,
+        maxOutputTokens: input.maxOutputTokens, autoCompact: input.autoCompact,
         permissionMode: input.permissionMode, skills: input.skills,
         traceEnabled: input.traceEnabled,
         globalInstructions: input.globalInstructions, globalInstructionsPath: input.globalInstructionsPath,

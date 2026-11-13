@@ -3,6 +3,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { dirname } from "node:path";
 import type { Agent } from "@alpha/adk/core";
 import { createTracePlugin } from "@alpha/adk-trace";
+import { createContextManager } from "@alpha/adk-context";
+import { createSqliteContextStore } from "@alpha/adk-context/sqlite";
 import type { RuntimeTrace } from "./trace-bridge";
 import { createSessionManager, createSessionPlugin, type Session, type SessionManager, type SessionStore } from "@alpha/adk-session";
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
@@ -19,7 +21,7 @@ import { loadRuntimeSkills, prepareSkillInput, skillStatus } from "./skills";
 import { parseInput } from "../input";
 import { displayText } from "./tool-records";
 import { generateSessionTitle, titleTimeoutMs } from "./session-title";
-import { estimateContext, modelContext, restoreContext } from "./context-usage";
+import { modelContext, restoreContext } from "./context-usage";
 
 export async function createRuntime(config: AppConfig, options: {
   approve?: RequestApproval;
@@ -33,6 +35,8 @@ export async function createRuntime(config: AppConfig, options: {
   let session: Session | undefined;
   let agent: Agent | undefined;
   let detachTrace: (() => void) | undefined;
+  let contextManager: ReturnType<typeof createContextManager>;
+  let contextStore: ReturnType<typeof createSqliteContextStore> | undefined;
   const sessionId = config.sessionId ?? options.draftSessionId ?? randomUUID();
   const subscriptions = new Map<(event: ChatEvent) => void, (() => void) | undefined>();
   let initialize: (input?: string) => Promise<{ agent: Agent; session: Session }>;
@@ -58,6 +62,17 @@ export async function createRuntime(config: AppConfig, options: {
     if (saved) settings = readSessionSettings(saved.data);
     contextUsage = restoreContext(saved?.data.metadata.alphacodeContext,
       modelContext(settings.modelId, settings.modelId === config.modelId ? config.contextWindow : undefined));
+    try { contextStore = createSqliteContextStore(`${config.databasePath}.context.db`); } catch { /* Derived checkpoints may remain in memory. */ }
+    contextManager = createContextManager({ namespace, sessionId, contextWindow: contextUsage.contextWindow,
+      maxOutputTokens: config.maxOutputTokens, auto: config.autoCompact, store: contextStore,
+      onEvent(event) {
+        if (event.type === 'usage') contextUsage = { ...contextUsage, tokens: event.tokens, inputBudget: event.inputBudget,
+          maxOutputTokens: event.maxOutputTokens, automatic: event.automatic };
+        else if (event.type !== 'skip') contextUsage = { ...contextUsage, compaction: { status: event.type } };
+        for (const listener of subscriptions.keys()) listener({ type: 'context.usage', usage: contextUsage });
+      },
+    });
+    if (saved) await contextManager.load();
     const agentKey = saved?.data.agentKey === `alphacode-v1:${settings.modelId}`
       ? saved.data.agentKey : `alphacode-v2:${settings.modelId}`;
     loadedSkills = await loadRuntimeSkills(config, cwd);
@@ -97,8 +112,6 @@ export async function createRuntime(config: AppConfig, options: {
         // The first model call happens after the Session plugin has persisted
         // admission. Title generation must not run for rejected/local prompts.
         model: { ...model, stream(input) {
-          contextUsage = estimateContext(input, contextUsage);
-          for (const listener of subscriptions.keys()) listener({ type: "context.usage", usage: contextUsage });
           startTitle(model);
           return model.stream(input);
         } }, cwd,
@@ -133,6 +146,7 @@ export async function createRuntime(config: AppConfig, options: {
         plugins: [
           ...(config.globalInstructions ? [globalInstructionsPlugin<CodingContext<undefined>>(config.globalInstructions, config.globalInstructionsPath ?? "~/.alphacode/AGENTS.md")] : []),
           createSessionPlugin({ session }),
+          contextManager.plugin<CodingContext<undefined>>(),
           ...(options.trace ? [createTracePlugin<CodingContext<undefined>>({ service: options.trace.service, scope: { namespace, sessionId } })] : []),
         ],
       });
@@ -142,6 +156,7 @@ export async function createRuntime(config: AppConfig, options: {
     };
     if (saved) await initialize();
   } catch (error) {
+    contextStore?.close();
     detachTrace?.();
     // Startup has not accepted a prompt; release only resources created here.
     for (const resource of [agent, session, manager, store]) {
@@ -233,7 +248,7 @@ export async function createRuntime(config: AppConfig, options: {
     async steer(input) {
       if (closing || cancelled || !agent?.state.canSteer) return false;
       const command = parseInput(input);
-      if (command.kind === "command" && ["skills", "permission"].includes(command.name)) return false;
+      if (command.kind === "command" && ["skills", "permission", "compact"].includes(command.name)) return false;
       const prepared = await prepareSkillInput(input, loadedSkills.skills, preparation?.signal ?? new AbortController().signal);
       return !closing && !cancelled && agent.state.canSteer ? agent.steer(prepared) : false;
     },
@@ -283,6 +298,21 @@ export async function createRuntime(config: AppConfig, options: {
       try {
         await titleSaving;
         const command = parseInput(input);
+        if (command.kind === "command" && command.name === "compact") {
+          if (command.arguments.trim()) throw settingsError('SESSION_INPUT_INVALID');
+          if (!session || !agent) throw settingsError('CONTEXT_NOTHING_TO_COMPACT');
+          const saved = await session.getSnapshot();
+          if (saved.data.pending || session.state.historyStatus !== 'ready') throw settingsError('HISTORY_BLOCKED');
+          const history = saved.data.turns.flatMap(turn => [...turn.messages]);
+          await agent.compact({ messages: history, signal: preparation.signal });
+          await contextManager.persist(history);
+          try {
+            await activeManager.updateSession(session.id, { metadata: { ...saved.data.metadata,
+              alphacodeContext: JSON.parse(JSON.stringify(contextUsage)),
+            } }, { expectedRevision: saved.revision });
+          } catch { /* Optional display counts must not affect the checkpoint. */ }
+          return { status: 'completed', localText: 'Context compacted. Full conversation history is preserved.', localResult: { kind: 'compact' } };
+        }
         if (command.kind === "command" && command.name === "skills" && !command.arguments.trim()) {
           return { status: "completed", localText: skillStatus(loadedSkills), localResult: { kind: "skills",
             skills: loadedSkills.skills.map(skill => ({ name: skill.name, description: displayText(skill.description, 1024),
@@ -304,6 +334,7 @@ export async function createRuntime(config: AppConfig, options: {
         if (activeSession.state.persistence?.status === "saved") {
           try {
             const saved = await activeSession.getSnapshot();
+            await contextManager.persist(saved.data.turns.flatMap(turn => [...turn.messages]));
             const turn = saved.data.turns.findLast(turn => turn.run.runId === result.runId);
             if (turn?.durationMs !== undefined) completion = {
               durationMs: turn.durationMs, completedAt: Date.parse(turn.committedAt), status: turn.run.status,
@@ -311,9 +342,7 @@ export async function createRuntime(config: AppConfig, options: {
             // Store only aggregate counts so reopen/restart retains the indicator.
             // Optional display metadata must never affect a successful turn.
             if (!saved.data.pending && contextUsage.tokens) await activeManager.updateSession(activeSession.id, {
-              metadata: { ...saved.data.metadata, alphacodeContext: {
-                modelId: contextUsage.modelId, tokens: { ...contextUsage.tokens },
-              } },
+              metadata: { ...saved.data.metadata, alphacodeContext: JSON.parse(JSON.stringify(contextUsage)) },
             }, { expectedRevision: saved.revision });
           } catch { /* Optional display timing must not change a completed run's outcome. */ }
         }
@@ -343,12 +372,17 @@ export async function createRuntime(config: AppConfig, options: {
           if (saved.status === "pending") throw Object.assign(new Error(), { code: saved.code });
         }
         await persistTitle();
+        if (session && session.state.persistence?.status === 'saved') {
+          try { await contextManager.persist((await session.getSnapshot()).data.turns.flatMap(turn => [...turn.messages])); }
+          catch { /* Derived checkpoints never prevent closing a saved session. */ }
+        }
         for (const unsubscribe of subscriptions.values()) unsubscribe?.();
         subscriptions.clear();
         detachTrace?.();
         await session?.close();
         await activeManager.close();
         await activeStore.close();
+        contextStore?.close();
       })().catch(error => {
         closing = undefined;
         throw error;

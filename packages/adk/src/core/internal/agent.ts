@@ -11,6 +11,8 @@ import { assertNotReentrant, validateSignal } from './config';
 import { boundaryError, ensure, error, errorData, safeError } from './errors';
 import { createId, record, text, textBytes } from './json';
 import { copyRunResult } from './run-result';
+import { prepareContext } from './prepare-context';
+import { copyMessages } from './messages';
 
 export function createAgentInstance<C>(config: {
   id: string; instructions: string; app: C; limits: Readonly<Limits>;
@@ -22,6 +24,7 @@ export function createAgentInstance<C>(config: {
   let status: AgentState['status'] = 'idle', closing = false;
   let current: Run<C> | undefined, currentPromise: Promise<RunResult> | undefined, closePromise: Promise<void> | undefined;
   let invocation: AbortController | undefined, boundaryFailed = false;
+  let maintenance: Promise<void> | undefined;
   let steeringOpen = false;
   let interruptible: AbortController | undefined;
   const steering: { input: string; resolve: (consumed: boolean) => void }[] = [];
@@ -60,7 +63,7 @@ export function createAgentInstance<C>(config: {
           }
           return consumed;
         },
-        callModel: () => withSteering(signal => callModel(run, registry.model, instructions, registry.tools, registry.hooks, signal)),
+        callModel: () => withSteering(signal => callModel(run, registry.model, instructions, registry.tools, registry.hooks, signal, registry.context)),
         callTools: assistantId => callTools(run, registry.toolMap, registry.hooks, assistantId, {
           hasSteering: () => steering.length > 0, prepare: withSteering,
         }),
@@ -125,7 +128,7 @@ export function createAgentInstance<C>(config: {
         assertNotReentrant(events.dispatching);
         ensure(status !== 'closed', 'AGENT_CLOSED');
         ensure(!closing, 'AGENT_CLOSING');
-        ensure(!currentPromise, 'AGENT_BUSY');
+        ensure(!currentPromise && !maintenance, 'AGENT_BUSY');
         ensure(!boundaryFailed, 'RUN_BOUNDARY_FAILED');
         if (!registry.boundary) ensure(!history.blocked, 'HISTORY_BLOCKED');
         ensure(text(input), 'INPUT_INVALID');
@@ -167,16 +170,37 @@ export function createAgentInstance<C>(config: {
       } catch (cause) { return Promise.reject(safeError(cause, 'INPUT_INVALID')); }
     },
     subscribe: events.subscribe,
+    compact(options?: { readonly messages?: readonly Message[]; readonly signal?: AbortSignal }): Promise<void> {
+      try {
+        assertNotReentrant(events.dispatching);
+        ensure(status !== 'closed' && !closing, 'AGENT_CLOSED');
+        ensure(!currentPromise && !maintenance, 'AGENT_BUSY');
+        ensure(!boundaryFailed && !history.blocked, 'HISTORY_BLOCKED');
+        ensure(registry.context, 'CONTEXT_UNAVAILABLE');
+        validateSignal(options?.signal);
+        const snapshot = copyMessages(options?.messages ?? history.messages, limits.maxToolCalls, 'INPUT_INVALID');
+        const controller = new AbortController(); invocation = controller; status = 'running';
+        const signal = AbortSignal.any([controller.signal, ...(options?.signal ? [options.signal] : [])]);
+        let calls = 0;
+        maintenance = prepareContext({ history: snapshot, instructions, tools: registry.tools, hooks: registry.hooks,
+          model: registry.model, provider: registry.context, limits, mode: 'manual',
+          context: Object.freeze({ agentId: id, runId: createId('compact'), app, signal }),
+          reserve() { ensure(limits.maxModelCalls === null || calls < limits.maxModelCalls, 'CONTEXT_COMPACTION_FAILED'); calls++; },
+          usage() { /* Manual maintenance has no conversation turn. */ },
+        }).then(() => undefined).finally(() => { maintenance = undefined; invocation = undefined; status = closing ? 'closed' : 'idle'; });
+        return maintenance;
+      } catch (cause) { return Promise.reject(safeError(cause, 'CONTEXT_COMPACTION_FAILED')); }
+    },
     abort(reason?: string) {
       if (currentPromise) status = 'cancelling';
       current?.cancel(typeof reason === 'string' ? reason : 'user'); invocation?.abort();
     },
-    waitForIdle(): Promise<void> { return currentPromise ? currentPromise.then(() => undefined, () => undefined) : Promise.resolve(); },
+    waitForIdle(): Promise<void> { return Promise.allSettled([currentPromise, maintenance]).then(() => undefined); },
     replaceMessages(messages: readonly Message[]) {
       assertNotReentrant(events.dispatching);
       ensure(status !== 'closed', 'AGENT_CLOSED');
       ensure(!closing, 'AGENT_CLOSING');
-      ensure(!currentPromise, 'AGENT_BUSY');
+      ensure(!currentPromise && !maintenance, 'AGENT_BUSY');
       ensure(!registry.boundary, 'HISTORY_MANAGED');
       try { history.replace(messages); } catch (cause) { throw safeError(cause, 'INPUT_INVALID'); }
     },
@@ -191,6 +215,7 @@ export function createAgentInstance<C>(config: {
       invocation?.abort();
       void (async () => {
         await currentPromise?.catch(() => undefined);
+        await maintenance?.catch(() => undefined);
         status = 'closed';
         await config.dispose();
       })().then(resolve, reject);

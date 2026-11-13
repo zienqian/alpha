@@ -46,9 +46,23 @@
     "directoryMissing": "安装时创建",
     "directoryActive": "已启用",
     "diagnostics_other": "{{count}} 条目录或元数据提示",
-    "scope": { "user": "个人", "project": "项目" },
-    "kind": { "all": "全部", "local": "本地安装", "shared": "共享目录", "claude": "Claude" },
-    "status": { "available": "可用", "disabled": "已禁用", "untrusted": "不受信任", "reserved": "保留名称", "shadowed": "已被同名技能覆盖" },
+    "scope": {
+      "user": "个人",
+      "project": "项目"
+    },
+    "kind": {
+      "all": "全部",
+      "local": "本地安装",
+      "shared": "共享目录",
+      "claude": "Claude"
+    },
+    "status": {
+      "available": "可用",
+      "disabled": "已禁用",
+      "untrusted": "不受信任",
+      "reserved": "保留名称",
+      "shadowed": "已被同名技能覆盖"
+    },
     "reason": {
       "disabled": "此技能或所在目录已在 config.yaml 中禁用。",
       "untrusted": "请将当前项目加入 config.yaml 的 skills.trustedProjects，并重新连接 CLI 后使用。",
@@ -67,5 +81,6 @@
       "project": "当前项目已不可用。请刷新页面，并从 CLI 重新连接。",
       "request": "无法连接技能服务。请先刷新列表确认是否已安装，再尝试重试。"
     }
-  }
+  },
+  "compactResult": "上下文已压缩，完整会话记录仍然保留。"
 }

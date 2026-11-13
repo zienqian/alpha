@@ -15,6 +15,7 @@ import { createProjectRoutes } from "./projects";
 import { skillUploadLimit } from "./skill-archive";
 import { createTraceService, createMemoryTraceStore, type TraceService } from "@alpha/adk-trace";
 import { createSqliteTraceStore } from "@alpha/adk-trace/sqlite";
+import { createSqliteContextStore } from "@alpha/adk-context/sqlite";
 import { createRuntimeTrace } from "../runtime/trace-bridge";
 import { createTraceRoutes } from "./traces";
 import { displayText } from "../runtime/tool-records";
@@ -375,6 +376,8 @@ export async function startServer(options: ServerOptions) {
         const config = body.config as AppConfig | undefined;
         if (!config || typeof config.workspaceRoot !== "string" || typeof config.modelId !== "string" || typeof config.baseURL !== "string" || typeof config.apiKeyEnv !== "string" || typeof config.noAuth !== "boolean" || config.databasePath !== options.databasePath) return fail(400, "INVALID_CONFIG");
         if (config.contextWindow !== undefined && (!Number.isSafeInteger(config.contextWindow) || config.contextWindow <= 0)) return fail(400, "INVALID_CONFIG");
+        if (config.maxOutputTokens !== undefined && (!Number.isSafeInteger(config.maxOutputTokens) || config.maxOutputTokens <= 0)) return fail(400, "INVALID_CONFIG");
+        if (config.autoCompact !== undefined && typeof config.autoCompact !== 'boolean') return fail(400, "INVALID_CONFIG");
         if (body.credential !== undefined && typeof body.credential !== "string") fail(400, "INVALID_CREDENTIAL");
         if (!config.noAuth && (typeof body.credential !== "string" || !body.credential)) fail(400, "CREDENTIAL_REQUIRED");
         const projectId = await registry.register(config, body.credential as string | undefined);
@@ -442,6 +445,14 @@ export async function startServer(options: ServerOptions) {
     return new Response(file);
   }
 
+  async function removeContext(id: string, namespace?: string) {
+    const filename = `${options.databasePath}.context.db`;
+    if (!await Bun.file(filename).exists()) return;
+    const cache = createSqliteContextStore(filename);
+    try { for (const scope of namespace ? [namespace] : registry.configs.keys()) cache.remove(scope, id); }
+    finally { cache.close(); }
+  }
+
   async function manageSession(id: string, request: Request) {
     if (managing.has(id)) return fail(409, "SESSION_BUSY");
     managing.add(id);
@@ -454,7 +465,7 @@ export async function startServer(options: ServerOptions) {
       if (entry && (entry.admission || entry.queue.length || entry.requestId || entry.draining || state?.busy || state?.closing || state?.settingsSaving || state?.approval)) fail(409, "SESSION_BUSY");
       const found = await registry.find(id);
       if (!entry && !found) {
-        if (title === undefined) return Response.json({ ok: true }); // Safe retry after a lost delete acknowledgement.
+        if (title === undefined) { await removeContext(id); return Response.json({ ok: true }); } // Safe retry after a lost delete acknowledgement.
         return fail(404, "SESSION_NOT_FOUND");
       }
       if (title !== undefined && entry) {
@@ -475,7 +486,7 @@ export async function startServer(options: ServerOptions) {
       }
       const saved = await registry.store.read(key);
       if (!saved) {
-        if (title === undefined) return Response.json({ ok: true });
+        if (title === undefined) { await removeContext(id, projectId); return Response.json({ ok: true }); }
         return fail(404, "SESSION_NOT_FOUND");
       }
       if (saved.data.pending) fail(409, "SESSION_BUSY");
@@ -484,7 +495,7 @@ export async function startServer(options: ServerOptions) {
         title === undefined ? null : { ...saved.data, title, updatedAt });
       if (!result.applied) fail(409, "SESSION_CONFLICT");
       changed();
-      if (title === undefined) return Response.json({ ok: true });
+      if (title === undefined) { await removeContext(id, projectId); return Response.json({ ok: true }); }
       const config = registry.configs.get(projectId);
       if (!config) return fail(404, "PROJECT_NOT_FOUND");
       return Response.json({ session: { id, projectId, workspaceRoot: config.workspaceRoot, title, titleStatus: "ready", updatedAt,

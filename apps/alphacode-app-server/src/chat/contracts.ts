@@ -8,13 +8,17 @@ export interface ContextUsage {
   contextWindow?: number;
   windowSource: "model" | "codex" | "configuration" | "unknown";
   /** Estimated tokens in the latest model request; excludes draft and its reply. */
-  tokens?: { system: number; tools: number; messages: number; total: number };
+  tokens?: { system: number; tools: number; summary?: number; messages: number; total: number };
+  inputBudget?: number;
+  maxOutputTokens?: number;
+  automatic?: boolean;
+  compaction?: { status: 'start' | 'end' | 'skip' | 'failed'; reason?: string; before?: number; after?: number };
 }
 
 // Optional presentation semantics preserve protocol v2's legacy text fields.
 export interface ChatNotice { code: string; params?: Record<string, string | number> }
 export interface LocalResult {
-  kind: "skills" | "permission";
+  kind: "skills" | "permission" | "compact";
   skills?: readonly { name: string; description: string; argumentHint?: string; userInvocable: boolean; disableModelInvocation?: boolean }[];
   diagnostics?: readonly { severity: string; code: string; path: string; field?: string }[];
 }

@@ -10,6 +10,18 @@ const config = () => defineProviderConfig({ providers: {
 const reply = (data) => new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
 const collect = async (iterable) => { const values = []; for await (const value of iterable) values.push(value); return values; };
 
+test('only structured context overflow codes normalize into a retryable error', async () => {
+  for (const [body, expected] of [
+    [{ error: { code: 'context_length_exceeded', message: 'private' } }, 'CONTEXT_LENGTH_EXCEEDED'],
+    [{ error: { type: 'prompt_too_long' } }, 'CONTEXT_LENGTH_EXCEEDED'],
+    [{ error: { type: 'invalid_request_error', message: 'context length exceeded' } }, 'REQUEST_FAILED'],
+    [{ error: { code: 'rate_limit_exceeded' } }, 'REQUEST_FAILED'],
+  ]) {
+    const model = createProvider(config(), { getEnv: () => 'secret', fetch: async () => new Response(JSON.stringify(body), { status: 400 }) }).use('local', 'chat');
+    await assert.rejects(collect(model.stream({ messages: [{ role: 'user', content: 'hi' }] })), error => error.code === expected && !error.message.includes('private'));
+  }
+});
+
 test('literal credentials authenticate without any environment lookup and remain absent from metadata/errors', async () => {
   for (const [adapter, options, header, expected, body] of [
     ['openai-completions', { apiKey: { value: 'direct-secret' } }, 'authorization', 'Bearer direct-secret', { choices: [{ finish_reason: 'stop', message: { content: 'ok' } }] }],

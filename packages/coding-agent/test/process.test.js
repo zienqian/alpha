@@ -10,6 +10,15 @@ async function gone(pid) {
   for (let i = 0; i < 100; i++) { try { process.kill(pid, 0); } catch { return; } await pause(20); }
   assert.fail(`process ${pid} still alive`);
 }
+test('command capture preserves separate UTF-8 heads and tails, including late stderr failures', async () => {
+  await using f = await fixture();
+  const result = await runProcess(process.execPath, ['-e', "process.stdout.write('OUT-START'+ '汉😀'.repeat(20000)+'OUT-END'); process.stderr.write('ERR-START'+'err'.repeat(20000)+'ERR-END'); process.exitCode=7"], { cwd: f.cwd, maxOutputBytes: 4096, outputMode: 'head-tail' });
+  assert.equal(result.exitCode, 7); assert.equal(result.truncated, true); assert.equal(result.outputIncomplete, false);
+  assert.match(result.stdout, /^OUT-START/); assert.match(result.stdout, /OUT-END$/);
+  assert.match(result.stderr, /^ERR-START/); assert.match(result.stderr, /ERR-END$/);
+  assert.ok(Buffer.byteLength(result.stdout) + Buffer.byteLength(result.stderr) <= 4096);
+  assert.ok(!result.stdout.includes('\ufffd'));
+});
 for (const reason of ['cancel', 'timeout']) test(`${reason} terminates a live root and its descendants`, async () => {
   await using f = await fixture();
   const grand = `require('node:fs').writeFileSync('grand.pid',String(process.pid)); setInterval(()=>{},1000)`;

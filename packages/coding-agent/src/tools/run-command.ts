@@ -34,6 +34,6 @@ export const runCommandTool = createTool({
     if (outcome.status === 'unknown') throw failure(outcome.code);
     if (outcome.status === 'not_started') return rejected(ctx, outcome.code);
     const detail = { exitCode: outcome.exitCode, stdout: outcome.stdout, stderr: outcome.stderr, truncated: outcome.truncated, outputIncomplete: outcome.outputIncomplete };
-    return result(ctx, outcome.exitCode === 0 ? { ok: true, data: detail } : { ok: false, code: 'COMMAND_EXIT_NONZERO', detail });
+    return result(ctx, outcome.exitCode === 0 ? { ok: true, data: detail } : { ok: false, code: 'COMMAND_EXIT_NONZERO', detail }, 'compact');
   },
 });

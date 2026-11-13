@@ -12,6 +12,8 @@ export interface GlobalDefaults {
   skills?: SkillsSettings;
   modelId?: string;
   contextWindow?: number;
+  maxOutputTokens?: number;
+  autoCompact?: boolean;
   baseURL?: string;
   apiKeyEnv?: string;
   noAuth?: boolean;
@@ -35,6 +37,9 @@ const template = `# AlphaCode global defaults. Environment variables override th
 # model:
 #   id: your-model-id
 #   contextWindow: 500000 # Optional override for your endpoint's actual limit.
+#   maxOutputTokens: 8192 # Reserved and sent as the actual output limit.
+# context:
+#   autoCompact: true
 # provider:
 #   adapter: openai-completions
 #   options:
@@ -79,8 +84,15 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     throw new ConfigurationError(`${file}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`, { code: "INVALID_YAML", params: { file } });
   }
   if (value === null) return {};
-  const root = object(value, file, "root", ["provider", "model", "permissionMode", "databasePath", "skills", "language"]);
+  const root = object(value, file, "root", ["provider", "model", "context", "permissionMode", "databasePath", "skills", "language"]);
   const defaults: GlobalDefaults = {};
+  if (root.context !== undefined) {
+    const context = object(root.context, file, "context", ["autoCompact"]);
+    if (context.autoCompact !== undefined) {
+      if (typeof context.autoCompact !== "boolean") invalid(file, "context.autoCompact");
+      defaults.autoCompact = context.autoCompact;
+    }
+  }
   if (root.language !== undefined) {
     if (!isLanguagePreference(root.language)) invalid(file, "language (system / en / zh-CN)");
     defaults.language = root.language;
@@ -103,11 +115,15 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     defaults.skills = settings;
   }
   if (root.model !== undefined) {
-    const model = object(root.model, file, "model", ["id", "contextWindow"]);
+    const model = object(root.model, file, "model", ["id", "contextWindow", "maxOutputTokens"]);
     if (model.id !== undefined) defaults.modelId = string(model.id, file, "model.id");
     if (model.contextWindow !== undefined) {
       if (typeof model.contextWindow !== "number" || !Number.isSafeInteger(model.contextWindow) || model.contextWindow <= 0) invalid(file, "model.contextWindow");
       defaults.contextWindow = model.contextWindow;
+    }
+    if (model.maxOutputTokens !== undefined) {
+      if (typeof model.maxOutputTokens !== "number" || !Number.isSafeInteger(model.maxOutputTokens) || model.maxOutputTokens <= 0) invalid(file, "model.maxOutputTokens");
+      defaults.maxOutputTokens = model.maxOutputTokens;
     }
   }
   if (root.provider !== undefined) {

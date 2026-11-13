@@ -60,6 +60,7 @@
       },
       "dependencies": {
         "@alpha/adk": "workspace:*",
+        "@alpha/adk-context": "workspace:*",
         "@alpha/adk-session": "workspace:*",
         "@alpha/adk-trace": "workspace:*",
         "@alpha/coding-agent": "workspace:*",
@@ -147,6 +148,13 @@
         "zod": "4.6.7",
       },
     },
+    "packages/adk-context": {
+      "name": "@alpha/adk-context",
+      "version": "0.0.0",
+      "dependencies": {
+        "@alpha/adk": "workspace:*",
+      },
+    },
     "packages/adk-session": {
       "name": "@alpha/adk-session",
       "version": "0.0.0",
@@ -187,6 +195,8 @@
   ],
   "packages": {
     "@alpha/adk": ["@alpha/adk@workspace:packages/adk"],
+
+    "@alpha/adk-context": ["@alpha/adk-context@workspace:packages/adk-context"],
 
     "@alpha/adk-session": ["@alpha/adk-session@workspace:packages/adk-session"],
 

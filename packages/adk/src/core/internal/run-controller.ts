@@ -17,6 +17,13 @@ export function createRun<C>(agentId: string, app: C, history: History, events: 
   let intent: StopIntent | undefined, active: Promise<unknown> | undefined, accepting = true;
   let seq = 0, modelCalls = 0, toolCalls = 0, last: AssistantMessage | undefined;
   const usage: { inputTokens?: number; outputTokens?: number } = {};
+  const userIds: string[] = [];
+  function recordUsage(value?: Usage) {
+    for (const key of ['inputTokens', 'outputTokens'] as const) {
+      const amount = value?.[key];
+      if (amount !== undefined && Number.isFinite(amount) && amount >= 0) usage[key] = (usage[key] ?? 0) + amount;
+    }
+  }
   let timer: ReturnType<typeof setTimeout> | undefined, detach: (() => void) | undefined;
   const started = performance.now();
   function emit(event: EventPayload, metadata: Omit<EventTelemetry, 'version' | 'timestampMs' | 'elapsedMs'> = {}) {
@@ -36,7 +43,7 @@ export function createRun<C>(agentId: string, app: C, history: History, events: 
     else stop({ status: 'failed', error: safeError(value, fallback) });
   }
   function check() { if (intent || !accepting) throw new Stop(); }
-  function commit(message: Message) { emit({ type: 'message.commit', messageId: message.id, role: message.role }); }
+  function commit(message: Message) { if (message.role === 'user') userIds.push(message.id); emit({ type: 'message.commit', messageId: message.id, role: message.role }); }
   function toolResult(assistantId: string, callId: string, content: string, execution: ToolResultMessage['execution']) {
     const { message, limited } = history.commitTool(assistantId, callId, content, execution);
     completed.set(callKey(assistantId, callId), message);
@@ -47,7 +54,7 @@ export function createRun<C>(agentId: string, app: C, history: History, events: 
     return message;
   }
   return {
-    context, history, limits, completed, assistants,
+    context, history, limits, completed, assistants, userIds, recordUsage,
     get intent() { return intent; },
     get active() { return active !== undefined; },
     emit, check, fail, commit, toolResult,
@@ -87,10 +94,7 @@ export function createRun<C>(agentId: string, app: C, history: History, events: 
     },
     recordAssistant(message: AssistantMessage) {
       assistants.add(message.id); last = message;
-      for (const key of ['inputTokens', 'outputTokens'] as const) {
-        const amount = message.usage?.[key];
-        if (amount !== undefined) usage[key] = (usage[key] ?? 0) + amount;
-      }
+      recordUsage(message.usage);
       commit(message);
     },
     async finish(natural?: AssistantMessage): Promise<RunResult> {

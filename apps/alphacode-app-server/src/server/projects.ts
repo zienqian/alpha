@@ -24,6 +24,8 @@ async function defaultConfig(workspaceRoot: string, databasePath: string): Promi
   if (auth && auth !== "none" && auth !== "api_key") return fail(400, "INVALID_AUTH");
   return { workspaceRoot, databasePath, configDirectory, modelId,
     contextWindow: modelId === defaults.modelId ? defaults.contextWindow : undefined,
+    maxOutputTokens: modelId === defaults.modelId ? defaults.maxOutputTokens : undefined,
+    autoCompact: defaults.autoCompact,
     baseURL: process.env.ADK_BASE_URL ?? defaults.baseURL ?? "https://api.openai.com/v1",
     apiKeyEnv: process.env.ADK_API_KEY_ENV ?? defaults.apiKeyEnv ?? "OPENAI_API_KEY",
     noAuth: auth ? auth === "none" : process.env.ADK_API_KEY_ENV !== undefined ? false : defaults.noAuth ?? false,

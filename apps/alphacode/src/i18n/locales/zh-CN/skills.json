@@ -4,5 +4,6 @@
   "modelOnly": "仅供模型调用",
   "manualOnly": "仅供手动调用",
   "configure": "在全局 config.yaml 中配置技能。项目技能要求在 skills.trustedProjects 中填写完全匹配的项目路径。重启后重新加载。",
-  "permissionHint": "使用 /permission 菜单修改当前会话的审批模式。"
+  "permissionHint": "使用 /permission 菜单修改当前会话的审批模式。",
+  "compactResult": "上下文已压缩，完整会话记录仍然保留。"
 }

@@ -26,6 +26,27 @@ type HttpOptions = {
 
 const protocols = { completions: completionsProtocol, responses: responsesProtocol, anthropic: anthropicProtocol };
 
+async function contextOverflow(response: Response): Promise<boolean> {
+  if (![400, 413, 422].includes(response.status) || !response.body) return false;
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = []; let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 65536) return false;
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(size); let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+    const payload = JSON.parse(new TextDecoder().decode(bytes));
+    // Structured machine codes only. Generic HTTP errors and prose never trigger replay.
+    return ['context_length_exceeded', 'prompt_too_long', 'input_too_long'].includes(payload?.error?.code ?? payload?.error?.type);
+  } catch { return false; }
+  finally { try { await reader.cancel(); } catch { /* Failed response only. */ } reader.releaseLock(); }
+}
+
 /** Transport owns HTTP and cancellation; protocol codecs own wire formats. */
 export function createHttpModel(options: HttpOptions): LanguageModel {
   const protocol = protocols[options.protocol];
@@ -53,7 +74,7 @@ export function createHttpModel(options: HttpOptions): LanguageModel {
       if (input.signal?.aborted) throw input.signal.reason ?? error;
       throw new ProviderError('REQUEST_FAILED', 'Provider request failed.');
     }
-    if (!response.ok) throw new ProviderError('REQUEST_FAILED', 'Provider request failed.', { status: response.status });
+    if (!response.ok) throw new ProviderError(await contextOverflow(response) ? 'CONTEXT_LENGTH_EXCEEDED' : 'REQUEST_FAILED', 'Provider request failed.', { status: response.status });
     return response;
   }
   return {

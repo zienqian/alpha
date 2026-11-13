@@ -15,6 +15,7 @@ export function composerActivity(t: Translate, state: ChatState): { text: string
   if (state.phase === "stopping") return { text: t("chat:activity.stopping"), animated: true, color: colors.muted };
   if (state.approval) return { text: t("chat:activity.approval"), animated: false, color: colors.warning };
   if (!state.busy) return { text: state.lastRunStatus ? presentNote(t, { noteCode: state.lastRunStatus }) : t("chat:outcome.completed"), animated: false, color: state.error ? colors.error : colors.muted };
+  if (state.contextUsage?.compaction?.status === 'start') return { text: t('chat:activity.compacting'), animated: true, color: colors.muted };
   if (state.phase === "running") {
     const tool = state.messages.findLast(message => message.tool?.status === "running")?.tool;
     return { text: tool ? presentToolDescription(t, tool) : t("chat:activity.working"), animated: true, color: colors.muted };

@@ -78,8 +78,14 @@ export default interface Resources {
     "connectingPreserved": "Connecting to the live session. Existing content and drafts are preserved.",
     "connectionFailed": "Connection failed",
     "context": {
+      "budget": "Input budget: {{input}} · Output reserve: {{output}}",
+      "compacting": "Compacting earlier context…",
+      "estimated": "Token counts are estimates. Use /compact to summarize earlier messages.",
+      "failed": "Compaction failed. Existing context was kept.",
+      "manual": "Automatic compaction is off or the context window is unknown. Use /compact when configured.",
       "messages": "Messages",
       "open": "View context usage: {{percent}}",
+      "summary": "Session summary",
       "system": "System prompt",
       "tools": "Tool definitions",
       "used": "Context used"
@@ -238,6 +244,7 @@ export default interface Resources {
     "title": "Settings"
   },
   "skills": {
+    "compactResult": "Context compacted. Full conversation history is preserved.",
     "configure": "Configure skills in the global config.yaml. Project skills require an exact project path in skills.trustedProjects. Restart to reload.",
     "manualOnly": "Manual only",
     "market": {

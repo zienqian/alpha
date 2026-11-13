@@ -7,6 +7,15 @@ const usage: ContextUsage = { modelId: "codex/gpt-6.1-sol", contextWindow: 500_0
   tokens: { system: 1500, tools: 7600, messages: 3400, total: 12500 } };
 
 describe("context usage indicator", () => {
+  it("shows summary tokens, the output reservation and active compaction", () => {
+    render(<ContextUsageIndicator usage={{ ...usage, inputBudget: 466808, maxOutputTokens: 8192,
+      tokens: { system: 1500, tools: 7600, summary: 1000, messages: 2400, total: 12500 }, compaction: { status: 'start' } }} />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('会话摘要')).toBeTruthy();
+    expect(screen.getByText('~1K')).toBeTruthy();
+    expect(screen.getByText('正在压缩较早的上下文…')).toBeTruthy();
+    expect(screen.getByText('输入预算：466.8K · 输出预留：8.2K')).toBeTruthy();
+  });
   it("opens the breakdown and closes with Escape without losing keyboard focus", async () => {
     render(<ContextUsageIndicator usage={usage} />);
     const button = screen.getByRole("button", { name: "查看上下文用量：3%" });

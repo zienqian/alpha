@@ -13,7 +13,7 @@ export async function skillCatalog(config: AppConfig) {
   const roots = await runtimeSkillRoots(config, config.workspaceRoot);
   const active = await loadRuntimeSkills(config, config.workspaceRoot);
   const disabled = new Set((config.skills ?? defaultSkillsSettings).disabledNames);
-  const reserved = new Set(["skills", "permission", "web"]);
+  const reserved = new Set(["skills", "permission", "web", "compact"]);
   const scans = await Promise.all(roots.map(async root => {
     // Browsing metadata is separate from trusting instructions for model use.
     const loaded = await loadSkills({ roots: [{ ...root, trusted: true }] });
@@ -79,7 +79,7 @@ export async function installSkillFiles(config: AppConfig, directoryId: string, 
   for (const candidate of candidates) {
     if (names.has(candidate.name)) fail(409, "SKILL_NAME_CONFLICT");
     names.add(candidate.name);
-    if (["skills", "permission", "web"].includes(candidate.name)) fail(400, "SKILL_RESERVED_NAME");
+    if (["skills", "permission", "web", "compact"].includes(candidate.name)) fail(400, "SKILL_RESERVED_NAME");
     if (candidates.some(other => other !== candidate && other.prefix.startsWith(candidate.prefix))) fail(400, "SKILL_INVALID_PACKAGE");
   }
   await checkDirectory(root.path);

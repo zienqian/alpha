@@ -31,18 +31,31 @@ export function clip(text: string, maxBytes: number): string {
   while (end > 0 && (bytes[end] & 0xc0) === 0x80) end--;
   return new TextDecoder().decode(bytes.subarray(0, end));
 }
-export function encode(result: CodingToolResult, budget: number): string {
+export function headTail(text: string, maxBytes: number): string {
+  if (byteLength(text) <= maxBytes) return text;
+  const marker = '\n[... output omitted ...]\n';
+  if (maxBytes < byteLength(marker) + 8) return clip(text, maxBytes);
+  const half = Math.floor((maxBytes - byteLength(marker)) / 2);
+  const bytes = new TextEncoder().encode(text);
+  let start = bytes.length - half;
+  while (start < bytes.length && (bytes[start] & 0xc0) === 0x80) start++;
+  return clip(text, half) + marker + new TextDecoder().decode(bytes.subarray(start));
+}
+export type OutputMode = 'exact' | 'compact' | 'passthrough';
+export function encode(result: CodingToolResult, budget: number, mode: OutputMode = 'exact'): string {
   // Bound the serialized JSON, including escaped controls, not merely the raw text.
   const value = structuredClone(result);
   let output = JSON.stringify(value);
-  if (!value.ok && !value.detail) return output;
+  if (byteLength(output) <= budget) return output;
+  if (mode !== 'compact') throw failure('RESULT_TOO_LARGE');
+  if (!value.ok && !value.detail) throw failure('RESULT_TOO_LARGE');
   const data = (value.ok ? value.data : value.detail) as Record<string, unknown>;
   while (byteLength(output) > budget) {
     data.truncated = true;
-    const key = ['content', 'stdout', 'stderr', 'paths', 'matches'].filter(k => data[k] !== undefined)
+    const key = ['stdout', 'stderr', 'paths', 'matches'].filter(k => data[k] !== undefined)
       .sort((a, b) => JSON.stringify(data[b]).length - JSON.stringify(data[a]).length)[0];
     const entry = data[key];
-    if (typeof entry === 'string' && entry.length) data[key] = clip(entry, Math.floor(byteLength(entry) / 2));
+    if (typeof entry === 'string' && entry.length) data[key] = headTail(entry, Math.floor(byteLength(entry) / 2));
     else if (Array.isArray(entry) && entry.length) data[key] = entry.slice(0, Math.floor(entry.length / 2));
     else throw failure('RESULT_BUDGET_TOO_SMALL');
     output = JSON.stringify(value);

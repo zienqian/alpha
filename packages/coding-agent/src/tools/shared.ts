@@ -1,14 +1,14 @@
 import type { JsonObject, ToolContext } from '@alpha/adk/core';
 import type { CodingContext, CodingPlan, CodingToolResult } from '../contracts';
 import { callKey, emitCodingEvent } from '../context';
-import { codeOf, encode, failure } from '../internal';
+import { codeOf, encode, failure, type OutputMode } from '../internal';
 import { writeFile } from '../files';
 
 export type Prepare = (context: CodingContext, args: JsonObject, signal: AbortSignal) => Promise<CodingPlan> | CodingPlan;
-export const result = (ctx: ToolContext<CodingContext>, value: CodingToolResult) => encode(value, ctx.app.state.budget);
+export const result = (ctx: ToolContext<CodingContext>, value: CodingToolResult, mode: OutputMode = 'exact') => encode(value, ctx.app.state.budget, mode);
 export const rejected = (ctx: ToolContext<CodingContext>, code: string) => result(ctx, { ok: false, code });
-export async function readResult(ctx: ToolContext<CodingContext>, operation: () => Promise<JsonObject>): Promise<string> {
-  try { return result(ctx, { ok: true, data: await operation() }); }
+export async function readResult(ctx: ToolContext<CodingContext>, operation: () => Promise<JsonObject>, mode: OutputMode = 'exact'): Promise<string> {
+  try { return result(ctx, { ok: true, data: await operation() }, mode); }
   catch (cause) { return rejected(ctx, codeOf(cause, 'READ_FAILED')); }
 }
 export function takePlan(ctx: ToolContext<CodingContext>, kind: CodingPlan['kind']): CodingPlan {

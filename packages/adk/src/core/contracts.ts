@@ -1,5 +1,5 @@
 /** Public contracts for the ADK microkernel. */
-import type { LanguageModel, GenerateResult, Json as ProviderJson } from '@alpha/provider';
+import type { LanguageModel, GenerateResult, ModelMetadata, Json as ProviderJson } from '@alpha/provider';
 import type { StandardSchemaV1, StandardJSONSchemaV1 } from '@standard-schema/spec';
 
 export type Awaitable<T> = T | Promise<T>;
@@ -141,6 +141,32 @@ export type RunPlan =
 export interface RunBoundary<C = undefined> {
   prepare(request: RunRequest<C>, history: RunHistory): Awaitable<RunPlan>;
 }
+/** Final, singleton projection stage. No writable history or tool execution capability. */
+export interface ModelContextRequest {
+  readonly history: readonly Message[];
+  readonly messages: readonly Message[];
+  readonly instructions: string;
+  readonly tools: readonly ToolInfo[];
+  readonly model: { readonly provider: string; readonly modelId: string; readonly metadata?: Readonly<ModelMetadata> };
+  readonly protectedIds: readonly string[];
+  readonly mode: 'auto' | 'manual' | 'emergency';
+  readonly signal: AbortSignal;
+  /** A bounded, tool-free auxiliary call; charged to the current run's model budget. */
+  readonly summarize: (text: string, maxOutputTokens: number) => Promise<string>;
+}
+export interface ModelContextPlan {
+  readonly messageIds: readonly string[];
+  readonly summary?: string;
+  readonly maxOutputTokens: number;
+  readonly inputBudget?: number;
+  readonly tokenScale?: number;
+  /** Called only after kernel validation and cancellation checks. */
+  readonly accept?: () => void;
+}
+export interface ModelContextProvider {
+  prepare(request: ModelContextRequest): Awaitable<ModelContextPlan>;
+  usage?(usage: Usage, estimatedInputTokens: number): void;
+}
 export interface EventMeta {
   readonly agentId: string; readonly runId: string; readonly seq: number;
   /** Optional for older producers. Metadata only: never includes prompt or tool payloads. */
@@ -197,6 +223,8 @@ export interface Agent<C = undefined> {
   abort(reason?: string): void;
   waitForIdle(): Promise<void>;
   replaceMessages(messages: readonly Message[]): void;
+  /** Compact a read-only snapshot without adding a turn or executing tools. */
+  compact(options?: { readonly messages?: readonly Message[]; readonly signal?: AbortSignal }): Promise<void>;
   close(): Promise<void>;
 }
 // 以下声明同属 @alpha/adk/core；没有另一套创建入口。
@@ -211,6 +239,7 @@ export interface PluginAPI<C> {
   provideModel(model: LanguageModel): void;
   /** At most one owner of the awaited invocation boundary; no Loop replacement. */
   provideRunBoundary(boundary: RunBoundary<C>): void;
+  provideModelContext(provider: ModelContextProvider): void;
   addTool(tool: Tool<C>): void;
   hook<K extends keyof HookMap<C>>(name: K, fn: HookMap<C>[K]): void;
   observe(listener: (event: AgentEvent) => void): void;

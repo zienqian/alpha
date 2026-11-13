@@ -4,7 +4,13 @@
     "used": "Context used",
     "system": "System prompt",
     "tools": "Tool definitions",
-    "messages": "Messages"
+    "messages": "Messages",
+    "summary": "Session summary",
+    "compacting": "Compacting earlier context…",
+    "failed": "Compaction failed. Existing context was kept.",
+    "manual": "Automatic compaction is off or the context window is unknown. Use /compact when configured.",
+    "estimated": "Token counts are estimates. Use /compact to summarize earlier messages.",
+    "budget": "Input budget: {{input}} · Output reserve: {{output}}"
   },
   "loadingHistory": "Loading session history",
   "connected": "Live",

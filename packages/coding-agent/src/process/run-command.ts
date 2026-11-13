@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
 import type { ChildProcess } from 'node:child_process';
 import type { CommandInput, CommandOutcome, FileAccess } from '../contracts';
-import { byteLength, checkSignal, clip, codeOf, failure, positive } from '../internal';
+import { byteLength, checkSignal, clip, codeOf, failure, positive, headTail } from '../internal';
 import { resolvePath } from '../files';
 import { commandEnv, shellArgs, type Shell } from './shell';
 
@@ -12,6 +12,7 @@ interface ProcessOptions {
   signal?: AbortSignal;
   timeoutMs?: number | null;
   maxOutputBytes?: number;
+  outputMode?: 'prefix' | 'head-tail';
   env?: NodeJS.ProcessEnv;
   windowsVerbatimArguments?: boolean;
   onOutput?: (channel: 'stdout' | 'stderr', text: string) => void;
@@ -46,17 +47,31 @@ export async function runProcess(executable: string, args: readonly string[], op
     let child: ChildProcess;
     let spawned = false, spawnFailed = false, exited = false, settled = false, closeSeen = false;
     let exitCode: number | null = null, reason: string | undefined;
-    let stdout = '', stderr = '', bytes = 0, truncated = false, outputIncomplete = false;
+    let stdout = '', stderr = '', truncated = false, outputIncomplete = false;
+    let captured = 0;
+    const observed = { stdout: 0, stderr: 0 };
+    const channelMax = Math.floor(max / 2);
     let stop: Promise<void> | undefined;
     let closeTimer: ReturnType<typeof setTimeout> | undefined;
     let forceTimer: ReturnType<typeof setTimeout> | undefined;
     const decoders = { stdout: new StringDecoder('utf8'), stderr: new StringDecoder('utf8') };
     const capture = (channel: 'stdout' | 'stderr', text: string) => {
-      if (settled || truncated || !text) return;
-      const retained = clip(text, Math.max(0, max - bytes));
-      if (retained.length < text.length) truncated = true;
-      bytes += byteLength(retained);
-      if (channel === 'stdout') stdout += retained; else stderr += retained;
+      if (settled || !text) return;
+      if (options.outputMode !== 'head-tail') {
+        if (truncated) return;
+        const retained = clip(text, Math.max(0, max - captured));
+        if (retained.length < text.length) truncated = true;
+        captured += byteLength(retained);
+        if (channel === 'stdout') stdout += retained; else stderr += retained;
+        if (retained) { try { void Promise.resolve(options.onOutput?.(channel, retained)).catch(() => undefined); } catch { /* Observation only. */ } }
+        return;
+      }
+      const previous = channel === 'stdout' ? stdout : stderr;
+      const combined = previous + text;
+      if (byteLength(combined) > channelMax) truncated = true;
+      if (channel === 'stdout') stdout = headTail(combined, channelMax); else stderr = headTail(combined, channelMax);
+      const retained = clip(text, Math.max(0, channelMax - observed[channel]));
+      observed[channel] += byteLength(retained);
       if (retained) {
         try { void Promise.resolve(options.onOutput?.(channel, retained)).catch(() => { /* Observation only. */ }); } catch { /* Observation only. */ }
       }
@@ -134,6 +149,6 @@ export async function runCommand(root: string, shell: Shell | null, input: Comma
     cwd = await resolvePath(root, input.cwd ?? '.', false, true, access);
   } catch (cause) { return { status: 'not_started', code: codeOf(cause, 'COMMAND_PREFLIGHT_FAILED') }; }
   return runProcess(shell.path, shellArgs(shell, input.command), {
-    ...options, cwd, timeoutMs: options.timeoutMs === null ? null : input.timeoutMs ?? options.timeoutMs, windowsVerbatimArguments: shell.family === 'cmd',
+    ...options, outputMode: 'head-tail', cwd, timeoutMs: options.timeoutMs === null ? null : input.timeoutMs ?? options.timeoutMs, windowsVerbatimArguments: shell.family === 'cmd',
   });
 }

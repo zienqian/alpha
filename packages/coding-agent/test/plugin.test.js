@@ -156,11 +156,11 @@ test('started timeout is outcome_unknown and blocks replay', async () => {
   await assert.rejects(agent.prompt('retry'), { code: 'HISTORY_BLOCKED' }); await agent.close();
 });
 
-test('read result JSON bounds escaping and UTF-8', async () => {
+test('oversized exact reads return an error and do not authorize edits', async () => {
   await using f = await fixture({ a: '"\t\\😀'.repeat(60000) });
-  const agent = await createCodingAgent({ cwd: f.cwd, model: fakeModel(request(call('read_file', { path: 'a' })), answer()), limits: { maxToolResultBytes: 4096 } });
-  await agent.prompt('read'); const r = results(agent)[0]; assert.ok(Buffer.byteLength(r.content) <= 4096); assert.equal(r.data.data.truncated, true);
-  assert.equal(Buffer.from(r.data.data.content).toString('utf8'), r.data.data.content); await agent.close();
+  const agent = await createCodingAgent({ cwd: f.cwd, model: fakeModel(request(call('read_file', { path: 'a' })), request(call('edit_file', { path: 'a', oldText: 'missing', newText: 'changed' })), answer()), limits: { maxToolResultBytes: 4096 } });
+  await agent.prompt('read'); const r = results(agent)[0]; assert.ok(Buffer.byteLength(r.content) <= 4096); assert.equal(r.data.code, 'RESULT_TOO_LARGE');
+  assert.equal(results(agent)[1].data.code, 'FILE_NOT_READ'); await agent.close();
   await assert.rejects(createCodingAgent({ cwd: f.cwd, model: fakeModel(), limits: { maxToolResultBytes: 512 } }), { code: 'RESULT_BUDGET_TOO_SMALL' });
 });
 

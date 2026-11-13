@@ -9,7 +9,11 @@ export interface ContextUsage {
   modelId: string;
   contextWindow?: number;
   windowSource: "model" | "codex" | "configuration" | "unknown";
-  tokens?: { system: number; tools: number; messages: number; total: number };
+  tokens?: { system: number; tools: number; summary?: number; messages: number; total: number };
+  inputBudget?: number;
+  maxOutputTokens?: number;
+  automatic?: boolean;
+  compaction?: { status: 'start' | 'end' | 'skip' | 'failed'; reason?: string; before?: number; after?: number };
 }
 
 export interface SessionInfo {

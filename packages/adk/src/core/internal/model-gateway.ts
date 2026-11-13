@@ -1,38 +1,14 @@
-import type { GenerateInput, LanguageModel, Message as ProviderMessage } from '@alpha/provider';
-import type { AssistantMessage, Hooks, Message, Tool } from '../contracts';
+import type { LanguageModel } from '@alpha/provider';
+import type { AssistantMessage, Hooks, ModelContextProvider, Tool } from '../contracts';
 import type { Run } from './run-controller';
 import { Stop } from './run-controller';
-import { ensure, error } from './errors';
-import { bytes, createId, equalJson, record, textBytes } from './json';
-import { copyMessages, createAssistant } from './messages';
+import { ensure } from './errors';
+import { bytes, createId, record, textBytes } from './json';
+import { createAssistant } from './messages';
+import { prepareContext } from './prepare-context';
+import { estimateContextTokens } from '../model-context';
 
-function project(messages: readonly Message[], original: readonly Message[], runLimits: Run<unknown>['limits']): ProviderMessage[] {
-  const normalized = copyMessages(messages, runLimits.maxToolCalls, 'MODEL_PROTOCOL');
-  ensure((runLimits.maxHistoryMessages === null || normalized.length <= runLimits.maxHistoryMessages)
-    && (runLimits.maxHistoryBytes === null || bytes(normalized) <= runLimits.maxHistoryBytes), 'MODEL_PROTOCOL');
-  const originals = new Map(original.map(m => [m.id, m]));
-  const output: ProviderMessage[] = [];
-  for (const message of normalized) {
-    const original = originals.get(message.id);
-    const protectedOriginal = original?.role === 'toolResult' || (original?.role === 'assistant' && (original.toolCalls.length || original.continuation));
-    if (protectedOriginal || message.role === 'toolResult' || (message.role === 'assistant' && (message.toolCalls.length || message.continuation))) {
-      ensure(equalJson(original, message), 'MODEL_PROTOCOL');
-    }
-    if (message.role === 'custom') throw error('MODEL_PROTOCOL');
-    if (message.role === 'user') output.push({ role: 'user', content: message.content });
-    if (message.role === 'assistant') {
-      output.push({
-        role: 'assistant', content: message.text,
-        ...(message.toolCalls.length ? { toolCalls: JSON.parse(JSON.stringify(message.toolCalls)) } : {}),
-        ...(message.continuation ? { continuation: JSON.parse(JSON.stringify(message.continuation)) } : {}),
-      });
-    }
-    if (message.role === 'toolResult') output.push({ role: 'tool', toolCallId: message.callId, content: message.content });
-  }
-  return output;
-}
-
-export function callModel<C>(run: Run<C>, model: LanguageModel, instructions: string, tools: readonly Tool<C>[], hooks: Hooks<C>, steeringSignal: AbortSignal): Promise<AssistantMessage | undefined> {
+export function callModel<C>(run: Run<C>, model: LanguageModel, instructions: string, tools: readonly Tool<C>[], hooks: Hooks<C>, steeringSignal: AbortSignal, provider?: ModelContextProvider): Promise<AssistantMessage | undefined> {
   return run.operate(async () => {
     const context = Object.freeze({ ...run.context, signal: AbortSignal.any([run.context.signal, steeringSignal]) });
     const check = () => { run.check(); context.signal.throwIfAborted(); };
@@ -53,41 +29,49 @@ export function callModel<C>(run: Run<C>, model: LanguageModel, instructions: st
     try {
       check();
       ensure(run.history.pending.length === 0, 'INTERNAL_INVARIANT');
-      let messages = run.history.messages;
-      for (const hook of hooks.beforeModel ?? []) {
-        try { messages = await hook(messages, context); } catch { throw error('HOOK_FAILED'); }
-        check();
-      }
-      const input: GenerateInput = {
-        messages: [{ role: 'system', content: instructions }, ...project(messages, run.history.messages, run.limits)],
-        tools: tools.map(t => ({ name: t.info.name, description: t.info.description, inputSchema: JSON.parse(JSON.stringify(t.info.inputSchema)) })),
-        signal: context.signal,
-      };
-      run.reserveModel();
-      modelCallId = createId('model');
-      run.emit({ type: 'model.start', modelCallId }, { provider: model.provider, modelId: model.modelId });
-      check();
-      for await (const event of model.stream(input)) {
-        check();
-        ensure(!candidate && record(event), 'MODEL_PROTOCOL');
-        if (event.type === 'text-delta') {
-          ensure(typeof event.text === 'string', 'MODEL_PROTOCOL');
-          deltaBytes += textBytes(event.text);
-          ensure(deltaBytes <= run.limits.maxModelOutputBytes, 'MODEL_OUTPUT_TOO_LARGE');
-          if (event.text) chunks.push(event.text);
-          run.emit({ type: 'model.delta', modelCallId, text: event.text });
-        } else if (event.type === 'tool-call') {
-          // Provider also reports these in finish. They are never a separate execution source.
-        } else {
-          ensure(event.type === 'finish', 'MODEL_PROTOCOL');
-          candidate = createAssistant(event.result, createId('msg'), run.limits.maxToolCalls);
-          const result = Object.fromEntries(Object.entries(candidate).filter(([key]) => key !== 'id' && key !== 'role'));
-          ensure(bytes(result) <= run.limits.maxModelOutputBytes, 'MODEL_OUTPUT_TOO_LARGE');
+      const prepare = (mode: 'auto' | 'emergency') => prepareContext({ history: run.history.messages, instructions, tools, hooks, model, provider,
+        context, limits: run.limits, mode, protectedIds: run.userIds, reserve: () => run.reserveModel(), usage: run.recordUsage });
+      let input = await prepare('auto');
+      let retried = false;
+      while (true) {
+        let observed = false;
+        try {
+          run.reserveModel();
+          modelCallId = createId('model');
+          run.emit({ type: 'model.start', modelCallId }, { provider: model.provider, modelId: model.modelId });
+          check();
+          for await (const event of model.stream(input)) {
+            observed = true;
+            check();
+            ensure(!candidate && record(event), 'MODEL_PROTOCOL');
+            if (event.type === 'text-delta') {
+              ensure(typeof event.text === 'string', 'MODEL_PROTOCOL');
+              deltaBytes += textBytes(event.text);
+              ensure(deltaBytes <= run.limits.maxModelOutputBytes, 'MODEL_OUTPUT_TOO_LARGE');
+              if (event.text) chunks.push(event.text);
+              run.emit({ type: 'model.delta', modelCallId, text: event.text });
+            } else if (event.type === 'tool-call') {
+              // Provider also reports these in finish. They are never a separate execution source.
+            } else {
+              ensure(event.type === 'finish', 'MODEL_PROTOCOL');
+              candidate = createAssistant(event.result, createId('msg'), run.limits.maxToolCalls);
+              const result = Object.fromEntries(Object.entries(candidate).filter(([key]) => key !== 'id' && key !== 'role'));
+              ensure(bytes(result) <= run.limits.maxModelOutputBytes, 'MODEL_OUTPUT_TOO_LARGE');
+            }
+          }
+          check();
+          ensure(candidate, 'MODEL_PROTOCOL');
+          if (candidate.usage) { try { provider?.usage?.(candidate.usage, estimateContextTokens(input)); } catch { /* Observation only. */ } }
+          return commit(candidate);
+        } catch (cause) {
+          // Only normalized pre-stream context failures can be retried. No run/tool replay.
+          if (!provider || retried || observed || (cause as { code?: string })?.code !== 'CONTEXT_LENGTH_EXCEEDED') throw cause;
+          retried = true;
+          if (modelCallId) run.emit({ type: 'model.end', modelCallId, outcome: 'failed' }, { errorCode: 'CONTEXT_LENGTH_EXCEEDED' });
+          modelCallId = undefined;
+          input = await prepare('emergency');
         }
       }
-      check();
-      ensure(candidate, 'MODEL_PROTOCOL');
-      return commit(candidate);
     } catch (cause) {
       let failureCause = cause;
       if (!run.intent && steeringSignal.aborted && !ended) {

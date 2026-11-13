@@ -36,7 +36,7 @@ export async function runtimeSkillRoots(config: AppConfig, cwd: string): Promise
 
 export async function loadRuntimeSkills(config: AppConfig, cwd: string): Promise<LoadSkillsResult> {
   return loadSkills({ roots: (await runtimeSkillRoots(config, cwd)).filter(root => root.enabled),
-    disabledNames: (config.skills ?? defaultSkillsSettings).disabledNames, reservedNames: ["skills", "permission", "web"] });
+    disabledNames: (config.skills ?? defaultSkillsSettings).disabledNames, reservedNames: ["skills", "permission", "web", "compact"] });
 }
 
 export function skillStatus(loaded: LoadSkillsResult): string {

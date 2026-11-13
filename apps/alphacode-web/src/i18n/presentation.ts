@@ -2,7 +2,7 @@ import type { Translate } from "./instance";
 
 export interface Notice { code: string; params?: Record<string, string | number> }
 export interface LocalResult {
-  kind: "skills" | "permission";
+  kind: "skills" | "permission" | "compact";
   skills?: readonly { name: string; description: string; argumentHint?: string; userInvocable: boolean; disableModelInvocation?: boolean }[];
   diagnostics?: readonly { severity: string; code: string; path: string; field?: string }[];
 }
@@ -69,6 +69,7 @@ export function presentToolError(t: Translate, tool: DisplayTool) {
   }
 }
 export function presentLocalResult(t: Translate, result: LocalResult) {
+  if (result.kind === "compact") return t("skills:compactResult");
   if (result.kind === "permission") return t("skills:permissionHint");
   return [t("skills:title"), ...(result.skills ?? []).map(skill =>
     `/${skill.name}${skill.argumentHint ? ` ${skill.argumentHint}` : ""} — ${skill.description}${!skill.userInvocable ? ` (${t("skills:modelOnly")})` : skill.disableModelInvocation ? ` (${t("skills:manualOnly")})` : ""}`),

@@ -48,9 +48,23 @@
     "directoryActive": "Enabled",
     "diagnostics_one": "{{count}} directory or metadata notice",
     "diagnostics_other": "{{count}} directory or metadata notices",
-    "scope": { "user": "Personal", "project": "Project" },
-    "kind": { "all": "All", "local": "Local", "shared": "Shared", "claude": "Claude" },
-    "status": { "available": "Available", "disabled": "Disabled", "untrusted": "Not trusted", "reserved": "Reserved name", "shadowed": "Overridden" },
+    "scope": {
+      "user": "Personal",
+      "project": "Project"
+    },
+    "kind": {
+      "all": "All",
+      "local": "Local",
+      "shared": "Shared",
+      "claude": "Claude"
+    },
+    "status": {
+      "available": "Available",
+      "disabled": "Disabled",
+      "untrusted": "Not trusted",
+      "reserved": "Reserved name",
+      "shadowed": "Overridden"
+    },
     "reason": {
       "disabled": "This skill or its directory is disabled in config.yaml.",
       "untrusted": "Add this project to skills.trustedProjects in config.yaml and reconnect the CLI to use its skills.",
@@ -69,5 +83,6 @@
       "project": "This project is no longer available. Refresh the page and reconnect from the CLI.",
       "request": "Could not reach the skills service. Refresh the list to check whether installation completed before trying again."
     }
-  }
+  },
+  "compactResult": "Context compacted. Full conversation history is preserved."
 }

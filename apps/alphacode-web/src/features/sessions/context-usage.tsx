@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const categories = [
   { key: "system", color: "bg-muted-foreground/60" },
   { key: "tools", color: "bg-violet-400 dark:bg-violet-400" },
+  { key: "summary", color: "bg-amber-500" },
   { key: "messages", color: "bg-primary" },
 ] as const;
 
@@ -71,14 +72,22 @@ export function ContextUsageIndicator({ usage }: { usage?: ContextUsage }) {
           aria-label={t("sessions:context.used")} aria-valuemin={0} aria-valuemax={100}
           aria-valuenow={ratio === undefined ? undefined : Math.round(progress * 100)} aria-valuetext={percent}>
           {tokens && limit && categories.map(({ key, color }) => <span key={key} className={cn("h-full shrink-0", color)}
-            style={{ width: `${tokens[key] / Math.max(limit, tokens.total) * 100}%` }} />)}
+            style={{ width: `${(tokens[key] ?? 0) / Math.max(limit, tokens.total) * 100}%` }} />)}
         </div>
         <dl className="space-y-2.5 text-[13px]">
           {categories.map(({ key, color }) => <div key={key} className="flex items-center justify-between gap-4">
             <dt className="flex items-center gap-2.5 text-muted-foreground"><span className={cn("size-2.5 shrink-0 rounded-[2px]", color)} aria-hidden="true" />{t(`sessions:context.${key}`)}</dt>
-            <dd className="tabular-nums">{tokens ? `~${formatTokens(tokens[key])}` : "—"}</dd>
+            <dd className="tabular-nums">{tokens ? `~${formatTokens(tokens[key] ?? 0)}` : "—"}</dd>
           </div>)}
         </dl>
+        <p className="mt-4 text-xs text-muted-foreground" role="status">
+          {usage?.compaction?.status === 'start' ? t('sessions:context.compacting')
+            : usage?.compaction?.status === 'failed' ? t('sessions:context.failed')
+            : usage?.automatic === false ? t('sessions:context.manual') : t('sessions:context.estimated')}
+        </p>
+        {usage?.inputBudget !== undefined && <p className="mt-2 text-xs text-muted-foreground">
+          {t('sessions:context.budget', { input: formatTokens(usage.inputBudget), output: formatTokens(usage.maxOutputTokens ?? 0) })}
+        </p>}
       </Popover.Content>
     </Popover.Portal>
   </Popover.Root>;

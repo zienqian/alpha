@@ -6,8 +6,8 @@ import ts from 'typescript';
 import { ESLint } from 'eslint';
 import * as core from '@alpha/adk/core';
 
-test('only core factories are exported and internal entry points are inaccessible', async () => {
-  assert.deepEqual(Object.keys(core).sort(), ['createAgent', 'createTool']);
+test('only core factories and pure context helpers are exported; internal entry points remain inaccessible', async () => {
+  assert.deepEqual(Object.keys(core).sort(), ['createAgent', 'createTool', 'estimateContextTokens', 'projectContextMessages']);
   for (const name of ['@alpha/adk', '@alpha/adk/standard', '@alpha/adk/loops', '@alpha/adk/core/internal/create-loop.js']) {
     await assert.rejects(import(name), { code: 'ERR_MODULE_NOT_FOUND' });
   }

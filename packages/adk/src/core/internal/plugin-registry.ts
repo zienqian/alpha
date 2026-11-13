@@ -1,5 +1,5 @@
 import type { LanguageModel } from '@alpha/provider';
-import type { AgentEvent, AgentOptions, Awaitable, HookMap, PluginAPI, RunBoundary, Tool } from '../contracts';
+import type { AgentEvent, AgentOptions, Awaitable, HookMap, ModelContextProvider, PluginAPI, RunBoundary, Tool } from '../contracts';
 import { copyModel, copyTool, createHooks, hookNames } from './config';
 import { ensure, error } from './errors';
 import { record, text } from './json';
@@ -15,6 +15,7 @@ export function createRegistry<C>(options: AgentOptions<C>) {
   const hooks = createHooks(options.hooks);
   const observers: ((event: AgentEvent) => void)[] = [];
   const boundaries: RunBoundary<C>[] = [];
+  const contexts: ModelContextProvider[] = [];
   const seen = new Set<string>();
   const plugins = [...(options.plugins ?? [])].map(plugin => {
     ensure(record(plugin) && text(plugin.id) && plugin.apiVersion === 1 && typeof plugin.setup === 'function', 'PLUGIN_CONFLICT');
@@ -33,6 +34,10 @@ export function createRegistry<C>(options: AgentOptions<C>) {
     function guard() { ensure(open, 'PLUGIN_REGISTRATION_CLOSED'); }
     const api: PluginAPI<C> = Object.freeze({
       provideModel(model: LanguageModel) { guard(); models.push(copyModel(model)); },
+      provideModelContext(provider: ModelContextProvider) {
+        guard(); ensure(record(provider) && typeof provider.prepare === 'function' && (provider.usage === undefined || typeof provider.usage === 'function'), 'PLUGIN_CONFLICT');
+        contexts.push(Object.freeze({ prepare: provider.prepare.bind(provider), usage: provider.usage?.bind(provider) }));
+      },
       provideRunBoundary(boundary: RunBoundary<C>) {
         guard(); ensure(record(boundary) && typeof boundary.prepare === 'function', 'PLUGIN_CONFLICT');
         boundaries.push(Object.freeze({ prepare: boundary.prepare.bind(boundary) }));
@@ -58,13 +63,14 @@ export function createRegistry<C>(options: AgentOptions<C>) {
   }
   ensure(models.length === 1, models.length ? 'PLUGIN_CONFLICT' : 'MISSING_CAPABILITY');
   ensure(boundaries.length <= 1, 'PLUGIN_CONFLICT');
+  ensure(contexts.length <= 1, 'PLUGIN_CONFLICT');
   const toolMap = new Map<string, Tool<C>>();
   for (const tool of tools) {
     ensure(!toolMap.has(tool.info.name), 'DUPLICATE_TOOL');
     toolMap.set(tool.info.name, tool);
   }
   return Object.freeze({
-    model: models[0], boundary: boundaries[0], tools: Object.freeze(tools), toolMap,
+    model: models[0], boundary: boundaries[0], context: contexts[0], tools: Object.freeze(tools), toolMap,
     hooks: Object.freeze({
       beforeModel: Object.freeze(hooks.beforeModel),
       authorizeTool: Object.freeze(hooks.authorizeTool),

@@ -34,6 +34,14 @@ export function restoreContext(value: unknown, model: ContextUsage): ContextUsag
   const tokens = saved.tokens;
   if (saved.modelId !== model.modelId || !tokens ||
     ![tokens.system, tokens.tools, tokens.messages, tokens.total].every(n => Number.isSafeInteger(n) && n >= 0) ||
-    tokens.total !== tokens.system + tokens.tools + tokens.messages) return model;
-  return { ...model, tokens: { system: tokens.system, tools: tokens.tools, messages: tokens.messages, total: tokens.total } };
+    (tokens.summary !== undefined && (!Number.isSafeInteger(tokens.summary) || tokens.summary < 0)) ||
+    tokens.total !== tokens.system + tokens.tools + (tokens.summary ?? 0) + tokens.messages) return model;
+  const extra: Partial<ContextUsage> = {};
+  if (typeof saved.inputBudget === 'number' && Number.isSafeInteger(saved.inputBudget) && saved.inputBudget > 0) extra.inputBudget = saved.inputBudget;
+  if (typeof saved.maxOutputTokens === 'number' && Number.isSafeInteger(saved.maxOutputTokens) && saved.maxOutputTokens > 0) extra.maxOutputTokens = saved.maxOutputTokens;
+  if (typeof saved.automatic === 'boolean') extra.automatic = saved.automatic;
+  const status = saved.compaction?.status;
+  if (status && ['end', 'skip', 'failed'].includes(status)) extra.compaction = { status };
+  return { ...model, ...extra, tokens: { system: tokens.system, tools: tokens.tools,
+    ...(tokens.summary === undefined ? {} : { summary: tokens.summary }), messages: tokens.messages, total: tokens.total } };
 }

@@ -10,5 +10,5 @@ export const listFilesTool = createTool({
   name: 'list_files', effect: 'read',
   description: 'List files under path (default working directory), filtered by a relative glob and respecting ignore files. Default limit 200. Requires ripgrep.',
   input: z.strictObject({ path: z.string().min(1).max(512).optional(), glob: z.string().max(1024).optional(), limit: z.int().positive().max(1000).optional() }),
-  execute: (args, ctx: ToolContext<CodingContext>) => readResult(ctx, () => listFiles(ctx.app.cwd, args, ctx.signal, ctx.app)),
+  execute: (args, ctx: ToolContext<CodingContext>) => readResult(ctx, () => listFiles(ctx.app.cwd, args, ctx.signal, ctx.app), 'compact'),
 });
