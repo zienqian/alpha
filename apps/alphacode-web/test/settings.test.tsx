@@ -56,7 +56,8 @@ describe("Workspace settings and navigation", () => {
     expect(session.closest('[data-slot="sidebar"]')).toBe(sidebar);
     expect((shell as HTMLElement).style.getPropertyValue("--sidebar-width")).toBe(width);
     fireEvent.click(session);
-    expect(await screen.findByRole("heading", { name: "开发约定" })).toBeTruthy();
+    // The first history opens the lazy Markdown/highlighter bundle; allow its cold import.
+    expect(await screen.findByRole("heading", { name: "开发约定" }, { timeout: 5000 })).toBeTruthy();
     expect(window.location.pathname).toBe("/");
   });
 

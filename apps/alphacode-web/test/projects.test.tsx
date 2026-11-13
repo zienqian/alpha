@@ -100,3 +100,20 @@ it("uses the native directory picker and treats cancellation as no change", asyn
   fireEvent.click(screen.getByRole("button", { name: "创建项目" }));
   await waitFor(() => expect(create).toHaveBeenCalledWith("project", "C:\\work\\project"));
 });
+
+it("opens project creation from the mobile drawer and returns focus to navigation on cancel", async () => {
+  const previousWidth = window.innerWidth;
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+  try {
+    mockSessionApi();
+    window.history.replaceState(null, "", "/");
+    render(<AppProviders><App /></AppProviders>);
+    fireEvent.click(screen.getByRole("button", { name: "切换侧栏" }));
+    fireEvent.click(await screen.findByRole("button", { name: "创建项目" }));
+    const dialog = await screen.findByRole("dialog", { name: "创建项目" });
+    await waitFor(() => expect(screen.queryByRole("button", { name: "关闭侧栏" })).toBeNull());
+    fireEvent.click(within(dialog).getByRole("button", { name: "取消" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "切换侧栏" }));
+  } finally { Object.defineProperty(window, "innerWidth", { configurable: true, value: previousWidth }); }
+});

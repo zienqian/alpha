@@ -121,7 +121,7 @@ export default interface Resources {
     "none": "No sessions",
     "notLoaded": "Not loaded",
     "persistence": "Sent messages are saved by the server. Unsent drafts stay in this page and are cleared on refresh. Attachments cannot be uploaded yet.",
-    "placeholder": "Describe your task…",
+    "placeholder": "Build with Alpha Code",
     "queueCount_one": "{{count}} message queued · Will send after the current reply",
     "queueCount_other": "{{count}} messages queued · Will send in order after the current reply",
     "queueEditExpired": "This message is no longer queued. Your edits are kept here to copy.",

@@ -98,6 +98,11 @@ export function SessionSidebar({ folders, selectedFolderId, onSelectProject, onC
     setOpenMobile(false);
   }
 
+  function openProjectDialog() {
+    setOpenMobile(false);
+    onCreateProject();
+  }
+
   return (
     <>
     <Sidebar aria-label={t("workspace:sidebar")} variant="floating" collapsible="icon" className="workspace-sidebar">
@@ -128,7 +133,7 @@ export function SessionSidebar({ folders, selectedFolderId, onSelectProject, onC
         <SidebarContent className="items-center gap-2 px-1.5 py-3 group-data-[collapsible=icon]:overflow-y-auto" style={{ scrollbarGutter: "auto", scrollbarWidth: "none" }}>
           <div className="rail-divider" />
           <nav aria-label={t("workspace:folders")} className="flex flex-col gap-2">
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="rail-action" aria-label={t("workspace:createProject")} onClick={onCreateProject}><Plus aria-hidden="true" /></Button></TooltipTrigger><TooltipContent side="right">{t("workspace:createProject")}</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="rail-action" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button></TooltipTrigger><TooltipContent side="right">{t("workspace:createProject")}</TooltipContent></Tooltip>
             {folders.map(folder => <Tooltip key={folder.id}><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="rail-action" aria-label={t("workspace:folder", { name: folder.name })} aria-expanded={false}
                 data-active={!skillsActive && !settingsActive && activeFolderId === folder.id}
@@ -161,8 +166,8 @@ export function SessionSidebar({ folders, selectedFolderId, onSelectProject, onC
       <SidebarContent className="pt-5" style={{ scrollbarGutter: "stable both-edges" }}>
         <SidebarGroup className="px-2.5 py-0">
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <ProjectPicker compact folders={folders} selectedId={activeFolderId} onSelect={id => { onSelectProject(id); setFolderOpen(id, true); setOpenMobile(false); }} onCreate={onCreateProject} disabled={Boolean(selectedSessionId && creatingIds[selectedSessionId])} />
-            <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("workspace:createProject")} onClick={onCreateProject}><Plus aria-hidden="true" /></Button>
+            <ProjectPicker compact folders={folders} selectedId={activeFolderId} onSelect={id => { onSelectProject(id); setFolderOpen(id, true); setOpenMobile(false); }} onCreate={openProjectDialog} disabled={Boolean(selectedSessionId && creatingIds[selectedSessionId])} />
+            <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button>
           </div>
           <SidebarGroupContent>
             {loading && <p role="status" className="px-2 py-5 text-xs text-muted-foreground">{t("sessions:loadingList")}</p>}
