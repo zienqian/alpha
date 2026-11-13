@@ -11,6 +11,7 @@ export interface GlobalDefaults {
   language?: LanguagePreference;
   skills?: SkillsSettings;
   modelId?: string;
+  contextWindow?: number;
   baseURL?: string;
   apiKeyEnv?: string;
   noAuth?: boolean;
@@ -33,6 +34,7 @@ export const defaultSkillsSettings: SkillsSettings = Object.freeze({
 const template = `# AlphaCode global defaults. Environment variables override these settings.
 # model:
 #   id: your-model-id
+#   contextWindow: 500000 # Optional override for your endpoint's actual limit.
 # provider:
 #   adapter: openai-completions
 #   options:
@@ -101,8 +103,12 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     defaults.skills = settings;
   }
   if (root.model !== undefined) {
-    const model = object(root.model, file, "model", ["id"]);
+    const model = object(root.model, file, "model", ["id", "contextWindow"]);
     if (model.id !== undefined) defaults.modelId = string(model.id, file, "model.id");
+    if (model.contextWindow !== undefined) {
+      if (typeof model.contextWindow !== "number" || !Number.isSafeInteger(model.contextWindow) || model.contextWindow <= 0) invalid(file, "model.contextWindow");
+      defaults.contextWindow = model.contextWindow;
+    }
   }
   if (root.provider !== undefined) {
     const provider = object(root.provider, file, "provider", ["adapter", "options"]);

@@ -4,6 +4,10 @@ Electron 桌面外壳，开发时连接 `apps/alphacode-web` 的 Vite 服务，�
 聊天、Tiptap 输入、搜索、审批、队列、Skills、Trace、主题和语言与 Web 使用同一份实现。
 源码工程为 `apps/alphacode-app`，包名为 `@alpha/alphacode-app`；窗口、菜单及分发程序统一使用产品名 **AlphaCode**。
 
+桌面标题栏与工作区外壳同色（36px），保留原生窗口按钮、拖动和双击最大化。浅深主题通过隔离的 preload 同步窗口配色；preload 仅暴露平台与配色方法，不开放通用 IPC 或窗口控制权限。浏览器不显示桌面标题栏。
+
+品牌图标使用 ALFI 的二维专注表情。`assets/icon.ico` 用于 Windows 窗口和可执行文件，`assets/icon.icns` 用于 macOS 应用包，`assets/icon.png` 用于 Linux 窗口和 macOS Dock；打包时会携带这些资源，移动发行目录后仍可加载。网页 favicon 和侧栏图标来自 `../alphacode-web/public/icons`。原始图稿与资源导出说明见 [图标说明](../../docs/brand/alphacode-icon-v1/README.md)。
+
 ## 运行与打包
 
 ```powershell
@@ -11,7 +15,7 @@ Electron 桌面外壳，开发时连接 `apps/alphacode-web` 的 Vite 服务，�
 bun install --frozen-lockfile
 bun run dev:app
 
-# 构建 Web 页面和 Electron 主进程
+# 构建 Web 页面、Electron 主进程和 preload
 bun run build:app
 
 # 打包当前系统/架构的独立应用目录，需要本机 rg 或 ALPHACODE_APP_RG
@@ -20,6 +24,8 @@ bun run package:app
 ```
 
 `dev:app` 自动启动 Vite、连接共享 App Server 并打开 Electron，无需先构建 Web。保存 React / CSS 后自动更新页面；修改 Electron 主进程后自动重新构建并重启窗口。页面不显示更新横幅、刷新/重试更新按钮或 Vite 错误浮层，编译诊断留在终端。
+
+双击打包目录的 `AlphaCode.exe` 使用随包静态资源，不接收源码热更新；`build:web` 也不会覆盖该包内的页面。日常开发请使用 `bun run dev:app`，需要更新打包版时重新执行 `bun run package:app`。Windows 开发启动器只隐藏辅助进程，Electron 主窗口正常显示。
 
 | 修改位置 | 开发时的行为 |
 | --- | --- |

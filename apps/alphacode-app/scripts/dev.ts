@@ -31,13 +31,18 @@ export async function startDevelopment(args: string[]) {
         vite: { configFile: false, build: {
           outDir: resolve(appDirectory, "dist"), emptyOutDir: false,
           lib: false,
-          rolldownOptions: { input: resolve(appDirectory, "src/main.ts"), output: { format: "cjs", entryFileNames: "main.cjs" } },
+          rolldownOptions: {
+            input: { main: resolve(appDirectory, "src/main.ts"), preload: resolve(appDirectory, "src/preload.ts") },
+            output: { format: "cjs", entryFileNames: "[name].cjs" },
+          },
         } },
         async onstart({ startup }) {
           const electronArgs = args.filter((_value, index) => portIndex < 0 || (index !== portIndex && index !== portIndex + 1))
             .map((value, index, values) => values[index - 1] === "--database" ? database ?? value : value);
           await startup([appDirectory, ...electronArgs], {
-            cwd: appDirectory, windowsHide: true,
+            // Electron is the interactive window. On Windows, hiding its startup
+            // window can swallow the first show(); reserve windowsHide for helpers.
+            cwd: appDirectory, windowsHide: false,
             // The plugin normalizes loopback to localhost; use Vite's actual
             // bound origin so navigation and API origin checks agree.
             env: { ...process.env, VITE_DEV_SERVER_URL: `http://127.0.0.1:${port}/`,

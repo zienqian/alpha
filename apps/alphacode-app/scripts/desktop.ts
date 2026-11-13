@@ -11,7 +11,7 @@ export async function run(args: string[], cwd = repository) {
 
 export async function buildDesktop() {
   await mkdir(resolve(appDirectory, "dist"), { recursive: true });
-  const result = await Bun.build({ entrypoints: [resolve(appDirectory, "src/main.ts")], outdir: resolve(appDirectory, "dist"),
+  const result = await Bun.build({ entrypoints: [resolve(appDirectory, "src/main.ts"), resolve(appDirectory, "src/preload.ts")], outdir: resolve(appDirectory, "dist"),
     target: "node", format: "cjs", external: ["electron"], naming: "[name].cjs" });
   if (!result.success) throw new AggregateError(result.logs, "Electron build failed");
 }

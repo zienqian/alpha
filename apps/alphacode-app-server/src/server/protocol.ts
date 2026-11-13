@@ -1,8 +1,9 @@
-import type { ChatSkill, ChatState } from "../chat/contracts";
+import type { ChatSkill, ChatState, ContextUsage } from "../chat/contracts";
 
 export const protocolVersion = 2;
 
 export interface SessionInfo {
+  defaultContext?: ContextUsage;
   id: string;
   projectId: string;
   workspaceRoot: string;

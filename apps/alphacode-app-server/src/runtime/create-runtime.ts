@@ -19,6 +19,7 @@ import { loadRuntimeSkills, prepareSkillInput, skillStatus } from "./skills";
 import { parseInput } from "../input";
 import { displayText } from "./tool-records";
 import { generateSessionTitle, titleTimeoutMs } from "./session-title";
+import { estimateContext, modelContext, restoreContext } from "./context-usage";
 
 export async function createRuntime(config: AppConfig, options: {
   approve?: RequestApproval;
@@ -47,6 +48,7 @@ export async function createRuntime(config: AppConfig, options: {
   let titleSaving: Promise<void> | undefined;
   let loadedSkills: LoadSkillsResult = { skills: [], diagnostics: [] };
   let settings: SessionSettings = { version: 1, modelId: config.modelId, permissionMode: config.permissionMode ?? "ask" };
+  let contextUsage = modelContext(config.modelId, config.contextWindow);
   try {
     await mkdir(dirname(config.databasePath), { recursive: true });
     store = await createSqliteSessionStore({ filename: config.databasePath });
@@ -54,6 +56,8 @@ export async function createRuntime(config: AppConfig, options: {
     const saved = config.sessionId ? await store.read({ namespace, id: config.sessionId }) : undefined;
     if (config.sessionId && !saved) throw settingsError("SESSION_NOT_FOUND");
     if (saved) settings = readSessionSettings(saved.data);
+    contextUsage = restoreContext(saved?.data.metadata.alphacodeContext,
+      modelContext(settings.modelId, settings.modelId === config.modelId ? config.contextWindow : undefined));
     const agentKey = saved?.data.agentKey === `alphacode-v1:${settings.modelId}`
       ? saved.data.agentKey : `alphacode-v2:${settings.modelId}`;
     loadedSkills = await loadRuntimeSkills(config, cwd);
@@ -92,7 +96,12 @@ export async function createRuntime(config: AppConfig, options: {
       agent = await createCodingAgent({
         // The first model call happens after the Session plugin has persisted
         // admission. Title generation must not run for rejected/local prompts.
-        model: { ...model, stream(input) { startTitle(model); return model.stream(input); } }, cwd,
+        model: { ...model, stream(input) {
+          contextUsage = estimateContext(input, contextUsage);
+          for (const listener of subscriptions.keys()) listener({ type: "context.usage", usage: contextUsage });
+          startTitle(model);
+          return model.stream(input);
+        } }, cwd,
         skills: loadedSkills.skills,
         fileAccess: "host", commandTimeoutMs: null,
         limits: {
@@ -191,6 +200,7 @@ export async function createRuntime(config: AppConfig, options: {
   }
 
   return {
+    get contextUsage() { return contextUsage; },
     skills: Object.freeze(loadedSkills.skills.map(({ name, description, argumentHint, userInvocable }) => Object.freeze({ name, description: displayText(description, 1024), argumentHint: argumentHint === undefined ? undefined : displayText(argumentHint, 256), userInvocable }))),
     modelId: settings.modelId,
     workspaceRoot: cwd,
@@ -277,6 +287,13 @@ export async function createRuntime(config: AppConfig, options: {
             if (turn?.durationMs !== undefined) completion = {
               durationMs: turn.durationMs, completedAt: Date.parse(turn.committedAt), status: turn.run.status,
             };
+            // Store only aggregate counts so reopen/restart retains the indicator.
+            // Optional display metadata must never affect a successful turn.
+            if (!saved.data.pending && contextUsage.tokens) await activeManager.updateSession(activeSession.id, {
+              metadata: { ...saved.data.metadata, alphacodeContext: {
+                modelId: contextUsage.modelId, tokens: { ...contextUsage.tokens },
+              } },
+            }, { expectedRevision: saved.revision });
           } catch { /* Optional display timing must not change a completed run's outcome. */ }
         }
         return { status: result.status, error: result.status === "failed" ? result.error.code : undefined, completion };

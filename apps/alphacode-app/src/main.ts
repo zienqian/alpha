@@ -8,6 +8,7 @@ import { createBackend } from "./backend";
 import { applicationURL, assetPath, databaseArgument, developmentURL, externalURL, isApplicationURL, isRendererURL } from "./policy";
 
 const applicationName = "AlphaCode";
+const applicationIcon = join(app.getAppPath(), "assets", process.platform === "win32" ? "icon.ico" : "icon.png");
 const rendererURL = developmentURL(process.env.VITE_DEV_SERVER_URL, app.isPackaged);
 const trustedRenderer = (url: string) => isRendererURL(url, rendererURL);
 app.setName(applicationName);
@@ -52,12 +53,25 @@ async function createWindow() {
   const position = typeof x === "number" && typeof y === "number" && Number.isFinite(x) && Number.isFinite(y) && screen.getAllDisplays().some(({ workArea }) =>
     x + width > workArea.x + 100 && x < workArea.x + workArea.width - 100
     && y >= workArea.y && y < workArea.y + workArea.height - 100) ? { x, y } : {};
+  const backgroundColor = nativeTheme.shouldUseDarkColors ? "#171b22" : "#e6ebf2";
   const created = new BrowserWindow({ ...position, width, height, minWidth: 680, minHeight: 520,
-    title: applicationName, show: false, autoHideMenuBar: true,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? "#171717" : "#ffffff",
-    webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: true },
+    title: applicationName, icon: applicationIcon, show: false, autoHideMenuBar: true,
+    backgroundColor, titleBarStyle: "hidden",
+    titleBarOverlay: process.platform === "darwin" ? true : {
+      color: backgroundColor, symbolColor: nativeTheme.shouldUseDarkColors ? "#e7ebf1" : "#252a34", height: 36,
+    },
+    ...(process.platform === "darwin" ? { trafficLightPosition: { x: 14, y: 11 } } : {}),
+    webPreferences: { preload: join(__dirname, "preload.cjs"), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: true },
   });
   window = created;
+  created.webContents.ipc.on("window:appearance", (event, appearance: unknown) => {
+    if (event.senderFrame !== created.webContents.mainFrame || !trustedRenderer(event.senderFrame.url)) return;
+    if (!appearance || typeof appearance !== "object" || !("color" in appearance) || !("symbolColor" in appearance)) return;
+    const { color, symbolColor } = appearance;
+    if (typeof color !== "string" || typeof symbolColor !== "string" || !/^#[\da-f]{6}$/i.test(color) || !/^#[\da-f]{6}$/i.test(symbolColor)) return;
+    created.setBackgroundColor(color);
+    if (process.platform !== "darwin") created.setTitleBarOverlay({ color, symbolColor });
+  });
   created.once("ready-to-show", () => { if (saved.maximized) created.maximize(); created.show(); });
   created.on("page-title-updated", event => { event.preventDefault(); created.setTitle(applicationName); });
   created.on("close", () => {
@@ -110,6 +124,7 @@ async function start() {
   session.defaultSession.setPermissionCheckHandler((contents, permission) =>
     Boolean(contents && trustedRenderer(contents.getURL()) && permission === "clipboard-sanitized-write"));
   installMenu();
+  if (process.platform === "darwin") app.dock?.setIcon(applicationIcon);
   for (;;) {
     try { if (!rendererURL) await backend.connect(); await createWindow(); break; }
     catch {

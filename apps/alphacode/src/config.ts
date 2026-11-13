@@ -57,6 +57,7 @@ export function readConfig(
     databasePath: env.ALPHACODE_DB !== undefined ? resolve(cwd, expandHome(env.ALPHACODE_DB))
       : resolve(directory, expandHome(defaults.databasePath ?? "sessions.db")),
     modelId,
+    contextWindow: !env.ADK_MODEL || env.ADK_MODEL.trim() === defaults.modelId ? defaults.contextWindow : undefined,
     baseURL: env.ADK_BASE_URL ?? defaults.baseURL ?? "https://api.openai.com/v1",
     apiKeyEnv: env.ADK_API_KEY_ENV ?? defaults.apiKeyEnv ?? "OPENAI_API_KEY",
     noAuth,

@@ -5,6 +5,7 @@ import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
 import type { SessionInfo } from "./protocol";
 import type { AppConfig } from "../config";
 import { sessionNamespace } from "../runtime/create-runtime";
+import { modelContext } from "../runtime/context-usage";
 
 export async function serverPaths(databasePath: string) {
   await mkdir(dirname(resolve(databasePath)), { recursive: true });
@@ -44,6 +45,7 @@ export async function createRegistry(databasePath: string, directory: string) {
       const config: AppConfig = {
         workspaceRoot, databasePath, configDirectory: input.configDirectory,
         modelId: input.modelId, baseURL: input.baseURL, apiKeyEnv: input.apiKeyEnv, noAuth: input.noAuth,
+        contextWindow: input.contextWindow,
         permissionMode: input.permissionMode, skills: input.skills,
         traceEnabled: input.traceEnabled,
         globalInstructions: input.globalInstructions, globalInstructionsPath: input.globalInstructionsPath,
@@ -62,6 +64,7 @@ export async function createRegistry(databasePath: string, directory: string) {
           const page = await store.list(projectId, { cursor, limit: 100 });
           for (const item of page.items) sessions.push({
             id: item.id, projectId, workspaceRoot: config.workspaceRoot,
+            defaultContext: modelContext(config.modelId, config.contextWindow),
             title: item.title, updatedAt: item.updatedAt, status: item.status,
           });
           cursor = page.cursor;

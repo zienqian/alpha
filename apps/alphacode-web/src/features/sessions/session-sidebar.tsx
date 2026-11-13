@@ -1,6 +1,6 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
-import { Folder, Plus, Search, SquareTerminal, X, Blocks, SquarePen, RefreshCw } from "lucide-react";
+import { Folder, Plus, Search, X, Blocks, SquarePen, RefreshCw } from "lucide-react";
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
 import { SessionTitle } from "@/features/sessions/session-title";
@@ -13,7 +13,7 @@ import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu,
   SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton,
-  SidebarMenuSubItem, useSidebar,
+  SidebarMenuSubItem, SidebarTrigger, useSidebar,
 } from "@/components/ui/sidebar";
 import type { SessionFolder } from "@/features/sessions/types";
 
@@ -94,15 +94,25 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
   return (
     <>
     <Sidebar aria-label={t("workspace:sidebar")} variant="floating" collapsible="icon" className="workspace-sidebar">
+      <SidebarHeader className="gap-0 p-0">
+        <div className={compact ? "flex h-11 items-center justify-center px-1.5" : "flex h-11 items-center gap-2.5 pr-2.5 pl-4"}>
+          {!compact && <>
+            <img src="/icons/alphacode-32.png" srcSet="/icons/alphacode-32.png 1x, /icons/alphacode-64.png 2x, /icons/alphacode-128.png 4x" width={28} height={28} className="size-7 shrink-0" alt="" aria-hidden="true" draggable={false} />
+            {/* i18next-instrument-ignore-next-line — Product name. */}
+            <span className="text-sm font-semibold tracking-tight">AlphaCode</span>
+          </>}
+          {isMobile ? <Button variant="ghost" size="icon-sm" className="ml-auto text-muted-foreground" aria-label={t("workspace:closeSidebar")} onClick={() => setOpenMobile(false)}>
+            <X aria-hidden="true" />
+          </Button> : <SidebarTrigger aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className={compact ? "rail-action text-muted-foreground" : "ml-auto text-muted-foreground"} />}
+        </div>
+      </SidebarHeader>
       {compact ? <>
-        <SidebarHeader className="items-center gap-2 px-1.5 pt-3 pb-2">
-          {/* i18next-instrument-ignore-next-line — Product name. */}
-          <SquareTerminal className="mb-2 size-5 text-sidebar-foreground" strokeWidth={1.7} aria-label="AlphaCode" />
+        <SidebarHeader className="items-center gap-2 px-1.5 pt-2 pb-2">
           <Tooltip><TooltipTrigger asChild>
             <Button variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:new")} disabled={folders.length === 0} onClick={() => startSession()}><SquarePen aria-hidden="true" /></Button>
           </TooltipTrigger><TooltipContent side="right">{t("sessions:new")}</TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild>
-            <Button ref={searchTriggerRef} variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen} onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></Button>
+            <Button ref={searchTriggerRef} variant="secondary" size="icon" className="rail-action" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen} onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></Button>
           </TooltipTrigger><TooltipContent side="right">{t("sessions:search")}</TooltipContent></Tooltip>
           {onOpenSkills && <Tooltip><TooltipTrigger asChild>
             <Button variant="ghost" size="icon" className="rail-action" aria-label={t("skills:market.title")} aria-current={skillsActive ? "page" : undefined} onClick={onOpenSkills}><Blocks aria-hidden="true" /></Button>
@@ -124,16 +134,8 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
         <SidebarFooter className="items-center gap-2 px-1.5 py-3"><LanguageToggle /><ThemeToggle /></SidebarFooter>
       </> : <>
       <SidebarHeader className="gap-0 p-0">
-        <div className="flex h-11 items-center gap-2.5 pr-2.5 pl-4">
-          <SquareTerminal className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
-          {/* i18next-instrument-ignore-next-line — Product name. */}
-          <span className="text-sm font-semibold tracking-tight">AlphaCode</span>
-          <Button variant="ghost" size="icon-sm" className="ml-auto text-muted-foreground md:hidden" aria-label={t("workspace:closeSidebar")} onClick={() => setOpenMobile(false)}>
-            <X aria-hidden="true" />
-          </Button>
-        </div>
         <div className="space-y-1 px-2.5 pt-2">
-        <Button ref={searchTriggerRef} variant="ghost" className="sidebar-search h-9 w-full justify-start gap-2 rounded-lg px-2.5 text-[13px] font-normal text-muted-foreground" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
+        <Button ref={searchTriggerRef} variant="secondary" className="h-9 w-full justify-start gap-2 rounded-lg px-2.5 text-[13px] font-normal" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
           onClick={() => setSearchOpen(true)}>
           <Search className="size-3.5" aria-hidden="true" /><span>{t("sessions:search")}</span>
           <kbd className="ml-auto rounded border border-sidebar-border px-1 font-sans text-[10px] leading-4 text-muted-foreground">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}</kbd>

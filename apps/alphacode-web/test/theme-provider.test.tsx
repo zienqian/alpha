@@ -6,10 +6,30 @@ afterEach(() => {
   localStorage.removeItem("alphacode-theme");
   document.documentElement.classList.remove("dark", "light");
   document.documentElement.style.colorScheme = "";
+  document.documentElement.style.removeProperty("--shell");
+  document.documentElement.style.removeProperty("--foreground");
+  delete document.documentElement.dataset.desktop;
   vi.restoreAllMocks();
 });
 
 describe("ThemeProvider", () => {
+  it("syncs the desktop window with the active palette on mount and theme changes", () => {
+    const setAppearance = vi.fn();
+    vi.stubGlobal("alphacodeDesktop", { platform: "win32", setAppearance });
+    const root = document.documentElement;
+    root.style.setProperty("--shell", "#e6ebf2");
+    root.style.setProperty("--foreground", "#252a34");
+    const { result } = renderHook(useTheme, { wrapper: ThemeProvider });
+    expect(root.dataset.desktop).toBe("win32");
+    expect(setAppearance).toHaveBeenLastCalledWith({ color: "#e6ebf2", symbolColor: "#252a34" });
+    act(() => {
+      root.style.setProperty("--shell", "#171b22");
+      root.style.setProperty("--foreground", "#e7ebf1");
+      result.current.setTheme("dark");
+    });
+    expect(setAppearance).toHaveBeenLastCalledWith({ color: "#171b22", symbolColor: "#e7ebf1" });
+  });
+
   it("persists an explicit choice and restores it on remount", () => {
     const first = renderHook(useTheme, { wrapper: ThemeProvider });
     act(() => first.result.current.setTheme("dark"));

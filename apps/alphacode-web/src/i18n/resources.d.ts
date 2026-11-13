@@ -72,6 +72,13 @@ export default interface Resources {
     "connecting": "Connecting…",
     "connectingPreserved": "Connecting to the live conversation. Existing content and drafts are preserved.",
     "connectionFailed": "Connection failed",
+    "context": {
+      "messages": "Conversation",
+      "open": "View context usage: {{percent}}",
+      "system": "System prompt",
+      "tools": "Tool definitions",
+      "used": "Context used"
+    },
     "create": "New conversation",
     "draft": "Message draft",
     "draftAttachments": "Draft attachments",

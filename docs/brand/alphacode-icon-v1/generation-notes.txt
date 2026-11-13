@@ -1,0 +1,18 @@
+AlphaCode app icon — ALFI 2D focused concept
+Created: 2026-11-13 (Asia/Shanghai)
+Generation: built-in image_gen, using the earlier 2D FOCUSED expression as the reference.
+Reference: ../alphacode-ip-v1/alfi-character-sheet.png
+Output: alfi-app-icon-concept.png
+
+设计方向：采用用户认可的二维工作表情，收拢为产品图标。保留白色头部、蓝围巾与白色下划线光标；头部放大、轮廓加粗，专注表情带轻微笑意。
+使用建议：固定的专注表情作为产品标识，其他表情用于应用内状态反馈。
+状态：第一版视觉概念，尚未替换应用中的图标资源。正式接入时需要制作和检查各尺寸，尤其是 16/32 px 的简化版。
+
+Full generation prompt:
+Use case: identity-preserve
+Asset type: AlphaCode product app icon, first visual concept.
+Input image 1: original ALFI character design sheet. ONLY use the 2D FOCUSED expression in the bottom row, second sticker from left, as the character/style reference. The user especially likes these flat working-expression illustrations and wants that mascot as the product icon. Do NOT use the 3D hero style.
+Primary request: translate that specific flat 2D working-expression ALFI into a polished, instantly recognizable square app icon. Preserve the compact white head with two softly pointed short ears, graphite nose, subtle curved smile, blue scarf and its single white underscore. Keep the appearance closely recognizable as the provided 2D sticker, not a different generic animal. Adjust the focused expression to be intelligent, calmly attentive, approachable and a tiny bit mischievous: two dark oval eyes, near-horizontal slightly inward-inclined upper lids, no aggressive eyebrows, no angry scowl. Face looks directly forward; head slightly wide and rounded.
+Design: pure flat 2D vector-like illustration with smooth bold clean curves, no 3D, no photographic texture, no shading. A soft-square tile (continuous rounded square corners) filled with very light mist blue #E6EBF2. Outside the rounded square is genuinely transparent alpha. Center one large mascot HEAD AND SCARF bust; no hands, feet, tail or long body. White #FAFBFD head, graphite-gray rounded outer contour thick enough to survive small display sizes, graphite #252A34 facial features. Rich blue #3269BE short scarf with one simple visible dangling end and a bold white underscore '_'. At the bottom the scarf naturally finishes the bust; no chopped torso or loose contour strokes. Use flat colors only; no inner-ear detail to clutter the silhouette. The ears, head, facial features and scarf must read clearly at avatar size.
+Composition: one icon only on a square canvas, centered. Tile fills about 94 percent of image with transparent outer margin. Character fills about 80 percent of the tile width, ears start about 14 percent down inside the tile, scarf ends about 88 percent down inside the tile. Clear separation of the silhouette from background. Beautiful optical centering, consistent thick rounded stroke, very minimal.
+Constraints: only one icon, one character. No wordmark, no labels, no typography, no extra symbols except the scarf underscore, no grids, variants, mockup device, UI surrounding, color swatches, sparkle, shadow, gradients, or watermark. Retain the 2D reference identity and focus on crisp reduction. Actual transparency outside the tile, never draw a checkerboard.

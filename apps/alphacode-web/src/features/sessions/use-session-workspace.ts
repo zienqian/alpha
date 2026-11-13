@@ -45,11 +45,12 @@ export function useSessionWorkspace() {
   const hasDraft = (id: string) => Boolean(drafts[id]?.text.trim() || drafts[id]?.attachments.length);
   const projectId = history.data?.session.projectId;
   const workspaceRoot = history.data?.session.workspaceRoot;
-  const [openedProjects, setOpenedProjects] = useState<Pick<SessionInfo, "projectId" | "workspaceRoot">[]>([]);
+  const defaultContext = history.data?.session.defaultContext;
+  const [openedProjects, setOpenedProjects] = useState<Pick<SessionInfo, "projectId" | "workspaceRoot" | "defaultContext">[]>([]);
   useEffect(() => {
-    if (projectId && workspaceRoot) setOpenedProjects(previous => previous.some(project => project.projectId === projectId && project.workspaceRoot === workspaceRoot)
-      ? previous : [...previous.filter(project => project.projectId !== projectId), { projectId, workspaceRoot }]);
-  }, [projectId, workspaceRoot]);
+    if (projectId && workspaceRoot) setOpenedProjects(previous => previous.some(project => project.projectId === projectId && project.workspaceRoot === workspaceRoot && project.defaultContext === defaultContext)
+      ? previous : [...previous.filter(project => project.projectId !== projectId), { projectId, workspaceRoot, defaultContext }]);
+  }, [projectId, workspaceRoot, defaultContext]);
   // A direct /web link can load its history even if the index request fails.
   // Keep its project usable without inventing a session row for an empty draft.
   const infos = index.data ?? [];

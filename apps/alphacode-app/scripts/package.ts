@@ -19,6 +19,8 @@ try {
   await mkdir(join(runtime, "bin"), { recursive: true });
   await writeFile(join(shell, "package.json"), JSON.stringify({ name: "alphacode-app", productName: "AlphaCode", author: "Alpha", version: "0.1.0", main: "main.cjs" }));
   await cp(join(dist, "main.cjs"), join(shell, "main.cjs"));
+  await cp(join(dist, "preload.cjs"), join(shell, "preload.cjs"));
+  await cp(join(appDirectory, "assets"), join(shell, "assets"), { recursive: true });
   await writeFile(join(runtime, "package.json"), JSON.stringify({ name: "alphacode-app-runtime", private: true,
     workspaces: ["apps/alphacode-app-server", "packages/*"] }));
   for (const path of ["apps/alphacode-app-server", ...["adk", "adk-session", "adk-trace", "coding-agent", "provider"].map(name => `packages/${name}`)]) {
@@ -54,6 +56,7 @@ try {
   await cp(ripgrep, join(runtime, "bin", process.platform === "win32" ? "rg.exe" : "rg"));
   const { version: electronVersion } = JSON.parse(await readFile(fileURLToPath(import.meta.resolve("electron/package.json")), "utf8"));
   const destinations = await packager({ dir: shell, out: dist, name: "AlphaCode", executableName: "AlphaCode",
+    icon: join(appDirectory, "assets", platform === "darwin" ? "icon.icns" : platform === "win32" ? "icon.ico" : "icon.png"),
     appBundleId: "com.alpha.alphacodeapp", appVersion: "0.1.0", electronVersion, platform: platform as "win32" | "darwin" | "linux",
     arch: arch as "x64" | "arm64", asar: true, prune: false, overwrite: true, extraResource: [runtime],
   });

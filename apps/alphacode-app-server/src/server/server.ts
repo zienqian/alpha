@@ -5,6 +5,7 @@ import type { Chat, ApprovalRequest } from "../chat/contracts";
 import { protocolVersion, type SessionView, type RequestReceipt, type SessionSearchResult } from "./protocol";
 import { createApplication } from "../application";
 import type { AppConfig } from "../config";
+import { modelContext } from "../runtime/context-usage";
 import { isPermissionMode } from "../runtime/session-settings";
 import { archiveSearchMessages, searchSession } from "./search";
 import { createRegistry, digest, readJson, writeJson } from "./storage";
@@ -140,9 +141,11 @@ export async function startServer(options: ServerOptions) {
   function snapshot(entry: Entry): SessionView {
     const { chat } = entry;
     const state = chat.state;
+    const config = registry.configs.get(entry.projectId);
     return {
       instanceId, sequence, modelId: chat.modelId, skills: chat.skills ?? [],
       session: { id: chat.sessionId, projectId: entry.projectId, workspaceRoot: chat.workspaceRoot,
+        defaultContext: config ? modelContext(config.modelId, config.contextWindow) : undefined,
         title: state.sessionTitle, titleStatus: state.titleStatus, status: state.busy ? "running" : state.canSend ? "ready" : "blocked", updatedAt: entry.updatedAt },
       state: { ...state,
         canQueue: canAccept(entry),
@@ -365,6 +368,7 @@ export async function startServer(options: ServerOptions) {
         const body = await jsonBody(request);
         const config = body.config as AppConfig | undefined;
         if (!config || typeof config.workspaceRoot !== "string" || typeof config.modelId !== "string" || typeof config.baseURL !== "string" || typeof config.apiKeyEnv !== "string" || typeof config.noAuth !== "boolean" || config.databasePath !== options.databasePath) return fail(400, "INVALID_CONFIG");
+        if (config.contextWindow !== undefined && (!Number.isSafeInteger(config.contextWindow) || config.contextWindow <= 0)) return fail(400, "INVALID_CONFIG");
         if (body.credential !== undefined && typeof body.credential !== "string") fail(400, "INVALID_CREDENTIAL");
         if (!config.noAuth && (typeof body.credential !== "string" || !body.credential)) fail(400, "CREDENTIAL_REQUIRED");
         const projectId = await registry.register(config, body.credential as string | undefined);

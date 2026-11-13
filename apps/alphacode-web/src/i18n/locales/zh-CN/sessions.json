@@ -1,4 +1,11 @@
 {
+  "context": {
+    "open": "查看上下文用量：{{percent}}",
+    "used": "上下文已用",
+    "system": "系统提示词",
+    "tools": "工具定义",
+    "messages": "对话消息"
+  },
   "loadingHistory": "正在加载会话历史",
   "connected": "实时同步",
   "connectionFailed": "连接失败",

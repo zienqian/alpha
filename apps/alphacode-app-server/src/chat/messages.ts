@@ -46,6 +46,8 @@ export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
   const change = (id: string, patch: (message: ChatMessage) => Partial<ChatMessage>) =>
     state.messages.map(message => message.id === id ? { ...message, ...patch(message) } : message);
   switch (event.type) {
+    case "context.usage":
+      return { ...state, contextUsage: event.usage };
     case "user.message":
       return { ...state, messages: [...state.messages, { id: event.id, role: "user", text: event.text }] };
     case "session.title":

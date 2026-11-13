@@ -4,14 +4,17 @@ import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupButton } from "@/components/ui/input-group";
 import type { SessionDraft } from "@/features/sessions/use-session-workspace";
 import type { SessionFolder } from "@/features/sessions/types";
-import type { PermissionMode } from "@/features/sessions/api";
+import type { ContextUsage, PermissionMode } from "@/features/sessions/api";
 import { SessionPermissions } from "@/features/sessions/session-permissions";
+import { ContextUsageIndicator } from "@/features/sessions/context-usage";
 
 import { MarkdownEditor } from "@/components/ai-elements/markdown-editor";
 
 // AI Elements Prompt Input pattern; the server owns accepted conversation state.
 export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend, busy, submitting, onCancel, canCancel, status,
-  permissionMode, onPermissionChange, canChangePermission, permissionSaving, folder }: {
+  permissionMode, onPermissionChange, canChangePermission, permissionSaving, folder, contextUsage, showContextUsage = false }: {
+  contextUsage?: ContextUsage;
+  showContextUsage?: boolean;
   draft: SessionDraft; onChange: (patch: Partial<SessionDraft>) => void; focusRequest?: number;
   onSend: () => void; canSend: boolean; busy: boolean; submitting?: boolean;
   onCancel: () => void; canCancel: boolean; status: string;
@@ -49,6 +52,7 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
         <InputGroupAddon align="block-end" className="gap-2 px-2.5 pt-1 pb-2.5">
           <SessionPermissions mode={permissionMode} onChange={onPermissionChange} disabled={!canChangePermission}
             saving={permissionSaving} busy={busy || Boolean(submitting)} />
+          {showContextUsage && <ContextUsageIndicator usage={contextUsage} />}
           <span id="composer-status" role="status" className="ml-auto min-w-0 truncate px-1 text-xs font-normal">{submitting ? t("sessions:submitting") : status}</span>
           {busy && <InputGroupButton variant={draft.text.trim() ? "ghost" : "default"} size="icon-sm" disabled={!canCancel} aria-label={t("sessions:stop")} onClick={onCancel}>
             <Square className="size-3.5" aria-hidden="true" />

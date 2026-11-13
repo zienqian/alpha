@@ -33,7 +33,7 @@ export function sessionFromView(view: SessionView): Session {
   };
 }
 
-export function groupSessions(sessions: readonly SessionInfo[], projects: readonly Pick<SessionInfo, "projectId" | "workspaceRoot">[] = []): SessionFolder[] {
+export function groupSessions(sessions: readonly SessionInfo[], projects: readonly Pick<SessionInfo, "projectId" | "workspaceRoot" | "defaultContext">[] = []): SessionFolder[] {
   const folders = new Map<string, SessionFolder>();
   for (const session of [...sessions].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))) {
     let folder = folders.get(session.projectId);
@@ -42,6 +42,7 @@ export function groupSessions(sessions: readonly SessionInfo[], projects: readon
         id: session.projectId,
         name: session.workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) || session.workspaceRoot,
         path: session.workspaceRoot, sessions: [],
+        defaultContext: session.defaultContext,
       };
       folders.set(folder.id, folder);
     }
@@ -52,12 +53,14 @@ export function groupSessions(sessions: readonly SessionInfo[], projects: readon
       id: project.projectId,
       name: project.workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) || project.workspaceRoot,
       path: project.workspaceRoot, sessions: [],
+      defaultContext: project.defaultContext,
     });
   }
   return [...folders.values()];
 }
 
 export interface SessionFolder {
+  defaultContext?: SessionInfo["defaultContext"];
   id: string;
   name: string;
   path: string;

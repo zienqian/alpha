@@ -3,6 +3,14 @@ export type PermissionMode = "ask" | "auto" | "full";
 export type ChatPhase = "idle" | "thinking" | "queued" | "running" | "saving" | "stopping";
 export type ToolStatus = "queued" | "running" | "awaiting_approval" | "succeeded" | "failed" | "denied" | "not_executed" | "outcome_unknown";
 
+export interface ContextUsage {
+  modelId: string;
+  contextWindow?: number;
+  windowSource: "model" | "codex" | "configuration" | "unknown";
+  /** Estimated tokens in the latest model request; excludes draft and its reply. */
+  tokens?: { system: number; tools: number; messages: number; total: number };
+}
+
 // Optional presentation semantics preserve protocol v2's legacy text fields.
 export interface ChatNotice { code: string; params?: Record<string, string | number> }
 export interface LocalResult {
@@ -59,6 +67,7 @@ export interface ApprovalRequest {
 export type RequestApproval = (action: ApprovalRequest, signal: AbortSignal) => Promise<boolean>;
 
 export interface ChatState {
+  contextUsage?: ContextUsage;
   sessionTitle: string;
   titleStatus?: "pending" | "ready";
   messages: readonly ChatMessage[];
@@ -100,6 +109,7 @@ export interface Chat {
 
 // The application consumes conversation events, not Agent or Session internals.
 export type ChatEvent =
+  | { type: "context.usage"; usage: ContextUsage }
   | { type: "user.message"; id: string; text: string }
   | { type: "session.title"; title: string; status: "pending" | "ready" }
   | { type: "assistant.start"; id: string }
@@ -111,6 +121,7 @@ export type ChatEvent =
   | { type: "run.end"; status: ChatRunStatus };
 
 export interface ChatRuntime {
+  readonly contextUsage?: ContextUsage;
   readonly canSteer?: boolean;
   steer?(input: string): Promise<boolean>;
   readonly sessionTitle: string;

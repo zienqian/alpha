@@ -65,6 +65,8 @@ export function App() {
       onMove={workspace.actions.moveQueued} onSteer={workspace.actions.steerQueued} />
     <PromptInput key={`composer-${selectedSessionId}`} draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
       folder={isWelcome ? selectedFolder : undefined}
+      showContextUsage={Boolean(view?.state.messages.length)}
+      contextUsage={view?.state.contextUsage ?? (selectedSession?.local ? selectedFolder?.defaultContext : undefined)}
       permissionMode={workspace.permissionMode} onPermissionChange={workspace.changePermission}
       canChangePermission={workspace.canChangePermission} permissionSaving={workspace.actions.permissionSaving || Boolean(view?.state.settingsSaving)}
       onSend={() => void workspace.send()} canSend={workspace.canSend} busy={workspace.busy} submitting={workspace.submitting}
@@ -73,7 +75,7 @@ export function App() {
   </>;
 
   return (
-    <SidebarProvider className="workspace-shell h-dvh min-h-0 overflow-hidden" style={{ "--sidebar-width": "16.5rem", "--sidebar-width-icon": "3.5rem" } as CSSProperties}>
+    <SidebarProvider className="workspace-shell h-[calc(100dvh-var(--desktop-titlebar-height,0px))] min-h-0 overflow-hidden" style={{ "--sidebar-width": "16.5rem", "--sidebar-width-icon": "3.5rem" } as CSSProperties}>
       <a href="#session-content" className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
         {t("sessions:skip")}</a>
       <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={id => { showSkills(false); workspace.selectSession(id); }} onNewSession={id => { showSkills(false); workspace.newSession(id); }}
@@ -82,7 +84,7 @@ export function App() {
       <SidebarInset className="workspace-canvas min-h-0 min-w-0 overflow-hidden">
         {skillsOpen ? <Suspense fallback={<HistoryLoading />}><SkillsMarket initialProjectId={selectedFolder?.id} onBack={() => showSkills(false)} /></Suspense> : <>
         <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
-          <SidebarTrigger aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground" />
+          <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground" />
           <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px]">
             {isWelcome ? <span className="truncate text-muted-foreground">{t("sessions:new")}</span> : (
               <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title || t("sessions:new")}</h1>

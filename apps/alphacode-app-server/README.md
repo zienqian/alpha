@@ -53,6 +53,18 @@ const info = await client.request("/api/info");
 
 ## 兼容与验证
 
+输入框按钮栏显示上下文用量，点击或悬停可查看系统提示词、工具定义和对话消息的分组。服务端按最近一次实际模型请求的 UTF-8 序列化字节数除以 4 估算 token；包含原始工具调用和结果，不包含未发送草稿、排队消息、本次回复或会话标题生成。它不是计费累计用量，也不是模型 tokenizer 的精确结果。首次请求前显示未统计；已统计的聚合值随会话保存，不向前端暴露提示词内容。
+
+窗口数值于 2026-11-13 核对 [OpenAI 官方模型文档](https://developers.openai.com/api/docs/models/gpt-6.1-sol)：`gpt-6.1-sol` / `openai/gpt-6.1-sol` 的 API 窗口为 1,050,000；`codex/gpt-6.1-sol` 使用 Codex 默认值 500,000。代理可能限制或调整窗口，可在全局 `config.yaml` 中覆盖，并通过 CLI 重新登记项目配置：
+
+```yaml
+model:
+  id: codex/gpt-6.1-sol
+  contextWindow: 500000
+```
+
+未知模型未配置上限时显示“未知”，仍可查看估算用量。修改 `ADK_MODEL` 为其他模型时不会沿用原模型的配置上限。该指标仅用于展示，不改变模型请求、自动压缩或截断对话。
+
 数据库路径、namespace、归档格式、协议 v2、鉴权和请求去重规则保持不变。已有活跃服务仍可复用，不会因目录迁移强行接管。完整退出后，新客户端从本应用启动服务。API 与一致性约定见 [协议文档](src/server/README.md)。
 
 ```powershell
@@ -62,3 +74,5 @@ bun --bun run nx run-many -t build,typecheck,lint,test --projects=@alpha/alphaco
 测试使用本地 HTTP、临时 SQLite 和离线模型夹具，覆盖独立进程启动、CLI 共享、流式快照、审批、恢复、队列与后台更新，不访问真实模型。
 
 源码变化由 supervisor 自动检测，在生成、审批、队列和保存完成后交接运行状态。新代码加载或恢复失败时继续使用原 worker，并按 5 / 10 / 20 / 30 秒退避自动重试（实际时间受检查周期影响）；后续源码修改会立即进入新一轮检测。页面不提供更新操作。前端开发使用 `bun run dev:web` 或 `bun run dev:app`，由 Vite 独立处理 HMR，不依赖后端版本轮询或手动刷新。
+
+为迁移前已经运行的 CLI/supervisor 保留 `apps/alphacode/src/server/main.ts` 和 `worker.ts` 转发入口，防止旧进程因入口被移动而持续更新失败。旧 supervisor 的监视目录仍由启动时确定；完整退出并重新启动 CLI 后，新 supervisor 使用 App Server 的目录监视后续后端改动。前端 Vite 热更新不受此限制。

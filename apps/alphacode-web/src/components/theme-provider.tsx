@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState, type PropsWithChildren } from "react";
+import { syncDesktopAppearance } from "@/components/desktop-titlebar";
 
 // Based on https://ui.shadcn.com/docs/dark-mode/vite, with live system updates
 // and a storage fallback for browsers that disallow localStorage.
@@ -30,6 +31,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
       root.classList.remove("light", "dark");
       root.classList.add(resolved);
       root.style.colorScheme = resolved;
+      syncDesktopAppearance();
     };
     applyTheme();
     if (theme !== "system") return;

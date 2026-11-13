@@ -7,6 +7,7 @@ import type { RestoredChat } from "../server/handoff";
 
 export function createChat(runtime: ChatRuntime, approvals: Approvals, restored?: RestoredChat): Chat {
   let state: ChatState = {
+    contextUsage: runtime.contextUsage,
     sessionTitle: runtime.sessionTitle,
     messages: runtime.messages, busy: false, closing: false,
     canSend: !runtime.unsaved && !runtime.blocked, status: "Ready", phase: "idle",

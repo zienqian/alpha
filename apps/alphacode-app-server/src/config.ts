@@ -7,6 +7,7 @@ export interface AppConfig {
   workspaceRoot: string;
   databasePath: string;
   modelId: string;
+  contextWindow?: number;
   baseURL: string;
   apiKeyEnv: string;
   noAuth: boolean;

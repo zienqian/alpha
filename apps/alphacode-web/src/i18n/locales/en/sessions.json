@@ -1,4 +1,11 @@
 {
+  "context": {
+    "open": "View context usage: {{percent}}",
+    "used": "Context used",
+    "system": "System prompt",
+    "tools": "Tool definitions",
+    "messages": "Conversation"
+  },
   "loadingHistory": "Loading conversation history",
   "connected": "Live",
   "connectionFailed": "Connection failed",

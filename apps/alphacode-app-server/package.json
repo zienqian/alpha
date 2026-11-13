@@ -4,6 +4,16 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./legacy-server": {
+      "alpha-source": "./src/server/main.ts",
+      "types": "./dist/server/main.d.ts",
+      "import": "./dist/server/main.js"
+    },
+    "./legacy-worker": {
+      "alpha-source": "./src/server/worker.ts",
+      "types": "./dist/server/worker.d.ts",
+      "import": "./dist/server/worker.js"
+    },
     "./client": {
       "alpha-source": "./src/client.ts",
       "types": "./dist/client.d.ts",

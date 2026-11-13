@@ -244,7 +244,7 @@ function Sidebar({
         inert={offcanvas}
         aria-hidden={offcanvas || undefined}
         className={cn(
-          "sidebar-width-transition fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) md:flex",
+          "sidebar-width-transition fixed top-[var(--desktop-titlebar-height,0px)] bottom-0 z-10 hidden h-[calc(100svh-var(--desktop-titlebar-height,0px))] w-(--sidebar-width) md:flex",
           side === "left"
             ? "left-0"
             : "right-0",
@@ -270,10 +270,13 @@ function Sidebar({
 function SidebarTrigger({
   className,
   onClick,
+  mobileOnly = false,
   ...props
-}: React.ComponentProps<typeof Button>) {
+}: React.ComponentProps<typeof Button> & { mobileOnly?: boolean }) {
   const { t } = useTranslation();
   const { toggleSidebar, open, openMobile, isMobile } = useSidebar()
+
+  if (mobileOnly && !isMobile) return null
 
   return (
     <Button

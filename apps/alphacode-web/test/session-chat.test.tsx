@@ -46,6 +46,7 @@ describe("live conversation", () => {
 
   it("opens an empty /web draft without a sidebar placeholder and sends in the shared CLI session", async () => {
     api.view(id).state.messages = [];
+    api.view(id).state.contextUsage = { modelId: "codex/gpt-6.1-sol", contextWindow: 500_000, windowSource: "configuration" };
     api.view(id).session.title = "AlphaCode";
     api.infos.splice(0);
     await open();
@@ -54,9 +55,11 @@ describe("live conversation", () => {
     expect(within(navigation).queryByRole("button", { name: "AlphaCode" })).toBeNull();
     expect(within(navigation).queryByRole("button", { name: "新对话" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "这个会话还没有消息" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /查看上下文用量/ })).toBeNull();
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
 
     replaceDraft(input(), "第一条消息");
+    expect(screen.queryByRole("button", { name: /查看上下文用量/ })).toBeNull();
     expect(within(navigation).getByRole("button", { name: "新对话" }).getAttribute("aria-current")).toBe("page");
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
@@ -64,6 +67,8 @@ describe("live conversation", () => {
     expect(sends()[0]?.[0]).toBe(`${path}/requests`);
     expect(api.fetch.mock.calls.some(([url, init]) => url === "/api/sessions" && init.method === "POST")).toBe(false);
     expect(await screen.findByText("第一条消息", {}, { timeout: 5000 })).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: /查看上下文用量/ }));
+    expect(screen.getByRole("dialog").textContent).toContain("500K");
     expect(within(navigation).getByRole("button", { name: "AlphaCode" }).getAttribute("aria-current")).toBe("page");
     expect(within(navigation).queryByRole("button", { name: "新对话" })).toBeNull();
   });
@@ -189,7 +194,9 @@ describe("live conversation", () => {
     window.history.replaceState(null, "", "/");
     render(<AppProviders><App /></AppProviders>);
     await screen.findByRole("button", { name: "搭建前端工作区" });
+    expect(screen.queryByRole("button", { name: /查看上下文用量/ })).toBeNull();
     replaceDraft(input(), "新的任务");
+    expect(screen.queryByRole("button", { name: /查看上下文用量/ })).toBeNull();
     fireEvent.keyDown(input(), { key: "Enter" });
     await waitFor(() => expect(sends()).toHaveLength(1));
     const createdId = new URL(window.location.href).searchParams.get("session");
@@ -199,8 +206,13 @@ describe("live conversation", () => {
     if (!createdId) throw new Error("Missing created session");
     expect(api.view(createdId).session.projectId).toBe(api.info("workspace-layout").projectId);
     expect(await screen.findByText("新的任务")).toBeTruthy();
+    expect(await screen.findByRole("button", { name: /查看上下文用量/ })).toBeTruthy();
     await waitFor(() => expect(input().textContent).toBe(""));
     expect(within(screen.getByRole("navigation", { name: "文件夹与会话" })).getAllByRole("button", { name: "新对话" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "在 alphacode-web 中新建会话" }));
+    expect(screen.queryByRole("button", { name: /查看上下文用量/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "搭建前端工作区" }));
+    expect(await screen.findByRole("button", { name: /查看上下文用量/ })).toBeTruthy();
   });
 
   it("retries an uncertain submission with exactly the same ID and original input without clearing edited text", async () => {

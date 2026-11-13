@@ -1,0 +1,35 @@
+AlphaCode IP — ALFI（阿尔菲）
+Concept version: 1
+Created: 2026-11-13 (Asia/Shanghai)
+Generation mode: built-in image_gen; no CLI/API fallback.
+
+方向：好奇、专注、可靠的代码小貂。
+识别点：蓝白配色、尖圆双耳、卷曲尾巴、带终端光标「_」的蓝围巾。
+产品色参考：apps/alphacode-web/src/styles.css
+色值：#3269BE / #8BB7F4 / #FAFBFD / #252A34
+性格：安静陪伴，遇到问题会钻研，完成任务时有一点小得意。
+表情状态：CURIOUS 好奇 / FOCUSED 专注 / DONE 完成 / REST 休息。
+
+交付：
+- alfi-character-sheet.png：主形象、正侧背视图及四种表情的概念设定图。
+- alfi-hero-transparent.png：透明背景主形象 PNG。
+这是第一版品牌形象概念；名称、比例和小尺寸细节可在选定方向后继续精修。
+
+=== Character sheet: full generation prompt ===
+Use case: stylized-concept
+Asset type: original AlphaCode brand mascot character design presentation sheet.
+Primary request: Design one distinctive, original mascot for AlphaCode, an AI coding partner used by software developers. Proposed character name ALFI. A clever small stoat-like coding companion, warm, curious, focused, quietly capable; sophisticated collectible designer-toy appeal, charming to adults.
+Character identity: a compact upright pear-shaped cloud-white stoat, oversized rounded head merging into body, two short softly pointed ears whose silhouette subtly evokes capital A (clearly a stoat, no long rabbit ears), tiny graphite oval eyes set wide apart, a very small dark rounded triangular nose and subtle relaxed smile, short rounded paws and small flat feet. A large substantial curled tail emerges from lower back, makes an open alpha-like loop on one side; tail is mainly white with a single cornflower-blue tip. A thick simple cobalt-blue scarf sits below the face, with one short rectangular scarf end bearing one white terminal underscore '_'. No clothing otherwise, no mechanical parts. Consistent anatomy and markings in every view. White face with NO robot visor. Blue is an accent, white is the main body color.
+Palette derived from actual product: primary blue #3269BE, soft blue #8BB7F4, cloud white #FAFBFD, graphite #252A34. Matte soft-touch vinyl / fine satin ceramic finish, no fur texture, no metallic surfaces.
+Composition: polished spacious landscape 3:2 brand character development sheet on a very light warm off-white studio background. Upper left neat restrained wordmark text 'AlphaCode', below it smaller 'ALFI'. Left 52 percent: one beautifully lit large three-quarter full-body hero character, relaxed confident smile, one paw raised in a small greeting, all ears and tail and feet fully visible, subtle soft contact shadow. Right upper area: smaller clean front, side and back full-body turnaround views, exact same character proportions and consistent single scarf / tail. Right lower area: a neat row of four expressive small flat vector-like head-and-shoulders stickers of this same character, showing curious head tilt, focused narrowed eyes, delighted closed-eye smile, sleepy eyes. Captions exactly 'CURIOUS', 'FOCUSED', 'DONE', 'REST', one under each. Bottom left a tiny restrained row of four palette swatches matching the specified colors.
+Style: premium original brand identity art direction, simple memorable silhouette readable at small avatar size, soft studio ambient occlusion, balanced negative space, impeccable editorial alignment. Main hero is high quality stylized 3D, small expressions are clean 2D with thick rounded shapes. Colors controlled, premium playful without being babyish.
+Constraints: one consistent mascot species and design throughout; maximum two arms and two legs and one tail each. No laptop, tools, floating code, scenery or extra props. No giant headings, gradients on background, frames, corporate slide template, watermark, dense annotation, sparkles, neon, sci-fi armor, stock robot, existing franchise characters, or invented extra typography. Exact text only 'AlphaCode', 'ALFI', 'CURIOUS', 'FOCUSED', 'DONE', 'REST'.
+
+=== Transparent hero: full edit prompt ===
+Reference: alfi-character-sheet.png
+Use case: identity-preserve
+Asset type: transparent PNG hero mascot asset for AlphaCode.
+Input image 1: the approved-for-this-iteration design reference sheet generated in this conversation; use the LARGE LEFT hero character only as the identity and pose reference.
+Primary request: reproduce ONLY the large waving ALFI character from the left side of the reference as one isolated, clean, full-body, high-resolution mascot on a genuinely transparent background. Preserve its exact shape, white material, very large head, two short softly pointed ears, graphite eyes, tiny nose, gentle smile, blue thick scarf with single white underscore, short paws and feet, one curled white tail with light blue tip, and friendly raised left paw as seen on image right. Preserve the distinctive original sculpt and soft premium vinyl finish, proportions, relative color palette and three-quarter view. Maintain one character, one tail, two ears, two arms, two feet. No redesign.
+Composition: square canvas, centered with all ears, waving paw, tail, and feet entirely visible, generous 8 percent transparent margin around the whole silhouette. Head/body should dominate the canvas. Soft neutral studio lighting on the subject.
+Background: actual alpha transparency, not a colored background, not a checkerboard painted into the image. Remove the design board, other views, expression stickers, typography and swatches. No floor, scenery, captions, lettering other than the one white underscore on the scarf, extra accessories, duplicate character, drop-shadow plate or watermark.

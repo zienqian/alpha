@@ -186,6 +186,17 @@
 }
 
 @layer components {
+  :root[data-desktop] {
+    --desktop-titlebar-height: 36px;
+  }
+
+  .desktop-titlebar {
+    height: var(--desktop-titlebar-height);
+    background: var(--shell);
+    user-select: none;
+    -webkit-app-region: drag;
+  }
+
   .workspace-shell {
     background: var(--shell);
   }
@@ -214,11 +225,6 @@
   .workspace-toolbar {
     border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
     background: color-mix(in srgb, var(--background) 94%, var(--shell));
-  }
-
-  .sidebar-search {
-    background: color-mix(in srgb, var(--background) 62%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sidebar-border) 70%, transparent);
   }
 
   .rail-action {

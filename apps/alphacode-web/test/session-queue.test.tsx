@@ -92,5 +92,5 @@ it("reorders a dragged row and restores server order if the mutation fails", asy
   fireEvent.pointerMove(handle, { pointerId: 1, clientY: 60 });
   fireEvent.pointerUp(handle, { pointerId: 1 });
   await waitFor(() => expect(onMove).toHaveBeenCalledExactlyOnceWith("one", null));
-  expect(within(screen.getByRole("region", { name: "待发送消息" })).getAllByRole("listitem")[0]?.textContent).toContain("第一条消息");
+  await waitFor(() => expect(within(screen.getByRole("region", { name: "待发送消息" })).getAllByRole("listitem")[0]?.textContent).toContain("第一条消息"));
 });

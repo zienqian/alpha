@@ -181,3 +181,33 @@ test("code revisions are stable and include local source plus the built web entr
     expect(await codeRevision(layout)).not.toBe(sourceChange);
   } finally { await temporaryFiles.dispose(); }
 });
+
+test("pre-extraction worker entry supports safe handoff into the extracted server", async () => {
+  const temporaryFiles = await temporary();
+  const paths = await serverPaths(join(temporaryFiles.root, "sessions.db"));
+  const layout = await serverLayout();
+  let revision = "legacy-entry";
+  const supervisor = await startSupervisor({ databasePath: paths.database, directory: paths.directory, descriptorPath: paths.descriptor,
+    layout: { ...layout, worker: join(layout.root, "apps/alphacode/src/server/worker.ts") },
+    getRevision: async () => revision, pollMs: 60000 });
+  const client = createNativeClient(supervisor.descriptor);
+  try {
+    const draft = await client.request<SessionView>("/api/connect", { config: {
+      workspaceRoot: temporaryFiles.root, databasePath: paths.database, configDirectory: join(temporaryFiles.root, "config"),
+      modelId: "codex/gpt-6.1-sol", baseURL: "https://offline.invalid/v1", apiKeyEnv: "UNUSED", noAuth: true,
+      skills: { sharedDirectories: false, claudeDirectories: false, trustedProjects: [], disabledNames: [] },
+    } });
+    const path = `/api/sessions/${draft.session.id}`;
+    await client.request(`${path}/requests`, { input: "/skills", requestId: "local" });
+    await waitFor(async () => !(await client.request<SessionView>(path)).requestId);
+    const before = await client.request<SessionView>(path);
+    revision = "new-server";
+    await supervisor.check();
+    await supervisor.check();
+    const after = await client.request<SessionView>(path);
+    expect(after.instanceId).not.toBe(before.instanceId);
+    expect(after.state.messages).toEqual(before.state.messages);
+    expect(after.state.contextUsage?.contextWindow).toBe(500000);
+    expect(await client.request("/api/info")).toMatchObject({ updateStatus: "current", revision });
+  } finally { await supervisor.close(); await temporaryFiles.dispose(); }
+});
