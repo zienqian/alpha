@@ -8,6 +8,7 @@ import { cliBridge, cliCommandName } from "../src/cli-command";
 // A native Bun binary is included, so build on the target OS and architecture.
 const platform = process.platform;
 const arch = process.arch;
+const { version: appVersion } = JSON.parse(await readFile(join(appDirectory, "package.json"), "utf8"));
 if (!["win32", "darwin", "linux"].includes(platform) || !["x64", "arm64"].includes(arch)) throw new Error("Unsupported desktop build target");
 await run(["run", "build:web"]);
 await run(["run", "--cwd", "apps/alphacode", "build"]);
@@ -19,7 +20,7 @@ try {
   const runtime = join(staging, "runtime");
   await mkdir(shell, { recursive: true });
   await mkdir(join(runtime, "bin"), { recursive: true });
-  await writeFile(join(shell, "package.json"), JSON.stringify({ name: "alphacode-app", productName: "AlphaCode", author: "Alpha", version: "0.1.0", main: "main.cjs" }));
+  await writeFile(join(shell, "package.json"), JSON.stringify({ name: "alphacode-app", productName: "AlphaCode", author: "Alpha", version: appVersion, main: "main.cjs" }));
   await cp(join(dist, "main.cjs"), join(shell, "main.cjs"));
   await cp(join(dist, "preload.cjs"), join(shell, "preload.cjs"));
   await cp(join(appDirectory, "assets"), join(shell, "assets"), { recursive: true });
@@ -68,7 +69,7 @@ try {
   const { version: electronVersion } = JSON.parse(await readFile(fileURLToPath(import.meta.resolve("electron/package.json")), "utf8"));
   const destinations = await packager({ dir: shell, out: dist, name: "AlphaCode", executableName: "AlphaCode",
     icon: join(appDirectory, "assets", platform === "darwin" ? "icon.icns" : platform === "win32" ? "icon.ico" : "icon.png"),
-    appBundleId: "com.alpha.alphacodeapp", appVersion: "0.1.0", electronVersion, platform: platform as "win32" | "darwin" | "linux",
+    appBundleId: "com.alpha.alphacodeapp", appVersion, electronVersion, platform: platform as "win32" | "darwin" | "linux",
     arch: arch as "x64" | "arm64", asar: true, prune: false, overwrite: true, extraResource: [runtime],
   });
   for (const destination of destinations) console.log(`Desktop package: ${destination}`);

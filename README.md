@@ -68,7 +68,19 @@ Session 使用 Bun 内置的 `bun:sqlite`，无需第三方 SQLite 驱动或原�
 - `alphacode-cli-<platform>-<arch>`：CLI、App Server 和库包的 `dist` 构建产物。需要检出同一提交、执行 `bun install --frozen-lockfile`，再把压缩包解压到仓库根目录；通过 `bun --no-env-file apps/alphacode/dist/index.js` 运行。此产物仍需 Bun、项目依赖及供搜索使用的 ripgrep。
 - `alphacode-app-<platform>-<arch>`：包含 Electron、Bun、CLI、App Server、Web 和 ripgrep 的独立应用目录。解压 `.tar.gz` 后运行目录内的 `AlphaCode.exe`、`AlphaCode.app` 或 `AlphaCode`，并完整保留目录内容。在 App 的 **工具 → 安装 alphacode 终端命令…** 中启用终端命令；用户已有或后来安装的 CLI 优先使用，详见 [App CLI 说明](apps/alphacode-app/README.md#随-app-提供的-cli)。使用 tar 保存可执行权限、符号链接及隐藏运行时文件，参见 [GitHub artifact 文档](https://github.com/actions/upload-artifact#permission-loss)。
 
-平台标识使用 `linux`、`win32`、`darwin`。App 产物尚未签名或公证；CI 验证构建与后台集成，桌面图形界面仍需在目标系统上验收。工作流仅上传 Actions 产物，不创建 Release。
+平台标识使用 `linux`、`win32`、`darwin`。App 产物尚未签名或公证；CI 验证构建与后台集成，桌面图形界面仍需在目标系统上验收。
+
+### 自动发布 GitHub Releases
+
+合并或推送到 `main` 后，CI 对比当前提交与其历史中最新的 `vX.Y.Z` tag。CLI、App、Web、App Server、共享库、依赖锁文件或构建打包脚本有变化时自动发版；只有文档、测试或示例变化时跳过发布。检测也覆盖文件删除和重命名；首次发版使用 `0.1.0`。无需按特定格式填写提交信息。
+
+CLI 和 App 共用版本号，后续默认递增补丁版本，例如 `0.1.0` → `0.1.1`。如需主动升级次版本或主版本，将 `apps/alphacode/package.json` 和 `apps/alphacode-app/package.json` 的版本一起调高并更新 `bun.lock`；CI 使用该版本。判断和更新逻辑在 [release.ts](scripts/release.ts)，可用 `bun scripts/release.ts plan` 在本地预览，不会修改文件。
+
+四个平台全部构建并通过离线集成测试后，CI 才将两个 `package.json` 及锁文件的版本更新提交回 `main`，同时创建 tag。产物和 tag 中的 CLI/App 版本保持一致。随后创建 Release 草稿，上传八个压缩包和 `SHA256SUMS`，全部上传成功后公开发布并生成更新说明。下载入口：[GitHub Releases](https://github.com/zienqian/alpha/releases)。Release 的 CLI 压缩包仍是上述构建产物；独立运行环境在 App 压缩包内。
+
+发布只使用 GitHub 自动提供的 `GITHUB_TOKEN`，仅发布 job 获得 `contents: write`；PR 只构建、不发布。仓库分支规则需允许 Actions 向 `main` 写入版本提交。版本提交由 `GITHUB_TOKEN` 推送，不会重复触发 CI，参见 [GitHub 的触发规则](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow)。
+
+如果构建期间 `main` 已更新，较旧的运行跳过发布，由新运行包含全部待发布变化；不会覆盖新提交。构建失败不会写版本或 tag。上传中断时 Release 保持草稿，在 Actions 中重跑失败 job 即可续传；已公开的 Release 不会被重写。手动运行 `main` 上的 CI 也使用相同检测规则。
 
 ## ADK
 

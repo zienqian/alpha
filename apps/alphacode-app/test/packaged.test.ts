@@ -97,6 +97,9 @@ test.skipIf(!runtime)("relocated App CLI works without global Bun and delegates 
       expect(result.error).toBeFalsy();
       expect(result.status, result.stderr).toBe(0);
       expect(result.stdout.toLowerCase()).toContain("alphacode");
+      if (args[0] === "--version" && process.env.ALPHACODE_RELEASE_VERSION) {
+        expect(result.stdout.trim()).toBe(`alphacode ${process.env.ALPHACODE_RELEASE_VERSION}`);
+      }
     }
     // The materialized workspace copy must locate the canonical server/Web paths.
     const revision = pathToFileURL(join(moved, "node_modules/@alpha/alphacode-app-server/src/server/revision.ts")).href;
