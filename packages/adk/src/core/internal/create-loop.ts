@@ -1,13 +1,13 @@
-import type { AssistantMessage, ToolResultMessage } from '../contracts';
+import type { AssistantMessage } from '../contracts';
 
 interface LoopContext {
   callModel(): Promise<AssistantMessage | undefined>;
-  callTool(assistantId: string, callId: string): Promise<ToolResultMessage>;
+  callTools(assistantId: string): Promise<void>;
   applySteering(): boolean;
   hasSteering(): boolean;
   skipTools(assistantId: string): void;
 }
-/** Private kernel algorithm: every operation is awaited, every batch is serial. */
+/** Private kernel algorithm: each model call and complete tool batch is awaited. */
 export function createLoop() {
   return {
     async execute(context: LoopContext): Promise<AssistantMessage> {
@@ -19,10 +19,8 @@ export function createLoop() {
           if (context.applySteering()) continue;
           return reply;
         }
-        for (const call of reply.toolCalls) {
-          if (context.hasSteering()) { context.skipTools(reply.id); break; }
-          await context.callTool(reply.id, call.id);
-        }
+        await context.callTools(reply.id);
+        if (context.hasSteering()) context.skipTools(reply.id);
       }
     },
   };

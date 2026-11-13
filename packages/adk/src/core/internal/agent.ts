@@ -6,7 +6,7 @@ import { createLoop } from './create-loop';
 import { createHistory } from './history';
 import { createEvents } from './events';
 import { callModel } from './model-gateway';
-import { callTool } from './tool-gateway';
+import { callTools } from './tool-gateway';
 import { assertNotReentrant, validateSignal } from './config';
 import { boundaryError, ensure, error, errorData, safeError } from './errors';
 import { createId, record, text, textBytes } from './json';
@@ -61,7 +61,9 @@ export function createAgentInstance<C>(config: {
           return consumed;
         },
         callModel: () => withSteering(signal => callModel(run, registry.model, instructions, registry.tools, registry.hooks, signal)),
-        callTool: (assistantId, callId) => withSteering((signal, release) => callTool(run, registry.toolMap, registry.hooks, assistantId, callId, signal, release)),
+        callTools: assistantId => callTools(run, registry.toolMap, registry.hooks, assistantId, {
+          hasSteering: () => steering.length > 0, prepare: withSteering,
+        }),
       });
     } catch (cause) { run.fail(cause); }
     steeringOpen = false;

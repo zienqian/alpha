@@ -47,13 +47,13 @@ test('one schema validates once and binds the identical frozen arguments to auth
   await agent.close();
 });
 
-test('tool-call hints do not execute; tools are awaited in order and IDs can repeat across responses/runs', async () => {
+test('tool-call hints do not execute; concurrency 1 preserves order and IDs can repeat across responses/runs', async () => {
   const trace = [];
   const model = fakeModel(
     [{ type: 'tool-call', toolCall: call() }, { type: 'finish', result: request(call(), call('c2')) }],
     request(call()), answer(), request(call()), answer(),
   );
-  const agent = await createAgent({ ...options(model), tools: [tool(async () => { trace.push('start'); await turn(); trace.push('end'); return 'ok'; })] });
+  const agent = await createAgent({ ...options(model), limits: { maxConcurrentTools: 1 }, tools: [tool(async () => { trace.push('start'); await turn(); trace.push('end'); return 'ok'; })] });
   assert.equal((await agent.prompt('first')).status, 'completed');
   assert.equal((await agent.prompt('second')).status, 'completed');
   assert.deepEqual(trace, ['start', 'end', 'start', 'end', 'start', 'end', 'start', 'end']);

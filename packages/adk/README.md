@@ -1,6 +1,6 @@
 # Alpha ADK
 
-ADK 是带内置 Loop 的单 Agent 微内核。模型、工具和固定阶段的策略通过配置与插件接入，内核管理历史、串行执行、预算、取消和终态。
+ADK 是带内置 Loop 的单 Agent 微内核。模型、工具和固定阶段的策略通过配置与插件接入，内核管理历史、工具调度、预算、取消和终态。
 
 ## 使用
 
@@ -54,6 +54,9 @@ input 同时提供 Standard Schema 校验和 Standard JSON Schema 输入描述�
 - 一个 Agent 同时只接受一个 prompt；并发请求 reject，不排队。
 - text-delta 是预览；正常情况下仅完整 finish 且流正常结束后提交 assistant，并从其 toolCalls 执行。引导中断时可将已显示文字保存为 `incompleteReason: "steered"` 的 assistant；不保存未完成的工具参数或 provider continuation。
 - 工具结果按 assistantId + callId 配对。effect 默认 unknown；write / unknown 工具抛错会将历史标为 blocked。
+- 同一响应中连续的 `effect: 'read'` 调用最多 4 个并行，空位释放后继续调度。`limits.maxConcurrentTools` 可设为正整数，设为 1 恢复全串行。write / unknown 调用等待前面的读取和结果处理完成，后续读取也不会越过它们；不推断 shell 命令是否只读。
+- 工具准备和 authorizeTool 按调用顺序执行，至多一个待审批调用。并行 read 的 execute / mapToolResult 可能交错，结果及 tool.end 按完成顺序提交；消费者应使用 assistantId + callId 关联。声明 read 的工具及结果钩子须支持并发调用；存在依赖的读取应分轮请求，或配置串行。
+- 任一工具失败、达到预算或取消后不再启动新调用；等待所有已启动工作结束并记录执行事实，再补齐未执行调用、保存快照或释放资源。
 - 已返回的工具即使后处理失败，也保留 succeeded 事实；内核不重试工具。
 - abort / timeout / close 请求协作停止，等待受理中的工作结束；不合作的扩展可能一直等待。
 - 初始化 signal 成功创建后解除关联；prompt.signal 仅影响当前 run。
@@ -62,7 +65,7 @@ input 同时提供 Standard Schema 校验和 Standard JSON Schema 输入描述�
 - 历史是进程内只读快照；未安装运行边界时，replaceMessages 在 idle 时原子替换完整历史，拒绝未知结果与未配对调用。安装边界后外部替换被 HISTORY_MANAGED 拒绝。
 - prompt 可传稳定的 requestId；省略时为新请求生成 ID。只有安装实现去重的边界（例如 Session 插件）才有跨调用去重语义，裸 core 不承诺该能力。
 - 事件同步有序，无消费者队列或持久化保证；观察者错误独立报告。同步重入产生的停止事件在当前分发后顺序通知。
-- 默认 8 次模型、32 次工具、1 MiB 模型输出、128 KiB 工具结果、4 MiB / 512 条历史；timeout 默认不设置。
+- 默认 8 次模型、32 次工具、4 个并行只读工具、1 MiB 模型输出、128 KiB 工具结果、4 MiB / 512 条历史；timeout 默认不设置。
 - 首版完整历史请求，保留 Provider continuation 与 responseId，不自动启用 previousResponseId。
 
 创建错误与入口错误 reject；已受理运行中的失败通过 RunResult.status=failed 返回。错误不包含原始工具参数、凭证或 HTTP 响应。

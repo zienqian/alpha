@@ -4,7 +4,7 @@ import { ensure, error } from './errors';
 import { copyObject, record, text } from './json';
 
 export const defaultLimits: Readonly<Limits> = Object.freeze({
-  maxModelCalls: 8, maxToolCalls: 32,
+  maxModelCalls: 8, maxToolCalls: 32, maxConcurrentTools: 4,
   maxModelOutputBytes: 1024 * 1024, maxToolResultBytes: 128 * 1024,
   maxHistoryBytes: 4 * 1024 * 1024, maxHistoryMessages: 512,
 });
@@ -35,7 +35,7 @@ export function createLimits(source?: Partial<Limits>): Readonly<Limits> {
     if (value === null && ['maxModelCalls', 'maxToolCalls', 'maxHistoryBytes', 'maxHistoryMessages'].includes(key)) continue;
     if (key === 'timeoutMs' && value === undefined) continue;
     ensure(typeof value === 'number' && Number.isSafeInteger(value) && value >= 0, 'CONFIG_INVALID');
-    if (key.endsWith('Bytes') || key === 'maxHistoryMessages') ensure(value > 0, 'CONFIG_INVALID');
+    if (key.endsWith('Bytes') || key === 'maxHistoryMessages' || key === 'maxConcurrentTools') ensure(value > 0, 'CONFIG_INVALID');
     if (key === 'timeoutMs') ensure(value <= 2_147_483_647, 'CONFIG_INVALID');
   }
   return Object.freeze(output);

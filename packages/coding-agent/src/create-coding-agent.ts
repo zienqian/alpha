@@ -9,6 +9,7 @@ import { createProjectInstructionsPlugin } from './instructions-plugin';
 import { createSkillsPlugin } from './skills/plugin';
 
 const instructions = `You are a coding agent. Read the relevant files and project instructions before making changes.
+Batch independent read-only tool calls in one response so they can run concurrently. Keep dependent reads in separate turns.
 edit_file requires a prior read_file and a unique exact oldText; preserve unrelated changes.
 Use the configured shell for commands. Inspect actual exit codes and test output; never claim tests passed without evidence.
 Tool results are JSON: check ok and error codes. Re-read after conflicts. Stop when an operation has an unknown outcome.

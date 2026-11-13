@@ -82,6 +82,8 @@ PowerShell 5.1/7 使用 UTF-8 和纯文本输出，不加载 profile。退出码
 | `create_file` | 只创建；父目录必须存在，不覆盖 |
 | `run_command` | 执行已选 Shell 的命令；参数 `command, cwd?, timeoutMs?` |
 
+同一模型响应中连续的 `read_file`、`list_files`、`search`、`readSkill` 默认最多 4 个并行；通过 `limits.maxConcurrentTools` 调整，设为 1 恢复串行。审批仍按调用顺序进行。`edit_file`、`create_file` 和 `run_command` 前后形成执行屏障，确保先完成读取再编辑，修改后的读取也不会提前执行。相互依赖的读取应分轮请求。
+
 默认读取、搜索、编辑、创建允许；命令询问、自定义工具拒绝。静态 `policy.decide(action, context)` 返回 allow/ask/deny；缺少 approve 回调时 ask 拒绝。`action.cwd` 标识根目录，digest 绑定参数、路径、Shell、预期文件版本和预览。审批期间文件变化返回 `FILE_CONFLICT`。
 
 结果为有界 JSON 字符串：`{ ok: true, data }` 或 `{ ok: false, code, detail? }`。非零退出返回 `COMMAND_EXIT_NONZERO`，保留退出码和日志，模型可继续修复。无法确认副作用则抛出并产生 `outcome_unknown`，不自动重试。命令执行后清除文件观察，写文件后清除该文件观察；再次修改需重新读取。

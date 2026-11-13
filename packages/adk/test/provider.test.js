@@ -43,6 +43,43 @@ const previews = {
   'openai-responses': [{ type: 'response.output_text.delta', delta: 'visible preview' }],
   'anthropic-messages': [{ type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'visible preview' } }],
 };
+
+describe('provider requests preserve pairing when parallel reads finish out of order', () => {
+  for (const adapter of Object.keys(cases)) test(adapter, async () => {
+    const events = structuredClone(cases[adapter][0]), bodies = [], release = deferred();
+    if (adapter === 'openai-completions') {
+      events[0].choices[0].delta.tool_calls.push({ index: 1, id: 'c2', type: 'function', function: { name: 'lookup', arguments: '{"id":"B"}' } });
+    } else if (adapter === 'openai-responses') {
+      events[0].response.output.push({ type: 'function_call', call_id: 'c2', name: 'lookup', arguments: '{"id":"B"}' });
+    } else {
+      events.splice(events.length - 2, 0,
+        { type: 'content_block_start', index: 2, content_block: { type: 'tool_use', id: 'c2', name: 'lookup', input: {} } },
+        { type: 'content_block_delta', index: 2, delta: { type: 'input_json_delta', partial_json: '{"id":"B"}' } },
+        { type: 'content_block_stop', index: 2 },
+      );
+    }
+    const provider = createProvider({ providers: { main: {
+      adapter, options: { baseURL: 'https://fixture.invalid/v1', apiKey: { env: 'FIXTURE_KEY' }, ...(adapter === 'anthropic-messages' ? { maxOutputTokens: 100 } : {}) },
+      models: { chat: { id: 'fixture-model' } },
+    } } }, { getEnv: () => 'fixture-not-a-real-secret', fetch: async (_url, init) => {
+      bodies.push(JSON.parse(init.body)); return sse(bodies.length === 1 ? events : cases[adapter][1]);
+    } });
+    const agent = await createAgent({ model: provider.use('main', 'chat'), instructions: '',
+      tools: [tool(async ({ id }) => { if (id === 'A') await release.promise; return id; })],
+    });
+    agent.subscribe(event => { if (event.type === 'tool.end' && event.callId === 'c2') release.resolve(); });
+    assert.equal((await agent.prompt('read both')).status, 'completed');
+    const body = bodies[1];
+    const pairs = adapter === 'openai-completions'
+      ? body.messages.filter(message => message.role === 'tool').map(message => [message.tool_call_id, message.content])
+      : adapter === 'openai-responses'
+        ? body.input.filter(item => item.type === 'function_call_output').map(item => [item.call_id, item.output])
+        : body.messages.at(-1).content.filter(block => block.type === 'tool_result').map(block => [block.tool_use_id, block.content]);
+    assert.deepEqual(pairs, [['c2', 'B'], ['c1', 'A']]);
+    await agent.close();
+  });
+});
+
 describe('steering closes the provider stream before resuming with portable history', () => {
   for (const [adapter, events] of Object.entries(previews)) test(adapter, async () => {
     const entered = deferred(), bodies = [], signals = [];

@@ -57,6 +57,34 @@ test('read/edit/create preserves exact text and emits facts, create never overwr
   assert.equal(results(agent)[3].data.code, 'FILE_EXISTS'); await agent.close();
 });
 
+test('parallel file reads retain edit observations and edits fence later reads', async () => {
+  await using f = await fixture({ a: 'before', b: 'independent' });
+  const bothRead = deferred(), release = deferred(), readResults = [], started = [];
+  const model = fakeModel(request(
+    call('read_file', { path: 'a' }, 'read-a'), call('read_file', { path: 'b' }, 'read-b'),
+    call('edit_file', { path: 'a', oldText: 'before', newText: 'after' }, 'edit'),
+    call('read_file', { path: 'a' }, 'after'),
+  ), answer());
+  const agent = await createCodingAgent({ model, cwd: f.cwd, shell: false, hooks: { mapToolResult: [async result => {
+    if (result.callId.startsWith('read-')) {
+      readResults.push(result.callId); if (readResults.length === 2) bothRead.resolve();
+      await release.promise;
+    }
+    return result.content;
+  }] } });
+  agent.subscribe(event => { if (event.type === 'tool.start') started.push(event.callId); });
+  const work = agent.prompt('read and edit'); await bothRead.promise;
+  assert.deepEqual(started, ['read-a', 'read-b']); assert.equal(await f.read('a'), 'before');
+  release.resolve(); assert.equal((await work).status, 'completed');
+  const byId = new Map(results(agent).map(result => [result.callId, result.data]));
+  assert.equal(byId.get('read-a').data.content, 'before');
+  assert.equal(byId.get('read-b').data.content, 'independent');
+  assert.equal(byId.get('edit').ok, true);
+  assert.equal(byId.get('after').data.content, 'after');
+  assert.deepEqual(started, ['read-a', 'read-b', 'edit', 'after']);
+  assert.equal(await f.read('a'), 'after'); await agent.close();
+});
+
 for (const [content, read, oldText, expected] of [['a', false, 'a', 'FILE_NOT_READ'], ['a a', true, 'a', 'TEXT_NOT_UNIQUE'], ['a', true, 'b', 'TEXT_NOT_FOUND']]) test(`preflight rejection ${expected} leaves files and history usable`, async () => {
   await using f = await fixture({ a: content }); const steps = read ? [request(call('read_file', { path: 'a' }))] : [];
   const agent = await createCodingAgent({ cwd: f.cwd, model: fakeModel(...steps, request(call('edit_file', { path: 'a', oldText, newText: 'x' })), answer()) });

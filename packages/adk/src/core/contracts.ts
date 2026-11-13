@@ -87,6 +87,7 @@ export type Hooks<C> = {
 export interface Limits {
   maxModelCalls: number | null; // 默认 8；null 不限次数
   maxToolCalls: number | null;  // 默认 32；null 不限次数及单响应调用列表长度
+  maxConcurrentTools: number;  // 默认 4；仅连续 read 工具并行；1 恢复串行
   timeoutMs?: number;           // 缺省无墙钟期限；不代表强制终止
   maxModelOutputBytes: number;  // 默认 1 MiB
   maxToolResultBytes: number;   // 默认 128 KiB
