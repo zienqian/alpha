@@ -11,7 +11,7 @@ import { archiveSearchMessages, searchSession } from "./search";
 import { createRegistry, digest, readJson, writeJson } from "./storage";
 import { createSecurity, fail, jsonBody, requiredString, secret } from "./security";
 import { createSkillRoutes } from "./skills";
-import { createProjectRoutes } from "./projects";
+import { createProjectRoutes, ensureDefaultProject } from "./projects";
 import { skillUploadLimit } from "./skill-archive";
 import { createTraceService, createMemoryTraceStore, type TraceService } from "@alpha/adk-trace";
 import { createSqliteTraceStore } from "@alpha/adk-trace/sqlite";
@@ -387,7 +387,9 @@ export async function startServer(options: ServerOptions) {
       }
       if (path === "/api/sessions" && request.method === "POST") {
         const body = await jsonBody(request);
-        return Response.json(snapshot(await createEntry(requiredString(body, "projectId", 100))), { status: 201 });
+        const projectId = body.projectId === undefined ? await ensureDefaultProject(registry, options.databasePath)
+          : requiredString(body, "projectId", 100);
+        return Response.json(snapshot(await createEntry(projectId)), { status: 201 });
       }
       if (path === "/api/web" && request.method === "POST") {
         const body = await jsonBody(request);

@@ -48,6 +48,7 @@ server 异常退出后，重新启动 CLI 可恢复已提交历史；端口变�
   config.yaml    # 模型、服务端点、认证方式、默认权限和会话数据库路径
   AGENTS.md      # 所有项目共用的 Agent 指令
   sessions.db    # 默认会话数据库
+  workspace/     # Web / App 未选择项目时使用的默认工作目录，首次发送时创建
 ```
 
 首次启动自动创建目录、带注释的 `config.yaml` 模板和空的 `AGENTS.md`；已有文件不会被覆盖。使用 `ALPHACODE_HOME` 可切换整个全局配置目录，也会改变默认数据库位置。目录支持 `~`，相对路径基于启动目录。
@@ -66,9 +67,12 @@ model:
   id: your-model-id
 permissionMode: ask # ask / auto / full
 databasePath: sessions.db
+defaultWorkspace: workspace # 相对全局配置目录，也可用绝对路径或 ~/...
 ```
 
 当前支持 `openai-completions` 适配器；`apiKey` 使用环境变量名或 `{ none: true }`，不在 YAML 中填写实际密钥。`databasePath` 的相对路径基于配置目录，`ALPHACODE_DB` 的相对路径仍基于启动目录；两者都支持 `~`。空文件和注释文件表示使用默认配置。无效字段、重复键、错误类型或 YAML 格式会在启动时明确报错。
+
+Web / App 新对话未选择项目时使用 `defaultWorkspace`，默认 `~/.alphacode/workspace`（Windows 为 `%USERPROFILE%\.alphacode\workspace`）。`ALPHACODE_HOME` 同时改变默认工作区的位置；相对配置路径基于该目录。首次发送会自动创建目录并登记项目，同一路径复用同一个项目，聊天记录仍统一保存在 `sessions.db`。修改配置只影响之后未选择项目的新对话，已有会话保留原目录。CLI 仍以启动目录、位置参数或 `ALPHACODE_WORKSPACE` 选择项目。
 
 新会话配置优先级为：**环境变量 → 全局 config.yaml → 内置默认值**。恢复已有会话时，使用该会话保存的模型和权限；`/permission` 只修改当前 session，不改写全局配置。
 

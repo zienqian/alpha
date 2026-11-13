@@ -16,6 +16,43 @@ async function openSearch() {
 }
 
 describe("full conversation search", () => {
+  it("offers quick actions before chats and opens the selected action with Enter", async () => {
+    const input = await openSearch();
+    const options = screen.getAllByRole("option");
+    expect(options.slice(0, 2).map(option => option.textContent)).toEqual(["新聊天Ctrl+N", "打开文件夹Ctrl+O"]);
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await screen.findByRole("dialog", { name: "创建项目" });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索会话" })).toBeNull());
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "项目名称" })));
+  });
+
+  it("filters quick actions by their translated name and focuses the new chat composer", async () => {
+    const input = await openSearch();
+    fireEvent.change(input, { target: { value: "新聊天" } });
+    const action = await screen.findByRole("option", { name: "新聊天" });
+    expect(screen.queryByRole("option", { name: "打开文件夹" })).toBeNull();
+    fireEvent.click(action);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "消息草稿" })));
+    expect(api.fetch.mock.calls.some(([path, init]) => path === "/api/sessions" && init.method === "POST")).toBe(false);
+  });
+
+  it("runs quick-action shortcuts from the search input without interrupting IME composition", async () => {
+    const input = await openSearch();
+    fireEvent.keyDown(input, { key: "o", ctrlKey: true, isComposing: true, keyCode: 229 });
+    expect(screen.getByRole("dialog", { name: "搜索会话" })).toBeTruthy();
+    fireEvent.keyDown(input, { key: "o", ctrlKey: true });
+    await screen.findByRole("dialog", { name: "创建项目" });
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "项目名称" }), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "n", metaKey: true });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "消息草稿" })));
+  });
+
   it("searches unopened message bodies and highlights every literal occurrence", async () => {
     const input = await openSearch();
     fireEvent.change(input, { target: { value: "主题变量" } });
@@ -40,7 +77,7 @@ describe("full conversation search", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect((screen.getByRole("combobox") as HTMLInputElement).value).toBe("");
-    expect(screen.getByText("最近会话")).toBeTruthy();
+    expect(screen.getByText("聊天")).toBeTruthy();
   });
 
   it("keeps IME Enter from opening a conversation", async () => {

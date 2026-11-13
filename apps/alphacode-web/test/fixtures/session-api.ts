@@ -1,8 +1,9 @@
 import { vi } from "vitest";
 import { demoFolders } from "./demo-data";
-import type { SessionInfo, SessionView } from "@/features/sessions/api";
+import type { ProjectInfo, SessionInfo, SessionView } from "@/features/sessions/api";
 
 export function mockSessionApi() {
+  const projects: ProjectInfo[] = [];
   const infos: SessionInfo[] = demoFolders.flatMap((folder) => folder.sessions.map((session) => ({
     id: session.id, projectId: folder.id, workspaceRoot: folder.path, title: session.title,
     updatedAt: "2026-11-09T01:00:00.000Z", status: "ready",
@@ -31,7 +32,7 @@ export function mockSessionApi() {
   const fetch = vi.fn(async (path: string, init: RequestInit) => {
     const override = overrides.get(path);
     if (override) return override(init);
-    if (path === "/api/projects") return Response.json({ projects: [] });
+    if (path === "/api/projects") return Response.json({ projects });
     if (path.endsWith("/events")) {
       const id = path.slice("/api/sessions/".length, -"/events".length);
       const initial = path === "/api/events" ? { instanceId: "test-server", sequence: 1 } : views.get(id);
@@ -56,11 +57,17 @@ export function mockSessionApi() {
     }
     if (path === "/api/sessions" && init.method === "POST") {
       const { projectId } = JSON.parse(String(init.body));
-      const template = infos.find(item => item.projectId === projectId);
-      if (!template) throw new Error("Missing project fixture");
-      const created: SessionView = { ...view(template.id), session: { ...template, id: crypto.randomUUID(), title: "" },
-        state: { ...view(template.id).state, messages: [] } };
+      const template = projectId === undefined ? undefined : infos.find(item => item.projectId === projectId);
+      if (projectId !== undefined && !template) throw new Error("Missing project fixture");
+      const created: SessionView = template
+        ? { ...view(template.id), session: { ...template, id: crypto.randomUUID(), title: "" }, state: { ...view(template.id).state, messages: [] } }
+        : { instanceId: "test-server", sequence: 1, modelId: "offline-model",
+          session: { id: crypto.randomUUID(), projectId: "default-project", workspaceRoot: "/home/test/.alphacode/workspace", title: "", updatedAt: "2026-11-14T01:00:00.000Z", status: "ready" },
+          state: { busy: false, canSend: true, closing: false, settingsSaving: false, phase: "idle", permissionMode: "ask", status: "Ready", messages: [] } };
       infos.push(created.session); views.set(created.session.id, created);
+      if (projectId === undefined && !projects.some(project => project.projectId === created.session.projectId)) projects.push({
+        projectId: created.session.projectId, workspaceRoot: created.session.workspaceRoot, name: "workspace", isDefaultWorkspace: true,
+      });
       return Response.json(created, { status: 201 });
     }
     const action = /^\/api\/sessions\/([^/]+)\/(requests|cancel|approval|permission|queue)$/.exec(path);
@@ -144,5 +151,5 @@ export function mockSessionApi() {
     if (!result) throw new Error(`Missing fixture view: ${id}`);
     return result;
   }
-  return { fetch, infos, views, overrides, info, view, emit, publish, streams };
+  return { fetch, infos, views, projects, overrides, info, view, emit, publish, streams };
 }

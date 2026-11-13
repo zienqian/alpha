@@ -30,6 +30,7 @@ export interface SessionInfo {
 export interface ProjectInfo {
   projectId: string;
   workspaceRoot: string;
+  isDefaultWorkspace?: boolean;
   name?: string;
   defaultContext?: ContextUsage;
 }
@@ -158,7 +159,7 @@ export type QueueAction = { requestId: string } & (
 );
 export const updateQueue = (id: string, action: QueueAction) =>
   requestJson<SessionView>(`${sessionPath(id)}/queue`, AbortSignal.timeout(15_000), action);
-export const createSession = (projectId: string) =>
+export const createSession = (projectId?: string) =>
   requestJson<SessionView>("/api/sessions", AbortSignal.timeout(15_000), { projectId });
 export const sendRequest = (id: string, requestId: string, input: string) =>
   requestJson<RequestReceipt>(`${sessionPath(id)}/requests`, AbortSignal.timeout(15_000), { requestId, input });

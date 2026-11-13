@@ -2,7 +2,8 @@ export type LanguagePreference = "system" | "en" | "zh-CN";
 export const isLanguagePreference = (value: unknown): value is LanguagePreference =>
   value === "system" || value === "en" || value === "zh-CN";
 import { mkdir, open, writeFile } from "node:fs/promises";
-import { isAbsolute, join } from "node:path";
+import { homedir } from "node:os";
+import { isAbsolute, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
 import type { PermissionMode } from "./chat/contracts";
 import { ConfigurationError } from "./errors";
@@ -19,6 +20,19 @@ export interface GlobalDefaults {
   noAuth?: boolean;
   permissionMode?: PermissionMode;
   databasePath?: string;
+  defaultWorkspace?: string;
+}
+
+export function expandHome(path: string): string {
+  return path === "~" ? homedir() : /^~[/\\]/.test(path) ? join(homedir(), path.slice(2)) : path;
+}
+
+export function globalConfigDirectory(env = process.env, cwd = process.cwd()): string {
+  return resolve(cwd, expandHome(env.ALPHACODE_HOME?.trim() || join(homedir(), ".alphacode")));
+}
+
+export function defaultWorkspacePath(directory: string, defaults: GlobalDefaults): string {
+  return resolve(directory, expandHome(defaults.defaultWorkspace ?? "workspace"));
 }
 
 export interface SkillsSettings {
@@ -55,6 +69,8 @@ skills:
   trustedProjects: []
   disabledNames: []
 # databasePath: sessions.db
+# Workspace for new chats without a selected project. Relative to this config directory.
+# defaultWorkspace: workspace
 `;
 
 function invalid(file: string, field: string): never {
@@ -84,7 +100,7 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     throw new ConfigurationError(`${file}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`, { code: "INVALID_YAML", params: { file } });
   }
   if (value === null) return {};
-  const root = object(value, file, "root", ["provider", "model", "context", "permissionMode", "databasePath", "skills", "language"]);
+  const root = object(value, file, "root", ["provider", "model", "context", "permissionMode", "databasePath", "defaultWorkspace", "skills", "language"]);
   const defaults: GlobalDefaults = {};
   if (root.context !== undefined) {
     const context = object(root.context, file, "context", ["autoCompact"]);
@@ -157,10 +173,14 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     defaults.permissionMode = root.permissionMode;
   }
   if (root.databasePath !== undefined) defaults.databasePath = string(root.databasePath, file, "databasePath");
+  if (root.defaultWorkspace !== undefined) {
+    defaults.defaultWorkspace = string(root.defaultWorkspace, file, "defaultWorkspace");
+    if (defaults.defaultWorkspace.includes("\0") || defaults.defaultWorkspace.length > 4096) invalid(file, "defaultWorkspace");
+  }
   return defaults;
 }
 
-async function readBounded(file: string, limit: number): Promise<string> {
+async function readBounded(file: string, limit: number, missingIsEmpty = false): Promise<string> {
   try {
     const handle = await open(file, "r");
     try {
@@ -176,9 +196,16 @@ async function readBounded(file: string, limit: number): Promise<string> {
       return new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(0, size));
     } finally { await handle.close(); }
   } catch (error) {
+    if (missingIsEmpty && (error as NodeJS.ErrnoException).code === "ENOENT") return "";
     if (error instanceof ConfigurationError) throw error;
     throw new ConfigurationError(`${file}: Could not read file. Check file permissions and UTF-8 encoding.`, { code: "CONFIG_READ_FAILED", params: { file } });
   }
+}
+
+// Read display metadata without initializing files during an index request.
+export async function readGlobalDefaults(directory: string): Promise<GlobalDefaults> {
+  const file = join(directory, "config.yaml");
+  return parseGlobalConfig(await readBounded(file, 64 * 1024, true), file);
 }
 
 export async function readGlobalConfig(directory: string): Promise<{

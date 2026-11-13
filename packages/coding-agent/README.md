@@ -15,6 +15,29 @@ try { await agent.prompt('修复问题并运行相关测试。'); }
 finally { await agent.close(); }
 ```
 
+## 内置系统指令
+
+`src/instructions.ts` 集中维护行为规则，`createCodingAgent` 在创建时按实际工具、Shell、文件访问模式和命令期限拼装。调用方 `instructions` 仍追加在末尾；项目 AGENTS.md 与 Skills 继续通过既有插件注入，系统指令不写入对话历史。AlphaCode 的 CLI、Web 和桌面端共用 app-server 的 `createCodingAgent`，无需在各端重复配置。
+
+2026-11-14 对公开 Claude Code prompt 的核对与取舍：
+
+- [官方 changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) 当日首项为 **2.1.323**；[Piebald 提取仓库 v2.1.322](https://github.com/Piebald-AI/claude-code-system-prompts/tree/v2.1.322) 的 README 标注 **2026-11-09**。本文以该固定 tag 为研究基线，不把它称为官方最新版的完整运行时 prompt。
+- 网传 [Fable 5.2 转储](https://github.com/elder-plinius/CL4R1T4S/blob/main/ANTHROPIC/CLAUDE-CODE-FABLE-5.2.txt) 混合了工具 schema、模型行为、云端环境和技能正文；其中 `agentic_behavior/situation` 自述基于 Claude Code，但不是 Claude Code 本体。来源是社区发布，真实性与完整性未获官方确认。
+- Claude Code 的指令由多个条件片段和工具描述组成，单个文件不是所有用户都会收到的唯一 prompt。Alpha 采用下列原则的独立改写，不导入整份转储，也不在运行时联网加载上游内容。
+
+| 参考原则 | Alpha 的内置行为 |
+| --- | --- |
+| [完整交付](https://github.com/Piebald-AI/claude-code-system-prompts/blob/v2.1.322/system-prompts/system-prompt-delivering-work-at-full-scope.md) | 合理假设下推进实现与验证；确实阻塞时完成其余部分并说明缺口 |
+| [控制范围](https://github.com/Piebald-AI/claude-code-system-prompts/blob/v2.1.322/system-prompts/system-prompt-doing-tasks-no-unnecessary-additions.md) | 最小且完整的修改，复用现有约定，保护用户已有改动，避免顺手重构 |
+| [工具使用](https://github.com/Piebald-AI/claude-code-system-prompts/blob/v2.1.322/system-prompts/system-prompt-harness-instructions.md) | 专用工具优先；仅独立读取并行；搜索与读取有界，依赖和副作用顺序执行 |
+| [行动边界](https://github.com/Piebald-AI/claude-code-system-prompts/blob/v2.1.322/system-prompts/system-prompt-executing-actions-with-care.md) | 授权范围内继续执行；被拒操作不可换工具绕过；提交、发布和破坏性操作遵守明确授权 |
+| [证据汇报](https://github.com/Piebald-AI/claude-code-system-prompts/blob/v2.1.322/system-prompts/system-prompt-reporting-outcomes.md) | 根据实际结果报告完成情况，区分通过、失败、未运行和未知结果 |
+| [面向用户沟通](https://github.com/Piebald-AI/claude-code-system-prompts/blob/v2.1.322/system-prompts/system-prompt-outcome-first-communication-style.md) | 任务开始说明意图，重要进展简报，最终先讲结果、验证和限制 |
+
+本地适配保留了 Alpha 的真实协议：`search` 是字面搜索，编辑前必须有 `read_file` 凭据，编辑或执行命令后再次编辑必须重读，`create_file` 不覆盖文件，JSON 的 `ok/code` 与命令退出码都要检查。PowerShell 单独提示传播原生命令退出码；禁用 Shell、工具子集、自定义同名工具、host/workspace 模式和无限期限不会收到相互矛盾的内置工具指令。
+
+未迁移 Claude 的身份、模型特定策略、Artifacts、自动发布、子代理、计划模式、记忆、后台任务或连接器工具指令；这些依赖不同的产品和运行时。尤其没有迁移转储中“编辑后不要重读”的规则，因为 Alpha 的编辑凭据会失效。权限仍由 `policy/approve` 和执行器落实，prompt 是行为指导，不是权限隔离。离线测试验证拼装与运行时契约，不能据此宣称真实模型的任务成功率已经提升。
+
 ## Skills
 
 Skills 使用三个公开函数，不新增注册中心或独立执行循环：

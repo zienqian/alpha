@@ -10,6 +10,8 @@
     "description": "Browse skills on this computer and in shared directories, or add skills from a package or link.",
     "back": "Back to session",
     "refresh": "Refresh skills",
+    "settings": "Skill settings",
+    "clearFilter": "Clear source filter",
     "add": "Add skill",
     "project": "Current project",
     "success": "Installed: {{names}}",

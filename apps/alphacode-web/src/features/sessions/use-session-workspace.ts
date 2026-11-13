@@ -22,6 +22,7 @@ export interface SessionDraft {
 }
 
 const emptyDraft: SessionDraft = { text: "", attachments: [] };
+const defaultDraftFolderId = "local-default-workspace";
 type LocalSession = Session & { folderId?: string };
 
 function createLocalSession(id: string, folderId?: string): LocalSession {
@@ -87,21 +88,21 @@ export function useSessionWorkspace() {
       ? { ...previous, [id]: { ...previous[id], text: "" } } : previous);
   });
   const [focusRequest, setFocusRequest] = useState(0);
-  const firstFolderId = sourceFolders[0]?.id;
-  useEffect(() => {
-    if (firstFolderId) setLocalSessions((previous) => previous.some((session) => !session.folderId)
-      ? previous.map((session) => session.folderId ? session : { ...session, folderId: firstFolderId }) : previous);
-  }, [firstFolderId]);
-  const folders = sourceFolders.map((folder) => ({
+  const defaultFolderId = sourceFolders.find(folder => folder.isDefaultWorkspace)?.id ?? defaultDraftFolderId;
+  // Keep unsent default-workspace drafts reachable without registering a project.
+  const draftFolders = defaultFolderId === defaultDraftFolderId && localSessions.some(session => !session.folderId && (hasDraft(session.id) || session.title))
+    ? [{ id: defaultDraftFolderId, name: t("workspace:defaultWorkspace"), path: "", sessions: [], isDefaultWorkspace: true }, ...sourceFolders] : sourceFolders;
+  const folders = draftFolders.map((folder) => ({
     ...folder,
+    name: folder.isDefaultWorkspace ? t("workspace:defaultWorkspace") : folder.name,
     sessions: [
-      ...localSessions.filter((session) => (session.folderId ?? sourceFolders[0]?.id) === folder.id && (hasDraft(session.id) || session.title)),
+      ...localSessions.filter((session) => (session.folderId ?? defaultFolderId) === folder.id && (hasDraft(session.id) || session.title)),
       ...folder.sessions.filter(session => !emptyRemoteIds.has(session.id) || hasDraft(session.id))
         .map(session => emptyRemoteIds.has(session.id) ? { ...session, title: "", local: true } : session),
     ].map(session => displaySession(creatingIds[session.id] ? { ...session, titleStatus: "pending" } : session)),
   }));
   const localSession = localSessions.find(session => session.id === selectedSessionId);
-  const selectedFolderId = isLocal ? localSession?.folderId ?? sourceFolders[0]?.id : history.data?.session.projectId;
+  const selectedFolderId = isLocal ? localSession?.folderId ?? defaultFolderId : history.data?.session.projectId;
   const selectedFolder = folders.find(folder => folder.id === selectedFolderId)
     ?? folders.find(folder => folder.sessions.some(session => session.id === selectedSessionId));
   const selectedSession = isWelcome ? displaySession(localSession ?? createLocalSession(selectedSessionId, selectedFolder?.id))
@@ -149,9 +150,9 @@ export function useSessionWorkspace() {
   }
 
   function newSession(requestedFolderId?: string) {
-    const folderId = requestedFolderId ?? selectedFolder?.id ?? sourceFolders[0]?.id;
-    if (!folderId || !sourceFolders.some((folder) => folder.id === folderId)) return;
-    const reusable = localSessions.find((session) => (session.folderId ?? sourceFolders[0]?.id) === folderId &&
+    const folderId = requestedFolderId === defaultDraftFolderId ? undefined : requestedFolderId;
+    if (folderId && !sourceFolders.some((folder) => folder.id === folderId)) return;
+    const reusable = localSessions.find((session) => session.folderId === folderId &&
       !session.title && !drafts[session.id]?.text.trim() && !drafts[session.id]?.attachments.length);
     if (reusable) {
       selectSession(reusable.id);
@@ -163,8 +164,9 @@ export function useSessionWorkspace() {
     setFocusRequest((previous) => previous + 1);
   }
 
-  function selectProject(folderId: string) {
-    if (creating.current.has(selectedSessionId) || !sourceFolders.some(folder => folder.id === folderId)) return;
+  function selectProject(folderId?: string) {
+    if (folderId === defaultDraftFolderId) folderId = undefined;
+    if (creating.current.has(selectedSessionId) || (folderId && !sourceFolders.some(folder => folder.id === folderId))) return;
     // Only unsent local drafts may move; archived/running sessions keep their cwd.
     if (isLocal) {
       setLocalSessions(previous => previous.map(session => session.id === selectedSessionId ? { ...session, folderId } : session));
@@ -175,7 +177,7 @@ export function useSessionWorkspace() {
   }
 
   async function addProject(name: string, path: string) {
-    const project = await createProject(name, path, selectedFolder?.id);
+    const project = await createProject(name, path, isLocal ? localSession?.folderId : selectedFolder?.id);
     client.setQueryData<ProjectInfo[]>(["projects"], previous => [...(previous ?? []).filter(item => item.projectId !== project.projectId), project]);
     setOpenedProjects(previous => [...previous.filter(item => item.projectId !== project.projectId), project]);
     if (isLocal && !creating.current.has(selectedSessionId)) {
@@ -216,10 +218,10 @@ export function useSessionWorkspace() {
     setDeletedIds(previous => new Set(previous).add(id));
     setDrafts(previous => { const next = { ...previous }; delete next[id]; return next; });
     setLocalSessions(previous => previous.filter(session => session.id !== id));
-    if (folder) setOpenedProjects(previous => previous.some(project => project.projectId === folder.id) ? previous
+    if (folder && folder.id !== defaultDraftFolderId) setOpenedProjects(previous => previous.some(project => project.projectId === folder.id) ? previous
       : [...previous, { projectId: folder.id, workspaceRoot: folder.path, defaultContext: folder.defaultContext }]);
     if (selection.current === id) {
-      const next = createLocalSession(`local-${crypto.randomUUID()}`, folder?.id);
+      const next = createLocalSession(`local-${crypto.randomUUID()}`, folder?.id === defaultDraftFolderId ? undefined : folder?.id);
       setLocalSessions(previous => [next, ...previous]);
       selectSession(next.id, true);
       setFocusRequest(previous => previous + 1);
@@ -234,7 +236,7 @@ export function useSessionWorkspace() {
   const busy = Boolean(history.data?.state.busy);
   const permissionMode = isLocal ? draft.permissionMode ?? "ask" : history.data?.state.permissionMode;
   const canChangePermission = !creatingIds[selectedSessionId] && !actions.pending && !actions.controlling
-    && (isLocal ? Boolean(selectedFolder) : connected && Boolean(history.data?.state.canSend)
+    && (isLocal || connected && Boolean(history.data?.state.canSend)
       && !busy && !history.data?.state.queuedRequests?.length && !history.data?.state.closing && !history.data?.state.settingsSaving && !history.data?.state.approval);
   function changePermission(mode: PermissionMode) {
     if (!canChangePermission) return;
@@ -242,24 +244,28 @@ export function useSessionWorkspace() {
     else void actions.setPermissionMode(selectedSessionId, mode);
   }
   const canSend = Boolean(draft.text.trim()) && !draft.attachments.length && !actions.pending
-    && !actions.controlling && !creatingIds[selectedSessionId] && (isLocal ? Boolean(selectedFolder) : connected
+    && !actions.controlling && !creatingIds[selectedSessionId] && (isLocal ? !localSession?.folderId || Boolean(selectedFolder) : connected
       && Boolean(history.data?.state.canQueue || (!busy && history.data?.state.canSend))
       && !history.data?.state.closing && !history.data?.state.settingsSaving);
 
   async function send() {
     if (!canSend || creating.current.has(selectedSessionId)) return;
     if (!isLocal) { await actions.send(selectedSessionId, draft.text); return; }
-    if (!selectedFolder) return;
     const localId = selectedSessionId;
     const input = draft.text;
     creating.current.add(localId);
     setCreatingIds(previous => ({ ...previous, [localId]: true }));
     setCreationErrors(previous => ({ ...previous, [localId]: undefined }));
     try {
-      const created = await createSession(selectedFolder.id);
+      const created = await createSession(localSession?.folderId);
       const id = created.session.id;
       client.setQueryData(["session", id], created);
       client.setQueryData<SessionInfo[]>(["sessions"], previous => [created.session, ...(previous ?? []).filter(info => info.id !== id)]);
+      if (!localSession?.folderId) client.setQueryData<ProjectInfo[]>(["projects"], previous => [
+        ...(previous ?? []).map(project => ({ ...project, isDefaultWorkspace: false })).filter(project => project.projectId !== created.session.projectId),
+        { projectId: created.session.projectId, workspaceRoot: created.session.workspaceRoot, defaultContext: created.session.defaultContext, isDefaultWorkspace: true },
+      ]);
+      void client.invalidateQueries({ queryKey: ["projects"] });
       setDrafts(previous => ({ ...previous, [id]: previous[localId] ?? draft, [localId]: emptyDraft }));
       setLocalSessions(previous => previous.map(session => session.id === localId ? { ...session, title: "" } : session));
       if (selection.current === localId) selectSession(id, false, false);

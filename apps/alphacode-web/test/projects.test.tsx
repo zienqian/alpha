@@ -16,6 +16,70 @@ async function setup(search = "/") {
   return api;
 }
 
+it.each([false, true])("sends an unselected chat to the default workspace (empty installation: %s)", async empty => {
+  const api = mockSessionApi();
+  if (empty) { api.infos.splice(0); api.views.clear(); }
+  window.history.replaceState(null, "", "/");
+  const app = render(<AppProviders><App /></AppProviders>);
+  const picker = await screen.findByRole("button", { name: "更改此聊天的项目" });
+  expect(picker.textContent).toBe("默认工作区");
+  expect(api.fetch.mock.calls.some(([, init]) => init.method === "POST")).toBe(false);
+  replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "默认工作区中的任务");
+  fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+  await waitFor(() => expect(api.fetch.mock.calls.some(([path]) => path.endsWith("/requests"))).toBe(true));
+  const request = api.fetch.mock.calls.find(([path, init]) => path === "/api/sessions" && init.method === "POST");
+  expect(JSON.parse(String(request?.[1].body))).toEqual({});
+  const id = new URL(window.location.href).searchParams.get("session");
+  if (!id) throw new Error("Missing created session");
+  expect(api.view(id).session.workspaceRoot).toBe("/home/test/.alphacode/workspace");
+  expect(api.view(id).state.messages.some(message => message.text === "默认工作区中的任务")).toBe(true);
+  expect(await screen.findByRole("button", { name: "文件夹 默认工作区" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "文件夹 workspace" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "在 默认工作区 中新建会话" }));
+  fireEvent.keyDown(screen.getByRole("button", { name: "更改此聊天的项目" }), { key: "Enter" });
+  expect(await screen.findByRole("menuitem", { name: /默认工作区/ })).toBeTruthy();
+  expect(screen.getAllByRole("menuitem", { name: /默认工作区/ })).toHaveLength(1);
+  fireEvent.click(screen.getByRole("menuitem", { name: /默认工作区/ }));
+  replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "下一条默认草稿");
+  expect(screen.getAllByRole("button", { name: "文件夹 默认工作区" })).toHaveLength(1);
+  app.unmount();
+  window.history.replaceState(null, "", `/?session=${id}`);
+  render(<AppProviders><App /></AppProviders>);
+  expect(await screen.findByRole("button", { name: "文件夹 默认工作区" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "文件夹 workspace" })).toBeNull();
+});
+
+it("keeps default workspace drafts reachable after navigation and allows returning from an explicit project", async () => {
+  const api = await setup();
+  replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "保留默认草稿");
+  fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
+  await screen.findByRole("heading", { name: "项目说明与约定" });
+  fireEvent.click(screen.getByRole("button", { name: "新会话" }));
+  expect(screen.getByRole("textbox", { name: "消息草稿" }).textContent).toBe("保留默认草稿");
+  fireEvent.keyDown(screen.getByRole("button", { name: "更改此聊天的项目" }), { key: "Enter" });
+  fireEvent.click(await screen.findByRole("menuitem", { name: /docs/ }));
+  fireEvent.keyDown(screen.getByRole("button", { name: "更改此聊天的项目" }), { key: "Enter" });
+  fireEvent.click(await screen.findByRole("menuitem", { name: "默认工作区" }));
+  fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+  await waitFor(() => expect(api.fetch.mock.calls.some(([path]) => path.endsWith("/requests"))).toBe(true));
+  const request = api.fetch.mock.calls.find(([path, init]) => path === "/api/sessions" && init.method === "POST");
+  expect(JSON.parse(String(request?.[1].body))).toEqual({});
+});
+
+it("preserves an unselected draft if default workspace creation fails and lets the user retry", async () => {
+  const api = await setup();
+  api.overrides.set("/api/sessions", init => init.method === "POST"
+    ? Response.json({ code: "DIRECTORY_UNAVAILABLE" }, { status: 400 }) : Response.json({ sessions: api.infos }));
+  replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "创建失败后保留");
+  fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+  await screen.findByRole("alert");
+  expect(screen.getByRole("textbox", { name: "消息草稿" }).textContent).toBe("创建失败后保留");
+  expect(api.fetch.mock.calls.some(([path]) => path.endsWith("/requests"))).toBe(false);
+  api.overrides.delete("/api/sessions");
+  fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+  await waitFor(() => expect(api.fetch.mock.calls.some(([path]) => path.endsWith("/requests"))).toBe(true));
+});
+
 it("moves an unsent draft to the chosen project and sends it using that project's directory", async () => {
   const api = await setup();
   replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "保留这段草稿");

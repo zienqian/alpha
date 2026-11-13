@@ -65,7 +65,7 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
           onClick={() => { setEditing(false); setError(undefined); requestAnimationFrame(() => menu.current?.focus()); }}><X aria-hidden="true" /></Button>
       </form> : <>
         <SidebarMenuSubButton asChild isActive={active}
-          className="session-nav-item h-9 w-full translate-x-0 rounded-lg pr-9 pl-7 text-[13px] text-sidebar-foreground/80 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8">
+          className="session-nav-item h-9 w-full translate-x-0 rounded-lg px-9 text-[13px] text-sidebar-foreground/80 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8">
           <button type="button" title={session.title} aria-label={session.title} aria-current={active ? "page" : undefined} onClick={onSelect}>
             <SessionTitle title={session.title} pending={session.titleStatus === "pending"} />
           </button>

@@ -22,17 +22,18 @@ function setup(data = fixture()) {
   const fetch = vi.fn(async (_path: string, init?: RequestInit) => init?.method === "POST"
     ? Response.json({ installed: ["new-skill"], directory: data.directories[0]?.path, requiresNewSession: true }, { status: 201 }) : Response.json(data));
   vi.stubGlobal("fetch", fetch);
-  const back = vi.fn();
-  render(<AppProviders><SidebarProvider><SkillsMarket initialProjectId="alpha" onBack={back} /></SidebarProvider></AppProviders>);
-  return { fetch, back };
+  render(<AppProviders><SidebarProvider><SkillsMarket initialProjectId="alpha" /></SidebarProvider></AppProviders>);
+  return { fetch };
 }
 
 describe("Skills marketplace", () => {
   it("lists real sources and statuses, filters and searches, and shows directory paths", async () => {
     setup();
-    const list = await screen.findByRole("list", { name: "已安装的技能" });
+    const list = await screen.findByRole("list", { name: "本地安装" });
     expect(within(list).getByText("code-review")).toBeTruthy();
-    expect(within(list).getByText("不受信任")).toBeTruthy();
+    expect(within(screen.getByRole("list", { name: "共享目录" })).getByText("不受信任")).toBeTruthy();
+    expect(screen.queryByRole("combobox", { name: "当前项目" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "技能设置" }));
     fireEvent.click(screen.getByRole("button", { name: "共享目录" }));
     expect(screen.queryByText("code-review")).toBeNull();
     expect(screen.getByText("team-style")).toBeTruthy();
@@ -41,6 +42,10 @@ describe("Skills marketplace", () => {
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "" } });
     fireEvent.click(screen.getByText("技能目录"));
     expect(screen.getByText("C:/work/alpha/.agents/skills")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "技能设置" }));
+    expect(screen.getByRole("button", { name: "清除来源筛选" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "清除来源筛选" }));
+    expect(screen.getByText("code-review")).toBeTruthy();
   });
 
   it("uploads ZIP to the chosen directory and refreshes after installation", async () => {
@@ -106,6 +111,7 @@ describe("Skills marketplace", () => {
     beta.directories = beta.directories.map(directory => ({ ...directory, enabled: directory.id === "user-local" }));
     fetch.mockImplementation(async (_path, init) => init?.method === "POST"
       ? Response.json({ installed: ["new-skill"], directory: "C:/user/.alphacode/skills", requiresNewSession: true }, { status: 201 }) : Response.json(beta));
+    fireEvent.click(screen.getByRole("button", { name: "技能设置" }));
     fireEvent.change(screen.getByRole("combobox", { name: "当前项目" }), { target: { value: "beta" } });
     await waitFor(() => expect((screen.getByRole("combobox", { name: "安装位置" }) as HTMLSelectElement).value).toBe("user-local"));
     expect(within(screen.getByRole("form", { name: "添加技能" })).getByText("C:/user/.alphacode/skills")).toBeTruthy();
@@ -115,7 +121,7 @@ describe("Skills marketplace", () => {
     expect(fetch.mock.calls.find(([, init]) => init?.method === "POST")?.[0]).toBe("/api/skills/install?projectId=beta&directoryId=user-local");
   });
 
-  it("navigates from the sidebar and preserves the chat draft when returning", async () => {
+  it("navigates through the sidebar and preserves the chat draft when returning", async () => {
     const api = mockSessionApi();
     window.history.replaceState(null, "", "/?session=project-notes");
     const projectId = api.view("project-notes").session.projectId;
@@ -126,7 +132,8 @@ describe("Skills marketplace", () => {
     fireEvent.click(screen.getByRole("button", { name: "技能市场" }));
     await screen.findByRole("heading", { name: "技能市场", level: 1 });
     expect(window.location.pathname).toBe("/skills");
-    fireEvent.click(screen.getByRole("button", { name: "返回会话" }));
+    expect(screen.queryByRole("button", { name: "返回会话" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
     expect((screen.getByRole("textbox", { name: "消息草稿" })).textContent).toBe("保留我的草稿");
     expect(window.location.pathname).toBe("/");
   });

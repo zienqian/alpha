@@ -10,6 +10,8 @@
     "description": "查看本机与共享目录中的技能，或通过压缩包或链接添加技能。",
     "back": "返回会话",
     "refresh": "刷新技能",
+    "settings": "技能设置",
+    "clearFilter": "清除来源筛选",
     "add": "添加技能",
     "project": "当前项目",
     "success": "已安装：{{names}}",

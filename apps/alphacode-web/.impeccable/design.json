@@ -1,9 +1,34 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-13T05:06:58.558Z",
+  "generatedAt": "2026-11-13T18:51:27.000Z",
   "title": "Design System: AlphaCode Web",
   "extensions": {
     "colorMeta": {
+      "search-surface": {
+        "role": "neutral",
+        "displayName": "搜索面板实色底",
+        "tonalRamp": ["oklch(0.150 0 0)", "oklch(0.264 0 0)", "oklch(0.379 0 0)", "oklch(0.493 0 0)", "oklch(0.607 0 0)", "oklch(0.721 0 0)", "oklch(0.836 0 0)", "oklch(0.950 0 0)"]
+      },
+      "search-text": {
+        "role": "neutral",
+        "displayName": "搜索文字与状态",
+        "tonalRamp": ["oklch(0.150 0 0)", "oklch(0.264 0 0)", "oklch(0.379 0 0)", "oklch(0.493 0 0)", "oklch(0.607 0 0)", "oklch(0.721 0 0)", "oklch(0.836 0 0)", "oklch(0.950 0 0)"]
+      },
+      "search-secondary": {
+        "role": "neutral",
+        "displayName": "搜索分组与项目名",
+        "tonalRamp": ["oklch(0.150 0 0)", "oklch(0.264 0 0)", "oklch(0.379 0 0)", "oklch(0.493 0 0)", "oklch(0.607 0 0)", "oklch(0.721 0 0)", "oklch(0.836 0 0)", "oklch(0.950 0 0)"]
+      },
+      "search-selected": {
+        "role": "neutral",
+        "displayName": "搜索选中行",
+        "tonalRamp": ["oklch(0.150 0 0)", "oklch(0.264 0 0)", "oklch(0.379 0 0)", "oklch(0.493 0 0)", "oklch(0.607 0 0)", "oklch(0.721 0 0)", "oklch(0.836 0 0)", "oklch(0.950 0 0)"]
+      },
+      "search-key": {
+        "role": "neutral",
+        "displayName": "搜索快捷键底色",
+        "tonalRamp": ["oklch(0.150 0 0)", "oklch(0.264 0 0)", "oklch(0.379 0 0)", "oklch(0.493 0 0)", "oklch(0.607 0 0)", "oklch(0.721 0 0)", "oklch(0.836 0 0)", "oklch(0.950 0 0)"]
+      },
       "primary": {
         "tonalRamp": [
           "oklch(0.150 0.1457 258.96)",
@@ -114,14 +139,14 @@
       },
       "accent": {
         "tonalRamp": [
-          "oklch(0.150 0.0109 256.70)",
-          "oklch(0.264 0.0109 256.70)",
-          "oklch(0.379 0.0109 256.70)",
-          "oklch(0.493 0.0109 256.70)",
-          "oklch(0.607 0.0109 256.70)",
-          "oklch(0.721 0.0109 256.70)",
-          "oklch(0.836 0.0109 256.70)",
-          "oklch(0.950 0.0109 256.70)"
+          "oklch(0.150 0 0)",
+          "oklch(0.264 0 0)",
+          "oklch(0.379 0 0)",
+          "oklch(0.493 0 0)",
+          "oklch(0.607 0 0)",
+          "oklch(0.721 0 0)",
+          "oklch(0.836 0 0)",
+          "oklch(0.950 0 0)"
         ]
       },
       "border": {
@@ -186,26 +211,26 @@
       },
       "sidebar-accent": {
         "tonalRamp": [
-          "oklch(0.150 0.0219 256.73)",
-          "oklch(0.264 0.0219 256.73)",
-          "oklch(0.379 0.0219 256.73)",
-          "oklch(0.493 0.0219 256.73)",
-          "oklch(0.607 0.0219 256.73)",
-          "oklch(0.721 0.0219 256.73)",
-          "oklch(0.836 0.0219 256.73)",
-          "oklch(0.950 0.0219 256.73)"
+          "oklch(0.150 0 0)",
+          "oklch(0.264 0 0)",
+          "oklch(0.379 0 0)",
+          "oklch(0.493 0 0)",
+          "oklch(0.607 0 0)",
+          "oklch(0.721 0 0)",
+          "oklch(0.836 0 0)",
+          "oklch(0.950 0 0)"
         ]
       },
       "sidebar-accent-foreground": {
         "tonalRamp": [
-          "oklch(0.150 0.1071 256.64)",
-          "oklch(0.264 0.1071 256.64)",
-          "oklch(0.379 0.1071 256.64)",
-          "oklch(0.493 0.1071 256.64)",
-          "oklch(0.607 0.1071 256.64)",
-          "oklch(0.721 0.1071 256.64)",
-          "oklch(0.836 0.1071 256.64)",
-          "oklch(0.950 0.1071 256.64)"
+          "oklch(0.150 0.0198 264.19)",
+          "oklch(0.264 0.0198 264.19)",
+          "oklch(0.379 0.0198 264.19)",
+          "oklch(0.493 0.0198 264.19)",
+          "oklch(0.607 0.0198 264.19)",
+          "oklch(0.721 0.0198 264.19)",
+          "oklch(0.836 0.0198 264.19)",
+          "oklch(0.950 0.0198 264.19)"
         ]
       },
       "sidebar-border": {
@@ -450,26 +475,26 @@
       },
       "sidebar-accent-dark": {
         "tonalRamp": [
-          "oklch(0.150 0.0556 258.63)",
-          "oklch(0.264 0.0556 258.63)",
-          "oklch(0.379 0.0556 258.63)",
-          "oklch(0.493 0.0556 258.63)",
-          "oklch(0.607 0.0556 258.63)",
-          "oklch(0.721 0.0556 258.63)",
-          "oklch(0.836 0.0556 258.63)",
-          "oklch(0.950 0.0556 258.63)"
+          "oklch(0.150 0.0272 259.15)",
+          "oklch(0.264 0.0272 259.15)",
+          "oklch(0.379 0.0272 259.15)",
+          "oklch(0.493 0.0272 259.15)",
+          "oklch(0.607 0.0272 259.15)",
+          "oklch(0.721 0.0272 259.15)",
+          "oklch(0.836 0.0272 259.15)",
+          "oklch(0.950 0.0272 259.15)"
         ]
       },
       "sidebar-accent-foreground-dark": {
         "tonalRamp": [
-          "oklch(0.150 0.0531 258.04)",
-          "oklch(0.264 0.0531 258.04)",
-          "oklch(0.379 0.0531 258.04)",
-          "oklch(0.493 0.0531 258.04)",
-          "oklch(0.607 0.0531 258.04)",
-          "oklch(0.721 0.0531 258.04)",
-          "oklch(0.836 0.0531 258.04)",
-          "oklch(0.950 0.0531 258.04)"
+          "oklch(0.150 0.0092 258.34)",
+          "oklch(0.264 0.0092 258.34)",
+          "oklch(0.379 0.0092 258.34)",
+          "oklch(0.493 0.0092 258.34)",
+          "oklch(0.607 0.0092 258.34)",
+          "oklch(0.721 0.0092 258.34)",
+          "oklch(0.836 0.0092 258.34)",
+          "oklch(0.950 0.0092 258.34)"
         ]
       },
       "sidebar-border-dark": {
@@ -577,6 +602,11 @@
     ],
     "motion": [
       {
+        "name": "search-list-height",
+        "value": "height 100ms ease",
+        "purpose": "搜索列表随实测内容加 8px 留白收缩，上限 440px，并受 70dvh 减输入行高度限制；减少动态效果时关闭过渡。"
+      },
+      {
         "name": "sidebar-width",
         "value": "width 220ms cubic-bezier(0.2, 0.8, 0.2, 1)",
         "purpose": "CSS 桌面展开与图标轨切换。"
@@ -625,11 +655,19 @@
   },
   "components": [
     {
+      "name": "分组搜索",
+      "kind": "custom",
+      "refersTo": "search-dialog",
+      "description": "实色中性搜索弹层，最大 760px / 70dvh；52px 输入行，快捷操作与聊天分组间隔 5px，结果行桌面最小 35px、窄屏 40px，14px 细线图标和右侧纯文字项目名。Ctrl/⌘ N、Ctrl/⌘ O 仅在弹层内触发新聊天与打开文件夹；全文结果保留路径、命中数量与片段，无尾部 Enter 图标或资源分组。",
+      "html": "<section class=\"ds-search\" aria-label=\"搜索\"><div class=\"ds-search-input-row\"><svg class=\"ds-search-input-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input class=\"ds-search-input\" aria-label=\"搜索聊天\" placeholder=\"搜索聊天\"/><button class=\"ds-search-close\" aria-label=\"关闭搜索\"><kbd class=\"ds-search-key\">Esc</kbd></button></div><div class=\"ds-search-list\"><div class=\"ds-search-group\"><div class=\"ds-search-group-heading\">快捷操作</div><button class=\"ds-search-item\"><svg class=\"ds-search-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M16 3l5 5M9 10l8-8 5 5-8 8-6 1z\"/></svg><span class=\"ds-search-title\">新聊天</span><kbd class=\"ds-search-key\">Ctrl+N</kbd></button><button class=\"ds-search-item\"><svg class=\"ds-search-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 14l1.5-3h14l-3 9H3V5a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2\"/></svg><span class=\"ds-search-title\">打开文件夹</span><kbd class=\"ds-search-key\">Ctrl+O</kbd></button></div><div class=\"ds-search-group\"><div class=\"ds-search-group-heading\">聊天</div><button class=\"ds-search-item ds-search-selected\"><svg class=\"ds-search-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7.9 20A9 9 0 1 0 4 16.1L2 22z\"/></svg><span class=\"ds-search-title\">界面调整</span><span class=\"ds-search-project\">alpha</span></button></div></div></section>",
+      "css": ".ds-search{--ds-search-surface:#f4f4f4;--ds-search-text:#666666;--ds-search-secondary:#858585;--ds-search-selected:var(--accent,#e6e6e6);--ds-search-key:#e5e5e5;display:flex;flex-direction:column;width:min(760px,100%);max-height:70dvh;overflow:hidden;border:1px solid var(--border,#dce1e9);border-radius:12px;corner-shape:round;background:var(--ds-search-surface);color:var(--popover-foreground,#252a34);box-shadow:var(--overlay-shadow,0 18px 48px -12px rgb(24 38 60 / 22%));font-family:system-ui,sans-serif}.dark .ds-search,:host-context(.dark) .ds-search{--ds-search-surface:var(--popover,#292e37);--ds-search-text:var(--popover-foreground,#e7ebf1);--ds-search-secondary:var(--muted-foreground,#a3adbc);--ds-search-selected:var(--accent,#343d4b);--ds-search-key:var(--muted,#2b3039)}.ds-search-input-row{display:flex;align-items:center;flex-shrink:0;gap:10px;min-height:52px;padding:8px 12px;border-bottom:1px solid var(--border,#dce1e9)}.ds-search-input-icon{width:16px;height:16px;flex-shrink:0;color:var(--ds-search-secondary)}.ds-search-input{flex:1;width:100%;min-width:0;padding:0;border:0;background:transparent;color:var(--foreground,#252a34);font:15px/24px system-ui,sans-serif;outline:none}.ds-search-input::placeholder{color:var(--ds-search-text)}.ds-search-list{max-height:min(440px,calc(70dvh - 52px));padding-bottom:8px;overflow-y:auto;overscroll-behavior:contain;scroll-padding-block:8px}.ds-search-group+.ds-search-group{margin-top:5px}.ds-search-group-heading{display:flex;align-items:center;height:30px;padding:6px 10px 4px;color:var(--ds-search-secondary);font-size:12px;line-height:20px}.ds-search-item{display:flex;align-items:center;gap:10px;width:100%;min-height:35px;padding:6px 10px;border:0;border-radius:6px;background:transparent;color:var(--ds-search-text);font:14px/23px system-ui,sans-serif;text-align:left;cursor:pointer}.ds-search-item:hover,.ds-search-selected{background:var(--ds-search-selected);color:var(--foreground,#252a34)}.ds-search-item:focus-visible,.ds-search-close:focus-visible{outline:2px solid var(--ring,#4b7dc4);outline-offset:-2px}.ds-search-item:active{background:color-mix(in oklab,var(--foreground,#252a34) 10%,var(--background,#fff))}.ds-search-icon{width:14px;height:14px;flex-shrink:0}.ds-search-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-search-project{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ds-search-secondary);font-size:12px;line-height:16px}.ds-search-key{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:17px;padding:0 6px;border-radius:999px;corner-shape:round;background:var(--ds-search-key);color:var(--ds-search-text);font:12px/1 system-ui,sans-serif}.ds-search-close{padding:4px;border:0;border-radius:8px;background:transparent;cursor:pointer}.ds-search-close:hover{background:var(--ds-search-selected)}@media(max-width:639px){.ds-search-input{font-size:16px}.ds-search-item{min-height:40px}.ds-search-project{max-width:80px}}"
+    },
+    {
       "name": "主要按钮",
       "kind": "button",
       "refersTo": "button-primary",
       "description": "发送与主要操作。",
-      "html": "<button class=\"ds-button ds-primary\">添加 Skill</button>",
+      "html": "<button class=\"ds-button ds-primary\">安装技能</button>",
       "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border:0;border-radius:var(--radius-md,8px);font:500 12px system-ui,sans-serif;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);outline-offset:2px}.ds-button:disabled{opacity:.5;pointer-events:none}.ds-primary{background:var(--primary,#3269be);color:var(--primary-foreground,#fff)}.ds-primary:hover{background:color-mix(in srgb,var(--primary,#3269be) 90%,transparent)}"
     },
     {
@@ -646,7 +684,7 @@
       "refersTo": "button-ghost",
       "description": "低强调工具栏操作。",
       "html": "<button class=\"ds-button ds-ghost\">返回对话</button>",
-      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border:0;border-radius:var(--radius-md,8px);font:500 12px system-ui,sans-serif;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);outline-offset:2px}.ds-button:disabled{opacity:.5;pointer-events:none}.ds-ghost{background:transparent;color:var(--foreground,#252a34)}.ds-ghost:hover{background:var(--accent,#e6ebf2);color:var(--accent-foreground,#283c59)}"
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border:0;border-radius:var(--radius-md,8px);font:500 12px system-ui,sans-serif;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);outline-offset:2px}.ds-button:disabled{opacity:.5;pointer-events:none}.ds-ghost{background:transparent;color:var(--foreground,#252a34)}.ds-ghost:hover{background:var(--accent,#e6e6e6);color:var(--accent-foreground,#252a34)}"
     },
     {
       "name": "描边按钮",
@@ -654,7 +692,7 @@
       "refersTo": "button-outline",
       "description": "重试等辅助操作。",
       "html": "<button class=\"ds-button ds-outline\">重试</button>",
-      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border:0;border-radius:var(--radius-md,8px);font:500 12px system-ui,sans-serif;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);outline-offset:2px}.ds-button:disabled{opacity:.5;pointer-events:none}.ds-outline{border:1px solid var(--border,#dce1e9);background:var(--background,#fafbfd);color:var(--foreground,#252a34);box-shadow:0 1px 2px rgb(0 0 0 / 5%)}.ds-outline:hover{background:var(--accent,#e6ebf2);color:var(--accent-foreground,#283c59)}"
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border:0;border-radius:var(--radius-md,8px);font:500 12px system-ui,sans-serif;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);outline-offset:2px}.ds-button:disabled{opacity:.5;pointer-events:none}.ds-outline{border:1px solid var(--border,#dce1e9);background:var(--background,#fafbfd);color:var(--foreground,#252a34);box-shadow:0 1px 2px rgb(0 0 0 / 5%)}.ds-outline:hover{background:var(--accent,#e6e6e6);color:var(--accent-foreground,#252a34)}"
     },
     {
       "name": "文本输入",
@@ -670,15 +708,23 @@
       "refersTo": "navigation-active",
       "description": "展开侧栏的当前会话。",
       "html": "<nav class=\"ds-nav\" aria-label=\"会话\"><button class=\"ds-nav-item\" aria-current=\"page\">新对话</button></nav>",
-      "css": ".ds-nav{corner-shape:round;width:248px;padding:10px;border-radius:14px;background:var(--glass-surface,rgb(246 249 253 / 72%));box-shadow:var(--glass-shadow,0 3px 12px rgb(31 49 77 / 4%));backdrop-filter:blur(24px) saturate(135%)}.ds-nav-item{corner-shape:var(--corner-shape,superellipse(1.3));width:100%;height:32px;padding:0 8px 0 28px;border:0;border-radius:8px;text-align:left;background:var(--sidebar-accent,#dce6f4);color:var(--sidebar-accent-foreground,#28538d);font:500 13px system-ui,sans-serif;cursor:pointer}.ds-nav-item:focus-visible{outline:2px solid var(--ring,#4b7dc4);outline-offset:2px}"
+      "css": ".ds-nav{corner-shape:round;width:248px;padding:12px;border-radius:14px;background:var(--glass-surface,rgb(246 249 253 / 72%));box-shadow:var(--glass-shadow,0 3px 12px rgb(31 49 77 / 4%));backdrop-filter:blur(24px) saturate(135%)}.ds-nav-item{corner-shape:var(--corner-shape,superellipse(1.3));width:100%;height:32px;padding:0 36px;border:0;border-radius:8px;text-align:left;background:var(--sidebar-accent,#e6e6e6);color:var(--sidebar-accent-foreground,#252a34);font:500 13px system-ui,sans-serif;cursor:pointer}.ds-nav-item:focus-visible{outline:2px solid var(--ring,#4b7dc4);outline-offset:2px}"
     },
     {
-      "name": "Skill 状态",
-      "kind": "chip",
-      "refersTo": "skill-status",
-      "description": "已安装条目的只读状态。",
-      "html": "<span class=\"ds-status\">可用</span>",
-      "css": ".ds-status{display:inline-flex;border:1px solid transparent;border-radius:4px;padding:2px 6px;background:var(--muted,#eef1f5);color:var(--foreground,#252a34);font:10px/12px system-ui,sans-serif}"
+      "name": "Skill 条目",
+      "kind": "custom",
+      "refersTo": "skill-entry",
+      "description": "技能列表按容器 640px 切换单双列。条目最小 64px，图标 40px，沿用产品 xl / 2xl 圆角（14px / 18px）；13px 名称与 12px 说明单行截断，可用状态显示勾选，展开后查看完整说明、来源与路径。以下为示例内容。",
+      "html": "<details class=\"ds-skill\"><summary class=\"ds-skill-summary\"><span class=\"ds-skill-icon\" aria-hidden=\"true\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m16 18 6-6-6-6m-8 0-6 6 6 6\"/></svg></span><span class=\"ds-skill-copy\"><span class=\"ds-skill-name\" title=\"code-example\">code-example</span><span class=\"ds-skill-description\">示例技能：构建与维护项目代码。</span></span><span class=\"ds-skill-status\" role=\"img\" aria-label=\"可用\" title=\"可用\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m20 6-11 11-5-5\"/></svg></span></summary><div class=\"ds-skill-detail\"><p>示例技能：构建与维护项目代码。</p><p class=\"ds-skill-meta\">个人 · 本地安装</p><p class=\"ds-skill-meta\">.agents/skills/code-example/SKILL.md</p></div></details>",
+      "css": ".ds-skill{border-radius:var(--radius-2xl,18px);corner-shape:var(--corner-shape,superellipse(1.3));color:var(--foreground,#252a34);font-family:system-ui,sans-serif}.ds-skill[open]{background:color-mix(in srgb,var(--muted,#eef1f5) 50%,transparent)}.ds-skill-summary{box-sizing:border-box;display:flex;align-items:center;gap:12px;min-height:64px;padding:8px;border-radius:var(--radius-2xl,18px);corner-shape:var(--corner-shape,superellipse(1.3));list-style:none;cursor:pointer;outline:none;transition:background-color 150ms}.ds-skill-summary::-webkit-details-marker{display:none}.ds-skill-summary:hover{background:color-mix(in srgb,var(--muted,#eef1f5) 70%,transparent)}.ds-skill-summary:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent)}.ds-skill-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:40px;height:40px;border-radius:var(--radius-xl,14px);corner-shape:var(--corner-shape,superellipse(1.3));background:light-dark(#f5f3ff,#2e1065);color:light-dark(#8b5cf6,#c4b5fd)}.ds-skill-copy{min-width:0;flex:1}.ds-skill-name,.ds-skill-description{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:20px}.ds-skill-name{font-size:13px;font-weight:500}.ds-skill-description{margin-top:2px;font-size:12px;color:var(--muted-foreground,#616c7b)}.ds-skill-status{display:flex;flex-shrink:0;margin-left:4px;padding-right:4px;color:var(--muted-foreground,#616c7b);opacity:.65}.ds-skill-detail{padding:4px 12px 16px;font-size:12px;line-height:20px;overflow-wrap:anywhere}.ds-skill-detail p{margin:0 0 8px}.ds-skill-meta{color:var(--muted-foreground,#616c7b)}@media(min-width:640px){.ds-skill-detail{padding-left:60px}}@media(prefers-reduced-motion:reduce){.ds-skill-summary{transition:none}}"
+    },
+    {
+      "name": "添加技能入口",
+      "kind": "button",
+      "refersTo": "skill-add",
+      "description": "Skills 顶部的局部前景色胶囊入口，与搜索、刷新、设置并列；共享主要按钮及安装表单继续沿用蓝色。",
+      "html": "<button class=\"ds-skill-add\">添加技能</button>",
+      "css": ".ds-skill-add{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border:0;border-radius:9999px;corner-shape:round;background:var(--foreground,#252a34);color:var(--background,#fff);font:500 12px system-ui,sans-serif;cursor:pointer;transition:background-color 150ms}.ds-skill-add:hover{background:color-mix(in srgb,var(--foreground,#252a34) 90%,transparent)}.ds-skill-add:focus-visible{outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 50%,transparent);outline-offset:2px}.ds-skill-add:disabled{opacity:.5;pointer-events:none}@media(prefers-reduced-motion:reduce){.ds-skill-add{transition:none}}"
     },
     {
       "name": "对话输入区",
@@ -702,7 +748,7 @@
     "rules": [
       {
         "name": "局部玻璃规则",
-        "body": "正文、代码、表单和输入框保持实色。磨砂仅用于导航和浮层，以文字对比度和边界清晰为先。",
+        "body": "正文、代码、表单和输入框保持实色。磨砂仅用于导航和浮层，以文字对比度和边界清晰为先。搜索弹层使用实色中性表面。",
         "section": "elevation"
       }
     ],

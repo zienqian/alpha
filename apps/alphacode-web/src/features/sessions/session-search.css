@@ -25,37 +25,48 @@
  * SOFTWARE.
  */
 .session-search-command[cmdk-root] {
-  --search-secondary: color-mix(in oklab, var(--muted-foreground) 94%, var(--foreground));
+  --search-surface: #f4f4f4;
+  --search-text: #666666;
+  --search-secondary: #858585;
+  --search-selected: var(--accent);
+  --search-key: #e5e5e5;
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-height: 80dvh;
-  padding: 8px;
+  max-height: 70dvh;
   overflow: hidden;
-  border: 1px solid var(--glass-edge);
-  border-radius: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   /* Keep backdrop blur working in the desktop Chromium renderer. */
   corner-shape: round;
-  background: color-mix(in srgb, var(--popover) 94%, transparent);
+  background: var(--search-surface);
   color: var(--popover-foreground);
   box-shadow: var(--overlay-shadow);
-  backdrop-filter: blur(24px) saturate(130%);
-  -webkit-backdrop-filter: blur(24px) saturate(130%);
   outline: none;
+}
+
+.dark .session-search-command[cmdk-root] {
+  --search-surface: var(--popover);
+  --search-text: var(--popover-foreground);
+  --search-secondary: var(--muted-foreground);
+  --search-key: var(--muted);
 }
 
 .session-search-command .search-input-row {
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 16px;
-  padding: 8px 8px 16px;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border);
 }
 
-.session-search-command .search-input-row:focus-within {
-  border-color: var(--ring);
+.session-search-command .search-input-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--search-secondary);
 }
 
 .session-search-command [cmdk-input] {
@@ -66,20 +77,22 @@
   border-radius: 0;
   background: transparent;
   color: var(--foreground);
-  font-size: 17px;
-  line-height: 28px;
+  font-size: 15px;
+  line-height: 24px;
   outline: none;
 }
 
 .session-search-command [cmdk-input]::placeholder {
-  color: var(--search-secondary);
+  color: var(--search-text);
 }
 
 .session-search-command [cmdk-list] {
-  height: min(330px, var(--cmdk-list-height, 330px));
+  height: min(440px, calc(var(--cmdk-list-height, 432px) + 8px));
   min-height: 0;
-  max-height: 400px;
+  max-height: calc(70dvh - 52px);
+  padding: 0 0 8px;
   @apply overflow-y-auto;
+  scrollbar-gutter: auto;
   overscroll-behavior: contain;
   scroll-padding-block: 8px;
   transition: height 100ms ease;
@@ -88,35 +101,36 @@
 .session-search-command [cmdk-group-heading] {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
-  padding: 0 8px;
+  height: 30px;
+  padding: 6px 10px 4px;
   color: var(--search-secondary);
   font-size: 12px;
   line-height: 20px;
   user-select: none;
 }
 
+.session-search-command [cmdk-group] ~ [cmdk-group] {
+  margin-top: 5px;
+}
+
 .session-search-command [cmdk-item] {
   display: flex;
-  min-height: 48px;
+  min-height: 35px;
   align-items: center;
-  gap: 8px;
-  padding: 0 16px;
-  border-radius: 8px;
-  color: var(--search-secondary);
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: var(--search-text);
   font-size: 14px;
+  line-height: 23px;
   cursor: pointer;
   user-select: none;
   outline: none;
 }
 
-.session-search-command [cmdk-item] + [cmdk-item] {
-  margin-top: 4px;
-}
-
 .session-search-command [cmdk-item][data-selected="true"] {
-  background: var(--accent);
-  color: var(--foreground);
+  background: var(--search-selected);
+  color: var(--accent-foreground);
 }
 
 .session-search-command [cmdk-item]:active {
@@ -125,17 +139,18 @@
 
 .session-search-command [cmdk-item][data-search-hit="true"] {
   align-items: flex-start;
-  padding-block: 12px;
+  padding-block: 8px;
 }
 
 .session-search-command .search-result-icon {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
+  stroke-width: 1.6;
 }
 
 .session-search-command [data-search-hit="true"] .search-result-icon {
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .session-search-command .search-result-content {
@@ -159,10 +174,9 @@
 
 .session-search-command .search-project {
   max-width: 120px;
+  flex-shrink: 0;
   overflow: hidden;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: color-mix(in oklab, var(--foreground) 5%, transparent);
+  color: var(--search-secondary);
   font-size: 12px;
   line-height: 16px;
   text-overflow: ellipsis;
@@ -171,14 +185,14 @@
 
 .session-search-command .search-result-count {
   flex-shrink: 0;
-  color: var(--search-secondary);
+  color: var(--search-text);
   font-size: 12px;
 }
 
 .session-search-command .search-result-path {
   margin-top: 3px;
   overflow: hidden;
-  color: var(--search-secondary);
+  color: var(--search-text);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -186,7 +200,7 @@
 
 .session-search-command .search-result-snippet {
   margin-top: 8px;
-  color: var(--search-secondary);
+  color: var(--search-text);
   font-size: 12px;
   line-height: 20px;
   overflow-wrap: anywhere;
@@ -195,13 +209,14 @@
 .session-search-command kbd {
   display: inline-flex;
   min-width: 20px;
-  height: 20px;
+  height: 17px;
   align-items: center;
   justify-content: center;
-  padding: 4px;
-  border-radius: 4px;
-  background: var(--muted);
-  color: var(--search-secondary);
+  padding: 0 6px;
+  border-radius: 999px;
+  corner-shape: round;
+  background: var(--search-key);
+  color: var(--search-text);
   font-family: inherit;
   font-size: 12px;
   line-height: 1;
@@ -212,37 +227,22 @@
   font-weight: 400;
 }
 
-.session-search-command .search-shortcuts {
-  display: flex;
+.session-search-command .search-action-shortcut {
   flex-shrink: 0;
   margin-left: auto;
-  gap: 8px;
-}
-
-.session-search-command .search-result-shortcut {
-  visibility: hidden;
-}
-
-.session-search-command [data-selected="true"] .search-result-shortcut {
-  visibility: visible;
-}
-
-.session-search-command .search-shortcuts svg {
-  width: 12px;
-  height: 12px;
 }
 
 .session-search-command [cmdk-empty],
 .session-search-command .search-state {
   padding: 24px 8px;
-  color: var(--search-secondary);
+  color: var(--search-text);
   font-size: 14px;
   text-align: center;
 }
 
 @media (max-width: 639px) {
   .session-search-command [cmdk-input] { font-size: 16px; }
-  .session-search-command [cmdk-item] { padding-inline: 8px; }
+  .session-search-command [cmdk-item] { min-height: 40px; }
   .session-search-command .search-project { max-width: 80px; }
 }
 

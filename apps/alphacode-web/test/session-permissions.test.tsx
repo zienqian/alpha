@@ -96,6 +96,7 @@ describe("composer approval modes", () => {
     api.view("workspace-layout").state.permissionMode = "full";
     render(<AppProviders><App /></AppProviders>);
     await screen.findByText("此计算机");
+    fireEvent.click(screen.getByRole("button", { name: "在 alphacode-web 中新建会话" }));
     expect(trigger()).toBeTruthy();
     replaceDraft(input(), "按当前显示的模式执行");
     fireEvent.keyDown(input(), { key: "Enter" });

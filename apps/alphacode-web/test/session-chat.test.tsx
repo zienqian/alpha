@@ -194,6 +194,7 @@ describe("live conversation", () => {
     window.history.replaceState(null, "", "/");
     render(<AppProviders><App /></AppProviders>);
     await screen.findByRole("button", { name: "搭建前端工作区" });
+    fireEvent.click(screen.getByRole("button", { name: "在 alphacode-web 中新建会话" }));
     expect(screen.queryByRole("button", { name: /查看上下文用量/ })).toBeNull();
     replaceDraft(input(), "新的任务");
     expect(screen.queryByRole("button", { name: /查看上下文用量/ })).toBeNull();

@@ -1,22 +1,22 @@
-import { realpath, stat } from "node:fs/promises";
-import { homedir } from "node:os";
-import { basename, isAbsolute, join, resolve } from "node:path";
+import { mkdir, realpath, stat } from "node:fs/promises";
+import { basename, isAbsolute } from "node:path";
 import type { AppConfig } from "../config";
-import { readGlobalConfig } from "../global-config";
+import { defaultWorkspacePath, globalConfigDirectory, readGlobalConfig, readGlobalDefaults } from "../global-config";
 import { modelContext } from "../runtime/context-usage";
 import { sessionNamespace } from "../runtime/create-runtime";
 import type { createRegistry } from "./storage";
 import { fail, jsonBody, requiredString } from "./security";
 
 // Public project records never expose provider configuration or credentials.
-function projectInfo(projectId: string, config: AppConfig) {
+function projectInfo(projectId: string, config: AppConfig, defaultProjectId?: string) {
   return { projectId, workspaceRoot: config.workspaceRoot,
+    ...(projectId === defaultProjectId ? { isDefaultWorkspace: true } : {}),
     name: config.projectName || basename(config.workspaceRoot) || config.workspaceRoot,
     defaultContext: modelContext(config.modelId, config.contextWindow) };
 }
 
 async function defaultConfig(workspaceRoot: string, databasePath: string): Promise<AppConfig> {
-  const configDirectory = resolve(process.env.ALPHACODE_HOME?.trim() || join(homedir(), ".alphacode"));
+  const configDirectory = globalConfigDirectory();
   const { defaults, instructions, instructionsPath } = await readGlobalConfig(configDirectory);
   const modelId = process.env.ADK_MODEL?.trim() || defaults.modelId;
   if (!modelId) return fail(409, "MODEL_REQUIRED");
@@ -33,9 +33,29 @@ async function defaultConfig(workspaceRoot: string, databasePath: string): Promi
     globalInstructions: instructions, globalInstructionsPath: instructionsPath };
 }
 
+export async function ensureDefaultProject(registry: Awaited<ReturnType<typeof createRegistry>>, databasePath: string) {
+  const directory = globalConfigDirectory();
+  const { defaults } = await readGlobalConfig(directory);
+  const path = defaultWorkspacePath(directory, defaults);
+  await mkdir(path, { recursive: true }).catch(() => fail(400, "DIRECTORY_UNAVAILABLE"));
+  const workspaceRoot = await realpath(path).catch(() => fail(400, "DIRECTORY_UNAVAILABLE"));
+  const id = sessionNamespace(workspaceRoot);
+  if (registry.configs.has(id)) return id;
+  const sourceId = [...registry.configs.keys()].at(-1);
+  const source = sourceId ? registry.configs.get(sourceId) : undefined;
+  const config = source ?? await defaultConfig(workspaceRoot, databasePath);
+  return registry.register({ ...config, workspaceRoot, projectName: undefined, permissionMode: "ask" },
+    sourceId ? registry.credentials.get(sourceId) : undefined);
+}
+
 export function createProjectRoutes(registry: Awaited<ReturnType<typeof createRegistry>>, databasePath: string, changed: () => void) {
   return async (request: Request) => {
-    if (request.method === "GET") return Response.json({ projects: [...registry.configs].map(([id, config]) => projectInfo(id, config)) });
+    if (request.method === "GET") {
+      const directory = globalConfigDirectory();
+      const path = defaultWorkspacePath(directory, await readGlobalDefaults(directory));
+      const defaultProjectId = sessionNamespace(await realpath(path).catch(() => path));
+      return Response.json({ projects: [...registry.configs].map(([id, config]) => projectInfo(id, config, defaultProjectId)) });
+    }
     if (request.method !== "POST") return fail(405, "METHOD_NOT_ALLOWED");
     const body = await jsonBody(request);
     const name = requiredString(body, "name", 100).trim();

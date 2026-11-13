@@ -168,6 +168,7 @@ describe("server session integration", () => {
   it("refreshes the index without moving local drafts when project order changes", async () => {
     renderApp();
     await screen.findByRole("button", { name: "搭建前端工作区" });
+    fireEvent.click(screen.getByRole("button", { name: "在 alphacode-web 中新建会话" }));
     replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "继续当前项目");
     api.info("project-notes").updatedAt = "2026-11-09T03:00:00.000Z";
     api.infos.push({ id: "new", projectId: "docs", workspaceRoot: "docs", title: "CLI 新建会话", updatedAt: "2026-11-09T04:00:00.000Z", status: "ready" });

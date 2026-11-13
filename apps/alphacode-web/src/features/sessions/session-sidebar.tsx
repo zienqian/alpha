@@ -1,5 +1,6 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
+import { ScrollArea } from "radix-ui";
 import { Folder, Plus, Search, X, Blocks, SquarePen, RefreshCw, Settings } from "lucide-react";
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
@@ -89,7 +90,7 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
   }
 
   function startSession(folderId?: string) {
-    const activeFolder = folders.find(folder => folder.id === (folderId ?? activeFolderId)) ?? folders[0];
+    const activeFolder = folders.find(folder => folder.id === folderId);
     if (activeFolder) setFolderOpen(activeFolder.id, true);
     setSearchOpen(false);
     onNewSession(activeFolder?.id);
@@ -105,7 +106,7 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
     <>
     <Sidebar aria-label={t("workspace:sidebar")} variant="floating" collapsible="icon" className="workspace-sidebar">
       <SidebarHeader className="gap-0 p-0">
-        <div className={compact ? "flex h-11 items-center justify-center px-1.5" : "flex h-11 items-center gap-2.5 pr-2.5 pl-4"}>
+        <div className={compact ? "flex h-11 items-center justify-center px-1.5" : "flex h-11 items-center gap-2 px-(--sidebar-inset)"}>
           {!compact && <>
             <img src="/icons/alphacode-32.png" srcSet="/icons/alphacode-32.png 1x, /icons/alphacode-64.png 2x, /icons/alphacode-128.png 4x" width={28} height={28} className="size-7 shrink-0" alt="" aria-hidden="true" draggable={false} />
             {/* i18next-instrument-ignore-next-line — Product name. */}
@@ -119,7 +120,7 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
       {compact ? <>
         <SidebarHeader className="items-center gap-2 px-1.5 pt-2 pb-2">
           <Tooltip><TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:new")} disabled={folders.length === 0} onClick={() => startSession()}><SquarePen aria-hidden="true" /></Button>
+            <Button variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:new")} onClick={() => startSession()}><SquarePen aria-hidden="true" /></Button>
           </TooltipTrigger><TooltipContent side="right">{t("sessions:new")}</TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild>
             <Button ref={searchTriggerRef} variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen} onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></Button>
@@ -149,22 +150,24 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
         </SidebarFooter>
       </> : <>
       <SidebarHeader className="gap-0 p-0">
-        <div className="space-y-1 px-2.5 pt-2">
-        <Button ref={searchTriggerRef} variant="ghost" className="h-9 w-full justify-start gap-2 rounded-lg px-2.5 text-[13px] font-normal text-muted-foreground" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
+        <div className="space-y-1 px-(--sidebar-inset) pt-2">
+        <Button ref={searchTriggerRef} variant="ghost" size="sm" className="h-9 w-full justify-start gap-2.5 rounded-lg px-3 text-[13px] font-normal text-muted-foreground" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
           onClick={() => setSearchOpen(true)}>
           <Search className="size-3.5" aria-hidden="true" /><span>{t("sessions:search")}</span>
           <kbd className="ml-auto rounded border border-sidebar-border px-1 font-sans text-[10px] leading-4 text-muted-foreground">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}</kbd>
         </Button>
-        {onOpenSkills && <Button variant="ghost" className="h-9 w-full justify-start gap-2 rounded-lg px-2.5 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-foreground"
+        {onOpenSkills && <Button variant="ghost" size="sm" className="h-9 w-full justify-start gap-2.5 rounded-lg px-3 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
           aria-current={skillsActive ? "page" : undefined} onClick={() => { onOpenSkills(); setOpenMobile(false); }}>
           <Blocks className="size-3.5" aria-hidden="true" /><span>{t("skills:market.title")}</span>
         </Button>}
         </div>
       </SidebarHeader>
-      <SidebarContent className="pt-5" style={{ scrollbarGutter: "stable both-edges" }}>
-        <SidebarGroup className="px-2.5 py-0">
+      <ScrollArea.Root asChild type="auto">
+      <SidebarContent className="relative overflow-hidden pt-5">
+        <ScrollArea.Viewport className="min-h-0 w-full flex-1 [&>div]:block!" style={{ scrollbarGutter: "auto" }}>
+        <SidebarGroup className="px-(--sidebar-inset) py-0">
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <SidebarGroupLabel className="h-7 text-muted-foreground">{t("workspace:projects")}</SidebarGroupLabel>
+            <SidebarGroupLabel className="h-7 px-3 text-muted-foreground">{t("workspace:projects")}</SidebarGroupLabel>
             <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button>
           </div>
           <SidebarGroupContent>
@@ -182,7 +185,7 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
                     <SidebarMenuItem>
                       <div className="group/folder-header relative w-full">
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton ref={element => { if (element) folderTriggers.current.set(folder.id, element); else folderTriggers.current.delete(folder.id); }} title={folder.path} aria-label={t("workspace:folder", { name: folder.name })} className="h-8 w-full gap-2 rounded-md pr-8 pl-2 text-xs text-muted-foreground group-hover/folder-header:bg-sidebar-accent md:h-7">
+                          <SidebarMenuButton ref={element => { if (element) folderTriggers.current.set(folder.id, element); else folderTriggers.current.delete(folder.id); }} title={folder.path} aria-label={t("workspace:folder", { name: folder.name })} className="h-8 w-full gap-2.5 rounded-lg pr-8 pl-3 text-xs text-muted-foreground group-hover/folder-header:bg-sidebar-accent md:h-7">
                             <Folder className="size-3.5!" strokeWidth={1.7} aria-hidden="true" />
                             <span className="font-medium">{folder.name}</span>
                           </SidebarMenuButton>
@@ -198,7 +201,7 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
                                 onRename={onRenameSession} onDelete={onDeleteSession} />
                             </SidebarMenuSubItem>
                           ))}
-                          {folder.sessions.length === 0 && <SidebarMenuSubItem className="px-2 py-2 text-xs text-muted-foreground">{t("sessions:none")}</SidebarMenuSubItem>}
+                          {folder.sessions.length === 0 && <SidebarMenuSubItem className="py-2 pr-3 pl-9 text-xs text-muted-foreground">{t("sessions:none")}</SidebarMenuSubItem>}
                         </SidebarMenuSub>
                       </CollapsibleContent>
                     </SidebarMenuItem>
@@ -209,9 +212,14 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
             </nav>
           </SidebarGroupContent>
         </SidebarGroup>
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar orientation="vertical" className="flex w-1.5 touch-none select-none p-px">
+          <ScrollArea.Thumb className="relative flex-1 rounded-full bg-sidebar-border" />
+        </ScrollArea.Scrollbar>
       </SidebarContent>
-      <SidebarFooter className="px-2.5 pt-2 pb-3">
-        <Button variant="ghost" className="h-9 w-full justify-start gap-2 rounded-lg px-2.5 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
+      </ScrollArea.Root>
+      <SidebarFooter className="px-(--sidebar-inset) pt-2 pb-3">
+        <Button variant="ghost" size="sm" className="h-9 w-full justify-start gap-2.5 rounded-lg px-3 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
           aria-current={settingsActive ? "page" : undefined} onClick={() => { onOpenSettings(); setOpenMobile(false); }}>
           <Settings className="size-3.5" aria-hidden="true" /><span>{t("settings:title")}</span>
         </Button>
@@ -219,6 +227,7 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
       </>}
     </Sidebar>
     <SessionSearch open={searchOpen} onOpenChange={setSearchOpen} folders={folders}
+      onNewSession={() => startSession()} onOpenFolder={openProjectDialog}
       onSelectSession={(id) => { onSelectSession(id); setOpenMobile(false); }}
       onCloseFocus={() => {
         const target = searchReturnTarget.current;

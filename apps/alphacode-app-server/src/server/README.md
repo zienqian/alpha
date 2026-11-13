@@ -33,13 +33,13 @@ Web 按单机使用、信任本机进程的前提设计，不使用浏览器登�
 | GET | `/api/skills?projectId=...` | 项目列表、当前 projectId、目录、Skill 元数据/状态和诊断。未指定项目时取第一个已登记项目；无需已有持久化会话 |
 | POST | `/api/skills/install?projectId=...&directoryId=...` | `application/zip` 二进制或 JSON `{url}`；默认目录 `user-local`，返回 201 `{installed, directory, requiresNewSession: true}` |
 | POST | `/api/connect` | 原生专用：`{config, credential?}`；登记项目并新建/恢复 config.sessionId，返回 SessionView |
-| GET | `/api/projects` | `{projects: [{projectId, workspaceRoot, name, defaultContext}]}`；包含没有会话的项目，不返回模型端点或凭据 |
+| GET | `/api/projects` | `{projects: [{projectId, workspaceRoot, name, defaultContext, isDefaultWorkspace?}]}`；默认工作区以真实路径匹配配置并标记，客户端使用本地化名称。包含没有会话的项目，不返回模型端点或凭据 |
 | POST | `/api/projects` | `{name, workspaceRoot, sourceProjectId?}`；登记已存在的绝对目录，名称最多 100 字符，返回 `{project}`。相同真实目录复用原项目；不创建会话。沿用指定或最近登记项目的模型配置，没有项目时使用全局配置；新项目权限默认 ask |
 | GET | `/api/sessions` | `{sessions: SessionInfo[]}`，覆盖所有已登记项目 |
 | PATCH | `/api/sessions/:id` | `{title}`，1–200 个字符的单行标题，返回 `{session: SessionInfo}`。手动标题中止并替代自动生成，保存后通过 SSE 同步；未打开的历史直接以 revision CAS 更新，无需启动 runtime |
 | DELETE | `/api/sessions/:id` | 关闭空闲 runtime，以 revision CAS tombstone 删除档案，关闭该会话的 SSE 并通知列表；重复删除返回 `{ok:true}`。运行、排队、保存或未恢复的 pending 状态返回 `SESSION_BUSY` |
 | GET | `/api/sessions/search?q=...` | `{results: SessionSearchResult[]}`；跨项目搜索标题、路径、消息正文和工具记录，忽略大小写、按字面匹配；关键词最多 500 字符，空值返回空结果。读取历史不启动 runtime；每个会话返回匹配消息总数及最多三条上下文片段 |
-| POST | `/api/sessions` | `{projectId}`；在已登记项目中新建内存草稿，返回 SessionView；首条有效消息才落盘 |
+| POST | `/api/sessions` | `{projectId?}`；指定项目时在该项目中新建内存草稿，省略时自动创建并复用全局 `defaultWorkspace`（默认 `~/.alphacode/workspace`）项目，返回 SessionView；首条有效消息才落盘。显式无效 ID 不回退 |
 | GET | `/api/events` | 全局 SSE：`{instanceId, sequence}`；提示重新读取列表 |
 | GET | `/api/sessions/:id` | SessionView 全量快照 |
 | GET | `/api/sessions/:id/events` | SSE SessionView，全量替换客户端投影 |

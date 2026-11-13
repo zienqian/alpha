@@ -52,12 +52,14 @@ export function groupSessions(sessions: readonly SessionInfo[], projects: readon
     const existing = folders.get(project.projectId);
     if (existing) {
       if (project.name) existing.name = project.name;
+      existing.isDefaultWorkspace = project.isDefaultWorkspace;
       existing.defaultContext = project.defaultContext ?? existing.defaultContext;
     }
     if (!folders.has(project.projectId)) folders.set(project.projectId, {
       id: project.projectId,
       name: project.name || project.workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) || project.workspaceRoot,
       path: project.workspaceRoot, sessions: [],
+      isDefaultWorkspace: project.isDefaultWorkspace,
       defaultContext: project.defaultContext,
     });
   }
@@ -66,6 +68,7 @@ export function groupSessions(sessions: readonly SessionInfo[], projects: readon
 
 export interface SessionFolder {
   defaultContext?: SessionInfo["defaultContext"];
+  isDefaultWorkspace?: boolean;
   id: string;
   name: string;
   path: string;

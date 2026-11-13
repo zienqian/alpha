@@ -33,6 +33,8 @@ React + TypeScript + Vite 的会话工作区，使用 shadcn/ui（New York / Neu
 
 ## 运行与检查
 
+未选择项目的新对话显示“默认工作区”，首次发送通过 `POST /api/sessions` 省略 `projectId`，由服务端使用全局 `defaultWorkspace`（默认 `~/.alphacode/workspace`）并自动创建缺失目录。首页不再隐式选择列表中的第一个项目；用户仍可通过项目选择器指定目录或切回默认工作区。未发送的默认草稿在侧栏的“默认工作区”分组中保留，发送失败也保留草稿。显式项目会话和 CLI `/web` 指定的会话保持其原目录。
+
 在仓库根目录执行，沿用工作区的 Bun 和唯一的 `bun.lock`：
 
 ```powershell

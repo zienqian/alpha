@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { request as httpRequest } from "node:http";
 import { basename, dirname, join, resolve } from "node:path";
@@ -148,6 +148,82 @@ test("the first project uses global model settings without requiring a CLI sessi
     const view = await fixture.browser().request<SessionView>("/api/sessions", { projectId: created.project.projectId });
     expect(view.modelId).toBe("offline-model");
     expect(view.state.permissionMode).toBe("ask");
+  } finally {
+    for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    await fixture.dispose();
+  }
+});
+
+test("unselected chats lazily create one default workspace, persist there and recover after restart", async () => {
+  const fixture = await serverFixture();
+  const previous = process.env.ALPHACODE_HOME;
+  try {
+    process.env.ALPHACODE_HOME = fixture.config.configDirectory;
+    const selected = await fixture.connect();
+    const path = join(fixture.root, "config", "workspace");
+    expect((await fixture.browser().request<{ projects: unknown[] }>("/api/projects")).projects).toHaveLength(1);
+    await expect(stat(join(fixture.root, "config", "config.yaml"))).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(stat(path)).rejects.toMatchObject({ code: "ENOENT" });
+    const [first, second] = await Promise.all([
+      fixture.browser().request<SessionView>("/api/sessions", {}),
+      fixture.browser().request<SessionView>("/api/sessions", {}),
+    ]);
+    expect(first.session.workspaceRoot).toBe(await realpath(path));
+    expect(first.session.projectId).not.toBe(selected.session.projectId);
+    expect(second.session.projectId).toBe(first.session.projectId);
+    expect(second.session.id).not.toBe(first.session.id);
+    expect(first.state.permissionMode).toBe("ask");
+    expect((await fixture.browser().request<{ projects: unknown[] }>("/api/projects")).projects).toHaveLength(2);
+    await fixture.browser().request(`/api/sessions/${first.session.id}/requests`, { input: "default workspace message", requestId: "default-first" });
+    await waitFor(async () => (await fixture.browser().request<{ sessions: SessionInfo[] }>("/api/sessions")).sessions.some(item => item.id === first.session.id));
+    await waitFor(async () => !(await fixture.browser().request<SessionView>(`/api/sessions/${first.session.id}`)).state.busy);
+    await fixture.restart();
+    const restored = await fixture.browser().request<SessionView>(`/api/sessions/${first.session.id}`);
+    expect(restored.session.workspaceRoot).toBe(first.session.workspaceRoot);
+    expect(restored.state.messages.some(message => message.text === "default workspace message")).toBe(true);
+    const projects = (await fixture.browser().request<{ projects: { projectId: string; isDefaultWorkspace?: boolean }[] }>("/api/projects")).projects;
+    expect(projects.find(project => project.projectId === first.session.projectId)?.isDefaultWorkspace).toBe(true);
+    expect(projects.find(project => project.projectId === selected.session.projectId)?.isDefaultWorkspace).toBeUndefined();
+    const next = await fixture.browser().request<SessionView>("/api/sessions", {});
+    expect(next.session.projectId).toBe(first.session.projectId);
+    const explicit = await fixture.browser().request<SessionView>("/api/sessions", { projectId: selected.session.projectId });
+    expect(explicit.session.workspaceRoot).toBe(selected.session.workspaceRoot);
+    for (const projectId of [null, "", "missing-project"]) {
+      await expect(fixture.browser().request("/api/sessions", { projectId })).rejects.toMatchObject({ status: projectId === "missing-project" ? 404 : 400 });
+    }
+  } finally {
+    if (previous === undefined) delete process.env.ALPHACODE_HOME; else process.env.ALPHACODE_HOME = previous;
+    await fixture.dispose();
+  }
+});
+
+test("a fresh installation uses the configured default workspace and global model without a registered project", async () => {
+  const fixture = await serverFixture();
+  const previous = { ALPHACODE_HOME: process.env.ALPHACODE_HOME, ADK_MODEL: process.env.ADK_MODEL, ADK_AUTH: process.env.ADK_AUTH };
+  try {
+    const directory = join(fixture.root, "config");
+    process.env.ALPHACODE_HOME = directory;
+    delete process.env.ADK_MODEL;
+    process.env.ADK_AUTH = "none";
+    await mkdir(directory);
+    await writeFile(join(directory, "config.yaml"), "model: { id: offline-model }\ndefaultWorkspace: drafts/默认工作区\n");
+    const view = await fixture.browser().request<SessionView>("/api/sessions", {});
+    expect(view.session.workspaceRoot).toBe(await realpath(join(directory, "drafts/默认工作区")));
+    expect(view.modelId).toBe("offline-model");
+    expect(view.state.permissionMode).toBe("ask");
+    const nextPath = join(fixture.root, "custom workspace");
+    await writeFile(join(directory, "config.yaml"), `defaultWorkspace: ${JSON.stringify(nextPath)}\n`);
+    const next = await fixture.browser().request<SessionView>("/api/sessions", {});
+    expect(next.session.workspaceRoot).toBe(await realpath(nextPath));
+    expect(view.session.projectId).not.toBe(next.session.projectId);
+    const projects = (await fixture.browser().request<{ projects: { projectId: string; isDefaultWorkspace?: boolean }[] }>("/api/projects")).projects;
+    expect(projects.find(project => project.projectId === next.session.projectId)?.isDefaultWorkspace).toBe(true);
+    expect(projects.find(project => project.projectId === view.session.projectId)?.isDefaultWorkspace).toBeUndefined();
+    expect((await fixture.browser().request<SessionView>(`/api/sessions/${view.session.id}`)).session.workspaceRoot).toBe(view.session.workspaceRoot);
+    const file = join(fixture.root, "not-a-directory");
+    await writeFile(file, "test");
+    await writeFile(join(directory, "config.yaml"), `defaultWorkspace: ${JSON.stringify(file)}\n`);
+    await expect(fixture.browser().request("/api/sessions", {})).rejects.toMatchObject({ status: 400, code: "DIRECTORY_UNAVAILABLE" });
   } finally {
     for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
     await fixture.dispose();

@@ -1,6 +1,6 @@
 import { lazy, Suspense, type CSSProperties } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useMatch, useNavigate, useOutletContext } from "react-router";
-import { ArrowLeft, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useTranslation } from "@/i18n/react";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ const SettingsPage = lazy(() => import("@/features/settings/settings-page").then
 
 function SkillsPage() {
   const workspace = useOutletContext<SessionWorkspace>();
-  return <SkillsMarket initialProjectId={workspace.selectedFolder?.id} onBack={() => workspace.selectSession(workspace.selectedSessionId)} showHeader={false} />;
+  return <SkillsMarket initialProjectId={workspace.selectedFolder?.id} showHeader={false} />;
 }
 
 function WorkspaceLayout() {
@@ -56,9 +56,8 @@ function WorkspaceLayout() {
             <span className="truncate text-muted-foreground">{t("sessions:new")}</span> :
             <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title || t("sessions:new")}</h1>}
         </div>
-        {sessionOpen ? <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} /> : skillsOpen ?
-          <Button variant="ghost" size="sm" onClick={returnToSession}><ArrowLeft aria-hidden="true" />{t("skills:market.back")}</Button> :
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("settings:backToSession")} title={t("settings:backToSession")} onClick={returnToSession}><X aria-hidden="true" /></Button>}
+        {sessionOpen ? <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} /> : settingsOpen ?
+          <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("settings:backToSession")} title={t("settings:backToSession")} onClick={returnToSession}><X aria-hidden="true" /></Button> : null}
       </header>
       <Suspense fallback={<div role="status" aria-label={t("common:loading")} className="space-y-3 p-6"><Skeleton className="h-5 w-24" /><Skeleton className="h-4 max-w-sm" /></div>}>
         <Outlet context={workspace} />

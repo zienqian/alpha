@@ -1,0 +1,4783 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T14:14:55.582Z",
+  "gitHead": "a9b42b4371487f0fd113dee17f39e9fe18a6545b",
+  "dirtyWorktree": "M apps/alphacode-web/DESIGN.md\n M apps/alphacode-web/README.md\n M apps/alphacode-web/src/app.tsx\n M apps/alphacode-web/src/features/sessions/project-picker.tsx\n M apps/alphacode-web/src/features/sessions/session-sidebar.tsx\n M apps/alphacode-web/test/projects.test.tsx\n M packages/adk/README.md\n M packages/adk/src/core/contracts.ts\n M packages/adk/src/core/internal/agent.ts\n M packages/adk/src/core/internal/config.ts\n M packages/adk/src/core/internal/create-loop.ts\n M packages/adk/src/core/internal/tool-gateway.ts\n M packages/adk/test/core.test.js\n M packages/coding-agent/README.md\n M packages/coding-agent/src/create-coding-agent.ts\n M packages/coding-agent/test/plugin.test.js\n?? docs/brand/alphacode-pet-v1/\n?? packages/adk/test/parallel-tools.test.js\n?? scripts/bench-search.mjs",
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "cpu": "AMD Ryzen 7 5800H with Radeon Graphics         ",
+    "logicalCpus": 16,
+    "node": "v20.20.2",
+    "rg": "ripgrep 15.2.0 (rev e89fff89ac)",
+    "astGrep": "ast-grep 0.51.2",
+    "tokenizer": "js-tiktoken@1.0.21/o200k_base (proxy, not model usage)"
+  },
+  "methodology": {
+    "repetitions": 15,
+    "warmups": 2,
+    "cache": "OS warm; fresh CLI processes; no persistent AST cache",
+    "corpus": ".ts only, ignore-aware, regular files <= 1 MiB",
+    "limit": 100,
+    "rawBudgetBytes": 4194304,
+    "resultBudgetBytes": 131072,
+    "snapshot": "C:\\Users\\ziyang\\AppData\\Local\\Temp\\alpha-search-pilot-8Kb4Dz",
+    "timing": "process startup + complete CLI output + JSON parsing/sorting + both output encodings; excludes tokenizer, snapshots, production path checks and ADK",
+    "quality": "line-level fixture gold only; real repository counts do not establish precision or recall"
+  },
+  "manifest": [
+    {
+      "path": "packages/adk/src/core/contracts.ts",
+      "bytes": 10164,
+      "sha256": "a637e99ac585788bf2fc02a9ff0b08efa98a72c21848d6145e519f293131c6b5"
+    },
+    {
+      "path": "packages/adk/src/core/create-agent.ts",
+      "bytes": 1385,
+      "sha256": "2540e1c8c46a68c9c27351b3777bca38f7960c2e15e41756adc5fd10bfd367f7"
+    },
+    {
+      "path": "packages/adk/src/core/create-tool.ts",
+      "bytes": 2139,
+      "sha256": "db158b8baaf60788ff9f4dd79278c9ea874426b8aabdd5b944424d1d8b0d90a7"
+    },
+    {
+      "path": "packages/adk/src/core/index.ts",
+      "bytes": 582,
+      "sha256": "1299ca50ba252c19fe79fb4c285ea1e55c09af40d4400394b12707bd87a4408a"
+    },
+    {
+      "path": "packages/adk/src/core/internal/agent.ts",
+      "bytes": 10666,
+      "sha256": "6d47911b17a4c16ee62e63d4290483934989402a074a6209e36e5603d3ab5165"
+    },
+    {
+      "path": "packages/adk/src/core/internal/config.ts",
+      "bytes": 4547,
+      "sha256": "19b1b74fcaf71868ad3f7348daf83fc093550b6c415123e10a1bbfe14215ec1b"
+    },
+    {
+      "path": "packages/adk/src/core/internal/create-loop.ts",
+      "bytes": 892,
+      "sha256": "82e9531451e6b5577fd9d25315575f5c67f2c8142302ad937db0a7fd9dde18f5"
+    },
+    {
+      "path": "packages/adk/src/core/internal/errors.ts",
+      "bytes": 3576,
+      "sha256": "1b7c08188e3d0879e0e256fe9b249549f46bd1cd85424bd11eaa13460fd12bee"
+    },
+    {
+      "path": "packages/adk/src/core/internal/events.ts",
+      "bytes": 1412,
+      "sha256": "546a52b924c8a00bf11577be80f322eb2e806fd8f130b574429cfdbe32440e8d"
+    },
+    {
+      "path": "packages/adk/src/core/internal/history.ts",
+      "bytes": 4149,
+      "sha256": "df0dd532b98b52393b3cc6a1673b3ad0e3a95b27228580a6e99a42c34c03ec38"
+    },
+    {
+      "path": "packages/adk/src/core/internal/json.ts",
+      "bytes": 3508,
+      "sha256": "c2141e616c6ea84506bc4ab83de72b64ca816340a635027c747096170341842e"
+    },
+    {
+      "path": "packages/adk/src/core/internal/messages.ts",
+      "bytes": 4892,
+      "sha256": "d6ea8612bf41c3e6ec7100102dd9a6f8a05838bed71f7a909404e1aca8f1a2b4"
+    },
+    {
+      "path": "packages/adk/src/core/internal/model-gateway.ts",
+      "bytes": 6779,
+      "sha256": "c065d7c0c240d4f31cb6e6a74befb103197da909016976cc7d01842158b0b96e"
+    },
+    {
+      "path": "packages/adk/src/core/internal/plugin-lifecycle.ts",
+      "bytes": 1552,
+      "sha256": "e2670a175c4d3efbcaa1793374ded0138c7f56056aa9b7e3f6bd7a32228769db"
+    },
+    {
+      "path": "packages/adk/src/core/internal/plugin-registry.ts",
+      "bytes": 3837,
+      "sha256": "db71599bf8ede980f0f303b8e54de43b73c2bf98ef273c68ebf1888e698285e3"
+    },
+    {
+      "path": "packages/adk/src/core/internal/run-controller.ts",
+      "bytes": 6813,
+      "sha256": "d2d6070c4c32ef5fa2b856ed97df2fd95e31c671eebe619da60ff5746c2a501e"
+    },
+    {
+      "path": "packages/adk/src/core/internal/run-result.ts",
+      "bytes": 1323,
+      "sha256": "74b6a9068462c7cf58597fc0c781bb1ebf581ec67960eb6fa7624586c6fd8acf"
+    },
+    {
+      "path": "packages/adk/src/core/internal/tool-gateway.ts",
+      "bytes": 6903,
+      "sha256": "f82134cecc1eeb8a64b27f311cbd2205f5b1bad8c5bb185a90dc5cb16fd2b461"
+    },
+    {
+      "path": "packages/adk/src/index.ts",
+      "bytes": 75,
+      "sha256": "c2732c8487434ab8ca3c13198149e32ab6aadeb1bd279c166066653ae61ecb66"
+    },
+    {
+      "path": "packages/adk/test/types.ts",
+      "bytes": 2875,
+      "sha256": "c30bf7c9290ba27177a20b37a0047db4c6cb826387a7c9986f5b910747e054a0"
+    },
+    {
+      "path": "packages/adk-session/src/contracts.ts",
+      "bytes": 6173,
+      "sha256": "ee57c117b72a82a2d6591233f084ce179556cbe84ab09bd9f8ad8b3a6693735a"
+    },
+    {
+      "path": "packages/adk-session/src/create-memory-session-store.ts",
+      "bytes": 2081,
+      "sha256": "9c1198392e3898aa19189258db6934cd09fa650a6c6b4260f488a69843fb06ed"
+    },
+    {
+      "path": "packages/adk-session/src/create-session-manager.ts",
+      "bytes": 7586,
+      "sha256": "64547a18dd52e915dc69fe6ed7a6ea208a4489a1525a78d593256bd586fe11b4"
+    },
+    {
+      "path": "packages/adk-session/src/create-session-plugin.ts",
+      "bytes": 1241,
+      "sha256": "7be7ef5c01229b8d132b2dc5768d058949c78fec3a98cc0de52ba7a5a5beb351"
+    },
+    {
+      "path": "packages/adk-session/src/create-session.ts",
+      "bytes": 890,
+      "sha256": "3a2938334f670a57b5d409f9431611809c6ba75fabfc90fb39c3b9b898c45f87"
+    },
+    {
+      "path": "packages/adk-session/src/index.ts",
+      "bytes": 286,
+      "sha256": "b38f8030c1b9ac6718dc2bb528f9812892f997336354c370772cbd9a4550d43c"
+    },
+    {
+      "path": "packages/adk-session/src/internal/access.ts",
+      "bytes": 2687,
+      "sha256": "a1b3879f1e0c27c981eaee9a9643ebe11947d146dc94a506b81f332f07773d92"
+    },
+    {
+      "path": "packages/adk-session/src/internal/codec.ts",
+      "bytes": 7215,
+      "sha256": "2705ce63c67b212ee0dcfc48f24d163c59900f02aea30964430bdf1d656185a1"
+    },
+    {
+      "path": "packages/adk-session/src/internal/errors.ts",
+      "bytes": 1779,
+      "sha256": "1cfde087ee1909f3cdae84d58db81f431eeeb5ab5eefd193138c61d9ea8249f6"
+    },
+    {
+      "path": "packages/adk-session/src/internal/events.ts",
+      "bytes": 851,
+      "sha256": "ebd69f048dc13fde73bca2b7112ad77c73161916366d27891c6e8f601475f7b6"
+    },
+    {
+      "path": "packages/adk-session/src/internal/json.ts",
+      "bytes": 2926,
+      "sha256": "58d28060329e1cd947ebb475f1890e73d3361c08e71ef7bf8d3bad0a284bdf53"
+    },
+    {
+      "path": "packages/adk-session/src/internal/pagination.ts",
+      "bytes": 2029,
+      "sha256": "82265e214b3fefce75554e98d9822a126cc7f5b27a50c403dedb60d81152b643"
+    },
+    {
+      "path": "packages/adk-session/src/internal/session.ts",
+      "bytes": 11526,
+      "sha256": "e9153af4c1acea9e1f55f61543feae39d7d3dd7185f34d34de74a3f598136664"
+    },
+    {
+      "path": "packages/adk-session/src/sqlite/index.ts",
+      "bytes": 6210,
+      "sha256": "468b381a8ef8cdb2cb081226e6f6a95f596e5a07804dffad971b7681bffb81f4"
+    },
+    {
+      "path": "packages/adk-session/test/types.ts",
+      "bytes": 2447,
+      "sha256": "9a6f13c879ad5cbc81409af9290fb320fb14d0faf9b90340e69487a0d6882a6d"
+    },
+    {
+      "path": "packages/adk-trace/src/contracts.ts",
+      "bytes": 4252,
+      "sha256": "dab83dd77dc4f4bfc721e70a5cb8b056eb76385077f67805a41cd92ea08920d0"
+    },
+    {
+      "path": "packages/adk-trace/src/index.ts",
+      "bytes": 247,
+      "sha256": "e1e3b64e3cdf6b224c3a668e65a6a05e8b84301c6b402a3b054004a766ba6fd2"
+    },
+    {
+      "path": "packages/adk-trace/src/internal.ts",
+      "bytes": 3072,
+      "sha256": "ef70ec2b59dfeaf79e1ffa1f26803dfb2734573ab7b464433693f64f5257a9e9"
+    },
+    {
+      "path": "packages/adk-trace/src/memory.ts",
+      "bytes": 1738,
+      "sha256": "eea046c13b930b7de20eeee07981cd95b4a06b3eede26f6e1784254ede5d842e"
+    },
+    {
+      "path": "packages/adk-trace/src/plugin.ts",
+      "bytes": 828,
+      "sha256": "a3d5fd027fc5ac132caee549a338665e1b95e07ba44900dc3d429f76767e6a85"
+    },
+    {
+      "path": "packages/adk-trace/src/reducer.ts",
+      "bytes": 9342,
+      "sha256": "d918b8809b4992df1c5c5a371d83be0913b8c6cc85b3214db198a0dcd365065f"
+    },
+    {
+      "path": "packages/adk-trace/src/sanitize.ts",
+      "bytes": 2050,
+      "sha256": "7ebb35e22c96f5b17d2b5408ff526ec592679532fd609b1da6a33ebf58be8e55"
+    },
+    {
+      "path": "packages/adk-trace/src/service.ts",
+      "bytes": 13567,
+      "sha256": "53fc2cac22c4aeea768f53ea4cbff308d685807a65353983190b297f93ef7205"
+    },
+    {
+      "path": "packages/adk-trace/src/sqlite/index.ts",
+      "bytes": 3038,
+      "sha256": "6c722c9586d11f61125e2826cc39813a8c5c75f82ae83e0fc0e6749455121d8d"
+    },
+    {
+      "path": "packages/adk-trace/src/sqlite/worker.ts",
+      "bytes": 8324,
+      "sha256": "031d0a36a887157e4c70703dd8520c525556261d34313643107864683c54bf3b"
+    },
+    {
+      "path": "packages/adk-trace/test/trace.test.ts",
+      "bytes": 7517,
+      "sha256": "5caf1f06e147ab52b01cc7a0440163dda0909dfbe81cc95ee2c52f13581c8036"
+    },
+    {
+      "path": "packages/coding-agent/src/coding-plugin.ts",
+      "bytes": 2402,
+      "sha256": "2d8cab50403f29db2f200f0fb0ca95770e6a2117536b053370c7169cc8a36a2a"
+    },
+    {
+      "path": "packages/coding-agent/src/context.ts",
+      "bytes": 2131,
+      "sha256": "45033d1e9f73cf9c634ca958cf177d30a15f104e42d93b0d64fbf6334c89dd32"
+    },
+    {
+      "path": "packages/coding-agent/src/contracts.ts",
+      "bytes": 6145,
+      "sha256": "ff12b8dec1963de413e40ae2512d0824c9adb5da03d4a3c125da7ef96a307031"
+    },
+    {
+      "path": "packages/coding-agent/src/create-coding-agent.ts",
+      "bytes": 3082,
+      "sha256": "9c0c0e6513df48ba40b2ecdce67658b76d84b0fa8904bfb7950fbf092cf7aa9c"
+    },
+    {
+      "path": "packages/coding-agent/src/files.ts",
+      "bytes": 6491,
+      "sha256": "bd56fd3d94443521cf1b9c0ac8b59b5ea425349169790ddeda79d88abbdb6173"
+    },
+    {
+      "path": "packages/coding-agent/src/index.ts",
+      "bytes": 968,
+      "sha256": "b504eabffec6a83635f9d3e308f4d101eb3e4fdf903a41bcf367f634873ee0c8"
+    },
+    {
+      "path": "packages/coding-agent/src/instructions-plugin.ts",
+      "bytes": 1375,
+      "sha256": "16ceee58ca286759a4de7b5b7d4f06b587f70edff9b641370605cde542928050"
+    },
+    {
+      "path": "packages/coding-agent/src/internal.ts",
+      "bytes": 3007,
+      "sha256": "09e3b96c2a0de990bb3e80c36437f9b3f711e5a710964e80d2363315f1b91d6b"
+    },
+    {
+      "path": "packages/coding-agent/src/process/run-command.ts",
+      "bytes": 7688,
+      "sha256": "9f6d6a13412dce348febd05383c77c232a090c46e2a8f9a57bb980a22bacd9b9"
+    },
+    {
+      "path": "packages/coding-agent/src/process/shell.ts",
+      "bytes": 4406,
+      "sha256": "b42a5459f9bafde2efb28d54a793bb3835865c72961db7ca158ff43b4b1f153a"
+    },
+    {
+      "path": "packages/coding-agent/src/search.ts",
+      "bytes": 4912,
+      "sha256": "f47a8030d5dbe106e02d5c327466f77cd5ae3f328c57b1f1e0c0b5bf146544dc"
+    },
+    {
+      "path": "packages/coding-agent/src/skills/contracts.ts",
+      "bytes": 1218,
+      "sha256": "310c0687d5aeaa3f9ecd085aaf6f8591bdcbb3df9fa16ca7a39157cd9db94f98"
+    },
+    {
+      "path": "packages/coding-agent/src/skills/format.ts",
+      "bytes": 1196,
+      "sha256": "f5f9d640f3d12d1f95a414a7ac346f79cf858b941f1aa8cbb121199c47b3e758"
+    },
+    {
+      "path": "packages/coding-agent/src/skills/load.ts",
+      "bytes": 4225,
+      "sha256": "e60669004b0de7dc028ef00606009394c4d7eadf6c1d95b8e72e4b970c54eca2"
+    },
+    {
+      "path": "packages/coding-agent/src/skills/parse.ts",
+      "bytes": 3518,
+      "sha256": "17d9fe04d7f82aac848bfb490b26db465fcb5a2308d55f3aaac7fc38b2f01aa8"
+    },
+    {
+      "path": "packages/coding-agent/src/skills/plugin.ts",
+      "bytes": 555,
+      "sha256": "08b65af2abb0d0a047087b1ced6842189a1c78d9f3af486459748cd4ea80d842"
+    },
+    {
+      "path": "packages/coding-agent/src/skills/read.ts",
+      "bytes": 3509,
+      "sha256": "659ed131dec6c01b380cc54a87be7337bcb1c5a84b937ecb08d65ba8fcf91ea8"
+    },
+    {
+      "path": "packages/coding-agent/src/tools/create-file.ts",
+      "bytes": 1346,
+      "sha256": "2fc4000284a80dfd8fed5994420cc6263ca0100dd1f88cc6fde4754c2c0aee4a"
+    },
+    {
+      "path": "packages/coding-agent/src/tools/edit-file.ts",
+      "bytes": 1948,
+      "sha256": "e318efc9ee20470ad3b0f1e402bb043bc461a08781db122bfb3b07141afad84b"
+    },
+    {
+      "path": "packages/coding-agent/src/tools/index.ts",
+      "bytes": 2055,
+      "sha256": "ed37d05814d3717448083eeb7dbc93b8956fc813479a2ccc4375b3e453e61c04"
+    },
+    {
+      "path": "packages/coding-agent/src/tools/list-files.ts",
+      "bytes": 1026,
+      "sha256": "140ebd0b976c0f78e0b512f5fb015dc7fbe354cca9e10b0b48e1b3a5918c041a"
+    },
+    {
+      "path": "packages/coding-agent/src/tools/read-file.ts",
+      "bytes": 1883,
+      "sha256": "3926fcf4d1a199e277d4db4ad80932e41404a8250fdd04f187ddc9950dd8ce89"
+    },
+    {
+      "path": "packages/coding-agent/src/tools/read-skill.ts",
+      "bytes": 1916,
+      "sha256": "ad2e5817ff068c7ed73103bafa7ae94d084172a0861658148a225588edb7453b"
+    },
+    {
+      "path": "packages/coding-agent/src/tools/run-command.ts",
+      "bytes": 2897,
+      "sha256": "a71efaf7df3501b1666dc4f67b20db7d2887f9094fb693f9326eb0b7d7ae37d9"
+    },
+    {
+      "path": "packages/coding-agent/src/tools/search.ts",
+      "bytes": 1099,
+      "sha256": "e3b513d6e04b2fb3b9524fc2c0343cf093a751c286171c4bf7197ba602eb1d2f"
+    },
+    {
+      "path": "packages/coding-agent/src/tools/shared.ts",
+      "bytes": 2210,
+      "sha256": "a80e97bd8f5e767cfc69fd7ceaa98b09df1b1cc44f1c975613cced932b23a234"
+    },
+    {
+      "path": "packages/coding-agent/test/types.ts",
+      "bytes": 2626,
+      "sha256": "3634e84173ebeb98a3576fd5a13c23ebd60946effa217435987f03d5be73af0c"
+    },
+    {
+      "path": "packages/provider/src/builtin-options.ts",
+      "bytes": 2520,
+      "sha256": "20df7b457f37e997a3cbef4c2c38e6ab334a18955bf4b0bd6aa9062b65683d1b"
+    },
+    {
+      "path": "packages/provider/src/builtins.ts",
+      "bytes": 1613,
+      "sha256": "ee048cf392f1bb4fb015756eecac4e491bed60637615c7a5a7b8a8da373190c8"
+    },
+    {
+      "path": "packages/provider/src/credentials.ts",
+      "bytes": 662,
+      "sha256": "d0171bf3496ec175329595d03ff75d25a300ef6086f353cefabcbfc113106fed"
+    },
+    {
+      "path": "packages/provider/src/errors.ts",
+      "bytes": 621,
+      "sha256": "6b17cbd7106520a8964545de061a7c87c546c2f4a2c651ff57cff5393d83654c"
+    },
+    {
+      "path": "packages/provider/src/http-headers.ts",
+      "bytes": 2816,
+      "sha256": "e17220358422caef10c33dc388e1e5183deda8d3dd208176604839aa665e7930"
+    },
+    {
+      "path": "packages/provider/src/http.ts",
+      "bytes": 4810,
+      "sha256": "bb51f37fd7739c5c5008bb07429fb0e4153c680e1518684e3d6f74df3ff9e0ae"
+    },
+    {
+      "path": "packages/provider/src/index.ts",
+      "bytes": 3380,
+      "sha256": "8b38a45a4b71131f2445e617d83d126cbea65e01c42a01575628386eda4dc440"
+    },
+    {
+      "path": "packages/provider/src/model-config.ts",
+      "bytes": 2284,
+      "sha256": "af7328acc22f1e554b7cf1a68e90a4c48ec4a549ba8a7bd8a987cf322a9cfb5e"
+    },
+    {
+      "path": "packages/provider/src/model-policy.ts",
+      "bytes": 1896,
+      "sha256": "474488dad336f8da9e232f74f569f948c3abc8f643f9eac67ef848d4707d8e80"
+    },
+    {
+      "path": "packages/provider/src/protocols/anthropic.ts",
+      "bytes": 4558,
+      "sha256": "5a3fbff031420f38c9e0a2dc7565e41647ba4d0df9271677d2aa348e1f6e9926"
+    },
+    {
+      "path": "packages/provider/src/protocols/completions.ts",
+      "bytes": 4472,
+      "sha256": "89ede75c160c6f00ca8e91397923e937b6f2611bfb6aeb9ae3c417bf37ce1d38"
+    },
+    {
+      "path": "packages/provider/src/protocols/official-types.ts",
+      "bytes": 2037,
+      "sha256": "e7034282336f8638257b84aa7b2d28be8719f3edfcec257ec104c462a7f41d91"
+    },
+    {
+      "path": "packages/provider/src/protocols/responses.ts",
+      "bytes": 4519,
+      "sha256": "0841aefadfc965b7f509261de8b8acc2541fc5966de21ddd07e659638cdfdaca"
+    },
+    {
+      "path": "packages/provider/src/protocols/shared.ts",
+      "bytes": 3182,
+      "sha256": "f2a778dc5bd61c0da5b27d0500e46bf12208401e812f7c025d87812ea20dfaa4"
+    },
+    {
+      "path": "packages/provider/src/sse.ts",
+      "bytes": 1913,
+      "sha256": "ed1bd22294f5b5db166d6d92233a5ef5260cd2b842a4c6a90bf5bd5be2cb5c99"
+    },
+    {
+      "path": "packages/provider/src/stream-codecs.ts",
+      "bytes": 7622,
+      "sha256": "3880fa563626d265a82048476bd30ece35153e5e6e228b4e77764702df5a3439"
+    },
+    {
+      "path": "packages/provider/src/types.ts",
+      "bytes": 6715,
+      "sha256": "d1ea1bdce13959f0e5368de6dd20b47063458ab9de023cda58b48d8ccf0bd65c"
+    },
+    {
+      "path": "packages/provider/src/validation-helpers.ts",
+      "bytes": 759,
+      "sha256": "1b3e567401470c3743595fc90762b800e210ba3b9c7707c1caa75f5bd24ce703"
+    },
+    {
+      "path": "packages/provider/src/validation.ts",
+      "bytes": 2677,
+      "sha256": "7683a369b59feb4d83336d4b47c5e70f595586d9894a4c4fe1fedaac6c8fb586"
+    },
+    {
+      "path": "packages/provider/test/types.ts",
+      "bytes": 2565,
+      "sha256": "23db29e04725dd0c70a4473e92dc35542e49a292f3b67fe45805ee16a326408c"
+    },
+    {
+      "path": "apps/alphacode/bin/alphacode.ts",
+      "bytes": 1323,
+      "sha256": "75a83d68b270104ecd946a84103f24a7442ee194dd1b620eea2aeae8ba29b070"
+    },
+    {
+      "path": "apps/alphacode/i18next.config.ts",
+      "bytes": 489,
+      "sha256": "46564ddcb28a4ceebaee5730baec5afb6b7c04449cefa201a4474bfb9158bd8f"
+    },
+    {
+      "path": "apps/alphacode/scripts/build.ts",
+      "bytes": 309,
+      "sha256": "b56dd96e34dd61d3da044715403e098d0dff2f8f140ab8d488979feb057b460b"
+    },
+    {
+      "path": "apps/alphacode/src/config.ts",
+      "bytes": 3688,
+      "sha256": "019574726ff4e1cfa2c38048ff8bc4cd39e8e3a50819a25b0b6e082b764117d6"
+    },
+    {
+      "path": "apps/alphacode/src/i18n/bootstrap.ts",
+      "bytes": 3150,
+      "sha256": "e89ad7f19756dad713ff9ff1a782f4bdf3d2df30e53d581412a482c4225a6ddd"
+    },
+    {
+      "path": "apps/alphacode/src/i18n/format.ts",
+      "bytes": 338,
+      "sha256": "5ddee1a634c15d79b7a283b9cc29d5937578f8cd59a6521ad3bd87b700961de2"
+    },
+    {
+      "path": "apps/alphacode/src/i18n/i18next.d.ts",
+      "bytes": 446,
+      "sha256": "3f395758e0b66a635269125af468a8aa3879f0de3708a70c11fe5ed920c45110"
+    },
+    {
+      "path": "apps/alphacode/src/i18n/instance.ts",
+      "bytes": 1754,
+      "sha256": "14e1519b5f50b66db3836442f38460db22db6080fd78f3b91ae2eea2440788b9"
+    },
+    {
+      "path": "apps/alphacode/src/i18n/locale.ts",
+      "bytes": 1322,
+      "sha256": "4815602d855cf98a2993a484e325503546bf48ad1cbaae553d3b210be8d4884c"
+    },
+    {
+      "path": "apps/alphacode/src/i18n/preferences.ts",
+      "bytes": 1524,
+      "sha256": "57b4f765cde89ee2786c74a93954a02e6ab6d00ca40de62834e22d57dc1d42af"
+    },
+    {
+      "path": "apps/alphacode/src/i18n/presentation.ts",
+      "bytes": 4942,
+      "sha256": "45064daf9a9b05739b7fc32121a64e717648d3d9d69661762357bca282209f4a"
+    },
+    {
+      "path": "apps/alphacode/src/i18n/react.ts",
+      "bytes": 194,
+      "sha256": "9fde2b7ea4b94acc5063faafbdc31c68348cd70ae9ba87a227c088d8be5fcc0d"
+    },
+    {
+      "path": "apps/alphacode/src/i18n/resources.d.ts",
+      "bytes": 7261,
+      "sha256": "fe71f0f1a1da4023ecc01ea922cf83c12db195bb8f8ee8bc81b12ed7fb7cd68a"
+    },
+    {
+      "path": "apps/alphacode/src/server/main.ts",
+      "bytes": 535,
+      "sha256": "621313d8e2805f521669b8363d34fcc70440421d32318e80fd45ad8a56449475"
+    },
+    {
+      "path": "apps/alphacode/src/server/worker.ts",
+      "bytes": 291,
+      "sha256": "054d3f6bd799f2b00d8476fdca26fde778df04c24b960a96caea0ee0422cfc0a"
+    },
+    {
+      "path": "apps/alphacode/src/ui/commands.ts",
+      "bytes": 1169,
+      "sha256": "c03e770edc394565bbcf075b19f8e1f124e68b9c11da259106fab21bf235bf2c"
+    },
+    {
+      "path": "apps/alphacode/src/ui/duration.ts",
+      "bytes": 425,
+      "sha256": "15f62589c70dcafc4d8a63a7539cae7b9cc522729024232de27769c988b9b331"
+    },
+    {
+      "path": "apps/alphacode/src/ui/keyboard.ts",
+      "bytes": 713,
+      "sha256": "23bbe5feebccf1e169faa64d1c35cd9502daa4d1c903d4c4886ba5b8dad84b34"
+    },
+    {
+      "path": "apps/alphacode/src/ui/morphing-infinity.ts",
+      "bytes": 4410,
+      "sha256": "ab8c71d870233c3642f481abdd6a0c3f5d3ab4f38f4e44f5f6a2fab1be778b15"
+    },
+    {
+      "path": "apps/alphacode/src/ui/motion.ts",
+      "bytes": 400,
+      "sha256": "a46308b18f406a50ddb7e00be2c555aa9f7c60bb5bd670cfd57e09a2df6cf5d5"
+    },
+    {
+      "path": "apps/alphacode/src/ui/shimmer.ts",
+      "bytes": 1541,
+      "sha256": "6cfeb939f80e2453c01014c8cdf32edf4d7afcb2e5563ba21ec3bd35d063499b"
+    },
+    {
+      "path": "apps/alphacode/src/ui/theme.ts",
+      "bytes": 850,
+      "sha256": "f41ee9cc5a8ebbab89a8d6facfc37f171e81d3e17c356a4fada8ddcfaa52f3f6"
+    },
+    {
+      "path": "apps/alphacode/src/ui/vscode-output.ts",
+      "bytes": 2792,
+      "sha256": "3362d75f86ab0191061e7e5a1273275cacda6feb78aac2a871bfd63ff491eeae"
+    },
+    {
+      "path": "apps/alphacode/src/ui/workspace-path.ts",
+      "bytes": 445,
+      "sha256": "eb9a397bbd606d6bdcd0935338430151618dcd2d3ee7f4bb1ab1babbc3ef009b"
+    },
+    {
+      "path": "apps/alphacode/test/architecture.test.ts",
+      "bytes": 1864,
+      "sha256": "33641c0ca118f4ba2d008a4fb12db5cb2cce14dfc49a4525bd268ace7efe610b"
+    },
+    {
+      "path": "apps/alphacode/test/config.test.ts",
+      "bytes": 1520,
+      "sha256": "cbe16b96c5286135e47605849ccaf53c4f4a8406c96399cc4dc7ef5e8d3ff520"
+    },
+    {
+      "path": "apps/alphacode/test/global-config.test.ts",
+      "bytes": 9888,
+      "sha256": "d3c76b2786dcc2eb52ed8878493e93536ce657d36a63b840032ad97f66944549"
+    },
+    {
+      "path": "apps/alphacode/test/helpers.ts",
+      "bytes": 4107,
+      "sha256": "60107d0e3929392dc8b772cd89a7ee101e601d4e4d8d806c8f4747f10030aed6"
+    },
+    {
+      "path": "apps/alphacode/test/i18n-types.ts",
+      "bytes": 633,
+      "sha256": "c8a15ee97e50badace3a5eb5d382f36f2cce8c36a4a6ea641894342ec7210676"
+    },
+    {
+      "path": "apps/alphacode/test/launcher.test.ts",
+      "bytes": 1217,
+      "sha256": "75f4cdd47f10886940839e8a49d7a9148206a5e0c97b4d783383d64ee9c57a9d"
+    },
+    {
+      "path": "apps/alphacode/test/vscode-output.test.ts",
+      "bytes": 1381,
+      "sha256": "db2de2e0b5ad82d52d14dc4dc18c9777e56fec97205fd5f66e96732b56e4aaaf"
+    },
+    {
+      "path": "apps/alphacode-app/scripts/cli.ts",
+      "bytes": 1258,
+      "sha256": "04852e8a756dffafada3334c21cc2a079f04bd3a6c2d54ecbe1543d71f0496f5"
+    },
+    {
+      "path": "apps/alphacode-app/scripts/desktop.ts",
+      "bytes": 1163,
+      "sha256": "51faeaa360a22d2626a203319a523cf9a92029a83d6b5f6b0a9327544da47979"
+    },
+    {
+      "path": "apps/alphacode-app/scripts/dev-api.ts",
+      "bytes": 2124,
+      "sha256": "f55005297380925050cee0fac260dc713758c79ea15ea8f34cf6f644de326d92"
+    },
+    {
+      "path": "apps/alphacode-app/scripts/dev.ts",
+      "bytes": 3143,
+      "sha256": "693946e707de800669b45516187ed9a4cdbcf0e90073547b7a208eb6dde3f3a2"
+    },
+    {
+      "path": "apps/alphacode-app/scripts/package.ts",
+      "bytes": 5767,
+      "sha256": "832c6db06d0dc11f55f4ff87027c04a92528ff1594ee78351348a6b990796318"
+    },
+    {
+      "path": "apps/alphacode-app/src/backend.ts",
+      "bytes": 5056,
+      "sha256": "75f6e5c2dbcef1a688d77689006ce80cab89c91b4fc9083ae32c9952f6f73632"
+    },
+    {
+      "path": "apps/alphacode-app/src/cli-command.ts",
+      "bytes": 3238,
+      "sha256": "9121f8c23f2f28f8f659eaf307e4b78242cd20541f97bbad52dc1ceaae67ce96"
+    },
+    {
+      "path": "apps/alphacode-app/src/install-cli.ts",
+      "bytes": 4368,
+      "sha256": "900807ca9cfa8cac2a038f0e9beafe1a350043be6338735570285f0123bfec2f"
+    },
+    {
+      "path": "apps/alphacode-app/src/main.ts",
+      "bytes": 12505,
+      "sha256": "1c834bc75373e9d8cfc6d3e0d95fd8345a3d88e28038c5f4739e5fb6a87af1c2"
+    },
+    {
+      "path": "apps/alphacode-app/src/policy.ts",
+      "bytes": 2141,
+      "sha256": "bd9c540c7e241dcf21384e102e122b0411c23ec8b7f3012381a7ce3605faefd4"
+    },
+    {
+      "path": "apps/alphacode-app/src/preload.ts",
+      "bytes": 458,
+      "sha256": "16bd60e16ab12f7370742a43b9d428fc420051f5ec7e0e91375624e62b463968"
+    },
+    {
+      "path": "apps/alphacode-app/test/cli.test.ts",
+      "bytes": 4961,
+      "sha256": "3bcbc2430d5099f84d5ba16dee05aaa7f4feda5ccac4b285882a3bee317af473"
+    },
+    {
+      "path": "apps/alphacode-app/test/desktop.test.ts",
+      "bytes": 6090,
+      "sha256": "cba8f793c8a79993c580c19ebf045aa78484621d2a79adfed214cc22ea024e9e"
+    },
+    {
+      "path": "apps/alphacode-app/test/development.test.ts",
+      "bytes": 2668,
+      "sha256": "d800ce8f247545b255de621b530fba91951ed474890fae3afe9a5f3bc4dd1379"
+    },
+    {
+      "path": "apps/alphacode-app/test/packaged.test.ts",
+      "bytes": 8003,
+      "sha256": "cecb1c0fdfac10e1e8a9584431f5a9a5d1cd9c6669f1e25dec0fe2daba5984f8"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/application.ts",
+      "bytes": 947,
+      "sha256": "6ce2a732b63a66edce0c687fe48833ecc9679caa2784dc2a3589d2c94715b99c"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/chat/approval.ts",
+      "bytes": 1572,
+      "sha256": "e79924e8a6f32fd10a83c67f69131899e06ae4f0d28634c2dc44555a1900c0e9"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/chat/contracts.ts",
+      "bytes": 5625,
+      "sha256": "07cce9542c4b002a81edad371c5f2d184ee31ddde449857e3edb30f406cfebb5"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/chat/controller.ts",
+      "bytes": 6685,
+      "sha256": "e69fb82c37980577880d7ec4f0bf3b0eac88aee9c55833f11050944f17bf7cff"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/chat/messages.ts",
+      "bytes": 5327,
+      "sha256": "6defa62bbdd65c2c2ffa60a61ab7329411c3c93beddf27d09d01ce3985910ab5"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/client.ts",
+      "bytes": 261,
+      "sha256": "2d27a1e65982e641a451bd1e2417ca7ce4f272c20e3d725f6cdb8bbfaec1252f"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/config.ts",
+      "bytes": 598,
+      "sha256": "b035b41611d53ff1d09ce2aed08d6e3ce5b0cf5bf3b26232f715d87449ea32eb"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/errors.ts",
+      "bytes": 563,
+      "sha256": "1f68c9b0d6465f6be25e30089267600296d301d2a281309a7bbc196a0b9ed088"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/global-config.ts",
+      "bytes": 9009,
+      "sha256": "86834bb5fd4dbae21497ea980165c7ba5b0dd4be780ea915a0c2e41095bc3ef3"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/input.ts",
+      "bytes": 1909,
+      "sha256": "65d1013498f038523bb7b0d36da117a17c003c9b3f9e12850a4fe4a4dafb4fd0"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/main.ts",
+      "bytes": 2487,
+      "sha256": "2cc7d8c0f949a97ddc5250889fa262c6be493c9dd7876214ca3231b29f02620a"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/context-usage.ts",
+      "bytes": 2388,
+      "sha256": "39bc2514356d5b5267b558ed2bba5083571715c97feda98743716afe09a96cec"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/create-runtime.ts",
+      "bytes": 19825,
+      "sha256": "5df9426599f2b3065138a5b18c0d56889fb0ac1dad5dd08384793a345fd938b0"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/events.ts",
+      "bytes": 3527,
+      "sha256": "dfa49052728e544db21c056dd3b5f7d366512c684815673e7a0abc49e044a750"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/global-instructions.ts",
+      "bytes": 665,
+      "sha256": "b54f4b06fecead5a3dbe6b2113dddfc1cb4ea1fa680a3819587e2a5f9e425541"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/history.ts",
+      "bytes": 2690,
+      "sha256": "1408f2102c9b3777f0ddd78fea272af468038ab22645ecfec3186f3bd0a5e538"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/permission-policy.ts",
+      "bytes": 1290,
+      "sha256": "478b08a3064edee01c19f366c4b39e9738f588ce01048865625ceb46c4910618"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/session-settings.ts",
+      "bytes": 1624,
+      "sha256": "52fadf7c595583d557b4b23200db146c1e70043ceeb934da01c7bbbd6a9f9039"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/session-title.ts",
+      "bytes": 1056,
+      "sha256": "bbaf02c30196813213c185fd01cb4d021950bb3d37bce3239977a143f9d00e4b"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/skills.ts",
+      "bytes": 3861,
+      "sha256": "266263a94925627ae1723e73675aa2d9caa5259fdd524304a27675a2ac4a3050"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/tool-records.ts",
+      "bytes": 5910,
+      "sha256": "c96e94b0ec847a67ec65bc832ddadb02289cdd623c2581670ee752361d014e51"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/runtime/trace-bridge.ts",
+      "bytes": 2306,
+      "sha256": "57f4f956888d45ed77c16b5510a946dc71137709f48a89c756c2edf2a067a1a3"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/client.ts",
+      "bytes": 4591,
+      "sha256": "3cb09826a07ea41fd8eae4db9da571ba30ad782b603255e943bc9fe28cfb096f"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/handoff.ts",
+      "bytes": 731,
+      "sha256": "2376bf917460cef5bebf094a49e7ccf60641e2ac00b01c15c2091b2694ed9d66"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/http.ts",
+      "bytes": 328,
+      "sha256": "343b7f55074d854e3a96ec15eb0ab77517056ad6826647852324addfd761908b"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/lifecycle.ts",
+      "bytes": 4495,
+      "sha256": "3af560ce4dc7eeeb6ca33626502017b5de904a89cb7e1ef85d5cfc313d17bbf6"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/main.ts",
+      "bytes": 1698,
+      "sha256": "dd02326a95f765c7572f50652d66b3ca603ea537507397bcbea96aa7faab4e91"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/projects.ts",
+      "bytes": 3770,
+      "sha256": "b0211bf3283b3970da7841c79bc430157b325c6d9426fca5a1c0910a41a723e7"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/protocol.ts",
+      "bytes": 868,
+      "sha256": "26cc918a0d9f64e09da14ae38cdc5a0c3039562d587a8a3d47503283d990e273"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/revision.ts",
+      "bytes": 3037,
+      "sha256": "926288aac7fcd01e982a75af79ef5e75e8c71e4238486d1c478a659874b8c3fe"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/search.ts",
+      "bytes": 2261,
+      "sha256": "9a522d28932cda57454294a5ba25fab68504abdf988a2813b81b29a79180ff7a"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/security.ts",
+      "bytes": 2154,
+      "sha256": "2f8645741e2a26c41fcf8de90159cf82f03ffc04cd3fca4fad5c22e01cdb2d73"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/server.ts",
+      "bytes": 32257,
+      "sha256": "5109ec50c2a6ee5ac616372c3703ca510b817e9f73b07250689c4628fad9409a"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/skill-archive.ts",
+      "bytes": 3300,
+      "sha256": "713e1919f5ad679670b9deabdec44342586ec46bde4daa85e253964e2e22cc45"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/skill-download.ts",
+      "bytes": 5658,
+      "sha256": "0ec710ddddd6a8706933e99f1859ad61fac5bfcd7b2b3feaeca881288cab6ec5"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/skills.ts",
+      "bytes": 9846,
+      "sha256": "461a73ae62206b33b0ead47652f4414ed5b7121493d12ea33de541140d0aaf93"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/storage.ts",
+      "bytes": 4337,
+      "sha256": "610d5deef221a73d3982bd9ae34902b2859d8b45d50b195008ca6e50b692aaa7"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/supervisor.ts",
+      "bytes": 8122,
+      "sha256": "d2a364c0b6b815b14dd9dae8c250007974c986e8e7a947a591dfec79288bff06"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/trace-pages.ts",
+      "bytes": 3213,
+      "sha256": "7c86b5dec9e62d3de8d0f9c322930c8993238a8f924d54475125f6fcdeeac9f8"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/trace-view.ts",
+      "bytes": 12625,
+      "sha256": "225961abd74888c568418948e6b811fbd410efdeb6abce45961a732772008ab8"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/traces.ts",
+      "bytes": 5827,
+      "sha256": "6a8819e75c147cd2362f0740f0ce936a0acd687b3e13a8daa0516c7daad96880"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/transport.ts",
+      "bytes": 3046,
+      "sha256": "2a50b02107b03e88d10a43ae312e72b185716d63ded97ff22ba5acdb7b93bbcc"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/web.ts",
+      "bytes": 3029,
+      "sha256": "11024c6e29865a411fca63deb7f99e536a804c79820f70b87e3f587dd061ac61"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/server/worker.ts",
+      "bytes": 2402,
+      "sha256": "9d58c94b52efd8a3e3887f08664252abb84a87473904e5d48c5d815b4df2f0ca"
+    },
+    {
+      "path": "apps/alphacode-app-server/src/testing.ts",
+      "bytes": 133,
+      "sha256": "071326fd46e8a31bf787fa82c36df01c684678d9ba6a8734a853ab30377cb5fd"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/approval.test.ts",
+      "bytes": 1582,
+      "sha256": "c0a663c6d212ce742b39d3b05c93e220e51ef8db49ba98a96bc80004b2ae7dd3"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/architecture.test.ts",
+      "bytes": 2330,
+      "sha256": "113ec5aa690f571af8053d1986605fe61291ef3c0e2164af7fbe32dc13fa05be"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/chat.test.ts",
+      "bytes": 10323,
+      "sha256": "c75204392c6dfd1239fa7da7f845ec0c47311fae03fdb7fa2a555a8675dbe09c"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/context-usage.test.ts",
+      "bytes": 3587,
+      "sha256": "d607914d6eaa1b73b2c1a743dd253033f9e2448081a00b4ff5aec8db4b63fe83"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/controller.test.ts",
+      "bytes": 2355,
+      "sha256": "dbc9a60421107740db8872635d60e88f3e5cead32fbf235cd7cd9fe16a6f34d9"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/execution.test.ts",
+      "bytes": 5816,
+      "sha256": "6a492dc638c4543f598ed57f2c4531135d52b44b5944c12ba4563727a76c81f2"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/helpers.ts",
+      "bytes": 4090,
+      "sha256": "aa18f21b6ff11daaff0db29cea0695a2a54f171976f2149012dc39d475f312e5"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/namespace.test.ts",
+      "bytes": 605,
+      "sha256": "600e71779197c3f51312ece3f2a3152f962e0864492988d763e916a497ba06f2"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/permissions.test.ts",
+      "bytes": 3384,
+      "sha256": "dda0a65990f3dfd1af2734f69419afc4de6975785177d5cf81221a75441f23a7"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/server-lifecycle.test.ts",
+      "bytes": 3840,
+      "sha256": "f8dadfa9310044b525674b38f9a8cff58ca6acb3ad59618a20c13939b30e5ecc"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/server-update.test.ts",
+      "bytes": 13932,
+      "sha256": "84cee5ff9f3db1ab59825bed05f53601555defd0d96fb6ff2fc89b984437ee0d"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/server.test.ts",
+      "bytes": 58156,
+      "sha256": "5c13ac80de7ed2894ebd7dbb43fd341bc52fdff988605653eb7d63e4fd124e32"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/session-persistence.test.ts",
+      "bytes": 3328,
+      "sha256": "455233cb8d81673e138a03127104a1cadb951062940ea1a146645580cff6850c"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/session-search.test.ts",
+      "bytes": 1476,
+      "sha256": "094c1c5aab729651e7c5d77e215161c4485590161a6bc30ff32b93ce778f3e4d"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/session-settings.test.ts",
+      "bytes": 8243,
+      "sha256": "5d9c1b394d4dcf8a011e56c824b04a3f00e19f2e9fd717c98882250fd8ba20d4"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/session-title-display.test.ts",
+      "bytes": 8947,
+      "sha256": "de5e17144a0486a9387009c51c884d951aaa0a57205060c1b16c89737ee997c4"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/skill-market.test.ts",
+      "bytes": 15097,
+      "sha256": "dbaa47612e958c5f1c27223f5c195c7454f8993e2d20dccc554f67cf5b0ecf9e"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/skills.test.ts",
+      "bytes": 13645,
+      "sha256": "1b7f6b452b4d6f91e2cd0c99f70ecb5e4e07e08243528f7075e8ec9b5bdac8dc"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/standalone.test.ts",
+      "bytes": 6730,
+      "sha256": "503ce97414deb108d21e72dca427e1be372af8c9a3ea5311dd3f67471ad25d90"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/tool-records.test.ts",
+      "bytes": 7924,
+      "sha256": "efb524113d05ca078025706a4515a6be48659f44f243e24b52f94556da87147b"
+    },
+    {
+      "path": "apps/alphacode-app-server/test/traces.test.ts",
+      "bytes": 7348,
+      "sha256": "0d976be204e9c3193f51e994fd17813cec35aef03b69efbe135352e8b6b64ca0"
+    },
+    {
+      "path": "apps/alphacode-web/i18next.config.ts",
+      "bytes": 489,
+      "sha256": "46564ddcb28a4ceebaee5730baec5afb6b7c04449cefa201a4474bfb9158bd8f"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/api.ts",
+      "bytes": 7507,
+      "sha256": "d375e7dfc9710716add5d360026bd9db86bef6b5158734f059d81ff5caf23486"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/application/session-cache.ts",
+      "bytes": 935,
+      "sha256": "4aa038423acc978b66eb47b88244b56982553ec60f7df6cb368f1a28572ae286"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/application/session-commands.ts",
+      "bytes": 7022,
+      "sha256": "a4d14a97f411712a868a040dec4e09171f22af4ac3ed721978774af6f7f23f94"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/application/session-gateway.ts",
+      "bytes": 1471,
+      "sha256": "40d1135186d5f6cc0098a2b97ea918ad6c4060518a788b9c04c407a425000ddd"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/application/use-session-search.ts",
+      "bytes": 1460,
+      "sha256": "229be63ecec7544317d6f30b0f03af3e54617b1922613ce74935fbdfce7b960a"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/domain/errors.ts",
+      "bytes": 562,
+      "sha256": "db5e862d77d00b557b78671f7c0e7d125000ba7489917454b0d03eee1febad92"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/domain/history.ts",
+      "bytes": 2141,
+      "sha256": "c44785d8db61e656e231fe6dfa91860feccae11ef5c614504bef34e19e5ca89e"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/domain/request.ts",
+      "bytes": 628,
+      "sha256": "b6a4328ceca443a6f453210c190e801f85899c2b7be71771c4b54ec86eb08ddc"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/domain/search.ts",
+      "bytes": 1256,
+      "sha256": "0dbea1fcecab19014800570c78c53135da6f79ba41175d7340845784d1275423"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/infrastructure/http-session-gateway.ts",
+      "bytes": 1014,
+      "sha256": "12754e86a0cc5416fac22435cb1e3c9d00cd1096c50f0b6730e55cae62ab3aae"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/presentation/errors.ts",
+      "bytes": 587,
+      "sha256": "74e789b26dea19fb441ab4e5683557b9f2798e4886b772b6438344d46189396d"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/queries.ts",
+      "bytes": 3141,
+      "sha256": "dab5e33fa3fe4649752d10225198d24f86b8bc6621f96ac1aae400b5fccf14ad"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/reload-drafts.ts",
+      "bytes": 1895,
+      "sha256": "7c51877c4446d668b6365163c2c41236b193ba2fb4af58a451acdab631ab3912"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/stream.ts",
+      "bytes": 2971,
+      "sha256": "323e613fdc93c6d43f0d375d883136f0d3554d93e0e52f9ce975cc050bbb5600"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/types.ts",
+      "bytes": 2534,
+      "sha256": "908782ce310afda9428abac01b5d5f0277db6a41fbd81933d2dab6dcada64f19"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/use-session-actions.ts",
+      "bytes": 2670,
+      "sha256": "76beda66b10e090af6f1f1c6910d6c7e9c86d316f5cb2f85bfb3498b23ae784c"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/sessions/use-session-workspace.ts",
+      "bytes": 18407,
+      "sha256": "9f24f3c85382efff37907877dacb52ae6a5844d09aac6856763f6c3a3d27e8f8"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/skills/api.ts",
+      "bytes": 3631,
+      "sha256": "abbc48231bf7467e14dce8b6f046917a1ea85580776a507146d5801c555ceb80"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/traces/api.ts",
+      "bytes": 4830,
+      "sha256": "3fe7ee293b19a479cca002cb111bd85e586ab069b636b8225f8541fe0c7133f6"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/traces/format.ts",
+      "bytes": 3200,
+      "sha256": "ea8321cd88521c083f15c083817f7d8444f583fa0bd82ce942ad7dc8c721bbcd"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/traces/vendor/build-steps.ts",
+      "bytes": 14777,
+      "sha256": "02b9a7856332e88cc7dbc6a851a96beb442b9af5cccce13b538e4e32e9d8cbd1"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/traces/vendor/build-timeline.ts",
+      "bytes": 472,
+      "sha256": "380c91a140cd45bd5112dac2a3126d922cccd8eb955b2754729312a5038e5142"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/traces/vendor/diff-highlight.ts",
+      "bytes": 4285,
+      "sha256": "d28890c4bea75d37a102eaf439606fb0d7b0fa16563530af1eb0100073d91ceb"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/traces/vendor/syntax-highlight.ts",
+      "bytes": 1084,
+      "sha256": "9340a19c72b4934ba9c81584494934af66aa0d33222947aa7beaff161715e94d"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/traces/vendor/trace-event-presenter.ts",
+      "bytes": 23036,
+      "sha256": "ec8123b0f7591cb50c39881ce6acc13006b4a50ee6677a864545e4e3064187bf"
+    },
+    {
+      "path": "apps/alphacode-web/src/features/traces/vendor/utils.ts",
+      "bytes": 493,
+      "sha256": "f857d6a63ee4c9fedef3bda3a524221745d52bc939327293c3f66895367633ee"
+    },
+    {
+      "path": "apps/alphacode-web/src/hooks/use-highlighted-code.ts",
+      "bytes": 2220,
+      "sha256": "0f3fbe4b70c7df9eb355a3c857918c32ec842a956edecc95bf1047738b20ab17"
+    },
+    {
+      "path": "apps/alphacode-web/src/hooks/use-mobile.ts",
+      "bytes": 565,
+      "sha256": "ad0936f84f1df79d3697bfbff9c18f8ad58431c1cbaf2359c6a853b0fcc9f28b"
+    },
+    {
+      "path": "apps/alphacode-web/src/i18n/format.ts",
+      "bytes": 338,
+      "sha256": "5ddee1a634c15d79b7a283b9cc29d5937578f8cd59a6521ad3bd87b700961de2"
+    },
+    {
+      "path": "apps/alphacode-web/src/i18n/i18next.d.ts",
+      "bytes": 446,
+      "sha256": "3f395758e0b66a635269125af468a8aa3879f0de3708a70c11fe5ed920c45110"
+    },
+    {
+      "path": "apps/alphacode-web/src/i18n/instance.ts",
+      "bytes": 2057,
+      "sha256": "b0f55fbc09c53678757b592f724677cd1d121c46c28fd5474531f4f1196b1ca2"
+    },
+    {
+      "path": "apps/alphacode-web/src/i18n/locale.ts",
+      "bytes": 1346,
+      "sha256": "2b4067a9cc742defdc9769e82e64d9eaa5e13278406a61fc9bc4f08056d6f533"
+    },
+    {
+      "path": "apps/alphacode-web/src/i18n/presentation.ts",
+      "bytes": 4942,
+      "sha256": "45064daf9a9b05739b7fc32121a64e717648d3d9d69661762357bca282209f4a"
+    },
+    {
+      "path": "apps/alphacode-web/src/i18n/react.ts",
+      "bytes": 194,
+      "sha256": "9fde2b7ea4b94acc5063faafbdc31c68348cd70ae9ba87a227c088d8be5fcc0d"
+    },
+    {
+      "path": "apps/alphacode-web/src/i18n/resources.d.ts",
+      "bytes": 25704,
+      "sha256": "d9d32748c166d48f44fcfa4c9c2f731fc4610a63ad70bcae6d339f3f7255b604"
+    },
+    {
+      "path": "apps/alphacode-web/src/lib/motion-features.ts",
+      "bytes": 75,
+      "sha256": "a46e140d182c02c1c11d90b4a795ef072af953dbc0598028055f4b5b18e62256"
+    },
+    {
+      "path": "apps/alphacode-web/src/lib/motion.ts",
+      "bytes": 710,
+      "sha256": "b656fc135738ebabc14dde273d7f84eee2a2bebc9baae36eb4789a141ddcc5e9"
+    },
+    {
+      "path": "apps/alphacode-web/src/lib/utils.ts",
+      "bytes": 25,
+      "sha256": "55bbdc94cef3e0c8a8bba386e94f97228dd2c967fe61466fc565378890550c08"
+    },
+    {
+      "path": "apps/alphacode-web/test/fixtures/demo-data.ts",
+      "bytes": 5370,
+      "sha256": "60dcbd86d8dfdd4458c0d429290e05b2c84a441704d1a54b70e4722d8d3ce529"
+    },
+    {
+      "path": "apps/alphacode-web/test/fixtures/draft-editor.ts",
+      "bytes": 562,
+      "sha256": "349870fda93c92574d016340093dfe1af0c6a10a67e3a8150738c622038a45a2"
+    },
+    {
+      "path": "apps/alphacode-web/test/fixtures/session-api.ts",
+      "bytes": 8258,
+      "sha256": "13cba3376c823fd312a3cfcba6a157308af4f79691434681f620039c7b68f894"
+    },
+    {
+      "path": "apps/alphacode-web/test/i18n-types.ts",
+      "bytes": 633,
+      "sha256": "c8a15ee97e50badace3a5eb5d382f36f2cce8c36a4a6ea641894342ec7210676"
+    },
+    {
+      "path": "apps/alphacode-web/test/session-api.test.ts",
+      "bytes": 1385,
+      "sha256": "d421022c1c153e02290dc89eb443302da73c9bfc3b47a66e2330108bd8cb1dff"
+    },
+    {
+      "path": "apps/alphacode-web/test/session-cache.test.ts",
+      "bytes": 1528,
+      "sha256": "7822c098382f2ed0002dd775bcf8f3f659756e566633ebb895aa588e8b78fb3b"
+    },
+    {
+      "path": "apps/alphacode-web/test/session-commands.test.ts",
+      "bytes": 10599,
+      "sha256": "8623aca4a87cdf0817dd5fed04a6e21db852a0020d9ee5de3f431d270967a67d"
+    },
+    {
+      "path": "apps/alphacode-web/test/session-stream.test.ts",
+      "bytes": 3077,
+      "sha256": "cea0082ebf1279d3c0aec7b4b5857fa6b562cd13f0bfaa0532d28eca20ebfb60"
+    },
+    {
+      "path": "apps/alphacode-web/test/setup.ts",
+      "bytes": 1124,
+      "sha256": "0c55430fa08f5c1f1b3089e0ed0aab3840c58647711fb772ea3825cb3c28363f"
+    },
+    {
+      "path": "apps/alphacode-web/test/skills-api.test.ts",
+      "bytes": 1911,
+      "sha256": "97225deaa6b82642a9ee10d516e5eb0d2ed737284ba53262b9aadfaf42c8a087"
+    },
+    {
+      "path": "apps/alphacode-web/test/utils.test.ts",
+      "bytes": 477,
+      "sha256": "190b3d248b207fc4b53cd81b4de5dbda99ef68dde972a207164ddf1355ffdd2d"
+    },
+    {
+      "path": "apps/alphacode-web/vite.config.ts",
+      "bytes": 711,
+      "sha256": "36865d77237beca4281e079860eebac17a8c00c4ff27a286f385bf437568cf73"
+    },
+    {
+      "path": "apps/example-agent/src/demo-transport.ts",
+      "bytes": 844,
+      "sha256": "6d3118e5483c13f901fd6062f1230b76c70b152ed40ed2c441a005b025b5d391"
+    },
+    {
+      "path": "apps/example-agent/src/index.ts",
+      "bytes": 2003,
+      "sha256": "fc4e6772223a7a8eae224a43575b144b0a9ebffcad92169c858b5fce0558e546"
+    }
+  ],
+  "fixture": {
+    "source": "import { createTool } from 'example';\n// createTool({ comment: true });\nconst text = \"createTool({ string: true })\";\nconst first = createTool({});\nconst multiline = createTool\n(\n  { name: \"multiline\" }\n);\nconst generic = createTool<Context>({});\nconst member = other.createTool({});\nconst similar = createToolbox({});\nconst reference = createTool;\nconst nested = createTool({ run: () => createTool({}) });\n",
+    "expectedLines": [
+      4,
+      5,
+      9,
+      13
+    ]
+  },
+  "rows": [
+    {
+      "scope": "coding-agent-src",
+      "query": "createTool",
+      "pattern": "createTool($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 40.970799999999144,
+      "p95Ms": 283.8741999999984,
+      "processP50Ms": 40.78859999999986,
+      "rawBytes": 5999,
+      "rawTruncated": false,
+      "matches": 14,
+      "uniqueLocations": 14,
+      "full": {
+        "tokens": 386,
+        "bytes": 1472,
+        "returned": 14,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 170,
+        "bytes": 607,
+        "returned": 14,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 40.02529999999933,
+          "adapterMs": 40.172599999999875
+        },
+        {
+          "processMs": 65.23329999999987,
+          "adapterMs": 65.39789999999994
+        },
+        {
+          "processMs": 60.60519999999815,
+          "adapterMs": 60.79439999999886
+        },
+        {
+          "processMs": 40.78859999999986,
+          "adapterMs": 40.970799999999144
+        },
+        {
+          "processMs": 40.22659999999814,
+          "adapterMs": 40.38330000000133
+        },
+        {
+          "processMs": 38.96610000000146,
+          "adapterMs": 39.11130000000048
+        },
+        {
+          "processMs": 40.43799999999828,
+          "adapterMs": 40.5837999999967
+        },
+        {
+          "processMs": 38.76420000000144,
+          "adapterMs": 38.91489999999976
+        },
+        {
+          "processMs": 38.329499999999825,
+          "adapterMs": 38.49819999999818
+        },
+        {
+          "processMs": 39.310599999997066,
+          "adapterMs": 39.49079999999958
+        },
+        {
+          "processMs": 283.6622999999963,
+          "adapterMs": 283.8741999999984
+        },
+        {
+          "processMs": 84.81180000000313,
+          "adapterMs": 85.181700000001
+        },
+        {
+          "processMs": 53.0656999999992,
+          "adapterMs": 53.244800000000396
+        },
+        {
+          "processMs": 49.732300000003306,
+          "adapterMs": 49.988499999999476
+        },
+        {
+          "processMs": 40.92029999999795,
+          "adapterMs": 41.095900000000256
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "createTool",
+      "pattern": "createTool($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 41.71259999999893,
+      "p95Ms": 112.7528000000002,
+      "processP50Ms": 41.547599999998056,
+      "rawBytes": 5999,
+      "rawTruncated": false,
+      "matches": 14,
+      "uniqueLocations": 14,
+      "full": {
+        "tokens": 386,
+        "bytes": 1472,
+        "returned": 14,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 170,
+        "bytes": 607,
+        "returned": 14,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 47.947400000000016,
+          "adapterMs": 48.111799999999675
+        },
+        {
+          "processMs": 112.57290000000103,
+          "adapterMs": 112.7528000000002
+        },
+        {
+          "processMs": 41.55359999999928,
+          "adapterMs": 41.71259999999893
+        },
+        {
+          "processMs": 41.36959999999817,
+          "adapterMs": 41.550100000000384
+        },
+        {
+          "processMs": 39.72769999999946,
+          "adapterMs": 39.87989999999991
+        },
+        {
+          "processMs": 41.07579999999871,
+          "adapterMs": 41.24859999999899
+        },
+        {
+          "processMs": 42.97100000000137,
+          "adapterMs": 43.248100000000704
+        },
+        {
+          "processMs": 41.547599999998056,
+          "adapterMs": 41.71270000000004
+        },
+        {
+          "processMs": 40.392799999997806,
+          "adapterMs": 40.57999999999811
+        },
+        {
+          "processMs": 42.90129999999772,
+          "adapterMs": 43.05789999999979
+        },
+        {
+          "processMs": 41.26070000000618,
+          "adapterMs": 41.425900000002
+        },
+        {
+          "processMs": 98.96949999999924,
+          "adapterMs": 99.27360000000044
+        },
+        {
+          "processMs": 55.81270000000222,
+          "adapterMs": 56
+        },
+        {
+          "processMs": 41.52919999999722,
+          "adapterMs": 41.68359999999666
+        },
+        {
+          "processMs": 41.50019999999495,
+          "adapterMs": 41.702400000001944
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "createTool",
+      "pattern": "createTool($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 59.48210000000017,
+      "p95Ms": 172.6823999999997,
+      "processP50Ms": 59.31450000000041,
+      "rawBytes": 21195,
+      "rawTruncated": false,
+      "matches": 7,
+      "uniqueLocations": 7,
+      "full": {
+        "tokens": 1764,
+        "bytes": 6462,
+        "returned": 7,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 93,
+        "bytes": 331,
+        "returned": 7,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 59.31450000000041,
+          "adapterMs": 59.48210000000017
+        },
+        {
+          "processMs": 172.3711000000003,
+          "adapterMs": 172.6823999999997
+        },
+        {
+          "processMs": 75.33629999999903,
+          "adapterMs": 75.5105999999978
+        },
+        {
+          "processMs": 53.18999999999869,
+          "adapterMs": 53.336199999997916
+        },
+        {
+          "processMs": 75.44550000000163,
+          "adapterMs": 75.70140000000174
+        },
+        {
+          "processMs": 48.985100000001694,
+          "adapterMs": 49.12989999999991
+        },
+        {
+          "processMs": 50.135699999998906,
+          "adapterMs": 50.3015000000014
+        },
+        {
+          "processMs": 48.47390000000087,
+          "adapterMs": 48.613900000000285
+        },
+        {
+          "processMs": 62.92120000000068,
+          "adapterMs": 63.05789999999979
+        },
+        {
+          "processMs": 51.05689999999595,
+          "adapterMs": 51.221099999995204
+        },
+        {
+          "processMs": 50.7812999999951,
+          "adapterMs": 50.95019999999931
+        },
+        {
+          "processMs": 137.86359999999695,
+          "adapterMs": 138.3732999999993
+        },
+        {
+          "processMs": 66.36349999999948,
+          "adapterMs": 66.62359999999899
+        },
+        {
+          "processMs": 54.52010000000155,
+          "adapterMs": 54.72950000000128
+        },
+        {
+          "processMs": 62.0737999999983,
+          "adapterMs": 62.2586999999985
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "failure",
+      "pattern": "failure($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 43.146199999999226,
+      "p95Ms": 83.17770000000019,
+      "processP50Ms": 42.49239999999918,
+      "rawBytes": 34419,
+      "rawTruncated": false,
+      "matches": 106,
+      "uniqueLocations": 106,
+      "full": {
+        "tokens": 3419,
+        "bytes": 12902,
+        "returned": 100,
+        "truncated": true
+      },
+      "locations": {
+        "tokens": 1028,
+        "bytes": 3628,
+        "returned": 100,
+        "truncated": true
+      },
+      "samples": [
+        {
+          "processMs": 40.188200000000506,
+          "adapterMs": 40.80630000000019
+        },
+        {
+          "processMs": 59.343800000000556,
+          "adapterMs": 60.17069999999876
+        },
+        {
+          "processMs": 45.421800000000076,
+          "adapterMs": 45.92059999999947
+        },
+        {
+          "processMs": 40.86650000000009,
+          "adapterMs": 41.49300000000221
+        },
+        {
+          "processMs": 38.933499999999185,
+          "adapterMs": 39.39999999999782
+        },
+        {
+          "processMs": 40.192699999999604,
+          "adapterMs": 40.68930000000182
+        },
+        {
+          "processMs": 40.02139999999781,
+          "adapterMs": 40.48139999999694
+        },
+        {
+          "processMs": 42.49239999999918,
+          "adapterMs": 43.146199999999226
+        },
+        {
+          "processMs": 41.4955000000009,
+          "adapterMs": 41.987600000000384
+        },
+        {
+          "processMs": 39.85570000000007,
+          "adapterMs": 40.376200000006065
+        },
+        {
+          "processMs": 59.04880000000412,
+          "adapterMs": 60.44050000000425
+        },
+        {
+          "processMs": 82.63990000000194,
+          "adapterMs": 83.17770000000019
+        },
+        {
+          "processMs": 45.43329999999696,
+          "adapterMs": 46.401599999997416
+        },
+        {
+          "processMs": 44.452400000001944,
+          "adapterMs": 45.01400000000285
+        },
+        {
+          "processMs": 44.922099999996135,
+          "adapterMs": 45.42189999999391
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "failure",
+      "pattern": "failure($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 51.3112000000001,
+      "p95Ms": 135.59210000000166,
+      "processP50Ms": 50.66650000000027,
+      "rawBytes": 34421,
+      "rawTruncated": false,
+      "matches": 106,
+      "uniqueLocations": 106,
+      "full": {
+        "tokens": 3419,
+        "bytes": 12902,
+        "returned": 100,
+        "truncated": true
+      },
+      "locations": {
+        "tokens": 1028,
+        "bytes": 3628,
+        "returned": 100,
+        "truncated": true
+      },
+      "samples": [
+        {
+          "processMs": 50.66650000000027,
+          "adapterMs": 51.3112000000001
+        },
+        {
+          "processMs": 80.247800000001,
+          "adapterMs": 80.9307000000008
+        },
+        {
+          "processMs": 50.91310000000158,
+          "adapterMs": 51.506100000002334
+        },
+        {
+          "processMs": 54.32999999999811,
+          "adapterMs": 54.79899999999907
+        },
+        {
+          "processMs": 38.895300000000134,
+          "adapterMs": 39.40569999999934
+        },
+        {
+          "processMs": 40.213199999998324,
+          "adapterMs": 40.85250000000087
+        },
+        {
+          "processMs": 42.07970000000205,
+          "adapterMs": 42.61040000000139
+        },
+        {
+          "processMs": 39.67369999999937,
+          "adapterMs": 40.16869999999835
+        },
+        {
+          "processMs": 41.00340000000142,
+          "adapterMs": 41.49910000000091
+        },
+        {
+          "processMs": 54.81559999999445,
+          "adapterMs": 55.30189999999857
+        },
+        {
+          "processMs": 134.02919999999722,
+          "adapterMs": 135.59210000000166
+        },
+        {
+          "processMs": 75.39220000000205,
+          "adapterMs": 76.09470000000147
+        },
+        {
+          "processMs": 43.02379999999539,
+          "adapterMs": 43.55649999999878
+        },
+        {
+          "processMs": 48.195299999999406,
+          "adapterMs": 48.81359999999404
+        },
+        {
+          "processMs": 51.586999999999534,
+          "adapterMs": 52.318700000003446
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "failure",
+      "pattern": "failure($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 57.168799999999464,
+      "p95Ms": 689.6938999999984,
+      "processP50Ms": 56.2922999999937,
+      "rawBytes": 48347,
+      "rawTruncated": false,
+      "matches": 89,
+      "uniqueLocations": 89,
+      "full": {
+        "tokens": 1797,
+        "bytes": 6610,
+        "returned": 89,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 915,
+        "bytes": 3236,
+        "returned": 89,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 51.795900000000984,
+          "adapterMs": 52.370200000001205
+        },
+        {
+          "processMs": 688.369999999999,
+          "adapterMs": 689.6938999999984
+        },
+        {
+          "processMs": 69.38509999999951,
+          "adapterMs": 70.00849999999991
+        },
+        {
+          "processMs": 61.864699999998265,
+          "adapterMs": 62.373899999998685
+        },
+        {
+          "processMs": 54.90719999999783,
+          "adapterMs": 55.48899999999776
+        },
+        {
+          "processMs": 48.63639999999941,
+          "adapterMs": 49.14409999999771
+        },
+        {
+          "processMs": 51.55240000000049,
+          "adapterMs": 52.14090000000215
+        },
+        {
+          "processMs": 49.743900000001304,
+          "adapterMs": 50.39300000000003
+        },
+        {
+          "processMs": 49.660899999998946,
+          "adapterMs": 50.32009999999718
+        },
+        {
+          "processMs": 51.7612999999983,
+          "adapterMs": 52.30760000000009
+        },
+        {
+          "processMs": 134.25160000000324,
+          "adapterMs": 135.6719000000012
+        },
+        {
+          "processMs": 99.52760000000126,
+          "adapterMs": 100.47720000000118
+        },
+        {
+          "processMs": 56.2922999999937,
+          "adapterMs": 57.168799999999464
+        },
+        {
+          "processMs": 70.05270000000019,
+          "adapterMs": 70.86450000000332
+        },
+        {
+          "processMs": 58.89990000000398,
+          "adapterMs": 59.78310000000056
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "JSON.parse",
+      "pattern": "JSON.parse($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 42.19399999999587,
+      "p95Ms": 213.6269999999986,
+      "processP50Ms": 42.07419999999547,
+      "rawBytes": 903,
+      "rawTruncated": false,
+      "matches": 1,
+      "uniqueLocations": 1,
+      "full": {
+        "tokens": 65,
+        "bytes": 231,
+        "returned": 1,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 25,
+        "bytes": 81,
+        "returned": 1,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 41.536299999999756,
+          "adapterMs": 41.60909999999967
+        },
+        {
+          "processMs": 213.54779999999846,
+          "adapterMs": 213.6269999999986
+        },
+        {
+          "processMs": 45.69180000000051,
+          "adapterMs": 45.77090000000317
+        },
+        {
+          "processMs": 40.896199999999226,
+          "adapterMs": 40.98189999999886
+        },
+        {
+          "processMs": 78.60239999999976,
+          "adapterMs": 78.69420000000173
+        },
+        {
+          "processMs": 38.67199999999866,
+          "adapterMs": 38.763999999999214
+        },
+        {
+          "processMs": 39.940200000000914,
+          "adapterMs": 40.015800000001036
+        },
+        {
+          "processMs": 40.22849999999744,
+          "adapterMs": 40.3166999999994
+        },
+        {
+          "processMs": 40.22190000000046,
+          "adapterMs": 40.31109999999899
+        },
+        {
+          "processMs": 38.39510000000155,
+          "adapterMs": 38.47219999999652
+        },
+        {
+          "processMs": 157.34449999999924,
+          "adapterMs": 157.89480000000185
+        },
+        {
+          "processMs": 128.14919999999984,
+          "adapterMs": 128.33840000000055
+        },
+        {
+          "processMs": 47.45539999999892,
+          "adapterMs": 47.53220000000147
+        },
+        {
+          "processMs": 42.07419999999547,
+          "adapterMs": 42.19399999999587
+        },
+        {
+          "processMs": 51.622699999999895,
+          "adapterMs": 51.758999999998196
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "JSON.parse",
+      "pattern": "JSON.parse($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 43.924699999999575,
+      "p95Ms": 165.82790000000023,
+      "processP50Ms": 43.83520000000135,
+      "rawBytes": 903,
+      "rawTruncated": false,
+      "matches": 1,
+      "uniqueLocations": 1,
+      "full": {
+        "tokens": 65,
+        "bytes": 231,
+        "returned": 1,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 25,
+        "bytes": 81,
+        "returned": 1,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 40.05829999999969,
+          "adapterMs": 40.14599999999973
+        },
+        {
+          "processMs": 165.66390000000138,
+          "adapterMs": 165.82790000000023
+        },
+        {
+          "processMs": 67.50820000000022,
+          "adapterMs": 67.72350000000006
+        },
+        {
+          "processMs": 43.83520000000135,
+          "adapterMs": 43.924699999999575
+        },
+        {
+          "processMs": 38.733500000002095,
+          "adapterMs": 38.8080000000009
+        },
+        {
+          "processMs": 41.26670000000013,
+          "adapterMs": 41.34779999999955
+        },
+        {
+          "processMs": 42.21450000000186,
+          "adapterMs": 42.29230000000098
+        },
+        {
+          "processMs": 55.16139999999723,
+          "adapterMs": 55.24669999999969
+        },
+        {
+          "processMs": 40.21429999999964,
+          "adapterMs": 40.30229999999938
+        },
+        {
+          "processMs": 39.48270000000048,
+          "adapterMs": 39.5650999999998
+        },
+        {
+          "processMs": 44.50340000000142,
+          "adapterMs": 44.58640000000014
+        },
+        {
+          "processMs": 108.41210000000137,
+          "adapterMs": 108.58550000000105
+        },
+        {
+          "processMs": 49.80319999999483,
+          "adapterMs": 49.927700000000186
+        },
+        {
+          "processMs": 52.35380000000441,
+          "adapterMs": 52.47230000000127
+        },
+        {
+          "processMs": 42.34309999999823,
+          "adapterMs": 42.44459999999526
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "JSON.parse",
+      "pattern": "JSON.parse($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 57.230499999997846,
+      "p95Ms": 302.75739999999496,
+      "processP50Ms": 57.16100000000006,
+      "rawBytes": 570,
+      "rawTruncated": false,
+      "matches": 1,
+      "uniqueLocations": 1,
+      "full": {
+        "tokens": 32,
+        "bytes": 107,
+        "returned": 1,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 25,
+        "bytes": 81,
+        "returned": 1,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 55.6241,
+          "adapterMs": 55.70330000000013
+        },
+        {
+          "processMs": 77.61239999999998,
+          "adapterMs": 77.73229999999967
+        },
+        {
+          "processMs": 70.1880999999994,
+          "adapterMs": 70.30139999999665
+        },
+        {
+          "processMs": 51.97190000000046,
+          "adapterMs": 52.03320000000167
+        },
+        {
+          "processMs": 57.16100000000006,
+          "adapterMs": 57.230499999997846
+        },
+        {
+          "processMs": 62.23609999999826,
+          "adapterMs": 62.29809999999998
+        },
+        {
+          "processMs": 53.80110000000059,
+          "adapterMs": 53.86540000000241
+        },
+        {
+          "processMs": 50.05199999999968,
+          "adapterMs": 50.12299999999959
+        },
+        {
+          "processMs": 50.94640000000072,
+          "adapterMs": 51.0096999999987
+        },
+        {
+          "processMs": 49.375,
+          "adapterMs": 49.43630000000121
+        },
+        {
+          "processMs": 302.6828999999998,
+          "adapterMs": 302.75739999999496
+        },
+        {
+          "processMs": 83.21469999999681,
+          "adapterMs": 83.39969999999448
+        },
+        {
+          "processMs": 122.29110000000219,
+          "adapterMs": 122.35889999999927
+        },
+        {
+          "processMs": 53.7213999999949,
+          "adapterMs": 53.789599999996426
+        },
+        {
+          "processMs": 72.8726999999999,
+          "adapterMs": 72.9484999999986
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "runProcess",
+      "pattern": "runProcess($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 41.608000000000175,
+      "p95Ms": 133.83120000000054,
+      "processP50Ms": 41.51080000000002,
+      "rawBytes": 2042,
+      "rawTruncated": false,
+      "matches": 4,
+      "uniqueLocations": 4,
+      "full": {
+        "tokens": 155,
+        "bytes": 599,
+        "returned": 4,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 56,
+        "bytes": 200,
+        "returned": 4,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 50.522500000000036,
+          "adapterMs": 50.68209999999999
+        },
+        {
+          "processMs": 133.73229999999967,
+          "adapterMs": 133.83120000000054
+        },
+        {
+          "processMs": 41.51080000000002,
+          "adapterMs": 41.608000000000175
+        },
+        {
+          "processMs": 39.6772000000019,
+          "adapterMs": 39.77590000000055
+        },
+        {
+          "processMs": 40.10190000000148,
+          "adapterMs": 40.20720000000074
+        },
+        {
+          "processMs": 38.65269999999873,
+          "adapterMs": 38.7583999999988
+        },
+        {
+          "processMs": 40.39570000000094,
+          "adapterMs": 40.50879999999961
+        },
+        {
+          "processMs": 39.729199999997945,
+          "adapterMs": 39.83669999999984
+        },
+        {
+          "processMs": 48.117200000000594,
+          "adapterMs": 48.247699999999895
+        },
+        {
+          "processMs": 39.624299999995856,
+          "adapterMs": 39.774499999999534
+        },
+        {
+          "processMs": 40.06229999999778,
+          "adapterMs": 40.18819999999687
+        },
+        {
+          "processMs": 67.16399999999703,
+          "adapterMs": 67.31379999999626
+        },
+        {
+          "processMs": 43.45030000000406,
+          "adapterMs": 43.603900000001886
+        },
+        {
+          "processMs": 43.110899999999674,
+          "adapterMs": 43.20799999999872
+        },
+        {
+          "processMs": 50.14610000000539,
+          "adapterMs": 50.26140000000305
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "runProcess",
+      "pattern": "runProcess($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 42.39649999999892,
+      "p95Ms": 84.7039999999979,
+      "processP50Ms": 42.28650000000016,
+      "rawBytes": 2042,
+      "rawTruncated": false,
+      "matches": 4,
+      "uniqueLocations": 4,
+      "full": {
+        "tokens": 155,
+        "bytes": 599,
+        "returned": 4,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 56,
+        "bytes": 200,
+        "returned": 4,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 46.97220000000016,
+          "adapterMs": 47.07669999999962
+        },
+        {
+          "processMs": 42.28650000000016,
+          "adapterMs": 42.39649999999892
+        },
+        {
+          "processMs": 43.69250000000102,
+          "adapterMs": 43.79349999999977
+        },
+        {
+          "processMs": 38.11070000000109,
+          "adapterMs": 38.23540000000139
+        },
+        {
+          "processMs": 39.05459999999948,
+          "adapterMs": 39.15950000000157
+        },
+        {
+          "processMs": 39.619800000000396,
+          "adapterMs": 39.739599999997154
+        },
+        {
+          "processMs": 41.35789999999906,
+          "adapterMs": 41.454900000000634
+        },
+        {
+          "processMs": 42.67749999999796,
+          "adapterMs": 42.78779999999824
+        },
+        {
+          "processMs": 39.908299999999144,
+          "adapterMs": 40.002700000000914
+        },
+        {
+          "processMs": 39.10029999999824,
+          "adapterMs": 39.2071999999971
+        },
+        {
+          "processMs": 43.29239999999845,
+          "adapterMs": 43.41189999999915
+        },
+        {
+          "processMs": 84.42339999999967,
+          "adapterMs": 84.7039999999979
+        },
+        {
+          "processMs": 51.28650000000198,
+          "adapterMs": 51.41049999999814
+        },
+        {
+          "processMs": 43.697800000001735,
+          "adapterMs": 43.8234999999986
+        },
+        {
+          "processMs": 40.22049999999581,
+          "adapterMs": 40.38089999999647
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "runProcess",
+      "pattern": "runProcess($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 52.13540000000012,
+      "p95Ms": 618.0852999999988,
+      "processP50Ms": 52.02900000000045,
+      "rawBytes": 2743,
+      "rawTruncated": false,
+      "matches": 2,
+      "uniqueLocations": 2,
+      "full": {
+        "tokens": 126,
+        "bytes": 455,
+        "returned": 2,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 36,
+        "bytes": 126,
+        "returned": 2,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 52.02900000000045,
+          "adapterMs": 52.13540000000012
+        },
+        {
+          "processMs": 405.0159999999996,
+          "adapterMs": 405.1154000000006
+        },
+        {
+          "processMs": 54.00040000000081,
+          "adapterMs": 54.12970000000132
+        },
+        {
+          "processMs": 50.78280000000086,
+          "adapterMs": 50.883999999998196
+        },
+        {
+          "processMs": 48.680599999999686,
+          "adapterMs": 48.76800000000003
+        },
+        {
+          "processMs": 48.78150000000096,
+          "adapterMs": 48.87879999999859
+        },
+        {
+          "processMs": 50.71800000000076,
+          "adapterMs": 50.84120000000257
+        },
+        {
+          "processMs": 50.20599999999831,
+          "adapterMs": 50.30349999999817
+        },
+        {
+          "processMs": 49.874400000000605,
+          "adapterMs": 49.98059999999896
+        },
+        {
+          "processMs": 52.78100000000268,
+          "adapterMs": 52.89910000000236
+        },
+        {
+          "processMs": 617.8838000000032,
+          "adapterMs": 618.0852999999988
+        },
+        {
+          "processMs": 107.00480000000243,
+          "adapterMs": 107.17030000000523
+        },
+        {
+          "processMs": 58.483000000000175,
+          "adapterMs": 58.59200000000419
+        },
+        {
+          "processMs": 51.2638999999981,
+          "adapterMs": 51.36529999999766
+        },
+        {
+          "processMs": 82.1255999999994,
+          "adapterMs": 82.29219999999623
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "resolvePath",
+      "pattern": "resolvePath($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 40.155399999999645,
+      "p95Ms": 106.23199999999997,
+      "processP50Ms": 39.94389999999839,
+      "rawBytes": 9320,
+      "rawTruncated": false,
+      "matches": 22,
+      "uniqueLocations": 22,
+      "full": {
+        "tokens": 828,
+        "bytes": 3280,
+        "returned": 22,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 236,
+        "bytes": 839,
+        "returned": 22,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 39.202800000000025,
+          "adapterMs": 39.41139999999996
+        },
+        {
+          "processMs": 105.91450000000077,
+          "adapterMs": 106.23199999999997
+        },
+        {
+          "processMs": 57.36040000000139,
+          "adapterMs": 57.66690000000017
+        },
+        {
+          "processMs": 41.73700000000099,
+          "adapterMs": 41.96060000000216
+        },
+        {
+          "processMs": 38.91489999999976,
+          "adapterMs": 39.125700000000506
+        },
+        {
+          "processMs": 39.34690000000046,
+          "adapterMs": 39.53280000000086
+        },
+        {
+          "processMs": 39.94389999999839,
+          "adapterMs": 40.155399999999645
+        },
+        {
+          "processMs": 39.564800000000105,
+          "adapterMs": 39.74250000000029
+        },
+        {
+          "processMs": 39.89890000000014,
+          "adapterMs": 40.089899999999034
+        },
+        {
+          "processMs": 39.32860000000073,
+          "adapterMs": 39.52560000000085
+        },
+        {
+          "processMs": 39.38590000000113,
+          "adapterMs": 39.57190000000264
+        },
+        {
+          "processMs": 87.94980000000214,
+          "adapterMs": 88.31750000000466
+        },
+        {
+          "processMs": 50.062000000005355,
+          "adapterMs": 50.29170000000158
+        },
+        {
+          "processMs": 45.77560000000085,
+          "adapterMs": 45.980100000000675
+        },
+        {
+          "processMs": 42.307999999997264,
+          "adapterMs": 42.5763999999981
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "resolvePath",
+      "pattern": "resolvePath($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 43.050600000002305,
+      "p95Ms": 173.4968000000008,
+      "processP50Ms": 42.8705000000009,
+      "rawBytes": 9321,
+      "rawTruncated": false,
+      "matches": 22,
+      "uniqueLocations": 22,
+      "full": {
+        "tokens": 828,
+        "bytes": 3280,
+        "returned": 22,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 236,
+        "bytes": 839,
+        "returned": 22,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 40.28989999999976,
+          "adapterMs": 40.475900000001275
+        },
+        {
+          "processMs": 79.0617000000002,
+          "adapterMs": 79.54379999999946
+        },
+        {
+          "processMs": 48.54009999999835,
+          "adapterMs": 48.75699999999779
+        },
+        {
+          "processMs": 41.755799999999,
+          "adapterMs": 41.949799999998504
+        },
+        {
+          "processMs": 38.98779999999897,
+          "adapterMs": 39.1846000000005
+        },
+        {
+          "processMs": 39.3788999999997,
+          "adapterMs": 39.61750000000029
+        },
+        {
+          "processMs": 42.8705000000009,
+          "adapterMs": 43.050600000002305
+        },
+        {
+          "processMs": 42.97350000000006,
+          "adapterMs": 43.19060000000172
+        },
+        {
+          "processMs": 40.60540000000037,
+          "adapterMs": 40.78470000000016
+        },
+        {
+          "processMs": 40.487600000000384,
+          "adapterMs": 40.7132000000056
+        },
+        {
+          "processMs": 39.98159999999916,
+          "adapterMs": 40.1846000000005
+        },
+        {
+          "processMs": 172.9872000000032,
+          "adapterMs": 173.4968000000008
+        },
+        {
+          "processMs": 44.94550000000163,
+          "adapterMs": 45.1652000000031
+        },
+        {
+          "processMs": 43.65299999999843,
+          "adapterMs": 43.85729999999603
+        },
+        {
+          "processMs": 63.28369999999995,
+          "adapterMs": 63.89059999999881
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "resolvePath",
+      "pattern": "resolvePath($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 55.740200000000186,
+      "p95Ms": 250.6978999999992,
+      "processP50Ms": 55.4372000000003,
+      "rawBytes": 22775,
+      "rawTruncated": false,
+      "matches": 14,
+      "uniqueLocations": 14,
+      "full": {
+        "tokens": 413,
+        "bytes": 1584,
+        "returned": 14,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 153,
+        "bytes": 539,
+        "returned": 14,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 49.03219999999965,
+          "adapterMs": 49.38829999999871
+        },
+        {
+          "processMs": 129.15359999999964,
+          "adapterMs": 129.46199999999953
+        },
+        {
+          "processMs": 72.07819999999992,
+          "adapterMs": 72.55340000000069
+        },
+        {
+          "processMs": 51.829099999999016,
+          "adapterMs": 52.14110000000073
+        },
+        {
+          "processMs": 48.203199999999924,
+          "adapterMs": 48.51590000000215
+        },
+        {
+          "processMs": 47.981400000000576,
+          "adapterMs": 48.261099999999715
+        },
+        {
+          "processMs": 65.53930000000037,
+          "adapterMs": 65.84890000000087
+        },
+        {
+          "processMs": 49.47819999999774,
+          "adapterMs": 49.740499999999884
+        },
+        {
+          "processMs": 49.783699999996315,
+          "adapterMs": 50.15020000000004
+        },
+        {
+          "processMs": 51.35519999999815,
+          "adapterMs": 51.68409999999858
+        },
+        {
+          "processMs": 250.00020000000222,
+          "adapterMs": 250.6978999999992
+        },
+        {
+          "processMs": 249.08350000000064,
+          "adapterMs": 249.75620000000345
+        },
+        {
+          "processMs": 60.800600000002305,
+          "adapterMs": 61.24289999999746
+        },
+        {
+          "processMs": 56.58840000000055,
+          "adapterMs": 56.8920999999973
+        },
+        {
+          "processMs": 55.4372000000003,
+          "adapterMs": 55.740200000000186
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "ALPHA_SEARCH_PILOT_ABSENT_7812",
+      "pattern": "ALPHA_SEARCH_PILOT_ABSENT_7812($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 42.52390000000014,
+      "p95Ms": 497.80449999999837,
+      "processP50Ms": 42.419999999998254,
+      "rawBytes": 267,
+      "rawTruncated": false,
+      "matches": 0,
+      "uniqueLocations": 0,
+      "full": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 41.60750000000007,
+          "adapterMs": 41.65759999999955
+        },
+        {
+          "processMs": 67.63040000000001,
+          "adapterMs": 67.68529999999919
+        },
+        {
+          "processMs": 52.1694000000025,
+          "adapterMs": 52.242300000001705
+        },
+        {
+          "processMs": 39.7497000000003,
+          "adapterMs": 39.80110000000059
+        },
+        {
+          "processMs": 40.69930000000022,
+          "adapterMs": 40.755300000000716
+        },
+        {
+          "processMs": 38.42580000000089,
+          "adapterMs": 38.477999999999156
+        },
+        {
+          "processMs": 41.88249999999971,
+          "adapterMs": 41.95440000000235
+        },
+        {
+          "processMs": 39.0073999999986,
+          "adapterMs": 39.0586000000003
+        },
+        {
+          "processMs": 38.84580000000278,
+          "adapterMs": 38.89229999999952
+        },
+        {
+          "processMs": 46.42059999999765,
+          "adapterMs": 46.46940000000177
+        },
+        {
+          "processMs": 497.7111999999979,
+          "adapterMs": 497.80449999999837
+        },
+        {
+          "processMs": 72.53319999999803,
+          "adapterMs": 72.64459999999963
+        },
+        {
+          "processMs": 45.74870000000374,
+          "adapterMs": 45.87020000000484
+        },
+        {
+          "processMs": 42.419999999998254,
+          "adapterMs": 42.52390000000014
+        },
+        {
+          "processMs": 55.54360000000452,
+          "adapterMs": 55.636600000005274
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "ALPHA_SEARCH_PILOT_ABSENT_7812",
+      "pattern": "ALPHA_SEARCH_PILOT_ABSENT_7812($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 45.19210000000021,
+      "p95Ms": 279.0933999999979,
+      "processP50Ms": 45.12970000000132,
+      "rawBytes": 266,
+      "rawTruncated": false,
+      "matches": 0,
+      "uniqueLocations": 0,
+      "full": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 41.91690000000017,
+          "adapterMs": 41.97649999999976
+        },
+        {
+          "processMs": 212.06860000000052,
+          "adapterMs": 212.13980000000083
+        },
+        {
+          "processMs": 47.27110000000175,
+          "adapterMs": 47.340800000001764
+        },
+        {
+          "processMs": 45.12970000000132,
+          "adapterMs": 45.19210000000021
+        },
+        {
+          "processMs": 55.008600000001024,
+          "adapterMs": 55.105799999997544
+        },
+        {
+          "processMs": 38.14440000000104,
+          "adapterMs": 38.19670000000042
+        },
+        {
+          "processMs": 40.85949999999866,
+          "adapterMs": 40.947400000000926
+        },
+        {
+          "processMs": 42.150799999999435,
+          "adapterMs": 42.21759999999995
+        },
+        {
+          "processMs": 40.462799999997515,
+          "adapterMs": 40.51169999999911
+        },
+        {
+          "processMs": 42.64839999999822,
+          "adapterMs": 42.70190000000002
+        },
+        {
+          "processMs": 278.95350000000326,
+          "adapterMs": 279.0933999999979
+        },
+        {
+          "processMs": 131.62370000000374,
+          "adapterMs": 131.73569999999745
+        },
+        {
+          "processMs": 52.33099999999831,
+          "adapterMs": 52.41659999999683
+        },
+        {
+          "processMs": 51.77019999999902,
+          "adapterMs": 51.818599999998696
+        },
+        {
+          "processMs": 42.77100000000064,
+          "adapterMs": 42.83060000000114
+        }
+      ]
+    },
+    {
+      "scope": "coding-agent-src",
+      "query": "ALPHA_SEARCH_PILOT_ABSENT_7812",
+      "pattern": "ALPHA_SEARCH_PILOT_ABSENT_7812($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 53.69919999999911,
+      "p95Ms": 142.04290000000037,
+      "processP50Ms": 53.66019999999844,
+      "rawBytes": 0,
+      "rawTruncated": false,
+      "matches": 0,
+      "uniqueLocations": 0,
+      "full": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 61.09740000000056,
+          "adapterMs": 61.14400000000023
+        },
+        {
+          "processMs": 63.986299999998664,
+          "adapterMs": 64.03479999999945
+        },
+        {
+          "processMs": 53.66019999999844,
+          "adapterMs": 53.69919999999911
+        },
+        {
+          "processMs": 50.3775999999998,
+          "adapterMs": 50.41489999999976
+        },
+        {
+          "processMs": 49.5483000000022,
+          "adapterMs": 49.57940000000235
+        },
+        {
+          "processMs": 48.99229999999807,
+          "adapterMs": 49.022799999998824
+        },
+        {
+          "processMs": 56.06980000000112,
+          "adapterMs": 56.13430000000153
+        },
+        {
+          "processMs": 48.83640000000014,
+          "adapterMs": 48.878099999998085
+        },
+        {
+          "processMs": 50.84639999999854,
+          "adapterMs": 50.87799999999697
+        },
+        {
+          "processMs": 49.63539999999921,
+          "adapterMs": 49.66700000000128
+        },
+        {
+          "processMs": 141.9794000000038,
+          "adapterMs": 142.04290000000037
+        },
+        {
+          "processMs": 104.81349999999657,
+          "adapterMs": 104.87649999999849
+        },
+        {
+          "processMs": 61.20140000000538,
+          "adapterMs": 61.25760000000446
+        },
+        {
+          "processMs": 51.176699999996345,
+          "adapterMs": 51.205199999996694
+        },
+        {
+          "processMs": 88.19150000000081,
+          "adapterMs": 88.2525999999998
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "createTool",
+      "pattern": "createTool($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 91.73189999999886,
+      "p95Ms": 181.77960000000166,
+      "processP50Ms": 91.37170000000333,
+      "rawBytes": 21972,
+      "rawTruncated": false,
+      "matches": 45,
+      "uniqueLocations": 45,
+      "full": {
+        "tokens": 1675,
+        "bytes": 6665,
+        "returned": 45,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 755,
+        "bytes": 2942,
+        "returned": 45,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 87.45610000000033,
+          "adapterMs": 87.83629999999994
+        },
+        {
+          "processMs": 128.3701999999994,
+          "adapterMs": 128.84799999999996
+        },
+        {
+          "processMs": 98.88860000000204,
+          "adapterMs": 99.24570000000313
+        },
+        {
+          "processMs": 91.16240000000107,
+          "adapterMs": 91.571899999999
+        },
+        {
+          "processMs": 102.51589999999851,
+          "adapterMs": 103.1195000000007
+        },
+        {
+          "processMs": 85.9349000000002,
+          "adapterMs": 86.34760000000097
+        },
+        {
+          "processMs": 86.62489999999889,
+          "adapterMs": 86.98500000000058
+        },
+        {
+          "processMs": 87.61119999999937,
+          "adapterMs": 87.95500000000175
+        },
+        {
+          "processMs": 83.42190000000119,
+          "adapterMs": 83.75849999999991
+        },
+        {
+          "processMs": 86.72490000000107,
+          "adapterMs": 87.06240000000253
+        },
+        {
+          "processMs": 181.27500000000146,
+          "adapterMs": 181.77960000000166
+        },
+        {
+          "processMs": 154.0474000000031,
+          "adapterMs": 154.77580000000307
+        },
+        {
+          "processMs": 102.3431999999957,
+          "adapterMs": 102.6955999999991
+        },
+        {
+          "processMs": 93.43100000000413,
+          "adapterMs": 93.83160000000498
+        },
+        {
+          "processMs": 91.37170000000333,
+          "adapterMs": 91.73189999999886
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "createTool",
+      "pattern": "createTool($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 58.763300000002346,
+      "p95Ms": 223.7045999999973,
+      "processP50Ms": 58.01520000000164,
+      "rawBytes": 21972,
+      "rawTruncated": false,
+      "matches": 45,
+      "uniqueLocations": 45,
+      "full": {
+        "tokens": 1675,
+        "bytes": 6665,
+        "returned": 45,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 755,
+        "bytes": 2942,
+        "returned": 45,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 79.29820000000018,
+          "adapterMs": 79.73829999999998
+        },
+        {
+          "processMs": 70.38020000000142,
+          "adapterMs": 70.79530000000159
+        },
+        {
+          "processMs": 53.998899999998685,
+          "adapterMs": 54.365099999999074
+        },
+        {
+          "processMs": 58.01520000000164,
+          "adapterMs": 58.763300000002346
+        },
+        {
+          "processMs": 49.42439999999988,
+          "adapterMs": 49.92499999999927
+        },
+        {
+          "processMs": 47.6195000000007,
+          "adapterMs": 47.99659999999858
+        },
+        {
+          "processMs": 51.610200000002806,
+          "adapterMs": 52.00300000000061
+        },
+        {
+          "processMs": 49.845900000000256,
+          "adapterMs": 50.23409999999785
+        },
+        {
+          "processMs": 63.45889999999781,
+          "adapterMs": 63.81879999999728
+        },
+        {
+          "processMs": 49.475500000000466,
+          "adapterMs": 49.86989999999787
+        },
+        {
+          "processMs": 222.86099999999715,
+          "adapterMs": 223.7045999999973
+        },
+        {
+          "processMs": 73.31040000000212,
+          "adapterMs": 74.07210000000487
+        },
+        {
+          "processMs": 58.67790000000241,
+          "adapterMs": 59.106299999999464
+        },
+        {
+          "processMs": 63.14039999999659,
+          "adapterMs": 63.5286999999953
+        },
+        {
+          "processMs": 57.5627999999997,
+          "adapterMs": 57.99029999999766
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "createTool",
+      "pattern": "createTool($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 94.63990000000194,
+      "p95Ms": 738.3643000000011,
+      "processP50Ms": 94.39100000000326,
+      "rawBytes": 26722,
+      "rawTruncated": false,
+      "matches": 11,
+      "uniqueLocations": 11,
+      "full": {
+        "tokens": 2230,
+        "bytes": 8087,
+        "returned": 11,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 181,
+        "bytes": 719,
+        "returned": 11,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 110.52949999999964,
+          "adapterMs": 110.83230000000003
+        },
+        {
+          "processMs": 738.0437999999995,
+          "adapterMs": 738.3643000000011
+        },
+        {
+          "processMs": 117.54619999999886,
+          "adapterMs": 117.84229999999843
+        },
+        {
+          "processMs": 82.70580000000336,
+          "adapterMs": 82.94040000000314
+        },
+        {
+          "processMs": 94.53130000000237,
+          "adapterMs": 94.75660000000062
+        },
+        {
+          "processMs": 95.63810000000012,
+          "adapterMs": 95.86969999999928
+        },
+        {
+          "processMs": 87.93309999999838,
+          "adapterMs": 88.18950000000041
+        },
+        {
+          "processMs": 81.17670000000362,
+          "adapterMs": 81.42410000000018
+        },
+        {
+          "processMs": 87.40390000000116,
+          "adapterMs": 87.7342000000026
+        },
+        {
+          "processMs": 84.8411999999953,
+          "adapterMs": 85.09979999999632
+        },
+        {
+          "processMs": 87.79399999999441,
+          "adapterMs": 88.13699999999517
+        },
+        {
+          "processMs": 141.56310000000667,
+          "adapterMs": 141.86350000000675
+        },
+        {
+          "processMs": 101.24079999999958,
+          "adapterMs": 101.5222999999969
+        },
+        {
+          "processMs": 93.58150000000023,
+          "adapterMs": 93.83359999999811
+        },
+        {
+          "processMs": 94.39100000000326,
+          "adapterMs": 94.63990000000194
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "failure",
+      "pattern": "failure($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 89.09779999999955,
+      "p95Ms": 247.22320000000036,
+      "processP50Ms": 88.29799999999886,
+      "rawBytes": 65832,
+      "rawTruncated": false,
+      "matches": 170,
+      "uniqueLocations": 170,
+      "full": {
+        "tokens": 3579,
+        "bytes": 14323,
+        "returned": 100,
+        "truncated": true
+      },
+      "locations": {
+        "tokens": 1647,
+        "bytes": 6432,
+        "returned": 100,
+        "truncated": true
+      },
+      "samples": [
+        {
+          "processMs": 87.36700000000019,
+          "adapterMs": 88.41070000000036
+        },
+        {
+          "processMs": 86.308500000001,
+          "adapterMs": 87.29770000000099
+        },
+        {
+          "processMs": 116.68060000000332,
+          "adapterMs": 117.80529999999999
+        },
+        {
+          "processMs": 99.49300000000221,
+          "adapterMs": 100.97739999999976
+        },
+        {
+          "processMs": 88.29799999999886,
+          "adapterMs": 89.09779999999955
+        },
+        {
+          "processMs": 86.12609999999768,
+          "adapterMs": 86.89839999999822
+        },
+        {
+          "processMs": 90.82330000000002,
+          "adapterMs": 91.58899999999994
+        },
+        {
+          "processMs": 84.12149999999747,
+          "adapterMs": 85.0596000000005
+        },
+        {
+          "processMs": 85.83399999999892,
+          "adapterMs": 86.7531999999992
+        },
+        {
+          "processMs": 84.20240000000194,
+          "adapterMs": 84.96470000000409
+        },
+        {
+          "processMs": 87.26220000000467,
+          "adapterMs": 88.1591000000044
+        },
+        {
+          "processMs": 244.5544000000009,
+          "adapterMs": 247.22320000000036
+        },
+        {
+          "processMs": 93.8304000000062,
+          "adapterMs": 94.73480000000563
+        },
+        {
+          "processMs": 112.25690000000031,
+          "adapterMs": 113.07020000000193
+        },
+        {
+          "processMs": 102.58069999999861,
+          "adapterMs": 103.58029999999417
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "failure",
+      "pattern": "failure($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 57.2757999999958,
+      "p95Ms": 214.45879999999852,
+      "processP50Ms": 56.243099999999686,
+      "rawBytes": 65830,
+      "rawTruncated": false,
+      "matches": 170,
+      "uniqueLocations": 170,
+      "full": {
+        "tokens": 3579,
+        "bytes": 14323,
+        "returned": 100,
+        "truncated": true
+      },
+      "locations": {
+        "tokens": 1647,
+        "bytes": 6432,
+        "returned": 100,
+        "truncated": true
+      },
+      "samples": [
+        {
+          "processMs": 52.397900000000845,
+          "adapterMs": 53.277499999999236
+        },
+        {
+          "processMs": 213.37339999999858,
+          "adapterMs": 214.45879999999852
+        },
+        {
+          "processMs": 60.413800000000265,
+          "adapterMs": 61.30030000000079
+        },
+        {
+          "processMs": 56.754399999997986,
+          "adapterMs": 57.929699999996956
+        },
+        {
+          "processMs": 48.298900000001595,
+          "adapterMs": 49.22100000000137
+        },
+        {
+          "processMs": 50.452400000001944,
+          "adapterMs": 51.36990000000151
+        },
+        {
+          "processMs": 56.23029999999926,
+          "adapterMs": 57.22529999999824
+        },
+        {
+          "processMs": 49.64089999999851,
+          "adapterMs": 50.44470000000001
+        },
+        {
+          "processMs": 50.42820000000211,
+          "adapterMs": 51.439400000002934
+        },
+        {
+          "processMs": 51.86030000000028,
+          "adapterMs": 52.760800000003655
+        },
+        {
+          "processMs": 58.679500000005646,
+          "adapterMs": 59.68440000000555
+        },
+        {
+          "processMs": 133.16359999999986,
+          "adapterMs": 135.10849999999482
+        },
+        {
+          "processMs": 60.55529999999999,
+          "adapterMs": 61.415899999999965
+        },
+        {
+          "processMs": 56.243099999999686,
+          "adapterMs": 57.2757999999958
+        },
+        {
+          "processMs": 61.34429999999702,
+          "adapterMs": 62.17859999999928
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "failure",
+      "pattern": "failure($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 94.52079999999842,
+      "p95Ms": 320.31039999999484,
+      "processP50Ms": 93.81089999999676,
+      "rawBytes": 61774,
+      "rawTruncated": false,
+      "matches": 109,
+      "uniqueLocations": 109,
+      "full": {
+        "tokens": 2567,
+        "bytes": 10012,
+        "returned": 100,
+        "truncated": true
+      },
+      "locations": {
+        "tokens": 1593,
+        "bytes": 6149,
+        "returned": 100,
+        "truncated": true
+      },
+      "samples": [
+        {
+          "processMs": 87.81970000000001,
+          "adapterMs": 88.51800000000003
+        },
+        {
+          "processMs": 207.71990000000005,
+          "adapterMs": 208.85829999999987
+        },
+        {
+          "processMs": 94.91939999999886,
+          "adapterMs": 95.67710000000079
+        },
+        {
+          "processMs": 85.56230000000141,
+          "adapterMs": 86.24070000000211
+        },
+        {
+          "processMs": 93.81089999999676,
+          "adapterMs": 94.52079999999842
+        },
+        {
+          "processMs": 81.54089999999997,
+          "adapterMs": 82.21639999999752
+        },
+        {
+          "processMs": 104.70710000000327,
+          "adapterMs": 105.37910000000193
+        },
+        {
+          "processMs": 87.72379999999976,
+          "adapterMs": 88.5070999999989
+        },
+        {
+          "processMs": 94.03089999999793,
+          "adapterMs": 94.6964999999982
+        },
+        {
+          "processMs": 79.07719999999972,
+          "adapterMs": 79.72320000000036
+        },
+        {
+          "processMs": 319.1360999999961,
+          "adapterMs": 320.31039999999484
+        },
+        {
+          "processMs": 175.52599999999802,
+          "adapterMs": 176.767399999997
+        },
+        {
+          "processMs": 86.50979999999981,
+          "adapterMs": 87.4481999999989
+        },
+        {
+          "processMs": 98.58259999999427,
+          "adapterMs": 99.42489999999816
+        },
+        {
+          "processMs": 92.48720000000321,
+          "adapterMs": 93.29129999999714
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "JSON.parse",
+      "pattern": "JSON.parse($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 94.16579999999976,
+      "p95Ms": 229.5630999999994,
+      "processP50Ms": 93.61620000000039,
+      "rawBytes": 33383,
+      "rawTruncated": false,
+      "matches": 63,
+      "uniqueLocations": 63,
+      "full": {
+        "tokens": 2507,
+        "bytes": 9837,
+        "returned": 63,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 1167,
+        "bytes": 4308,
+        "returned": 63,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 93.61620000000039,
+          "adapterMs": 94.16579999999976
+        },
+        {
+          "processMs": 130.40010000000075,
+          "adapterMs": 131.40400000000045
+        },
+        {
+          "processMs": 92.08559999999852,
+          "adapterMs": 92.62519999999859
+        },
+        {
+          "processMs": 85.2322000000022,
+          "adapterMs": 85.79420000000027
+        },
+        {
+          "processMs": 91.44659999999931,
+          "adapterMs": 92.04639999999927
+        },
+        {
+          "processMs": 93.97430000000168,
+          "adapterMs": 94.42959999999948
+        },
+        {
+          "processMs": 86.13839999999982,
+          "adapterMs": 86.66159999999945
+        },
+        {
+          "processMs": 86.8117999999995,
+          "adapterMs": 87.31139999999868
+        },
+        {
+          "processMs": 84.64340000000084,
+          "adapterMs": 85.18269999999757
+        },
+        {
+          "processMs": 85.89130000000296,
+          "adapterMs": 86.3379999999961
+        },
+        {
+          "processMs": 228.59279999999853,
+          "adapterMs": 229.5630999999994
+        },
+        {
+          "processMs": 180.27999999999884,
+          "adapterMs": 181.21630000000005
+        },
+        {
+          "processMs": 94.06700000000274,
+          "adapterMs": 94.52870000000257
+        },
+        {
+          "processMs": 96.31470000000263,
+          "adapterMs": 96.77109999999811
+        },
+        {
+          "processMs": 103.08720000000176,
+          "adapterMs": 103.54620000000432
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "JSON.parse",
+      "pattern": "JSON.parse($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 54.97239999999874,
+      "p95Ms": 361.8526999999958,
+      "processP50Ms": 54.36369999999806,
+      "rawBytes": 33383,
+      "rawTruncated": false,
+      "matches": 63,
+      "uniqueLocations": 63,
+      "full": {
+        "tokens": 2507,
+        "bytes": 9837,
+        "returned": 63,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 1167,
+        "bytes": 4308,
+        "returned": 63,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 57.35279999999966,
+          "adapterMs": 57.88519999999971
+        },
+        {
+          "processMs": 69.08939999999893,
+          "adapterMs": 69.79470000000038
+        },
+        {
+          "processMs": 54.36369999999806,
+          "adapterMs": 54.97239999999874
+        },
+        {
+          "processMs": 50.94850000000224,
+          "adapterMs": 51.386099999999715
+        },
+        {
+          "processMs": 52.19759999999951,
+          "adapterMs": 52.65740000000005
+        },
+        {
+          "processMs": 52.90469999999914,
+          "adapterMs": 53.39320000000225
+        },
+        {
+          "processMs": 56.715799999998126,
+          "adapterMs": 57.16769999999815
+        },
+        {
+          "processMs": 52.502300000000105,
+          "adapterMs": 52.96020000000135
+        },
+        {
+          "processMs": 50.93319999999949,
+          "adapterMs": 51.471699999998236
+        },
+        {
+          "processMs": 52.84240000000136,
+          "adapterMs": 53.28949999999895
+        },
+        {
+          "processMs": 361.05289999999513,
+          "adapterMs": 361.8526999999958
+        },
+        {
+          "processMs": 97.9233000000022,
+          "adapterMs": 99.11750000000029
+        },
+        {
+          "processMs": 58.43080000000191,
+          "adapterMs": 58.945999999996275
+        },
+        {
+          "processMs": 53.96050000000105,
+          "adapterMs": 54.441500000000815
+        },
+        {
+          "processMs": 56.23540000000503,
+          "adapterMs": 56.71150000000489
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "JSON.parse",
+      "pattern": "JSON.parse($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 98.10680000000139,
+      "p95Ms": 460.6560000000027,
+      "processP50Ms": 97.59590000000026,
+      "rawBytes": 36049,
+      "rawTruncated": false,
+      "matches": 62,
+      "uniqueLocations": 62,
+      "full": {
+        "tokens": 1824,
+        "bytes": 6954,
+        "returned": 62,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 1143,
+        "bytes": 4215,
+        "returned": 62,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 87.69860000000062,
+          "adapterMs": 88.22590000000037
+        },
+        {
+          "processMs": 209.15459999999985,
+          "adapterMs": 209.96979999999894
+        },
+        {
+          "processMs": 125.93119999999908,
+          "adapterMs": 126.44180000000051
+        },
+        {
+          "processMs": 93.31330000000162,
+          "adapterMs": 93.77119999999923
+        },
+        {
+          "processMs": 85.08850000000166,
+          "adapterMs": 85.57979999999952
+        },
+        {
+          "processMs": 106.94870000000083,
+          "adapterMs": 107.41190000000279
+        },
+        {
+          "processMs": 89.72869999999966,
+          "adapterMs": 90.19810000000143
+        },
+        {
+          "processMs": 97.59590000000026,
+          "adapterMs": 98.10680000000139
+        },
+        {
+          "processMs": 83.61459999999715,
+          "adapterMs": 84.1875
+        },
+        {
+          "processMs": 89.26849999999831,
+          "adapterMs": 89.68089999999938
+        },
+        {
+          "processMs": 459.59010000000126,
+          "adapterMs": 460.6560000000027
+        },
+        {
+          "processMs": 230.262999999999,
+          "adapterMs": 231.16459999999643
+        },
+        {
+          "processMs": 93.0766999999978,
+          "adapterMs": 93.52130000000034
+        },
+        {
+          "processMs": 112.7954000000027,
+          "adapterMs": 113.50340000000142
+        },
+        {
+          "processMs": 135.26580000000104,
+          "adapterMs": 136.03579999999783
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "runProcess",
+      "pattern": "runProcess($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 91.34249999999884,
+      "p95Ms": 206.77189999999973,
+      "processP50Ms": 91.23519999999553,
+      "rawBytes": 2279,
+      "rawTruncated": false,
+      "matches": 4,
+      "uniqueLocations": 4,
+      "full": {
+        "tokens": 175,
+        "bytes": 703,
+        "returned": 4,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 76,
+        "bytes": 304,
+        "returned": 4,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 101.22469999999885,
+          "adapterMs": 101.49029999999948
+        },
+        {
+          "processMs": 201.46680000000015,
+          "adapterMs": 201.7502000000004
+        },
+        {
+          "processMs": 128.4390999999996,
+          "adapterMs": 128.5723999999973
+        },
+        {
+          "processMs": 88.08079999999973,
+          "adapterMs": 88.19050000000061
+        },
+        {
+          "processMs": 101.40550000000076,
+          "adapterMs": 101.51680000000124
+        },
+        {
+          "processMs": 86.09570000000167,
+          "adapterMs": 86.20000000000073
+        },
+        {
+          "processMs": 100.40590000000157,
+          "adapterMs": 100.50930000000153
+        },
+        {
+          "processMs": 82.321899999999,
+          "adapterMs": 82.48099999999977
+        },
+        {
+          "processMs": 83.85559999999896,
+          "adapterMs": 83.95929999999862
+        },
+        {
+          "processMs": 91.23519999999553,
+          "adapterMs": 91.34249999999884
+        },
+        {
+          "processMs": 90.99259999999776,
+          "adapterMs": 91.113400000002
+        },
+        {
+          "processMs": 206.50920000000042,
+          "adapterMs": 206.77189999999973
+        },
+        {
+          "processMs": 92.84540000000561,
+          "adapterMs": 92.99490000000515
+        },
+        {
+          "processMs": 87.69440000000031,
+          "adapterMs": 87.8015000000014
+        },
+        {
+          "processMs": 90.03409999999712,
+          "adapterMs": 90.18600000000151
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "runProcess",
+      "pattern": "runProcess($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 54.076600000000326,
+      "p95Ms": 261.35179999999855,
+      "processP50Ms": 53.91939999999886,
+      "rawBytes": 2279,
+      "rawTruncated": false,
+      "matches": 4,
+      "uniqueLocations": 4,
+      "full": {
+        "tokens": 175,
+        "bytes": 703,
+        "returned": 4,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 76,
+        "bytes": 304,
+        "returned": 4,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 51.6915999999992,
+          "adapterMs": 51.80619999999999
+        },
+        {
+          "processMs": 261.23409999999967,
+          "adapterMs": 261.35179999999855
+        },
+        {
+          "processMs": 53.27759999999762,
+          "adapterMs": 53.47609999999986
+        },
+        {
+          "processMs": 53.471700000001874,
+          "adapterMs": 53.576600000000326
+        },
+        {
+          "processMs": 49.79290000000037,
+          "adapterMs": 49.90190000000075
+        },
+        {
+          "processMs": 49.17630000000281,
+          "adapterMs": 49.27480000000287
+        },
+        {
+          "processMs": 57.82310000000143,
+          "adapterMs": 57.947400000000926
+        },
+        {
+          "processMs": 63.115499999999884,
+          "adapterMs": 63.234300000000076
+        },
+        {
+          "processMs": 49.49399999999878,
+          "adapterMs": 49.606400000000576
+        },
+        {
+          "processMs": 52.83709999999701,
+          "adapterMs": 53.03499999999622
+        },
+        {
+          "processMs": 191.2031999999963,
+          "adapterMs": 191.49989999999525
+        },
+        {
+          "processMs": 109.40099999999802,
+          "adapterMs": 109.61789999999746
+        },
+        {
+          "processMs": 69.81410000000324,
+          "adapterMs": 69.93089999999938
+        },
+        {
+          "processMs": 56.57800000000134,
+          "adapterMs": 56.75020000000222
+        },
+        {
+          "processMs": 53.91939999999886,
+          "adapterMs": 54.076600000000326
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "runProcess",
+      "pattern": "runProcess($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 87.20520000000033,
+      "p95Ms": 280.75369999999384,
+      "processP50Ms": 87.09770000000208,
+      "rawBytes": 2801,
+      "rawTruncated": false,
+      "matches": 2,
+      "uniqueLocations": 2,
+      "full": {
+        "tokens": 136,
+        "bytes": 507,
+        "returned": 2,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 46,
+        "bytes": 178,
+        "returned": 2,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 81.79510000000118,
+          "adapterMs": 81.88889999999992
+        },
+        {
+          "processMs": 232.25500000000102,
+          "adapterMs": 232.4257000000016
+        },
+        {
+          "processMs": 109.80519999999888,
+          "adapterMs": 109.94889999999941
+        },
+        {
+          "processMs": 82.74989999999889,
+          "adapterMs": 82.86769999999888
+        },
+        {
+          "processMs": 80.1278999999995,
+          "adapterMs": 80.22710000000006
+        },
+        {
+          "processMs": 78.34249999999884,
+          "adapterMs": 78.43449999999939
+        },
+        {
+          "processMs": 84.47290000000066,
+          "adapterMs": 84.58600000000297
+        },
+        {
+          "processMs": 87.09770000000208,
+          "adapterMs": 87.20520000000033
+        },
+        {
+          "processMs": 79.58920000000217,
+          "adapterMs": 79.68349999999919
+        },
+        {
+          "processMs": 81.96020000000135,
+          "adapterMs": 82.0570000000007
+        },
+        {
+          "processMs": 280.6391999999978,
+          "adapterMs": 280.75369999999384
+        },
+        {
+          "processMs": 183.27209999999468,
+          "adapterMs": 183.47729999999865
+        },
+        {
+          "processMs": 100.94810000000143,
+          "adapterMs": 101.10549999999785
+        },
+        {
+          "processMs": 94.50740000000224,
+          "adapterMs": 94.60949999999866
+        },
+        {
+          "processMs": 95.85540000000037,
+          "adapterMs": 95.95270000000164
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "resolvePath",
+      "pattern": "resolvePath($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 94.48270000000048,
+      "p95Ms": 171.62800000000425,
+      "processP50Ms": 94.1478999999963,
+      "rawBytes": 10427,
+      "rawTruncated": false,
+      "matches": 22,
+      "uniqueLocations": 22,
+      "full": {
+        "tokens": 938,
+        "bytes": 3852,
+        "returned": 22,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 346,
+        "bytes": 1411,
+        "returned": 22,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 95.31890000000021,
+          "adapterMs": 95.55209999999988
+        },
+        {
+          "processMs": 144.91370000000097,
+          "adapterMs": 145.42779999999948
+        },
+        {
+          "processMs": 102.05370000000039,
+          "adapterMs": 102.3695000000007
+        },
+        {
+          "processMs": 84.94419999999809,
+          "adapterMs": 85.15069999999832
+        },
+        {
+          "processMs": 89.8090000000011,
+          "adapterMs": 90.00010000000111
+        },
+        {
+          "processMs": 89.21049999999741,
+          "adapterMs": 89.41519999999946
+        },
+        {
+          "processMs": 90.33450000000084,
+          "adapterMs": 90.52950000000055
+        },
+        {
+          "processMs": 84.21150000000125,
+          "adapterMs": 84.39930000000095
+        },
+        {
+          "processMs": 87.55919999999969,
+          "adapterMs": 87.74759999999878
+        },
+        {
+          "processMs": 85.08020000000397,
+          "adapterMs": 85.29690000000119
+        },
+        {
+          "processMs": 97.93009999999776,
+          "adapterMs": 98.12080000000424
+        },
+        {
+          "processMs": 171.2968000000037,
+          "adapterMs": 171.62800000000425
+        },
+        {
+          "processMs": 100.76030000000173,
+          "adapterMs": 100.95760000000155
+        },
+        {
+          "processMs": 94.1478999999963,
+          "adapterMs": 94.48270000000048
+        },
+        {
+          "processMs": 96.79089999999997,
+          "adapterMs": 97.02189999999973
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "resolvePath",
+      "pattern": "resolvePath($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 53.595799999995506,
+      "p95Ms": 154.60399999999936,
+      "processP50Ms": 53.34610000000248,
+      "rawBytes": 10427,
+      "rawTruncated": false,
+      "matches": 22,
+      "uniqueLocations": 22,
+      "full": {
+        "tokens": 938,
+        "bytes": 3852,
+        "returned": 22,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 346,
+        "bytes": 1411,
+        "returned": 22,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 64.02909999999974,
+          "adapterMs": 64.3134999999993
+        },
+        {
+          "processMs": 128.8156999999992,
+          "adapterMs": 129.2543999999998
+        },
+        {
+          "processMs": 54.060600000000704,
+          "adapterMs": 54.25480000000243
+        },
+        {
+          "processMs": 51.89040000000023,
+          "adapterMs": 52.11970000000292
+        },
+        {
+          "processMs": 67.25379999999859,
+          "adapterMs": 67.61279999999897
+        },
+        {
+          "processMs": 52.296800000000076,
+          "adapterMs": 52.52039999999761
+        },
+        {
+          "processMs": 52.365600000000995,
+          "adapterMs": 52.596300000001065
+        },
+        {
+          "processMs": 50.75200000000041,
+          "adapterMs": 50.95969999999943
+        },
+        {
+          "processMs": 52.18630000000121,
+          "adapterMs": 52.42450000000099
+        },
+        {
+          "processMs": 52.231199999994715,
+          "adapterMs": 52.45629999999801
+        },
+        {
+          "processMs": 154.15400000000227,
+          "adapterMs": 154.60399999999936
+        },
+        {
+          "processMs": 95.40030000000115,
+          "adapterMs": 95.78589999999531
+        },
+        {
+          "processMs": 62.24300000000221,
+          "adapterMs": 62.49300000000221
+        },
+        {
+          "processMs": 53.34610000000248,
+          "adapterMs": 53.595799999995506
+        },
+        {
+          "processMs": 49.56960000000254,
+          "adapterMs": 49.78910000000178
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "resolvePath",
+      "pattern": "resolvePath($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 94.1429000000062,
+      "p95Ms": 824.0733000000037,
+      "processP50Ms": 93.84850000000006,
+      "rawBytes": 23181,
+      "rawTruncated": false,
+      "matches": 14,
+      "uniqueLocations": 14,
+      "full": {
+        "tokens": 483,
+        "bytes": 1948,
+        "returned": 14,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 223,
+        "bytes": 903,
+        "returned": 14,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 100.78739999999925,
+          "adapterMs": 101.08179999999993
+        },
+        {
+          "processMs": 227.181700000001,
+          "adapterMs": 227.59950000000026
+        },
+        {
+          "processMs": 114.75509999999849,
+          "adapterMs": 115.2548999999999
+        },
+        {
+          "processMs": 100.3096000000005,
+          "adapterMs": 100.58139999999912
+        },
+        {
+          "processMs": 91.67130000000179,
+          "adapterMs": 91.97439999999915
+        },
+        {
+          "processMs": 82.62770000000091,
+          "adapterMs": 82.90149999999994
+        },
+        {
+          "processMs": 86.42450000000099,
+          "adapterMs": 86.74630000000252
+        },
+        {
+          "processMs": 85.01450000000114,
+          "adapterMs": 85.28610000000117
+        },
+        {
+          "processMs": 84.09670000000187,
+          "adapterMs": 84.3547000000035
+        },
+        {
+          "processMs": 84.37000000000262,
+          "adapterMs": 84.70030000000406
+        },
+        {
+          "processMs": 823.6439000000028,
+          "adapterMs": 824.0733000000037
+        },
+        {
+          "processMs": 142.20650000000023,
+          "adapterMs": 142.72819999999774
+        },
+        {
+          "processMs": 93.84850000000006,
+          "adapterMs": 94.1429000000062
+        },
+        {
+          "processMs": 90.03570000000036,
+          "adapterMs": 90.47999999999593
+        },
+        {
+          "processMs": 149.00589999999647,
+          "adapterMs": 149.50649999999587
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "ALPHA_SEARCH_PILOT_ABSENT_7812",
+      "pattern": "ALPHA_SEARCH_PILOT_ABSENT_7812($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 91.3117999999995,
+      "p95Ms": 360.530700000003,
+      "processP50Ms": 91.2583999999988,
+      "rawBytes": 271,
+      "rawTruncated": false,
+      "matches": 0,
+      "uniqueLocations": 0,
+      "full": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 87.07240000000002,
+          "adapterMs": 87.1252999999997
+        },
+        {
+          "processMs": 148.3246999999992,
+          "adapterMs": 148.38709999999992
+        },
+        {
+          "processMs": 123.25530000000072,
+          "adapterMs": 123.31650000000081
+        },
+        {
+          "processMs": 97.04439999999886,
+          "adapterMs": 97.09679999999935
+        },
+        {
+          "processMs": 86.59430000000066,
+          "adapterMs": 86.64189999999871
+        },
+        {
+          "processMs": 89.90690000000177,
+          "adapterMs": 89.95540000000256
+        },
+        {
+          "processMs": 87.15610000000015,
+          "adapterMs": 87.20599999999831
+        },
+        {
+          "processMs": 91.2583999999988,
+          "adapterMs": 91.3117999999995
+        },
+        {
+          "processMs": 87.58740000000034,
+          "adapterMs": 87.64210000000094
+        },
+        {
+          "processMs": 84.44769999999698,
+          "adapterMs": 84.49789999999484
+        },
+        {
+          "processMs": 88.22750000000087,
+          "adapterMs": 88.27749999999651
+        },
+        {
+          "processMs": 360.2891000000018,
+          "adapterMs": 360.530700000003
+        },
+        {
+          "processMs": 137.16629999999714,
+          "adapterMs": 137.2606999999989
+        },
+        {
+          "processMs": 102.98990000000049,
+          "adapterMs": 103.17859999999928
+        },
+        {
+          "processMs": 103.15759999999864,
+          "adapterMs": 103.2528999999995
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "ALPHA_SEARCH_PILOT_ABSENT_7812",
+      "pattern": "ALPHA_SEARCH_PILOT_ABSENT_7812($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 57.426199999994424,
+      "p95Ms": 737.4590000000007,
+      "processP50Ms": 57.36769999999524,
+      "rawBytes": 271,
+      "rawTruncated": false,
+      "matches": 0,
+      "uniqueLocations": 0,
+      "full": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 60.14149999999972,
+          "adapterMs": 60.20919999999933
+        },
+        {
+          "processMs": 737.3917000000001,
+          "adapterMs": 737.4590000000007
+        },
+        {
+          "processMs": 62.527000000000044,
+          "adapterMs": 62.58259999999973
+        },
+        {
+          "processMs": 49.61150000000271,
+          "adapterMs": 49.66860000000088
+        },
+        {
+          "processMs": 47.980899999998655,
+          "adapterMs": 48.03099999999904
+        },
+        {
+          "processMs": 50.711199999997916,
+          "adapterMs": 50.768199999998615
+        },
+        {
+          "processMs": 63.5441000000028,
+          "adapterMs": 63.592500000002474
+        },
+        {
+          "processMs": 50.08289999999761,
+          "adapterMs": 50.1404999999977
+        },
+        {
+          "processMs": 49.90309999999954,
+          "adapterMs": 49.95290000000023
+        },
+        {
+          "processMs": 55.498799999993935,
+          "adapterMs": 55.545899999997346
+        },
+        {
+          "processMs": 61.02749999999651,
+          "adapterMs": 61.07630000000063
+        },
+        {
+          "processMs": 122.65749999999389,
+          "adapterMs": 122.76599999999598
+        },
+        {
+          "processMs": 57.36769999999524,
+          "adapterMs": 57.426199999994424
+        },
+        {
+          "processMs": 59.76049999999668,
+          "adapterMs": 59.85450000000128
+        },
+        {
+          "processMs": 54.0679999999993,
+          "adapterMs": 54.122699999999895
+        }
+      ]
+    },
+    {
+      "scope": "repo-ts",
+      "query": "ALPHA_SEARCH_PILOT_ABSENT_7812",
+      "pattern": "ALPHA_SEARCH_PILOT_ABSENT_7812($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 95.65179999999964,
+      "p95Ms": 180.52970000000096,
+      "processP50Ms": 95.59719999999652,
+      "rawBytes": 0,
+      "rawTruncated": false,
+      "matches": 0,
+      "uniqueLocations": 0,
+      "full": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 15,
+        "bytes": 51,
+        "returned": 0,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 95.6221000000005,
+          "adapterMs": 95.6780000000008
+        },
+        {
+          "processMs": 180.4878000000008,
+          "adapterMs": 180.52970000000096
+        },
+        {
+          "processMs": 156.86119999999937,
+          "adapterMs": 156.97329999999965
+        },
+        {
+          "processMs": 107.96849999999904,
+          "adapterMs": 108.00329999999667
+        },
+        {
+          "processMs": 82.4390999999996,
+          "adapterMs": 82.47759999999835
+        },
+        {
+          "processMs": 89.15389999999752,
+          "adapterMs": 89.18289999999979
+        },
+        {
+          "processMs": 81.52430000000095,
+          "adapterMs": 81.56399999999849
+        },
+        {
+          "processMs": 82.31489999999758,
+          "adapterMs": 82.35399999999936
+        },
+        {
+          "processMs": 79.24079999999958,
+          "adapterMs": 79.27419999999984
+        },
+        {
+          "processMs": 93.23380000000179,
+          "adapterMs": 93.26499999999942
+        },
+        {
+          "processMs": 98.23730000000069,
+          "adapterMs": 98.27100000000064
+        },
+        {
+          "processMs": 152.37200000000303,
+          "adapterMs": 152.42779999999766
+        },
+        {
+          "processMs": 85.76529999999912,
+          "adapterMs": 85.79499999999825
+        },
+        {
+          "processMs": 98.84459999999672,
+          "adapterMs": 98.92280000000028
+        },
+        {
+          "processMs": 95.59719999999652,
+          "adapterMs": 95.65179999999964
+        }
+      ]
+    },
+    {
+      "scope": "fixture",
+      "query": "createTool",
+      "pattern": "createTool($$$ARGS)",
+      "arm": "rg-current-cli",
+      "p50Ms": 37.96179999999731,
+      "p95Ms": 203.46779999999853,
+      "processP50Ms": 37.842499999998836,
+      "rawBytes": 2847,
+      "rawTruncated": false,
+      "matches": 10,
+      "uniqueLocations": 10,
+      "full": {
+        "tokens": 225,
+        "bytes": 833,
+        "returned": 10,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 106,
+        "bytes": 364,
+        "returned": 10,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 44.71100000000024,
+          "adapterMs": 44.84389999999985
+        },
+        {
+          "processMs": 35.8059000000012,
+          "adapterMs": 35.914600000000064
+        },
+        {
+          "processMs": 37.842499999998836,
+          "adapterMs": 37.96179999999731
+        },
+        {
+          "processMs": 53.82790000000023,
+          "adapterMs": 53.98800000000119
+        },
+        {
+          "processMs": 34.38330000000133,
+          "adapterMs": 34.50300000000061
+        },
+        {
+          "processMs": 34.922200000000885,
+          "adapterMs": 35.0599000000002
+        },
+        {
+          "processMs": 34.2032999999974,
+          "adapterMs": 34.33889999999883
+        },
+        {
+          "processMs": 34.05569999999716,
+          "adapterMs": 34.17689999999857
+        },
+        {
+          "processMs": 34.693600000002334,
+          "adapterMs": 34.8015000000014
+        },
+        {
+          "processMs": 34.096599999997125,
+          "adapterMs": 34.21159999999509
+        },
+        {
+          "processMs": 203.2540999999983,
+          "adapterMs": 203.46779999999853
+        },
+        {
+          "processMs": 114.11699999999837,
+          "adapterMs": 114.40479999999661
+        },
+        {
+          "processMs": 46.763700000003155,
+          "adapterMs": 46.89760000000388
+        },
+        {
+          "processMs": 41.36979999999312,
+          "adapterMs": 41.53319999999803
+        },
+        {
+          "processMs": 53.01759999999922,
+          "adapterMs": 53.2667999999976
+        }
+      ],
+      "fixtureQuality": {
+        "expectedLines": [
+          4,
+          5,
+          9,
+          13
+        ],
+        "foundLines": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "precision": 0.4,
+        "recall": 1
+      }
+    },
+    {
+      "scope": "fixture",
+      "query": "createTool",
+      "pattern": "createTool($$$ARGS)",
+      "arm": "rg-unsorted-cli",
+      "p50Ms": 42.38880000000063,
+      "p95Ms": 86.97969999999623,
+      "processP50Ms": 42.27219999999943,
+      "rawBytes": 2847,
+      "rawTruncated": false,
+      "matches": 10,
+      "uniqueLocations": 10,
+      "full": {
+        "tokens": 225,
+        "bytes": 833,
+        "returned": 10,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 106,
+        "bytes": 364,
+        "returned": 10,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 49.004799999999705,
+          "adapterMs": 49.14859999999953
+        },
+        {
+          "processMs": 50.98289999999906,
+          "adapterMs": 51.16610000000037
+        },
+        {
+          "processMs": 40.68279999999868,
+          "adapterMs": 40.815199999997276
+        },
+        {
+          "processMs": 40.82879999999932,
+          "adapterMs": 40.949399999997695
+        },
+        {
+          "processMs": 36.306400000001304,
+          "adapterMs": 36.40910000000076
+        },
+        {
+          "processMs": 54.25300000000061,
+          "adapterMs": 54.372699999999895
+        },
+        {
+          "processMs": 39.83480000000054,
+          "adapterMs": 39.97609999999986
+        },
+        {
+          "processMs": 36.83799999999974,
+          "adapterMs": 36.948599999999715
+        },
+        {
+          "processMs": 37.511600000001636,
+          "adapterMs": 37.674299999998766
+        },
+        {
+          "processMs": 52.78390000000218,
+          "adapterMs": 52.88749999999709
+        },
+        {
+          "processMs": 86.75600000000122,
+          "adapterMs": 86.97969999999623
+        },
+        {
+          "processMs": 70.791999999994,
+          "adapterMs": 71.11769999999524
+        },
+        {
+          "processMs": 45.1875,
+          "adapterMs": 45.3637000000017
+        },
+        {
+          "processMs": 39.16030000000319,
+          "adapterMs": 39.2867000000042
+        },
+        {
+          "processMs": 42.27219999999943,
+          "adapterMs": 42.38880000000063
+        }
+      ],
+      "fixtureQuality": {
+        "expectedLines": [
+          4,
+          5,
+          9,
+          13
+        ],
+        "foundLines": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "precision": 0.4,
+        "recall": 1
+      }
+    },
+    {
+      "scope": "fixture",
+      "query": "createTool",
+      "pattern": "createTool($$$ARGS)",
+      "arm": "ast-grep-cli",
+      "p50Ms": 52.22540000000299,
+      "p95Ms": 185.97450000000026,
+      "processP50Ms": 52.097700000005716,
+      "rawBytes": 1975,
+      "rawTruncated": false,
+      "matches": 4,
+      "uniqueLocations": 3,
+      "full": {
+        "tokens": 100,
+        "bytes": 328,
+        "returned": 4,
+        "truncated": false
+      },
+      "locations": {
+        "tokens": 43,
+        "bytes": 144,
+        "returned": 3,
+        "truncated": false
+      },
+      "samples": [
+        {
+          "processMs": 53.671400000000176,
+          "adapterMs": 53.76430000000073
+        },
+        {
+          "processMs": 185.8129000000008,
+          "adapterMs": 185.97450000000026
+        },
+        {
+          "processMs": 64.59590000000026,
+          "adapterMs": 64.70000000000073
+        },
+        {
+          "processMs": 49.03310000000056,
+          "adapterMs": 49.1234000000004
+        },
+        {
+          "processMs": 43.50330000000031,
+          "adapterMs": 43.59479999999894
+        },
+        {
+          "processMs": 44.80740000000151,
+          "adapterMs": 44.898700000001554
+        },
+        {
+          "processMs": 46.08009999999922,
+          "adapterMs": 46.16820000000007
+        },
+        {
+          "processMs": 61.639799999997194,
+          "adapterMs": 61.7567999999992
+        },
+        {
+          "processMs": 47.590400000000955,
+          "adapterMs": 47.67420000000129
+        },
+        {
+          "processMs": 44.56079999999929,
+          "adapterMs": 44.65469999999914
+        },
+        {
+          "processMs": 121.43830000000162,
+          "adapterMs": 121.59449999999924
+        },
+        {
+          "processMs": 75.32590000000346,
+          "adapterMs": 75.49330000000191
+        },
+        {
+          "processMs": 52.097700000005716,
+          "adapterMs": 52.22540000000299
+        },
+        {
+          "processMs": 46.347200000003795,
+          "adapterMs": 46.456899999997404
+        },
+        {
+          "processMs": 53.87739999999758,
+          "adapterMs": 54.06010000000242
+        }
+      ],
+      "fixtureQuality": {
+        "expectedLines": [
+          4,
+          5,
+          9,
+          13
+        ],
+        "foundLines": [
+          4,
+          5,
+          13
+        ],
+        "precision": 1,
+        "recall": 0.75
+      }
+    }
+  ]
+}

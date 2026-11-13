@@ -25,6 +25,10 @@ bun run start:server
 
 服务只监听 `127.0.0.1` 随机端口。数据库选择顺序是 `--database`、`ALPHACODE_DB`、全局 `config.yaml` 的 `databasePath`、`~/.alphacode/sessions.db`；`ALPHACODE_HOME` 可修改全局配置目录。显式路径和环境变量相对启动目录，配置内路径相对配置目录。启动服务无需模型配置，也不会启动 TUI、创建会话或请求模型。
 
+Web / App 未选择项目时，`POST /api/sessions` 可省略 `projectId`。服务读取全局 `config.yaml` 的 `defaultWorkspace`（默认 `workspace`），以配置目录为基准解析相对路径并支持 `~`，首次使用时创建目录和登记项目。默认路径为 `~/.alphacode/workspace`，会话记录仍使用同一份数据库。已登记的真实路径会复用原项目；首次登记沿用最近项目的模型配置，没有项目时使用全局模型配置，新项目权限为 `ask`。显式传入无效项目会报错，不会回退。更改默认路径只影响后续未选项目的新会话。
+
+目录选择参考（2026-11-14 核对官方文档）：[OpenClaw](https://docs.openclaw.ai/agent-workspace) 使用可配置的 `~/.openclaw/workspace` 作为默认工作目录；[OpenCode](https://opencode.ai/docs/troubleshooting/) 通常将数据库放在 `~/.local/share/opencode/opencode.db`；[Gemini CLI](https://geminicli.com/docs/cli/session-management/) 将对话记录放在 `~/.gemini/tmp/<project_hash>/chats/`。后两项是会话数据位置，与 Agent 读写文件的工作目录用途不同。AlphaCode 沿用已有的 `~/.alphacode` 根目录，在其下增加 `workspace/`。
+
 就绪后 stdout 输出一条 JSON，含 `event: "ready"`、`origin`、`protocolVersion`、`pid`、`descriptorPath`。原生客户端从私有 descriptor 读取 token；日志不输出凭证。相同数据库已被其他服务占用时，显式启动返回 `SERVER_ALREADY_RUNNING`；客户端应使用 `ensureServer` 发现并复用它。服务沿用空闲退出规则：无连接和未完成任务时，默认 60 秒退出。CLI 仍然按需自动启动服务，无需预先运行此命令。
 
 ## AlphaCode 内部集成入口

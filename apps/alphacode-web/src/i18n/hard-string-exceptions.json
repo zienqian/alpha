@@ -63,12 +63,12 @@
     ]
   },
   "src/features/sessions/session-sidebar.tsx": {
-    "reason": "Product name, physical keyboard shortcuts, and the CSS scrollbar-gutter value.",
+    "reason": "Product name, physical keyboard shortcuts, and Tailwind class strings in conditional className values.",
     "messages": [
       "Hard-coded string \"AlphaCode\".",
       "Hard-coded string \"⌘ K\".",
       "Hard-coded string \"Ctrl K\".",
-      "Hard-coded string \"stable both-edges\"."
+      "Hard-coded string \"flex h-11 items-center gap-2 px-(--sidebar-inset)\"."
     ]
   },
   "src/i18n/provider.tsx": {

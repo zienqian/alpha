@@ -87,8 +87,8 @@
   --secondary-foreground: #343d4b;
   --muted: #eef1f5;
   --muted-foreground: #616c7b;
-  --accent: #e6ebf2;
-  --accent-foreground: #283c59;
+  --accent: #e6e6e6;
+  --accent-foreground: var(--foreground);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
   --border: #dce1e9;
@@ -103,8 +103,8 @@
   --sidebar-foreground: #343d4b;
   --sidebar-primary: #3269be;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #dce6f4;
-  --sidebar-accent-foreground: #28538d;
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
   --sidebar-border: #d8e0eb;
   --sidebar-ring: #4b7dc4;
   --shell: #f1f4f9;
@@ -131,7 +131,7 @@
   --muted: #2b3039;
   --muted-foreground: #a3adbc;
   --accent: #343d4b;
-  --accent-foreground: #e2ebf9;
+  --accent-foreground: var(--foreground);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.985 0 0);
   --border: #363e4a;
@@ -146,8 +146,8 @@
   --sidebar-foreground: #d7dfeb;
   --sidebar-primary: #8bb7f4;
   --sidebar-primary-foreground: #18263b;
-  --sidebar-accent: #304360;
-  --sidebar-accent-foreground: #c6ddff;
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
   --sidebar-border: #394454;
   --sidebar-ring: #8bb7f4;
   --shell: #171b22;
@@ -200,6 +200,7 @@
 @layer components {
   :root {
     --window-header-height: 36px;
+    --sidebar-inset: 12px;
   }
 
   .window-header {
