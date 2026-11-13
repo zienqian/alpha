@@ -5,6 +5,7 @@ declare global {
   interface Window {
     alphacodeDesktop?: {
       platform: string;
+      selectDirectory?: () => Promise<string | null>;
       setAppearance: (appearance: { color: string; symbolColor: string }) => void;
     };
   }

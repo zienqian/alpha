@@ -10,6 +10,7 @@ import { SessionQueue } from "./session-queue";
 import type { SessionWorkspace } from "./use-session-workspace";
 import { presentNotice } from "@/i18n/presentation";
 import { cn } from "@/lib/utils";
+import { ProjectPicker } from "./project-picker";
 const SessionContent = lazy(() => import("./session-content").then(module => ({ default: module.SessionContent })));
 
 function HistoryColumn({ className, ...props }: ComponentProps<"div">) {
@@ -48,6 +49,8 @@ export function SessionPage() {
       onMove={workspace.actions.moveQueued} onSteer={workspace.actions.steerQueued} />
     <PromptInput key={`composer-${selectedSessionId}`} draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
       folder={isWelcome ? selectedFolder : undefined}
+      projectPicker={isWelcome && (selectedFolder || (!workspace.projects.isPending && !workspace.index.isPending)) ? <ProjectPicker folders={workspace.folders} selectedId={selectedFolder?.id} onSelect={workspace.selectProject}
+        onCreate={() => workspace.setProjectDialogOpen(true)} disabled={Boolean(workspace.submitting)} /> : undefined}
       showContextUsage={Boolean(view?.state.messages.length)}
       contextUsage={view?.state.contextUsage ?? (selectedSession?.local ? selectedFolder?.defaultContext : undefined)}
       permissionMode={workspace.permissionMode} onPermissionChange={workspace.changePermission}

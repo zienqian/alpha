@@ -114,7 +114,7 @@ describe("Session workspace", () => {
     api.infos.splice(0);
     render(<AppProviders><App /></AppProviders>);
     expect(screen.getByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
-    expect(await screen.findByText("暂无会话，请先在 CLI 中开始会话。")).toBeTruthy();
+    expect(await screen.findByText("添加一个项目文件夹，开始新的对话。")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "新建会话" })).toBeNull();
   });
 

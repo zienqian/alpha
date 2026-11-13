@@ -31,6 +31,7 @@ export function mockSessionApi() {
   const fetch = vi.fn(async (path: string, init: RequestInit) => {
     const override = overrides.get(path);
     if (override) return override(init);
+    if (path === "/api/projects") return Response.json({ projects: [] });
     if (path.endsWith("/events")) {
       const id = path.slice("/api/sessions/".length, -"/events".length);
       const initial = path === "/api/events" ? { instanceId: "test-server", sequence: 1 } : views.get(id);

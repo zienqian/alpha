@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, rename, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
 import type { SessionInfo } from "./protocol";
@@ -41,9 +41,11 @@ export async function createRegistry(databasePath: string, directory: string) {
     credentials,
     async register(input: AppConfig, credential?: string) {
       const workspaceRoot = await realpath(input.workspaceRoot);
+      if (!(await stat(workspaceRoot)).isDirectory()) throw Object.assign(new Error("INVALID_DIRECTORY"), { status: 400, code: "INVALID_DIRECTORY" });
       const projectId = sessionNamespace(workspaceRoot);
       const config: AppConfig = {
         workspaceRoot, databasePath, configDirectory: input.configDirectory,
+        projectName: input.projectName ?? configs.get(projectId)?.projectName,
         modelId: input.modelId, baseURL: input.baseURL, apiKeyEnv: input.apiKeyEnv, noAuth: input.noAuth,
         contextWindow: input.contextWindow,
         permissionMode: input.permissionMode, skills: input.skills,

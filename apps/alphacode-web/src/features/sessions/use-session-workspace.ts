@@ -1,9 +1,9 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { createSession, type PermissionMode, type SessionInfo, type SessionView } from "@/features/sessions/api";
+import { createProject, createSession, type PermissionMode, type ProjectInfo, type SessionInfo, type SessionView } from "@/features/sessions/api";
 import { useSessionActions } from "@/features/sessions/use-session-actions";
-import { useSessionQuery, useSessionsQuery } from "@/features/sessions/queries";
+import { useProjectsQuery, useSessionQuery, useSessionsQuery } from "@/features/sessions/queries";
 import { groupSessions, sessionFromView, type Session } from "@/features/sessions/types";
 import { clearReloadDrafts, preserveReloadDrafts, readReloadDrafts } from "./reload-drafts";
 import { useSessionGateway } from "./application/session-gateway-provider";
@@ -41,6 +41,8 @@ export function useSessionWorkspace() {
   const client = useQueryClient();
   const gateway = useSessionGateway();
   const index = useSessionsQuery();
+  const projects = useProjectsQuery();
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [reloadDrafts] = useState(readReloadDrafts);
   useEffect(clearReloadDrafts, []);
   const [localSessions, setLocalSessions] = useState<LocalSession[]>(() => reloadDrafts?.localSessions.map(item => ({ ...createLocalSession(item.id, item.folderId), title: item.title ?? "" })) ?? [createLocalSession("local-initial")]);
@@ -75,7 +77,7 @@ export function useSessionWorkspace() {
   const sourceFolders = groupSessions([
     ...infos.filter(info => !views.some(view => view.session.id === info.id)),
     ...views.map(view => view.session),
-  ], openedProjects);
+  ], [...openedProjects, ...(projects.data ?? [])]);
   const selection = useRef(selectedSessionId);
   const creating = useRef(new Set<string>());
   const [creatingIds, setCreatingIds] = useState<Record<string, boolean>>({});
@@ -159,6 +161,33 @@ export function useSessionWorkspace() {
       selectSession(session.id, true);
     }
     setFocusRequest((previous) => previous + 1);
+  }
+
+  function selectProject(folderId: string) {
+    if (creating.current.has(selectedSessionId) || !sourceFolders.some(folder => folder.id === folderId)) return;
+    // Only unsent local drafts may move; archived/running sessions keep their cwd.
+    if (isLocal) {
+      setLocalSessions(previous => previous.map(session => session.id === selectedSessionId ? { ...session, folderId } : session));
+      setCreationErrors(previous => ({ ...previous, [selectedSessionId]: undefined }));
+      selectSession(selectedSessionId, true);
+    } else newSession(folderId);
+    setFocusRequest(previous => previous + 1);
+  }
+
+  async function addProject(name: string, path: string) {
+    const project = await createProject(name, path, selectedFolder?.id);
+    client.setQueryData<ProjectInfo[]>(["projects"], previous => [...(previous ?? []).filter(item => item.projectId !== project.projectId), project]);
+    setOpenedProjects(previous => [...previous.filter(item => item.projectId !== project.projectId), project]);
+    if (isLocal && !creating.current.has(selectedSessionId)) {
+      setLocalSessions(previous => previous.map(session => session.id === selectedSessionId ? { ...session, folderId: project.projectId } : session));
+      selectSession(selectedSessionId, true);
+    } else {
+      const session = createLocalSession(`local-${crypto.randomUUID()}`, project.projectId);
+      setLocalSessions(previous => [session, ...previous]);
+      selectSession(session.id, true);
+    }
+    setFocusRequest(previous => previous + 1);
+    void client.invalidateQueries({ queryKey: ["projects"] });
   }
 
   async function renameSession(id: string, title: string) {
@@ -263,6 +292,7 @@ export function useSessionWorkspace() {
   }, [selectedSessionId, localSessions, drafts, creatingIds, actions.canRefresh]);
 
   return { folders, selectedFolder, selectedSession, selectedSessionId, selectSession, draft, updateDraft,
+    projects, selectProject, addProject, projectDialogOpen, setProjectDialogOpen,
     newSession, renameSession, deleteSession, creatingIds, focusRequest, isLocal, isWelcome, index, history, canSend, send, busy, connected, actions,
     permissionMode, canChangePermission, changePermission,
     submitting: creatingIds[selectedSessionId] || actions.pending?.status === "sending" || actions.pending?.status === "accepted",

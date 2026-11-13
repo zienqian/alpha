@@ -11,6 +11,7 @@ import { archiveSearchMessages, searchSession } from "./search";
 import { createRegistry, digest, readJson, writeJson } from "./storage";
 import { createSecurity, fail, jsonBody, requiredString, secret } from "./security";
 import { createSkillRoutes } from "./skills";
+import { createProjectRoutes } from "./projects";
 import { skillUploadLimit } from "./skill-archive";
 import { createTraceService, createMemoryTraceStore, type TraceService } from "@alpha/adk-trace";
 import { createSqliteTraceStore } from "@alpha/adk-trace/sqlite";
@@ -80,6 +81,7 @@ export async function startServer(options: ServerOptions) {
   let webDirectory: Promise<string> | undefined;
   let updating = options.paused ?? false;
   const changed = () => { sequence++; lastActivity = Date.now(); for (const listener of listeners) listener(); };
+  const projectRoutes = createProjectRoutes(registry, options.databasePath, changed);
   const security = createSecurity(token, () => origin);
   const factory = options.createChat ?? ((config, credential, restore) => createApplication(config, {
     restore, trace: config.traceEnabled === false ? undefined : trace,
@@ -327,6 +329,7 @@ export async function startServer(options: ServerOptions) {
     const path = url.pathname;
     if (path.startsWith("/api/")) {
       security.checkAccess(request, path === "/api/connect" || path === "/api/web");
+      if (path === "/api/projects") return projectRoutes(request);
       if (/^\/api\/sessions\/[^/]+\/traces(?:\/|$)/.test(path)) {
         if (path.endsWith('/traces/events')) server.timeout(request, 0);
         return await traceRoutes(request, url) ?? fail(404, 'NOT_FOUND');

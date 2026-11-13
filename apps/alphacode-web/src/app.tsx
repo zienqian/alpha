@@ -9,6 +9,7 @@ import { DesktopTitlebar } from "@/components/desktop-titlebar";
 import { SessionContext } from "@/features/sessions/session-context";
 import { SessionSidebar } from "@/features/sessions/session-sidebar";
 import { SessionPage } from "@/features/sessions/session-page";
+import { CreateProjectDialog } from "@/features/sessions/create-project-dialog";
 import { useSessionWorkspace, type SessionWorkspace } from "@/features/sessions/use-session-workspace";
 
 const SkillsMarket = lazy(() => import("@/features/skills/skills-market").then(module => ({ default: module.SkillsMarket })));
@@ -40,10 +41,13 @@ function WorkspaceLayout() {
       className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
       {sessionOpen ? t("sessions:skip") : t("common:skipContent")}</a>
     <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={id => workspace.selectSession(id)} onNewSession={id => workspace.newSession(id)}
+      selectedFolderId={selectedFolder?.id} onSelectProject={workspace.selectProject} onCreateProject={() => workspace.setProjectDialogOpen(true)}
       onRenameSession={workspace.renameSession} onDeleteSession={workspace.deleteSession} creatingIds={workspace.creatingIds}
       onOpenSkills={() => openPage("/skills")} skillsActive={skillsOpen}
       onOpenSettings={() => openPage("/settings")} settingsActive={settingsOpen}
-      loading={workspace.index.isPending} error={workspace.index.error} refreshing={workspace.index.isFetching} onRefresh={() => void workspace.index.refetch()} />
+      loading={workspace.index.isPending && workspace.projects.isPending} error={workspace.index.error ?? workspace.projects.error} refreshing={workspace.index.isFetching || workspace.projects.isFetching}
+      onRefresh={() => { void workspace.index.refetch(); void workspace.projects.refetch(); }} />
+    <CreateProjectDialog open={workspace.projectDialogOpen} onOpenChange={workspace.setProjectDialogOpen} onCreate={workspace.addProject} />
     <SidebarInset className="workspace-canvas min-h-0 min-w-0 overflow-hidden">
       <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
         <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground" />

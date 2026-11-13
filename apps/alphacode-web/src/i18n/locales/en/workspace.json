@@ -1,5 +1,5 @@
 {
-  "registerProject": "Register a project in the CLI first",
+  "registerProject": "Select or create a project to get started",
   "toggleSidebar": "Toggle sidebar",
   "toggleSidebarHint": "Toggle sidebar (Ctrl / ⌘ + B)",
   "welcome": "Start building here.",
@@ -13,5 +13,25 @@
   "mobileTitle": "Projects and sessions",
   "mobileDescription": "Search projects and select a session to view its history.",
   "folder": "Folder {{name}}",
-  "createIn": "New session in {{name}}"
+  "createIn": "New session in {{name}}",
+  "projects": "Projects",
+  "changeProject": "Change project for this chat",
+  "selectProject": "Select project",
+  "currentProject": "Current project",
+  "createProject": "Create project",
+  "creatingProject": "Creating…",
+  "projectName": "Project name",
+  "sourceFolder": "Source folder",
+  "chooseFolder": "Choose folder",
+  "pathPlaceholder": "Enter the full folder path",
+  "folderHint": "Choose a folder on this computer or enter its path.",
+  "browserFolderHint": "Enter the full path to a folder on the computer running AlphaCode.",
+  "projectDescription": "Name your project and select an existing folder as its working directory.",
+  "emptyProjects": "Add a project folder to start a new conversation.",
+  "invalidDirectory": "Cannot access this folder. Check the full path and make sure it is an existing directory.",
+  "createFailed": "Could not create the project. Check your connection and try again.",
+  "pickFailed": "Could not open the folder picker. Try again or enter the path.",
+  "modelRequired": "Configure a model in the AlphaCode global settings before creating a project.",
+  "cancel": "Cancel",
+  "closeDialog": "Close"
 }

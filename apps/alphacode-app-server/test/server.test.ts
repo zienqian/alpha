@@ -93,6 +93,67 @@ test("Web page routes serve the entry document without masking missing assets or
   } finally { await fixture.dispose(); }
 });
 
+test("projects can be registered without a session, deduplicate directories and survive restart", async () => {
+  const fixture = await serverFixture();
+  try {
+    const initial = await fixture.connect();
+    const workspaceRoot = join(fixture.root, "second project 中文");
+    await mkdir(workspaceRoot);
+    const created = await fixture.browser().request<{ project: { projectId: string; workspaceRoot: string; name: string } }>("/api/projects", {
+      name: "第二个项目", workspaceRoot, sourceProjectId: initial.session.projectId,
+    });
+    expect(created.project.name).toBe("第二个项目");
+    expect(created.project.projectId).not.toBe(initial.session.projectId);
+    expect(fixture.creations).toBe(1);
+    const duplicate = await fixture.browser().request<typeof created>("/api/projects", { name: "重复", workspaceRoot: join(workspaceRoot, ".") });
+    expect(duplicate.project).toEqual(created.project);
+    await fixture.restart();
+    const listed = await fixture.browser().request<{ projects: unknown[] }>("/api/projects");
+    expect(listed.projects).toHaveLength(2);
+    expect(listed.projects).toContainEqual(created.project);
+    expect(JSON.stringify(listed)).not.toContain("baseURL");
+    const view = await fixture.browser().request<SessionView>("/api/sessions", { projectId: created.project.projectId });
+    expect(view.session.workspaceRoot).toBe(created.project.workspaceRoot);
+    expect(view.session.projectId).toBe(created.project.projectId);
+    expect(view.state.messages).toHaveLength(0);
+  } finally { await fixture.dispose(); }
+});
+
+test("project registration rejects missing folders, files and invalid names without changing the registry", async () => {
+  const fixture = await serverFixture();
+  try {
+    await fixture.connect();
+    const file = join(fixture.root, "not-a-folder.txt");
+    await writeFile(file, "test");
+    for (const body of [
+      { name: "Test", workspaceRoot: join(fixture.root, "missing") },
+      { name: "Test", workspaceRoot: file },
+      { name: "Test", workspaceRoot: "relative/path" },
+      { name: " ", workspaceRoot: fixture.root },
+      { name: "x".repeat(101), workspaceRoot: fixture.root },
+    ]) await expect(fixture.browser().request("/api/projects", body)).rejects.toMatchObject({ status: 400 });
+    expect((await fixture.browser().request<{ projects: unknown[] }>("/api/projects")).projects).toHaveLength(1);
+  } finally { await fixture.dispose(); }
+});
+
+test("the first project uses global model settings without requiring a CLI session", async () => {
+  const fixture = await serverFixture();
+  const previous = { ALPHACODE_HOME: process.env.ALPHACODE_HOME, ADK_MODEL: process.env.ADK_MODEL, ADK_AUTH: process.env.ADK_AUTH };
+  try {
+    process.env.ALPHACODE_HOME = fixture.config.configDirectory;
+    process.env.ADK_MODEL = "offline-model";
+    process.env.ADK_AUTH = "none";
+    const created = await fixture.browser().request<{ project: { projectId: string } }>("/api/projects", { name: "First", workspaceRoot: fixture.config.workspaceRoot });
+    expect(fixture.creations).toBe(0);
+    const view = await fixture.browser().request<SessionView>("/api/sessions", { projectId: created.project.projectId });
+    expect(view.modelId).toBe("offline-model");
+    expect(view.state.permissionMode).toBe("ask");
+  } finally {
+    for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    await fixture.dispose();
+  }
+});
+
 test("session management persists renames, syncs subscribers, deletes archives and rejects busy mutations", async () => {
   const model = controlledStream();
   const fixture = await serverFixture((_body, count) => count === 1 ? model.response : textResponse("done"));

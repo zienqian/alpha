@@ -4,9 +4,15 @@ import { shouldRetryQuery } from "@/features/sessions/domain/errors";
 import { cacheSession, sessionKeys, shareSessionSnapshot } from "@/features/sessions/application/session-cache";
 import type { ConnectionStatus } from "@/features/sessions/application/session-gateway";
 import { useSessionGateway } from "@/features/sessions/application/session-gateway-provider";
+import { listProjects } from "./api";
 
 // Polling remains a fallback for the index and disconnected sessions.
 const refreshInterval = 15_000;
+
+export function useProjectsQuery() {
+  return useQuery({ queryKey: ["projects"], queryFn: ({ signal }) => listProjects(signal),
+    retry: shouldRetryQuery, refetchInterval: refreshInterval });
+}
 
 export function useSessionsQuery() {
   const client = useQueryClient();
@@ -23,6 +29,7 @@ export function useSessionsQuery() {
       timer ??= setTimeout(() => {
         timer = undefined;
         void client.invalidateQueries({ queryKey: sessionKeys.list });
+        void client.invalidateQueries({ queryKey: ["projects"] });
       }, 500);
     }, abort.signal);
     return () => { abort.abort(); clearTimeout(timer); };

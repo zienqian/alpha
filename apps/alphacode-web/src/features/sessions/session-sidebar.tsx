@@ -9,14 +9,18 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarHeader, SidebarMenu,
+  SidebarHeader, SidebarMenu,
   SidebarMenuButton, SidebarMenuItem, SidebarMenuSub,
   SidebarMenuSubItem, SidebarTrigger, useSidebar,
 } from "@/components/ui/sidebar";
 import type { SessionFolder } from "@/features/sessions/types";
+import { ProjectPicker } from "./project-picker";
 
 interface SessionSidebarProps {
   folders: SessionFolder[];
+  selectedFolderId?: string;
+  onSelectProject: (id: string) => void;
+  onCreateProject: () => void;
   selectedSessionId: string | undefined;
   onSelectSession: (sessionId: string) => void;
   onNewSession: (folderId?: string) => void;
@@ -33,7 +37,7 @@ interface SessionSidebarProps {
   settingsActive: boolean;
 }
 
-export function SessionSidebar({ folders, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive }: SessionSidebarProps) {
+export function SessionSidebar({ folders, selectedFolderId, onSelectProject, onCreateProject, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive }: SessionSidebarProps) {
   const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set());
@@ -43,7 +47,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
   const folderFocusRequest = useRef<string | null>(null);
   const { setOpenMobile, isMobile, openMobile, state, setOpen } = useSidebar();
   const compact = !isMobile && state === "collapsed";
-  const activeFolderId = folders.find((folder) => folder.sessions.some((session) => session.id === selectedSessionId))?.id;
+  const activeFolderId = selectedFolderId ?? folders.find((folder) => folder.sessions.some((session) => session.id === selectedSessionId))?.id;
 
   useEffect(() => {
     if (searchOpen) searchReturnTarget.current = searchTriggerRef.current;
@@ -87,7 +91,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
   }
 
   function startSession(folderId?: string) {
-    const activeFolder = (folderId ? folders.find((folder) => folder.id === folderId) : folders.find((folder) => folder.sessions.some((session) => session.id === selectedSessionId))) ?? folders[0];
+    const activeFolder = folders.find(folder => folder.id === (folderId ?? activeFolderId)) ?? folders[0];
     if (activeFolder) setFolderOpen(activeFolder.id, true);
     setSearchOpen(false);
     onNewSession(activeFolder?.id);
@@ -124,6 +128,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
         <SidebarContent className="items-center gap-2 px-1.5 py-3 group-data-[collapsible=icon]:overflow-y-auto" style={{ scrollbarGutter: "auto", scrollbarWidth: "none" }}>
           <div className="rail-divider" />
           <nav aria-label={t("workspace:folders")} className="flex flex-col gap-2">
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="rail-action" aria-label={t("workspace:createProject")} onClick={onCreateProject}><Plus aria-hidden="true" /></Button></TooltipTrigger><TooltipContent side="right">{t("workspace:createProject")}</TooltipContent></Tooltip>
             {folders.map(folder => <Tooltip key={folder.id}><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="rail-action" aria-label={t("workspace:folder", { name: folder.name })} aria-expanded={false}
                 data-active={!skillsActive && !settingsActive && activeFolderId === folder.id}
@@ -155,7 +160,10 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
       </SidebarHeader>
       <SidebarContent className="pt-5" style={{ scrollbarGutter: "stable both-edges" }}>
         <SidebarGroup className="px-2.5 py-0">
-          <SidebarGroupLabel className="mb-1.5 h-5 px-2 text-[11px] font-medium text-muted-foreground">{t("workspace:title")}</SidebarGroupLabel>
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <ProjectPicker compact folders={folders} selectedId={activeFolderId} onSelect={id => { onSelectProject(id); setFolderOpen(id, true); setOpenMobile(false); }} onCreate={onCreateProject} disabled={Boolean(selectedSessionId && creatingIds[selectedSessionId])} />
+            <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("workspace:createProject")} onClick={onCreateProject}><Plus aria-hidden="true" /></Button>
+          </div>
           <SidebarGroupContent>
             {loading && <p role="status" className="px-2 py-5 text-xs text-muted-foreground">{t("sessions:loadingList")}</p>}
             {error && <div role="alert" className="space-y-2 px-2 py-3 text-xs leading-5">
@@ -194,7 +202,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
                   </Collapsible>
                 ))}
               </SidebarMenu>
-              {!loading && !error && folders.length === 0 && <p role="status" className="px-2 py-5 text-xs text-muted-foreground">{t("sessions:startCli")}</p>}
+              {!loading && !error && folders.length === 0 && <p role="status" className="px-2 py-5 text-xs leading-5 text-muted-foreground">{t("workspace:emptyProjects")}</p>}
             </nav>
           </SidebarGroupContent>
         </SidebarGroup>

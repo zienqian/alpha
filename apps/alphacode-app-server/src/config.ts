@@ -5,6 +5,7 @@ export interface AppConfig {
   language?: LanguagePreference;
   skills?: SkillsSettings;
   workspaceRoot: string;
+  projectName?: string;
   databasePath: string;
   modelId: string;
   contextWindow?: number;

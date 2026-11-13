@@ -1,4 +1,5 @@
 import { useTranslation } from "@/i18n/react";
+import type { ReactNode } from "react";
 import { ArrowUp, Folder, LaptopMinimal, LoaderCircle, Square, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupButton } from "@/components/ui/input-group";
@@ -12,7 +13,8 @@ import { MarkdownEditor } from "@/components/ai-elements/markdown-editor";
 
 // AI Elements Prompt Input pattern; the server owns accepted conversation state.
 export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend, busy, submitting, onCancel, canCancel, status,
-  permissionMode, onPermissionChange, canChangePermission, permissionSaving, folder, contextUsage, showContextUsage = false }: {
+  permissionMode, onPermissionChange, canChangePermission, permissionSaving, folder, projectPicker, contextUsage, showContextUsage = false }: {
+  projectPicker?: ReactNode;
   contextUsage?: ContextUsage;
   showContextUsage?: boolean;
   draft: SessionDraft; onChange: (patch: Partial<SessionDraft>) => void; focusRequest?: number;
@@ -25,10 +27,10 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
   const { t } = useTranslation();
   return (
     <div className="relative z-10 w-full">
-      {folder && <div className="composer-context mb-3 flex min-w-0 items-center gap-4 px-1 text-xs text-muted-foreground">
-        <span className="flex min-w-0 items-center gap-2" title={folder.path}>
+      {(folder || projectPicker) && <div className="composer-context mb-3 flex min-w-0 items-center gap-4 px-1 text-xs text-muted-foreground">
+        {projectPicker ?? (folder && <span className="flex min-w-0 items-center gap-2" title={folder.path}>
           <Folder className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{folder.name}</span>
-        </span>
+        </span>)}
         <span className="flex shrink-0 items-center gap-2"><LaptopMinimal className="size-3.5" aria-hidden="true" />{t("workspace:computer")}</span>
       </div>}
       <InputGroup className="composer rounded-2xl border-input bg-card bg-clip-padding shadow-(--composer-shadow) transition-[border-color,box-shadow] duration-150 ease-out dark:bg-card has-[[data-slot=input-group-control]:focus-visible]:border-ring/60 has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/15">

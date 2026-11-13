@@ -23,6 +23,13 @@ export interface SessionInfo {
   status: string;
 }
 
+export interface ProjectInfo {
+  projectId: string;
+  workspaceRoot: string;
+  name?: string;
+  defaultContext?: ContextUsage;
+}
+
 export interface ToolRecord {
   name: string;
   description: string;
@@ -109,6 +116,14 @@ async function requestJson<T>(path: string, signal: AbortSignal, body?: unknown,
 export async function listSessions(signal: AbortSignal) {
   const result = await requestJson<{ sessions: SessionInfo[] }>("/api/sessions", signal);
   return result.sessions;
+}
+
+export async function listProjects(signal: AbortSignal) {
+  return (await requestJson<{ projects: ProjectInfo[] }>("/api/projects", signal)).projects;
+}
+
+export async function createProject(name: string, workspaceRoot: string, sourceProjectId?: string) {
+  return (await requestJson<{ project: ProjectInfo }>("/api/projects", AbortSignal.timeout(15_000), { name, workspaceRoot, sourceProjectId })).project;
 }
 
 export function getSession(id: string, signal: AbortSignal) {

@@ -1,4 +1,4 @@
-import type { HistoryMessage, SessionInfo, SessionView, ToolRecord } from "@/features/sessions/api";
+import type { HistoryMessage, ProjectInfo, SessionInfo, SessionView, ToolRecord } from "@/features/sessions/api";
 
 export interface SessionMessage {
   id: string;
@@ -33,7 +33,7 @@ export function sessionFromView(view: SessionView): Session {
   };
 }
 
-export function groupSessions(sessions: readonly SessionInfo[], projects: readonly Pick<SessionInfo, "projectId" | "workspaceRoot" | "defaultContext">[] = []): SessionFolder[] {
+export function groupSessions(sessions: readonly SessionInfo[], projects: readonly ProjectInfo[] = []): SessionFolder[] {
   const folders = new Map<string, SessionFolder>();
   for (const session of [...sessions].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))) {
     let folder = folders.get(session.projectId);
@@ -49,9 +49,14 @@ export function groupSessions(sessions: readonly SessionInfo[], projects: readon
     folder.sessions.push(sessionSummary(session));
   }
   for (const project of projects) {
+    const existing = folders.get(project.projectId);
+    if (existing) {
+      if (project.name) existing.name = project.name;
+      existing.defaultContext = project.defaultContext ?? existing.defaultContext;
+    }
     if (!folders.has(project.projectId)) folders.set(project.projectId, {
       id: project.projectId,
-      name: project.workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) || project.workspaceRoot,
+      name: project.name || project.workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) || project.workspaceRoot,
       path: project.workspaceRoot, sessions: [],
       defaultContext: project.defaultContext,
     });

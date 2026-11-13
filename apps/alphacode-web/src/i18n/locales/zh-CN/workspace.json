@@ -1,5 +1,5 @@
 {
-  "registerProject": "请先在 CLI 登记项目",
+  "registerProject": "选择或创建项目后即可开始",
   "toggleSidebar": "切换侧栏",
   "toggleSidebarHint": "切换侧栏 (Ctrl / ⌘ + B)",
   "welcome": "从这里，开始构建。",
@@ -13,5 +13,25 @@
   "mobileTitle": "项目与会话",
   "mobileDescription": "搜索项目，选择会话查看消息记录。",
   "folder": "文件夹 {{name}}",
-  "createIn": "在 {{name}} 中新建会话"
+  "createIn": "在 {{name}} 中新建会话",
+  "projects": "项目",
+  "changeProject": "更改此聊天的项目",
+  "selectProject": "选择项目",
+  "currentProject": "当前项目",
+  "createProject": "创建项目",
+  "creatingProject": "正在创建…",
+  "projectName": "项目名称",
+  "sourceFolder": "源文件夹",
+  "chooseFolder": "选择文件夹",
+  "pathPlaceholder": "输入文件夹的完整路径",
+  "folderHint": "选择此计算机上的文件夹，也可以直接输入路径。",
+  "browserFolderHint": "输入运行 AlphaCode 的计算机上的文件夹完整路径。",
+  "projectDescription": "为项目命名，并选择已有文件夹作为工作目录。",
+  "emptyProjects": "添加一个项目文件夹，开始新的对话。",
+  "invalidDirectory": "无法访问此文件夹，请检查完整路径并确认它是已存在的目录。",
+  "createFailed": "创建项目失败，请检查服务连接后重试。",
+  "pickFailed": "无法打开文件夹选择器，请重试或直接输入路径。",
+  "modelRequired": "请先在 AlphaCode 全局配置中设置模型，再创建项目。",
+  "cancel": "取消",
+  "closeDialog": "关闭"
 }

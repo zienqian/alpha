@@ -64,6 +64,13 @@ async function createWindow() {
     webPreferences: { preload: join(__dirname, "preload.cjs"), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: true },
   });
   window = created;
+  created.webContents.ipc.handle("project:select-directory", async event => {
+    if (event.senderFrame !== created.webContents.mainFrame || !trustedRenderer(event.senderFrame.url)) throw new Error("UNTRUSTED_RENDERER");
+    const result = await dialog.showOpenDialog(created, {
+      title: label("选择项目目录", "Select project directory"), properties: ["openDirectory"],
+    });
+    return result.canceled ? null : result.filePaths[0] ?? null;
+  });
   created.webContents.ipc.on("window:appearance", (event, appearance: unknown) => {
     if (event.senderFrame !== created.webContents.mainFrame || !trustedRenderer(event.senderFrame.url)) return;
     if (!appearance || typeof appearance !== "object" || !("color" in appearance) || !("symbolColor" in appearance)) return;
