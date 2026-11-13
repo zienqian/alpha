@@ -2,9 +2,11 @@ import { app, BrowserWindow, dialog, Menu, nativeTheme, net, protocol, screen, s
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { delimiter, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createBackend } from "./backend";
+import { withBundledCommands } from "./cli-command";
+import { installCliCommand } from "./install-cli";
 import { applicationURL, assetPath, databaseArgument, developmentURL, externalURL, isApplicationURL, isRendererURL } from "./policy";
 
 const applicationName = "AlphaCode";
@@ -38,6 +40,29 @@ function installMenu() {
       { role: "togglefullscreen" }, ...(!app.isPackaged ? [{ role: "toggleDevTools" as const }] : []),
     ] },
     { label: label("窗口", "Window"), submenu: [{ role: "minimize" }, { role: "close" }] },
+    ...(app.isPackaged ? [{ label: label("工具", "Tools"), submenu: [{
+      label: label("安装 alphacode 终端命令…", "Install alphacode Terminal Command…"),
+      click: async () => {
+        try {
+          const result = await installCliCommand({ root: join(process.resourcesPath, "runtime"), home: app.getPath("home") });
+          await dialog.showMessageBox({ type: "info", title: applicationName,
+            message: result.kind === "existing"
+              ? label("保留已安装的 CLI", "Using your existing CLI")
+              : label("终端命令已安装", "Terminal command installed"),
+            detail: result.kind === "existing"
+              ? label(`已有命令未被修改：\n${result.command}`, `Your existing command was left unchanged:\n${result.command}`)
+              : label(`重新打开终端后运行 alphacode。\n${result.command}`, `Open a new terminal and run alphacode.\n${result.command}`),
+          });
+        } catch (error) {
+          await dialog.showMessageBox({ type: "error", title: applicationName,
+            message: label("无法安装终端命令", "Could not install the terminal command"),
+            detail: error instanceof Error && error.message === "UNSUPPORTED_SHELL"
+              ? label("当前 Shell 尚不支持自动配置。可手动将 ~/.alphacode/bin 加入 PATH。", "This shell does not support automatic setup. Add ~/.alphacode/bin to PATH manually.")
+              : label("请检查用户目录和 Shell 配置文件的写入权限，然后重试。", "Check write access to your home directory and shell configuration, then retry."),
+          });
+        }
+      },
+    }] }] : []),
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(menu));
 }
@@ -107,7 +132,7 @@ async function start() {
   const root = app.isPackaged ? join(process.resourcesPath, "runtime") : resolve(process.env.ALPHACODE_APP_REPOSITORY || join(app.getAppPath(), "../.."));
   const binary = process.platform === "win32" ? "bun.exe" : "bun";
   const bun = app.isPackaged ? join(root, "bin", binary) : process.env.ALPHACODE_APP_BUN || (existsSync(join(homedir(), ".bun/bin", binary)) ? join(homedir(), ".bun/bin", binary) : binary);
-  if (app.isPackaged) process.env.PATH = `${join(root, "bin")}${delimiter}${process.env.PATH || ""}`;
+  if (app.isPackaged) Object.assign(process.env, withBundledCommands(root, process.env));
   const backend = createBackend({ root, bun, database: databaseArgument(process.argv) });
   const web = join(root, "apps/alphacode-web/dist");
   const csp = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";

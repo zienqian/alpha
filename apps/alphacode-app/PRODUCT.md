@@ -11,6 +11,7 @@ The Electron main process owns desktop integration and forwards requests to the
 shared local service. Closing the UI must not terminate another client's work.
 
 Windows x64 is the currently verified platform. Build outputs include a portable
-application directory with Bun, ripgrep and production dependencies. Signed
-installers and update publishing are not configured. First-time project/model
-configuration still uses the CLI.
+application directory with Bun, ripgrep, the CLI and production dependencies.
+The Tools menu can install the terminal command for the current user. Existing
+and subsequently installed standalone CLIs take precedence over the bundled CLI.
+Signed installers and update publishing are not configured.

@@ -11,7 +11,17 @@ export async function serverLayout(start = import.meta.dir) {
     app = parent;
   }
   const development = !relative(app, start).split(/[\\/]/).includes("dist");
-  const root = join(app, "../..");
+  let root = join(app, "../..");
+  // Portable App packages materialize workspace links under node_modules.
+  // A client imported from that copy must still launch the canonical runtime.
+  if (basename(root) === "node_modules") {
+    const runtime = dirname(root);
+    const manifest = await readFile(join(runtime, "package.json"), "utf8").catch(() => "{}");
+    if (JSON.parse(manifest).name === "alphacode-app-runtime") {
+      root = runtime;
+      app = join(root, "apps/alphacode-app-server");
+    }
+  }
   return { app, root, development,
     main: join(app, development ? "src/server/main.ts" : "dist/server/main.js"),
     worker: join(app, development ? "src/server/worker.ts" : "dist/server/worker.js"),

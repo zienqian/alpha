@@ -1,8 +1,12 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { chmod, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, delimiter, dirname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { sync as spawnSync } from "cross-spawn";
 import { createBackend, parseDescriptor } from "../src/backend";
+import { cliBridge, cliCommandName } from "../src/cli-command";
+import { installCliCommand } from "../src/install-cli";
 
 const runtime = process.env.ALPHACODE_APP_TEST_RUNTIME;
 async function cleanup(root: string) {
@@ -65,3 +69,55 @@ test.skipIf(!runtime)("packaged Bun starts outside the repository and serves ses
     await cleanup(root);
   }
 }, 30000);
+
+test.skipIf(!runtime)("relocated App CLI works without global Bun and delegates to a later user installation", async () => {
+  if (!runtime) return;
+  const root = await mkdtemp(join(tmpdir(), "alphacode-app-package-test-"));
+  try {
+    const moved = join(root, "moved runtime with spaces");
+    await cp(runtime, moved, { recursive: true });
+    const work = join(root, "user project");
+    await mkdir(work);
+    // A project .env must not silently reconfigure a packaged CLI.
+    await writeFile(join(work, ".env"), "ALPHACODE_LANG=invalid\n");
+    const systemPath = process.platform === "win32" ? join(process.env.SystemRoot || "C:\\Windows", "System32") : "/usr/bin:/bin";
+    const env: NodeJS.ProcessEnv = { ...process.env, ALPHACODE_HOME: join(root, "home"),
+      ALPHACODE_LANG: undefined, ALPHACODE_DB: undefined };
+    for (const key of Object.keys(env)) if (key.toUpperCase() === "PATH") delete env[key];
+    env.PATH = systemPath;
+    const bundled = join(moved, "cli", cliCommandName);
+    for (const args of [["--help"], ["--version"]]) {
+      const result = spawnSync(bundled, args, { cwd: work, env, encoding: "utf8", timeout: 15000 });
+      expect(result.error).toBeFalsy();
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout.toLowerCase()).toContain("alphacode");
+    }
+    // The materialized workspace copy must locate the canonical server/Web paths.
+    const revision = pathToFileURL(join(moved, "node_modules/@alpha/alphacode-app-server/src/server/revision.ts")).href;
+    const layout = spawnSync(join(moved, "bin", process.platform === "win32" ? "bun.exe" : "bun"),
+      ["--no-env-file", "--conditions=alpha-source", "-e", `const {serverLayout} = await import(${JSON.stringify(revision)}); console.log(JSON.stringify(await serverLayout()));`],
+      { cwd: work, env, encoding: "utf8", timeout: 15000 });
+    expect(layout.status, layout.stderr).toBe(0);
+    expect(JSON.parse(layout.stdout).root).toBe(moved);
+
+    const installed = await installCliCommand({ root: moved, home: join(root, "home"), env,
+      registerPath: async () => { /* Never edit the test machine's user PATH. */ } });
+    const result = spawnSync(installed.command, ["--version"], { cwd: work, env, encoding: "utf8", timeout: 15000 });
+    expect(result.status, result.stderr).toBe(0);
+    const userBin = join(root, "separate user CLI");
+    await mkdir(userBin);
+    const userCommand = join(userBin, cliCommandName);
+    await writeFile(userCommand, process.platform === "win32"
+      ? '@echo off\r\necho USER_CLI\r\necho "%CD%"\r\necho "%~1"\r\nexit /b 23\r\n'
+      : '#!/bin/sh\nprintf "USER_CLI\\n%s\\n%s\\n" "$PWD" "$1"\nexit 23\n');
+    await chmod(userCommand, 0o755);
+    // Even if the App bridge appears first in PATH, a separately installed CLI wins.
+    const priorityEnv = { ...env, PATH: [dirname(installed.command), userBin, systemPath].join(delimiter) };
+    const delegated = spawnSync(installed.command, ["argument with spaces & symbols"], { cwd: work, env: priorityEnv, encoding: "utf8", timeout: 15000 });
+    expect(delegated.status, delegated.stderr).toBe(23);
+    expect(delegated.stdout).toContain("USER_CLI");
+    expect(delegated.stdout).toContain(work);
+    expect(delegated.stdout).toContain("argument with spaces & symbols");
+    expect(await readFile(bundled, "utf8")).toBe(cliBridge());
+  } finally { await cleanup(root); }
+}, 60000);

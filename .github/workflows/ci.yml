@@ -1,0 +1,162 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: "true"
+  NX_DAEMON: "false"
+  RIPGREP_VERSION: "15.2.0"
+
+jobs:
+  build:
+    name: Build CLI and App (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      # The App bundles the runner's Bun and ripgrep binaries.
+      # Each package must therefore be built on its target OS and architecture.
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: linux-x64
+            runtime: resources/runtime
+            ripgrep-target: x86_64-unknown-linux-musl
+            ripgrep-sha256: 33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c
+          - os: windows-2025
+            target: win32-x64
+            runtime: resources/runtime
+            ripgrep-target: x86_64-pc-windows-msvc
+            ripgrep-sha256: 71b2fef860abe467217a538ff31de02f5258807c0129f771846f87bd029aafc5
+          - os: macos-15-intel
+            target: darwin-x64
+            runtime: AlphaCode.app/Contents/Resources/runtime
+            ripgrep-target: x86_64-apple-darwin
+            ripgrep-sha256: af7825fcc69a2afc7a7aea55fc9af90e26421d8f20fe59df32e233c0b8a231c1
+          - os: macos-15
+            target: darwin-arm64
+            runtime: AlphaCode.app/Contents/Resources/runtime
+            ripgrep-target: aarch64-apple-darwin
+            ripgrep-sha256: 3750b2e93f37e0c692657da574d7019a101c0084da05a790c83fd335bad973e4
+    defaults:
+      run:
+        shell: bash
+    env:
+      TARGET: ${{ matrix.target }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js for Electron tooling
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      # Use upstream binaries rather than package-manager shims or binaries
+      # linked to libraries that only exist on the build machine.
+      - name: Install portable ripgrep
+        shell: pwsh
+        env:
+          RIPGREP_TARGET: ${{ matrix.ripgrep-target }}
+          RIPGREP_SHA256: ${{ matrix.ripgrep-sha256 }}
+        run: |
+          $release = "ripgrep-$env:RIPGREP_VERSION-$env:RIPGREP_TARGET"
+          $extension = if ($IsWindows) { 'zip' } else { 'tar.gz' }
+          $directory = Join-Path $env:RUNNER_TEMP 'ripgrep'
+          New-Item -ItemType Directory -Force -Path $directory | Out-Null
+          $archive = Join-Path $directory "$release.$extension"
+          Invoke-WebRequest -Uri "https://github.com/BurntSushi/ripgrep/releases/download/$env:RIPGREP_VERSION/$release.$extension" -OutFile $archive
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $env:RIPGREP_SHA256) {
+            throw 'ripgrep checksum mismatch'
+          }
+          if ($IsWindows) {
+            Expand-Archive -LiteralPath $archive -DestinationPath $directory
+          } else {
+            tar -xzf $archive -C $directory
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          $binDirectory = Join-Path $directory $release
+          $binary = Join-Path $binDirectory $(if ($IsWindows) { 'rg.exe' } else { 'rg' })
+          "ALPHACODE_APP_RG=$((Resolve-Path -LiteralPath $binary).Path)" >> $env:GITHUB_ENV
+          $binDirectory >> $env:GITHUB_PATH
+
+      - name: Verify build tools
+        run: |
+          bun --version
+          rg --version
+          bun -e 'if (`${process.platform}-${process.arch}` !== process.env.TARGET) throw new Error("Runner architecture does not match the package target")'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build CLI and workspace dependencies
+        run: bun --bun run nx run @alpha/alphacode:build
+
+      - name: Smoke test built CLI
+        run: |
+          bun --no-env-file apps/alphacode/dist/index.js --help
+          bun --no-env-file apps/alphacode/dist/index.js --version
+
+      # CLI output uses external dependencies and is restored into a checkout
+      # of the same commit after bun install; it is not a standalone executable.
+      - name: Archive CLI build output
+        run: |
+          mkdir -p dist
+          tar -czf "dist/alphacode-cli-${TARGET}.tar.gz" \
+            apps/alphacode/dist \
+            apps/alphacode-app-server/dist \
+            packages/*/dist
+
+      - name: Upload CLI build output
+        uses: actions/upload-artifact@v7
+        with:
+          name: alphacode-cli-${{ matrix.target }}
+          path: dist/alphacode-cli-${{ matrix.target }}.tar.gz
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Package desktop App
+        run: bun run package:app
+
+      - name: Test desktop App, bundled CLI and backend
+        run: |
+          bun run test:app
+          bun -e 'import { join } from "node:path"; const rg = join(process.env.ALPHACODE_APP_TEST_RUNTIME, "bin", process.platform === "win32" ? "rg.exe" : "rg"); const result = Bun.spawnSync([rg, "--version"], { stdout: "inherit", stderr: "inherit" }); if (result.exitCode !== 0) throw new Error("Packaged ripgrep failed to start")'
+        env:
+          ALPHACODE_APP_TEST_RUNTIME: ${{ github.workspace }}/apps/alphacode-app/dist/AlphaCode-${{ matrix.target }}/${{ matrix.runtime }}
+
+      # Keep executable permissions, symlinks and hidden runtime files intact.
+      - name: Archive desktop App
+        run: |
+          tar -czf "dist/alphacode-app-${TARGET}.tar.gz" \
+            -C apps/alphacode-app/dist "AlphaCode-${TARGET}"
+
+      - name: Upload desktop App
+        uses: actions/upload-artifact@v7
+        with:
+          name: alphacode-app-${{ matrix.target }}
+          path: dist/alphacode-app-${{ matrix.target }}.tar.gz
+          archive: false
+          if-no-files-found: error
+          retention-days: 14

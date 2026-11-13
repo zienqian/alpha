@@ -1,14 +1,16 @@
-import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, unlink, writeFile } from "node:fs/promises";
+import { chmod, cp, lstat, mkdir, mkdtemp, readFile, readlink, realpath, rm, unlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { packager } from "@electron/packager";
 import { appDirectory, buildDesktop, repository, run } from "./desktop";
+import { cliBridge, cliCommandName } from "../src/cli-command";
 
 // A native Bun binary is included, so build on the target OS and architecture.
 const platform = process.platform;
 const arch = process.arch;
 if (!["win32", "darwin", "linux"].includes(platform) || !["x64", "arm64"].includes(arch)) throw new Error("Unsupported desktop build target");
 await run(["run", "build:web"]);
+await run(["run", "--cwd", "apps/alphacode", "build"]);
 await buildDesktop();
 const dist = join(appDirectory, "dist");
 const staging = await mkdtemp(join(dist, "package-"));
@@ -22,12 +24,13 @@ try {
   await cp(join(dist, "preload.cjs"), join(shell, "preload.cjs"));
   await cp(join(appDirectory, "assets"), join(shell, "assets"), { recursive: true });
   await writeFile(join(runtime, "package.json"), JSON.stringify({ name: "alphacode-app-runtime", private: true,
-    workspaces: ["apps/alphacode-app-server", "packages/*"] }));
-  for (const path of ["apps/alphacode-app-server", ...["adk", "adk-session", "adk-trace", "coding-agent", "provider"].map(name => `packages/${name}`)]) {
+    workspaces: ["apps/alphacode", "apps/alphacode-app-server", "packages/*"] }));
+  for (const path of ["apps/alphacode", "apps/alphacode-app-server", ...["adk", "adk-session", "adk-trace", "coding-agent", "provider"].map(name => `packages/${name}`)]) {
     const source = join(repository, path);
     const target = join(runtime, path);
     await mkdir(target, { recursive: true });
-    await cp(join(source, "src"), join(target, "src"), { recursive: true });
+    const directory = path === "apps/alphacode" ? "dist" : "src";
+    await cp(join(source, directory), join(target, directory), { recursive: true });
     const { name, version, type, exports, dependencies, engines } = JSON.parse(await readFile(join(source, "package.json"), "utf8"));
     await writeFile(join(target, "package.json"), JSON.stringify({ name, version, type, exports, dependencies, engines }));
   }
@@ -41,7 +44,7 @@ try {
   await run(["install", "--production", "--frozen-lockfile", "--ignore-scripts", "--linker=hoisted"], runtime);
   // Workspace links point into the staging directory. Materialize them before
   // moving the distribution so nothing depends on the build machine's paths.
-  for (const name of ["adk", "adk-session", "adk-trace", "coding-agent", "provider", "alphacode-app-server"]) {
+  for (const name of ["adk", "adk-session", "adk-trace", "coding-agent", "provider", "alphacode-app-server", "alphacode"]) {
     const link = join(runtime, "node_modules/@alpha", name);
     if ((await lstat(link)).isSymbolicLink()) {
       const target = resolve(dirname(link), await readlink(link));
@@ -53,7 +56,15 @@ try {
   await cp(process.execPath, join(runtime, "bin", process.platform === "win32" ? "bun.exe" : "bun"));
   const ripgrep = process.env.ALPHACODE_APP_RG || Bun.which("rg");
   if (!ripgrep) throw new Error("Install ripgrep or set ALPHACODE_APP_RG before packaging.");
-  await cp(ripgrep, join(runtime, "bin", process.platform === "win32" ? "rg.exe" : "rg"));
+  await cp(await realpath(ripgrep), join(runtime, "bin", process.platform === "win32" ? "rg.exe" : "rg"));
+  const cliDirectory = join(runtime, "cli");
+  await mkdir(cliDirectory, { recursive: true });
+  const launcher = await Bun.build({ entrypoints: [join(appDirectory, "scripts/cli.ts")], outdir: cliDirectory,
+    target: "bun", naming: "launcher.js" });
+  if (!launcher.success) throw new AggregateError(launcher.logs, "CLI launcher build failed");
+  const command = join(cliDirectory, cliCommandName);
+  await writeFile(command, cliBridge());
+  if (platform !== "win32") await chmod(command, 0o755);
   const { version: electronVersion } = JSON.parse(await readFile(fileURLToPath(import.meta.resolve("electron/package.json")), "utf8"));
   const destinations = await packager({ dir: shell, out: dist, name: "AlphaCode", executableName: "AlphaCode",
     icon: join(appDirectory, "assets", platform === "darwin" ? "icon.icns" : platform === "win32" ? "icon.ico" : "icon.png"),

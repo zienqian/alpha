@@ -45,7 +45,7 @@ bun run test
 bun run graph
 ```
 
-`bun run graph` 打开 Nx 项目依赖图。Provider 使用方法见 [Provider README](packages/provider/README.md)。包名为内部占位名称，目前均为 private；尚未配置发布或 CI。
+`bun run graph` 打开 Nx 项目依赖图。Provider 使用方法见 [Provider README](packages/provider/README.md)。包名为内部占位名称，目前均为 private；尚未配置自动发布。
 
 使用 `bun run test` 执行 Nx 的完整测试任务（先构建依赖）。终端和库包测试使用 `bun:test`，Web 使用 Vitest、jsdom 和 React Testing Library；任务由 Bun 执行。真实模型测试通过各包的 `test:live` 或显式脚本运行，不在普通测试中自动请求模型。
 
@@ -56,6 +56,19 @@ Session 使用 Bun 内置的 `bun:sqlite`，无需第三方 SQLite 驱动或原�
 数据库表结构与归档 `formatVersion=1` 保持不变；迁移前 Node / better-sqlite3 和 Bun 内置 SQLite 生成的数据库作为测试夹具验证历史恢复、请求重放及续写。`docs` 中原有验收文档记录当时的运行环境，当前开发命令以这里和各包 README 为准。
 
 构建和类型检查使用 Rust 实现的 `tsrs`（当前为 TypeScript 7.1 beta 对应的实验版本），版本固定在锁文件中。根依赖中的 TypeScript 6.0 供 ESLint TypeScript 工具使用，与 tsrs 使用的编译器版本不同；应留意两者兼容性。遇到 tsrs 编译问题时，可先用 `bun --bun run tsc -p packages/adk/tsconfig.json --noEmit` 等命令辅助排查，但两者诊断不保证一致。
+
+## GitHub CI
+
+[CI 工作流](.github/workflows/ci.yml) 在推送到 `main`、提交或更新 PR 时自动运行，也可以在 GitHub Actions 中手动运行。使用 `.bun-version` 指定的 Bun 和锁定依赖，在 Linux x64、Windows x64、macOS Intel x64 与 Apple Silicon arm64 上分别构建 CLI 和桌面 App。
+
+每个平台先通过 Nx 构建 CLI 及其依赖，并运行构建产物的 `--help` / `--version` 冒烟检查；随后打包 App（包含完整 CLI），执行桌面、随包 Bun 后端和 CLI 的离线集成测试。CLI 测试覆盖无全局 Bun、包目录移动和用户独立 CLI 优先。CI 无需模型 API 密钥，不启动 Electron 图形窗口。
+
+构建成功后，在对应 Actions 运行的 **Artifacts** 中下载产物，保留 14 天：
+
+- `alphacode-cli-<platform>-<arch>`：CLI、App Server 和库包的 `dist` 构建产物。需要检出同一提交、执行 `bun install --frozen-lockfile`，再把压缩包解压到仓库根目录；通过 `bun --no-env-file apps/alphacode/dist/index.js` 运行。此产物仍需 Bun、项目依赖及供搜索使用的 ripgrep。
+- `alphacode-app-<platform>-<arch>`：包含 Electron、Bun、CLI、App Server、Web 和 ripgrep 的独立应用目录。解压 `.tar.gz` 后运行目录内的 `AlphaCode.exe`、`AlphaCode.app` 或 `AlphaCode`，并完整保留目录内容。在 App 的 **工具 → 安装 alphacode 终端命令…** 中启用终端命令；用户已有或后来安装的 CLI 优先使用，详见 [App CLI 说明](apps/alphacode-app/README.md#随-app-提供的-cli)。使用 tar 保存可执行权限、符号链接及隐藏运行时文件，参见 [GitHub artifact 文档](https://github.com/actions/upload-artifact#permission-loss)。
+
+平台标识使用 `linux`、`win32`、`darwin`。App 产物尚未签名或公证；CI 验证构建与后台集成，桌面图形界面仍需在目标系统上验收。工作流仅上传 Actions 产物，不创建 Release。
 
 ## ADK
 

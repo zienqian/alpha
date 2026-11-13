@@ -44,9 +44,22 @@ bun run package:app
 首次安装 Electron 依赖需要下载 Chromium。
 
 Electron 固定为 45.3.1，Electron Packager 固定为 20.3.0。
-包内 Bun 和 ripgrep 使用构建机的二进制，因此必须在目标操作系统和架构上打包。
+包内 Bun、ripgrep 和 CLI 的 OpenTUI 原生依赖需要匹配目标操作系统和架构，因此必须在对应平台上打包。
 当前验证 Windows x64；macOS / Linux 尚未实机验证。产物为未签名的应用目录，
 暂未配置安装向导、签名、公证和自动更新发布。
+
+## 随 App 提供的 CLI
+
+`bun run package:app` 同时构建并携带完整 CLI、OpenTUI 原生依赖及共享服务。只安装 App 即可使用，无需另装 Bun、Node 或 CLI。
+
+在发行版 App 中选择 **工具 → 安装 alphacode 终端命令…**（Windows/Linux 可按 `Alt` 显示菜单），然后重新打开终端，运行 `alphacode`、`alphacode --help` 或 `alphacode <项目目录>`。
+
+- 如果 `PATH` 中已有用户安装的 CLI，安装入口保留现有命令，不覆盖文件或修改 PATH。
+- 没有独立 CLI 时，在用户的 `~/.alphacode/bin` 创建 App 启动器，并将此目录追加到用户 PATH。Windows 更新当前用户的 PATH；macOS/Linux 为 Bash、Zsh 或 Fish 添加启动配置，保留已有内容。
+- 启动器每次运行都会重新查找独立 CLI。即使后来安装 CLI，或 App 启动器排在 PATH 前面，也会优先调用用户的 CLI，并保留参数、工作目录和退出码；该 CLI 报错时直接返回错误。
+- 找不到独立 CLI 时，使用 App 自带 Bun、CLI 和依赖。CLI 与 App 使用相同的全局配置和会话数据库。发行版不会加载项目 `.env` 或仓库 `.env.local`。
+
+也可以直接运行包内的 `resources/runtime/cli/alphacode.cmd`（Windows）或 `resources/runtime/cli/alphacode`（Linux）；macOS 位于 `AlphaCode.app/Contents/Resources/runtime/cli/alphacode`。移动 App 后重新执行菜单中的安装命令，可更新已有 App 启动器。删除 App 前可删除 `~/.alphacode/bin/alphacode.cmd` 或 `~/.alphacode/bin/alphacode`，并移除相应 PATH 项或带 `AlphaCode App terminal command` 注释的 Shell 配置段。
 
 ## 服务与数据
 
@@ -58,7 +71,7 @@ bun run dev:app --database C:/work/sessions.db
 & ".\apps\alphacode-app\dist\AlphaCode-win32-x64\AlphaCode.exe" --database C:/work/sessions.db
 ```
 
-首次使用仍需通过 CLI `alphacode` 完成项目登记和模型配置。
+需要终端操作时可使用用户已有的 CLI，或上述 App 自带的 `alphacode`。
 直接启动桌面应用不会自动读取项目 `.env`；模型配置引用的环境变量应已存在于进程环境，
 或由已运行的 CLI 服务持有。退出桌面应用不会杀掉 CLI 共用的服务；服务自行处理空闲退出。
 
@@ -94,3 +107,4 @@ bun run test:app
 
 协议测试覆盖来源/路径校验、凭证隔离、POST 内容、错误状态、重定向拒绝、SSE 实时传输与取消。
 发行目录集成验证覆盖服务启动与复用、会话、Skills、Trace 和流式本地命令。
+同时验证移动后的包内 CLI 在没有全局 Bun 的环境中启动、独立 CLI 优先、参数与退出码传递，以及安装入口不覆盖用户命令。CI 在各目标系统运行这些检查。
