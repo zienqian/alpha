@@ -1,8 +1,8 @@
 {
-  "title": "可用 Skills",
-  "none": "未加载任何 Skill。",
+  "title": "可用技能",
+  "none": "未加载任何技能。",
   "modelOnly": "仅供模型调用",
   "manualOnly": "仅供手动调用",
-  "configure": "在全局 config.yaml 中配置 Skills。项目 Skills 需要精确的 trustedProjects 条目。重启后重新加载。",
-  "permissionHint": "使用 /permission 菜单修改会话权限。"
+  "configure": "在全局 config.yaml 中配置技能。项目技能要求在 skills.trustedProjects 中填写完全匹配的项目路径。重启后重新加载。",
+  "permissionHint": "使用 /permission 菜单修改当前会话的审批模式。"
 }

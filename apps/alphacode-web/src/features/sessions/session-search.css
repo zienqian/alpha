@@ -34,6 +34,8 @@
   overflow: hidden;
   border: 1px solid var(--glass-edge);
   border-radius: 16px;
+  /* Keep backdrop blur working in the desktop Chromium renderer. */
+  corner-shape: round;
   background: color-mix(in srgb, var(--popover) 94%, transparent);
   color: var(--popover-foreground);
   box-shadow: var(--overlay-shadow);

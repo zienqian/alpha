@@ -1,4 +1,19 @@
 {
+  "title": "Settings",
+  "navigation": "Settings categories",
+  "general": "General",
+  "description": "Customize AlphaCode’s appearance and language. Changes apply immediately.",
+  "colorTheme": "Theme",
+  "themeDescription": "Choose light, dark, or follow your system appearance.",
+  "preferences": "Preferences",
+  "search": "Search settings",
+  "clearSearch": "Clear search",
+  "searchResults_one": "{{count}} setting found",
+  "searchResults_other": "{{count}} settings found",
+  "noResults": "No matching settings",
+  "noResultsHint": "Try a theme, language, or option name.",
+  "languageDescription": "Choose the language used in the interface.",
+  "backToSession": "Back to conversation",
   "theme": "Change theme",
   "appearance": "Appearance",
   "light": "Light",
@@ -9,15 +24,15 @@
   "english": "English",
   "permissions": {
     "label": "Approval mode",
-    "title": "How should AlphaCode act?",
+    "title": "How should AlphaCode request approval?",
     "change": "Change approval mode: {{mode}}",
     "saving": "Saving…",
     "busy": "Approval mode can be changed after this task finishes",
-    "unavailable": "Approval mode is unavailable until the conversation is ready",
+    "unavailable": "Approval mode is unavailable until the session is ready",
     "more": "Learn more",
     "less": "Show less",
     "saveFailed": "Could not confirm the permission change. Check the current mode and try again.",
-    "help": "This setting applies only to this conversation and syncs with the CLI. Ask and Auto allow workspace file tools. Auto only approves predefined routine commands. Full access skips tool approval within the permissions of the AlphaCode process; it does not grant additional system access.",
+    "help": "This setting applies only to this session and syncs with the CLI. Ask for approval and Auto approval allow workspace file tools and block custom tools. Auto approval only approves predefined routine commands. Full access skips tool approval within the permissions of the AlphaCode process; it does not grant additional system access.",
     "ask": {
       "short": "Ask for approval",
       "name": "Ask for approval",
@@ -25,8 +40,8 @@
     },
     "auto": {
       "short": "Auto approval",
-      "name": "Approve for me",
-      "description": "Approve routine commands; ask before other commands"
+      "name": "Auto approval",
+      "description": "Auto-approve predefined routine commands; ask before other commands"
     },
     "full": {
       "short": "Full access",

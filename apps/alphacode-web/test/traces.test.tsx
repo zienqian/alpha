@@ -143,7 +143,7 @@ describe("Trace interactions", () => {
     fireEvent.click(trigger);
     expect(await screen.findByText("AlphaCode")).toBeTruthy();
     expect(fetch).toHaveBeenCalledWith(`/api/sessions/session/traces/${data.summary.traceId}/view`,expect.anything());
-    expect(screen.queryByText("已报告用量")).toBeNull();
+    expect(screen.queryByText("上报用量")).toBeNull();
     fireEvent.keyDown(screen.getByRole("dialog"), {
       key: "Escape",
       code: "Escape",

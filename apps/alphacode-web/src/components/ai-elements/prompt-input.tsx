@@ -31,7 +31,7 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
         </span>
         <span className="flex shrink-0 items-center gap-2"><LaptopMinimal className="size-3.5" aria-hidden="true" />{t("workspace:computer")}</span>
       </div>}
-      <InputGroup className="composer rounded-2xl border-input bg-card has-[[data-slot=input-group-control]:focus-visible]:border-ring/60 has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/15">
+      <InputGroup className="composer rounded-2xl border-input bg-card bg-clip-padding shadow-(--composer-shadow) transition-[border-color,box-shadow] duration-150 ease-out dark:bg-card has-[[data-slot=input-group-control]:focus-visible]:border-ring/60 has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/15">
         {draft.attachments.length > 0 && (
           <InputGroupAddon align="block-start" className="flex-wrap gap-1.5 px-3 pt-3">
             {draft.attachments.map(({ id, file }) => (

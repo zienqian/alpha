@@ -25,6 +25,11 @@
   scrollbar-gutter: stable;
 }
 
+/* Circles and capsules retain circular ends, including variant utilities. */
+@utility rounded-full {
+  corner-shape: round;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -69,7 +74,8 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #fafbfd;
+  --corner-shape: superellipse(1.3);
+  --background: #ffffff;
   --foreground: #252a34;
   --card: #ffffff;
   --card-foreground: #252a34;
@@ -101,10 +107,11 @@
   --sidebar-accent-foreground: #28538d;
   --sidebar-border: #d8e0eb;
   --sidebar-ring: #4b7dc4;
-  --shell: #e6ebf2;
-  --glass-surface: rgb(246 249 253 / 72%);
+  --shell: #f1f4f9;
+  --shell-gradient: linear-gradient(180deg, #f1f4f9 0%, #f5f8fb 55%, #edf5fc 100%);
+  --glass-surface: rgb(255 255 255 / 72%);
   --glass-edge: rgb(255 255 255 / 80%);
-  --glass-shadow: 0 3px 12px rgb(31 49 77 / 4%), inset 0 1px 0 var(--glass-edge);
+  --glass-shadow: 0 3px 12px rgb(31 49 77 / 4%), inset 0 1px 1px var(--glass-edge);
   --surface-shadow: 0 2px 8px rgb(31 49 77 / 4%);
   --composer-shadow: 0 4px 20px -8px rgb(31 49 77 / 15%);
   --overlay-shadow: 0 18px 48px -12px rgb(24 38 60 / 22%);
@@ -144,9 +151,10 @@
   --sidebar-border: #394454;
   --sidebar-ring: #8bb7f4;
   --shell: #171b22;
+  --shell-gradient: none;
   --glass-surface: rgb(38 45 56 / 72%);
   --glass-edge: rgb(204 222 255 / 9%);
-  --glass-shadow: 0 3px 12px rgb(0 0 0 / 12%), inset 0 1px 0 var(--glass-edge);
+  --glass-shadow: 0 3px 12px rgb(0 0 0 / 12%), inset 0 1px 1px var(--glass-edge);
   --surface-shadow: 0 2px 8px rgb(0 0 0 / 12%);
   --composer-shadow: 0 5px 24px -8px rgb(0 0 0 / 30%);
   --overlay-shadow: 0 18px 48px -12px rgb(0 0 0 / 50%);
@@ -155,6 +163,10 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Keep backgrounds, borders, shadows and clipping on the same curve.
+     * Unsupported browsers keep their ordinary border-radius rendering.
+     */
+    corner-shape: var(--corner-shape);
   }
 
   body {
@@ -186,23 +198,60 @@
 }
 
 @layer components {
-  :root[data-desktop] {
-    --desktop-titlebar-height: 36px;
+  :root {
+    --window-header-height: 36px;
   }
 
-  .desktop-titlebar {
-    height: var(--desktop-titlebar-height);
+  .window-header {
+    display: flex;
+    height: var(--window-header-height);
+    align-items: center;
+    padding-inline: 12px;
     background: var(--shell);
     user-select: none;
     -webkit-app-region: drag;
   }
 
+  .window-header nav {
+    -webkit-app-region: no-drag;
+  }
+
+  :root[data-desktop="darwin"] .window-header {
+    padding-left: 88px;
+  }
+
+  :root[data-desktop="win32"] .window-header,
+  :root[data-desktop="linux"] .window-header {
+    padding-right: 150px;
+  }
+
+  @media (max-width: 767px) {
+    :root:not([data-desktop]) {
+      --window-header-height: 44px;
+    }
+
+    :root:not([data-desktop]) .window-header [data-slot="button"] {
+      width: 36px;
+      height: 36px;
+    }
+  }
+
   .workspace-shell {
     background: var(--shell);
+    background-image: var(--shell-gradient);
   }
 
   .sidebar-width-transition {
     transition: width 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* The current desktop Chromium drops backdrop blur with superellipse
+   * corners. Frosted surfaces keep native round geometry for their filter.
+   */
+  .workspace-sidebar [data-slot="sidebar-inner"],
+  [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"],
+  .workspace-popover, [data-slot="sidebar"][data-mobile="true"] {
+    corner-shape: round;
   }
 
   .workspace-sidebar [data-slot="sidebar-inner"] {
@@ -224,7 +273,7 @@
 
   .workspace-toolbar {
     border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
-    background: color-mix(in srgb, var(--background) 94%, var(--shell));
+    background: var(--background);
   }
 
   .rail-action {
@@ -242,10 +291,6 @@
     height: 1px;
     margin-bottom: 4px;
     background: var(--sidebar-border);
-  }
-
-  .session-nav-item[data-active="true"] {
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sidebar-ring) 12%, transparent);
   }
 
   .session-nav-item[data-active="false"]:hover {
@@ -272,11 +317,6 @@
 
   .morphing-spinner[data-active="true"] > path {
     animation: alphacode-morph 5s cubic-bezier(0.42, 0, 0.58, 1) infinite;
-  }
-
-  .composer {
-    box-shadow: var(--composer-shadow);
-    transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
   }
 
   .composer-editor {

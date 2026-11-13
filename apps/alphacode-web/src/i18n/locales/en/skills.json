@@ -1,17 +1,17 @@
 {
   "title": "Available skills",
   "none": "No skills loaded.",
-  "modelOnly": "model only",
-  "manualOnly": "manual only",
-  "configure": "Configure skills in the global config.yaml. Project skills require an exact trustedProjects entry. Restart to reload.",
-  "permissionHint": "Use the /permission picker to change session permissions.",
+  "modelOnly": "Model only",
+  "manualOnly": "Manual only",
+  "configure": "Configure skills in the global config.yaml. Project skills require an exact project path in skills.trustedProjects. Restart to reload.",
+  "permissionHint": "Use the /permission menu to change the approval mode for this session.",
   "market": {
     "title": "Skills marketplace",
     "description": "Browse skills on this computer and in shared directories, or add skills from a package or link.",
-    "back": "Back to chat",
+    "back": "Back to session",
     "refresh": "Refresh skills",
     "add": "Add skill",
-    "project": "Project context",
+    "project": "Current project",
     "success": "Installed: {{names}}",
     "newSession": "Newly installed skills are loaded when a new session is created. Existing sessions keep their current skills.",
     "close": "Close installation form",
@@ -58,7 +58,7 @@
       "shadowed": "Another skill with the same name takes precedence in this project."
     },
     "errors": {
-      "unavailable": "The current backend does not provide the Skills API. After upgrading, close all AlphaCode CLI clients and web tabs, wait about 60 seconds for the old server to exit, then restart AlphaCode and open /web.",
+      "unavailable": "The current backend does not provide the skills API. After upgrading, close all AlphaCode CLI clients and web tabs, wait about 60 seconds for the old server to exit, then restart AlphaCode and open /web.",
       "conflict": "A skill with this name already exists, or the package contains duplicate names. Choose another directory or rename the skill before importing.",
       "size": "The package is too large. ZIP files must be at most 10 MB, with at most 40 MB and 2,048 entries after extraction.",
       "url": "Use a public HTTPS skill link. Local network addresses and URLs with credentials are not supported.",

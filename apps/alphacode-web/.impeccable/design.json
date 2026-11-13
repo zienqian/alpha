@@ -536,12 +536,12 @@
     "shadows": [
       {
         "name": "glass-light",
-        "value": "0 3px 12px rgb(31 49 77 / 4%), inset 0 1px 0 var(--glass-edge)",
+        "value": "0 3px 12px rgb(31 49 77 / 4%), inset 0 1px 1px var(--glass-edge)",
         "purpose": "浅色导航。"
       },
       {
         "name": "glass-dark",
-        "value": "0 3px 12px rgb(0 0 0 / 12%), inset 0 1px 0 var(--glass-edge)",
+        "value": "0 3px 12px rgb(0 0 0 / 12%), inset 0 1px 1px var(--glass-edge)",
         "purpose": "深色导航。"
       },
       {
@@ -670,7 +670,7 @@
       "refersTo": "navigation-active",
       "description": "展开侧栏的当前会话。",
       "html": "<nav class=\"ds-nav\" aria-label=\"会话\"><button class=\"ds-nav-item\" aria-current=\"page\">新对话</button></nav>",
-      "css": ".ds-nav{width:248px;padding:10px;border-radius:14px;background:var(--glass-surface,rgb(246 249 253 / 72%));box-shadow:var(--glass-shadow,0 3px 12px rgb(31 49 77 / 4%));backdrop-filter:blur(24px) saturate(135%)}.ds-nav-item{width:100%;height:32px;padding:0 8px 0 28px;border:0;border-radius:8px;text-align:left;background:var(--sidebar-accent,#dce6f4);color:var(--sidebar-accent-foreground,#28538d);font:500 13px system-ui,sans-serif;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sidebar-ring,#4b7dc4) 12%,transparent);cursor:pointer}.ds-nav-item:focus-visible{outline:2px solid var(--ring,#4b7dc4);outline-offset:2px}"
+      "css": ".ds-nav{corner-shape:round;width:248px;padding:10px;border-radius:14px;background:var(--glass-surface,rgb(246 249 253 / 72%));box-shadow:var(--glass-shadow,0 3px 12px rgb(31 49 77 / 4%));backdrop-filter:blur(24px) saturate(135%)}.ds-nav-item{corner-shape:var(--corner-shape,superellipse(1.3));width:100%;height:32px;padding:0 8px 0 28px;border:0;border-radius:8px;text-align:left;background:var(--sidebar-accent,#dce6f4);color:var(--sidebar-accent-foreground,#28538d);font:500 13px system-ui,sans-serif;cursor:pointer}.ds-nav-item:focus-visible{outline:2px solid var(--ring,#4b7dc4);outline-offset:2px}"
     },
     {
       "name": "Skill 状态",
@@ -686,7 +686,7 @@
       "refersTo": "composer",
       "description": "实色编辑表面，玻璃不进入编辑内容。",
       "html": "<div class=\"ds-composer\"><textarea class=\"ds-editor\" aria-label=\"消息\" placeholder=\"发送消息\"></textarea><div class=\"ds-tools\"><button class=\"ds-send\" aria-label=\"发送\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 12 7-7 7 7M12 19V5\"/></svg></button></div></div>",
-      "css": ".ds-composer{width:min(680px,100%);border:1px solid var(--input,#d1d9e4);border-radius:var(--radius-2xl,18px);background:var(--card,#fff);box-shadow:var(--composer-shadow,0 4px 20px -8px rgb(31 49 77 / 15%));overflow:hidden}.ds-composer:focus-within{border-color:color-mix(in srgb,var(--ring,#4b7dc4) 60%,transparent);outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 15%,transparent)}.ds-editor{display:block;width:100%;min-height:80px;max-height:192px;padding:14px 16px 8px;border:0;background:transparent;color:var(--foreground,#252a34);resize:vertical;font:14px/24px system-ui,sans-serif;outline:none}.ds-editor::placeholder{color:var(--muted-foreground,#616c7b)}.ds-tools{display:flex;justify-content:flex-end;padding:4px 10px 10px}.ds-send{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:9999px;background:var(--primary,#3269be);color:var(--primary-foreground,#fff);cursor:pointer}.ds-send:hover{opacity:.9}.ds-send:focus-visible{outline:2px solid var(--ring,#4b7dc4);outline-offset:2px}"
+      "css": ".ds-composer{corner-shape:var(--corner-shape,superellipse(1.3));width:min(680px,100%);border:1px solid var(--input,#d1d9e4);border-radius:var(--radius-2xl,18px);background:var(--card,#fff);box-shadow:var(--composer-shadow,0 4px 20px -8px rgb(31 49 77 / 15%));overflow:hidden}.ds-composer:focus-within{border-color:color-mix(in srgb,var(--ring,#4b7dc4) 60%,transparent);outline:2px solid color-mix(in srgb,var(--ring,#4b7dc4) 15%,transparent)}.ds-editor{display:block;width:100%;min-height:80px;max-height:192px;padding:14px 16px 8px;border:0;background:transparent;color:var(--foreground,#252a34);resize:vertical;font:14px/24px system-ui,sans-serif;outline:none}.ds-editor::placeholder{color:var(--muted-foreground,#616c7b)}.ds-tools{display:flex;justify-content:flex-end;padding:4px 10px 10px}.ds-send{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:9999px;background:var(--primary,#3269be);color:var(--primary-foreground,#fff);cursor:pointer}.ds-send:hover{opacity:.9}.ds-send:focus-visible{outline:2px solid var(--ring,#4b7dc4);outline-offset:2px}"
     }
   ],
   "narrative": {

@@ -27,7 +27,7 @@
     "empty": "无匹配命令 · Esc 返回",
     "web": "在浏览器中打开当前实时会话",
     "permission": "选择工具和命令的审批方式",
-    "skills": "列出可用 Skills 和加载诊断"
+    "skills": "列出可用技能和加载诊断"
   },
   "activity": {
     "closing": "正在保存并退出…",
@@ -43,8 +43,8 @@
   "completion": {
     "cancelled": "{{duration}} 后停止 · {{time}}",
     "failed": "{{duration}} 后失败 · {{time}}",
-    "completed": "工作了 {{duration}} · {{time}}",
+    "completed": "运行了 {{duration}} · {{time}}",
     "other": "{{duration}} 后结束 · {{time}}"
   },
-  "newConversation": "新对话"
+  "newConversation": "新会话"
 }

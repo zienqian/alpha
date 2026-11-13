@@ -1,4 +1,9 @@
 {
+  "loading": "Loading…",
+  "goBack": "Go back",
+  "goForward": "Go forward",
+  "historyNavigation": "History navigation",
+  "skipContent": "Skip to page content",
   "copyMessage": "Copy message",
   "copied": "Copied",
   "copyFailed": "Copy failed. Select the text and copy it manually.",
@@ -9,6 +14,6 @@
   "toggleSidebar": "Toggle sidebar",
   "more": "More",
   "breadcrumb": "Breadcrumb",
-  "scrollEnd": "Scroll to end",
-  "scrollStart": "Scroll to start"
+  "scrollEnd": "Scroll to bottom",
+  "scrollStart": "Scroll to top"
 }

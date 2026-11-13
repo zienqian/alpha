@@ -6,11 +6,11 @@
   "hint": "/permission · Session · ↑↓ · Enter Apply · Esc Back",
   "ask": {
     "name": "Ask for approval",
-    "description": "Ask before commands; allow workspace file tools"
+    "description": "Ask before running commands; allow workspace file tools"
   },
   "auto": {
-    "name": "Approve for me",
-    "description": "Approve routine commands; ask for everything else"
+    "name": "Auto approval",
+    "description": "Auto-approve predefined routine commands; ask before other commands"
   },
   "full": {
     "name": "Full access",

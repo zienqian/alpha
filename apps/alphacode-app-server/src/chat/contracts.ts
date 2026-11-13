@@ -104,6 +104,7 @@ export interface Chat {
   cancel(): void;
   answerApproval(allow: boolean): void;
   setPermissionMode(mode: PermissionMode): Promise<boolean>;
+  setTitle?(title: string): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -134,6 +135,7 @@ export interface ChatRuntime {
   readonly unsaved: boolean;
   readonly blocked: boolean;
   setPermissionMode(mode: PermissionMode): Promise<void>;
+  setTitle?(title: string): Promise<void>;
   subscribe(listener: (event: ChatEvent) => void): () => void;
   send(input: string, requestId?: string): Promise<{ status: ChatRunStatus; error?: string; localText?: string; localResult?: LocalResult; completion?: ChatMessage["completion"] }>;
   cancel(): void;

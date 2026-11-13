@@ -65,10 +65,10 @@ describe("internationalization", () => {
     const input = screen.getByRole("textbox", { name: "消息草稿" });
     replaceDraft(input, "未发送 <draft>");
     const connections = api.fetch.mock.calls.filter(([url]) => url.endsWith("/events")).length;
-    fireEvent.keyDown(screen.getByRole("button", { name: "语言" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitemradio", { name: "English" }));
-    await waitFor(() => expect(screen.getByRole("textbox", { name: "Message draft" })).toBe(input));
-    expect(input.textContent).toBe("未发送 <draft>");
+    fireEvent.click(screen.getByRole("button", { name: "设置" }));
+    fireEvent.change(await screen.findByRole("combobox", { name: "语言" }), { target: { value: "en" } });
+    fireEvent.click(screen.getByRole("button", { name: "Back to conversation" }));
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Message draft" }).textContent).toBe("未发送 <draft>"));
     expect(screen.getByText("echo hello")).toBeTruthy();
     expect(view.requestId).toBe("running-request"); expect(view.approvalId).toBe("pending-approval");
     expect(api.fetch.mock.calls.filter(([, init]) => init.method === "POST")).toHaveLength(0);

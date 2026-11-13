@@ -76,6 +76,80 @@ async function serverFixture(reply: (body: RequestBody, count: number) => Respon
   };
 }
 
+test("Web page routes serve the entry document without masking missing assets or APIs", async () => {
+  const fixture = await serverFixture();
+  try {
+    const session = await fixture.connect();
+    await fixture.client().request("/api/web", { sessionId: session.session.id });
+    for (const path of ["/", "/settings", "/settings/", "/skills", "/skills/"]) {
+      const response = await fetch(`${fixture.server.origin}${path}`, { proxy: false });
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toContain("text/html");
+      expect(await response.text()).toContain("<title>AlphaCode</title>");
+    }
+    for (const path of ["/assets/missing.js", "/api/missing", "/settings/missing.js"]) {
+      expect((await fetch(`${fixture.server.origin}${path}`, { proxy: false })).status).toBe(404);
+    }
+  } finally { await fixture.dispose(); }
+});
+
+test("session management persists renames, syncs subscribers, deletes archives and rejects busy mutations", async () => {
+  const model = controlledStream();
+  const fixture = await serverFixture((_body, count) => count === 1 ? model.response : textResponse("done"));
+  try {
+    const initial = await fixture.connect();
+    const id = initial.session.id;
+    const path = `/api/sessions/${id}`;
+    const mutate = (method: string, title?: unknown, origin = fixture.server.origin) => fetch(`${fixture.server.origin}${path}`, {
+      method, headers: { Origin: origin, "Content-Type": "application/json" },
+      body: title === undefined ? undefined : JSON.stringify({ title }), proxy: false,
+    });
+    const live = fixture.subscribe(id);
+    await fixture.client().request(`${path}/requests`, { input: "first", requestId: "manage-first" });
+    await waitFor(() => fixture.calls.length === 1);
+    expect((await mutate("DELETE")).status).toBe(409);
+    expect((await mutate("PATCH", "Busy")).status).toBe(409);
+    model.text("done"); model.end();
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    for (const invalid of ["", " ", "x".repeat(201), "line\nbreak", 42]) expect((await mutate("PATCH", invalid)).status).toBe(400);
+    expect((await mutate("PATCH", "No access", "https://other.invalid")).status).toBe(403);
+    expect((await mutate("PATCH", "  手动标题 📝  ")).status).toBe(200);
+    await waitFor(() => live.values.some(view => view.state.sessionTitle === "手动标题 📝"));
+    await live.close();
+    await fixture.restart();
+    const creations = fixture.creations;
+    expect((await mutate("PATCH", "Archive renamed")).status).toBe(200);
+    expect(fixture.creations).toBe(creations);
+    const results = await fixture.browser().request<{ results: SessionSearchResult[] }>("/api/sessions/search?q=Archive%20renamed");
+    expect(results.results[0]?.session.title).toBe("Archive renamed");
+    expect((await mutate("DELETE")).status).toBe(200);
+    expect((await mutate("DELETE")).status).toBe(200);
+    expect(fixture.creations).toBe(creations);
+    await fixture.restart();
+    const list = await fixture.browser().request<{ sessions: SessionInfo[] }>("/api/sessions");
+    expect(list.sessions.some(session => session.id === id)).toBe(false);
+    expect((await fetch(`${fixture.server.origin}${path}`, { proxy: false })).status).toBe(404);
+    expect((await fixture.browser().request<{ results: SessionSearchResult[] }>("/api/sessions/search?q=first")).results).toHaveLength(0);
+  } finally { model.end(); await fixture.dispose(); }
+});
+
+test("deleting an open session closes its stream and prevents runtime resurrection", async () => {
+  const fixture = await serverFixture();
+  try {
+    const initial = await fixture.connect();
+    const path = `/api/sessions/${initial.session.id}`;
+    await fixture.client().request(`${path}/requests`, { input: "delete open session", requestId: "delete-open" });
+    await waitFor(async () => !(await fixture.client().request<SessionView>(path)).requestId);
+    const response = await fetch(`${fixture.server.origin}${path}/events`, { proxy: false });
+    const reader = response.body!.getReader();
+    await reader.read();
+    const removed = await fetch(`${fixture.server.origin}${path}`, { method: "DELETE", headers: { Origin: fixture.server.origin }, proxy: false });
+    expect(removed.status).toBe(200);
+    while (!(await reader.read()).done) { /* Drain closing snapshots. */ }
+    expect((await fetch(`${fixture.server.origin}${path}`, { proxy: false })).status).toBe(404);
+  } finally { await fixture.dispose(); }
+});
+
 test("global search finds persisted message contents across projects without resuming runtimes", async () => {
   const fixture = await serverFixture(() => textResponse(`${"前文 ".repeat(100)}全文检索 a+b ${"后文 ".repeat(100)}`));
   try {

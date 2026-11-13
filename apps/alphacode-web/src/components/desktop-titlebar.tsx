@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { HistoryNavigation } from "@/components/history-navigation";
+
 declare global {
   interface Window {
     alphacodeDesktop?: {
@@ -20,6 +23,18 @@ export function syncDesktopAppearance() {
 }
 
 export function DesktopTitlebar() {
-  if (!window.alphacodeDesktop) return null;
-  return <div className="desktop-titlebar" aria-hidden="true" />;
+  useEffect(() => {
+    if (!window.alphacodeDesktop) return;
+    syncDesktopAppearance();
+    // CSS hot updates do not rerun the theme provider. Refresh native window
+    // controls after Vite applies styles so their background stays with --shell.
+    const hot = import.meta.hot;
+    if (!hot) return;
+    hot.on("vite:afterUpdate", syncDesktopAppearance);
+    return () => hot.off("vite:afterUpdate", syncDesktopAppearance);
+  }, []);
+
+  return <header className="window-header">
+    <HistoryNavigation />
+  </header>;
 }

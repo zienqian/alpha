@@ -1,125 +1,78 @@
+import { lazy, Suspense, type CSSProperties } from "react";
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useMatch, useNavigate, useOutletContext } from "react-router";
+import { ArrowLeft, X } from "lucide-react";
 import { useTranslation } from "@/i18n/react";
-import { lazy, Suspense, useEffect, useState, type ComponentProps, type CSSProperties } from "react";
-import { PromptInput } from "@/components/ai-elements/prompt-input";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { sessionErrorMessage } from "@/features/sessions/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DesktopTitlebar } from "@/components/desktop-titlebar";
 import { SessionContext } from "@/features/sessions/session-context";
 import { SessionSidebar } from "@/features/sessions/session-sidebar";
-import { SessionApproval } from "@/features/sessions/session-approval";
-import { SessionQueue } from "@/features/sessions/session-queue";
-import { useSessionWorkspace } from "@/features/sessions/use-session-workspace";
-import { presentNotice } from "@/i18n/presentation";
-import { cn } from "@/lib/utils";
+import { SessionPage } from "@/features/sessions/session-page";
+import { useSessionWorkspace, type SessionWorkspace } from "@/features/sessions/use-session-workspace";
 
-const SessionContent = lazy(() => import("@/features/sessions/session-content").then((module) => ({ default: module.SessionContent })));
 const SkillsMarket = lazy(() => import("@/features/skills/skills-market").then(module => ({ default: module.SkillsMarket })));
+const SettingsPage = lazy(() => import("@/features/settings/settings-page").then(module => ({ default: module.SettingsPage })));
 
-function HistoryColumn({ className, ...props }: ComponentProps<"div">) {
-  // Reserve the same native scrollbar gutter as the message viewport.
-  return <div className="shrink-0 overflow-y-hidden scrollbar-gutter-stable">
-    <div className={cn("mx-auto w-full max-w-[744px] px-5 sm:px-8", className)} {...props} />
-  </div>;
+function SkillsPage() {
+  const workspace = useOutletContext<SessionWorkspace>();
+  return <SkillsMarket initialProjectId={workspace.selectedFolder?.id} onBack={() => workspace.selectSession(workspace.selectedSessionId)} showHeader={false} />;
 }
 
-function HistoryLoading() {
+function WorkspaceLayout() {
   const { t } = useTranslation();
-  return <HistoryColumn role="status" aria-label={t("sessions:loadingHistory")} className="space-y-4 py-6">
-    <Skeleton className="ml-auto h-14 w-2/3 rounded-xl" />
-    <Skeleton className="mt-10 h-4 w-24" />
-    <Skeleton className="h-4 w-full" />
-    <Skeleton className="h-4 w-4/5" />
-  </HistoryColumn>;
+  const workspace = useSessionWorkspace();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const settingsOpen = Boolean(useMatch("/settings"));
+  const skillsOpen = Boolean(useMatch("/skills"));
+  const sessionOpen = !settingsOpen && !skillsOpen;
+  const contentId = settingsOpen ? "settings-content" : skillsOpen ? "skills-content" : "session-content";
+  const { folders, selectedFolder, selectedSession, selectedSessionId, draft } = workspace;
+  const openPage = (pathname: "/settings" | "/skills") => {
+    if (location.pathname !== pathname) void navigate(pathname, { state: { sessionId: selectedSessionId, sessionLocal: workspace.isLocal } });
+  };
+  const returnToSession = () => workspace.selectSession(selectedSessionId);
+
+  return <SidebarProvider className="workspace-shell h-[calc(100dvh-var(--window-header-height))] min-h-0 overflow-hidden"
+    style={{ "--sidebar-width": "16.5rem", "--sidebar-width-icon": "3.5rem" } as CSSProperties}>
+    <a href={`#${contentId}`} onClick={event => { event.preventDefault(); document.getElementById(contentId)?.focus(); }}
+      className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
+      {sessionOpen ? t("sessions:skip") : t("common:skipContent")}</a>
+    <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={id => workspace.selectSession(id)} onNewSession={id => workspace.newSession(id)}
+      onRenameSession={workspace.renameSession} onDeleteSession={workspace.deleteSession} creatingIds={workspace.creatingIds}
+      onOpenSkills={() => openPage("/skills")} skillsActive={skillsOpen}
+      onOpenSettings={() => openPage("/settings")} settingsActive={settingsOpen}
+      loading={workspace.index.isPending} error={workspace.index.error} refreshing={workspace.index.isFetching} onRefresh={() => void workspace.index.refetch()} />
+    <SidebarInset className="workspace-canvas min-h-0 min-w-0 overflow-hidden">
+      <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
+        <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground" />
+        <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px]">
+          {!sessionOpen ? <span className="truncate font-medium">{settingsOpen ? t("settings:title") : t("skills:market.title")}</span> : workspace.isWelcome ?
+            <span className="truncate text-muted-foreground">{t("sessions:new")}</span> :
+            <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title || t("sessions:new")}</h1>}
+        </div>
+        {sessionOpen ? <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} /> : skillsOpen ?
+          <Button variant="ghost" size="sm" onClick={returnToSession}><ArrowLeft aria-hidden="true" />{t("skills:market.back")}</Button> :
+          <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("settings:backToSession")} title={t("settings:backToSession")} onClick={returnToSession}><X aria-hidden="true" /></Button>}
+      </header>
+      <Suspense fallback={<div role="status" aria-label={t("common:loading")} className="space-y-3 p-6"><Skeleton className="h-5 w-24" /><Skeleton className="h-4 max-w-sm" /></div>}>
+        <Outlet context={workspace} />
+      </Suspense>
+    </SidebarInset>
+  </SidebarProvider>;
 }
 
 export function App() {
-  const { t } = useTranslation();
-  const workspace = useSessionWorkspace();
-  const [skillsOpen, setSkillsOpen] = useState(() => new URL(window.location.href).searchParams.get("view") === "skills");
-  useEffect(() => {
-    const update = () => setSkillsOpen(new URL(window.location.href).searchParams.get("view") === "skills");
-    window.addEventListener("popstate", update);
-    return () => window.removeEventListener("popstate", update);
-  }, []);
-  function showSkills(open: boolean) {
-    const url = new URL(window.location.href);
-    if (open) url.searchParams.set("view", "skills");
-    else url.searchParams.delete("view");
-    if (url.href !== window.location.href) window.history.pushState(window.history.state, "", url);
-    setSkillsOpen(open);
-  }
-  const { folders, selectedFolder, selectedSession, selectedSessionId, draft } = workspace;
-  const isWelcome = workspace.isWelcome;
-  const view = workspace.history.data;
-  const connectionLabel = workspace.connected ? t("sessions:connected") : workspace.history.connection === "error" ? t("sessions:connectionFailed") : workspace.history.connection === "reconnecting" ? t("sessions:reconnecting") : t("sessions:connecting");
-  const composer = <>
-    {workspace.actionError && <div role="alert" className="mb-3 space-y-2 text-xs text-destructive">
-      <p>{workspace.actionError}</p>
-      {workspace.actions.pending?.status === "uncertain" && <Button size="sm" variant="outline" disabled={!workspace.connected} onClick={workspace.actions.retry}>{t("sessions:retrySend")}</Button>}
-    </div>}
-    {view?.state.approval && <SessionApproval approval={view.state.approval}
-      disabled={!workspace.connected || workspace.actions.controlling || !view.approvalId} onAnswer={workspace.actions.approve} />}
-    <SessionQueue key={selectedSessionId} requests={view?.state.queuedRequests} disabled={!workspace.connected || workspace.actions.controlling}
-      canSteer={Boolean(view?.state.canSteer)} onRemove={workspace.actions.cancelQueued} onEdit={workspace.actions.editQueued}
-      onMove={workspace.actions.moveQueued} onSteer={workspace.actions.steerQueued} />
-    <PromptInput key={`composer-${selectedSessionId}`} draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
-      folder={isWelcome ? selectedFolder : undefined}
-      showContextUsage={Boolean(view?.state.messages.length)}
-      contextUsage={view?.state.contextUsage ?? (selectedSession?.local ? selectedFolder?.defaultContext : undefined)}
-      permissionMode={workspace.permissionMode} onPermissionChange={workspace.changePermission}
-      canChangePermission={workspace.canChangePermission} permissionSaving={workspace.actions.permissionSaving || Boolean(view?.state.settingsSaving)}
-      onSend={() => void workspace.send()} canSend={workspace.canSend} busy={workspace.busy} submitting={workspace.submitting}
-      onCancel={workspace.actions.cancel} canCancel={workspace.connected && !workspace.actions.controlling && Boolean(view?.requestId) && view?.state.phase !== "stopping"}
-      status={isWelcome ? selectedFolder ? "" : t("workspace:registerProject") : !workspace.connected ? connectionLabel : workspace.busy ? view?.state.phase === "stopping" ? t("sessions:stopping") : "" : view?.state.canSend ? "" : t("sessions:unavailable")} />
-  </>;
-
-  return (
-    <SidebarProvider className="workspace-shell h-[calc(100dvh-var(--desktop-titlebar-height,0px))] min-h-0 overflow-hidden" style={{ "--sidebar-width": "16.5rem", "--sidebar-width-icon": "3.5rem" } as CSSProperties}>
-      <a href="#session-content" className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
-        {t("sessions:skip")}</a>
-      <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={id => { showSkills(false); workspace.selectSession(id); }} onNewSession={id => { showSkills(false); workspace.newSession(id); }}
-        onOpenSkills={() => showSkills(true)} skillsActive={skillsOpen}
-        loading={workspace.index.isPending} error={workspace.index.error} refreshing={workspace.index.isFetching} onRefresh={() => void workspace.index.refetch()} />
-      <SidebarInset className="workspace-canvas min-h-0 min-w-0 overflow-hidden">
-        {skillsOpen ? <Suspense fallback={<HistoryLoading />}><SkillsMarket initialProjectId={selectedFolder?.id} onBack={() => showSkills(false)} /></Suspense> : <>
-        <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
-          <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground" />
-          <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px]">
-            {isWelcome ? <span className="truncate text-muted-foreground">{t("sessions:new")}</span> : (
-              <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title || t("sessions:new")}</h1>
-            )}
-          </div>
-          <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} />
-        </header>
-        {isWelcome ? (
-          <section id="session-content" tabIndex={-1} aria-labelledby="welcome-title" className="welcome-stage min-h-0 flex-1 overflow-y-auto px-5 outline-none sm:px-8">
-            <div className="task-entry mx-auto w-full max-w-[680px]">
-              <div className="mb-6">
-                <h1 id="welcome-title" className="text-[22px] leading-8 font-medium tracking-tight text-balance">{t("workspace:welcome")}</h1>
-              </div>
-              {composer}
-            </div>
-          </section>
-        ) : (
-          <>
-            <div id="session-content" key={selectedSessionId} tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">
-              {workspace.history.isError && <HistoryColumn role="alert" className="space-y-2 py-4 text-xs leading-5">
-                <p>{sessionErrorMessage(t, workspace.history.error, "history")}</p>
-                {workspace.history.data && <p className="text-xs text-muted-foreground">{t("sessions:cachedHistory")}</p>}
-                <Button variant="outline" size="sm" disabled={workspace.history.isFetching} onClick={() => void workspace.history.refetch()}>{t("sessions:retryHistory")}</Button>
-              </HistoryColumn>}
-              {workspace.history.data?.state.error && <HistoryColumn role="status" className="py-2 text-xs leading-5 text-destructive">{presentNotice(t, workspace.history.data.state.notice, workspace.history.data.state.error)}</HistoryColumn>}
-              {!workspace.connected && workspace.history.data && <HistoryColumn role="status" className="py-2 text-xs leading-5 text-muted-foreground">{workspace.history.connection === "error" ? t("errors:subscribe") : t("sessions:connectingPreserved")}</HistoryColumn>}
-              {workspace.history.isPending ? <HistoryLoading /> : selectedSession?.historyLoaded && (
-                <Suspense fallback={<HistoryLoading />}><SessionContent session={selectedSession} busy={workspace.busy} phase={view?.state.phase} connected={workspace.connected} /></Suspense>
-              )}
-            </div>
-            <HistoryColumn className="pt-3 pb-4">{composer}</HistoryColumn>
-          </>
-        )}
-        </>}
-      </SidebarInset>
-    </SidebarProvider>
-  );
+  return <BrowserRouter useTransitions={false}>
+    <DesktopTitlebar />
+    <Routes>
+      <Route element={<WorkspaceLayout />}>
+        <Route index element={<SessionPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="skills" element={<SkillsPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  </BrowserRouter>;
 }

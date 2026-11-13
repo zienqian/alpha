@@ -89,9 +89,9 @@ export class SessionApiError extends Error {
   constructor(readonly status: number, readonly code: string) { super(code); }
 }
 
-async function requestJson<T>(path: string, signal: AbortSignal, body?: unknown): Promise<T> {
+async function requestJson<T>(path: string, signal: AbortSignal, body?: unknown, method = body === undefined ? "GET" : "POST"): Promise<T> {
   const response = await fetch(path, {
-    method: body === undefined ? "GET" : "POST",
+    method,
     signal, credentials: "omit", redirect: "error", cache: "no-store",
     headers: { Accept: "application/json", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -127,6 +127,10 @@ export async function searchSessions(query: string, signal: AbortSignal) {
 }
 
 export const sessionPath = (id: string) => `/api/sessions/${encodeURIComponent(id)}`;
+export const renameSession = (id: string, title: string) =>
+  requestJson<{ session: SessionInfo }>(sessionPath(id), AbortSignal.timeout(15_000), { title }, "PATCH");
+export const deleteSession = (id: string) =>
+  requestJson<{ ok: true }>(sessionPath(id), AbortSignal.timeout(15_000), undefined, "DELETE");
 export interface RequestReceipt { requestId: string; status: "accepted" | "settled" | "interrupted" }
 export type QueueAction = { requestId: string } & (
   | { action: "edit"; input: string; expectedInput: string }

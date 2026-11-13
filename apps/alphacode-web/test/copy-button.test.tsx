@@ -17,7 +17,7 @@ describe("CopyButton", () => {
     vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockRejectedValue(new Error("Denied")) } });
     render(<CopyButton value="hello" />, { wrapper: TooltipProvider });
     fireEvent.click(screen.getByRole("button", { name: "复制消息" }));
-    expect(await screen.findByRole("button", { name: "复制失败，请选择文字后复制" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "复制失败，请选中文本后手动复制。" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "已复制" })).toBeNull();
   });
 });

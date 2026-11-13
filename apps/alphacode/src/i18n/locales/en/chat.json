@@ -40,12 +40,12 @@
     "working": "Working…",
     "reconnecting": "Reconnecting to local server…"
   },
-  "interrupt": " · esc to interrupt",
+  "interrupt": " · Esc to interrupt",
   "completion": {
     "cancelled": "Stopped after {{duration}} · {{time}}",
     "failed": "Failed after {{duration}} · {{time}}",
-    "completed": "Worked for {{duration}} · {{time}}",
+    "completed": "Ran for {{duration}} · {{time}}",
     "other": "Ended after {{duration}} · {{time}}"
   },
-  "newConversation": "New conversation"
+  "newConversation": "New session"
 }

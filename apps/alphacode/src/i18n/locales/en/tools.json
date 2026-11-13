@@ -7,7 +7,7 @@
     "failed": "Failed",
     "denied": "Denied",
     "not_executed": "Not executed",
-    "outcome_unknown": "Result unconfirmed"
+    "outcome_unknown": "Outcome unconfirmed"
   },
   "description": {
     "command": "Run command: {{target}}",
@@ -37,10 +37,10 @@
     "list_files": "Listed",
     "other": "Used"
   },
-  "failedExit": "Failed (exit {{code}})",
-  "exit": "exit {{code}}",
-  "preview": "Output preview (up to 8 rows)",
+  "failedExit": "Failed (exit code {{code}})",
+  "exit": "Exit code {{code}}",
+  "preview": "Output preview (up to 8 lines)",
   "truncated": "Truncated",
   "incomplete": "Output incomplete",
-  "cwd": "cwd: {{path}}"
+  "cwd": "Working directory: {{path}}"
 }

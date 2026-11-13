@@ -8,7 +8,7 @@ describe("Skills API availability", () => {
     const error = await listSkills("project", new AbortController().signal).catch(error => error);
     expect(error.code).toBe("SKILL_API_UNAVAILABLE");
     const t = createI18n("zh-CN").getFixedT(null, namespaces);
-    expect(skillError(t, error)).toContain("当前后端尚不支持 Skills 接口");
+    expect(skillError(t, error)).toContain("当前后端尚不支持技能接口");
     expect(skillError(t, error)).toContain("/web");
     await expect(installSkill({ projectId: "project", directoryId: "user-local", url: "https://example.com/SKILL.md" }))
       .rejects.toMatchObject({ code: "SKILL_API_UNAVAILABLE" });

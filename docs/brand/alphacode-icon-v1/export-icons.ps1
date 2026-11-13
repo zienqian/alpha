@@ -4,9 +4,10 @@ Add-Type -AssemblyName System.Drawing
 $repository = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
 $webDirectory = Join-Path $repository 'apps/alphacode-web/public'
 $desktopDirectory = Join-Path $repository 'apps/alphacode-app/assets'
+$terminalDirectory = Join-Path $repository 'apps/alphacode/src/ui'
 New-Item -ItemType Directory -Path (Join-Path $webDirectory 'icons'), $desktopDirectory -Force | Out-Null
 
-$source = [System.Drawing.Bitmap]::new((Join-Path $PSScriptRoot 'alfi-app-icon-concept.png'))
+$source = [System.Drawing.Bitmap]::new((Join-Path $PSScriptRoot 'alfi-icon-transparent.png'))
 $images = @{}
 try {
     foreach ($size in @(16, 24, 32, 48, 64, 128, 180, 256, 512, 1024)) {
@@ -34,6 +35,9 @@ foreach ($size in @(16, 32, 64, 128, 180)) {
     [System.IO.File]::WriteAllBytes((Join-Path $webDirectory "icons/alphacode-$size.png"), $images[$size])
 }
 [System.IO.File]::WriteAllBytes((Join-Path $desktopDirectory 'icon.png'), $images[512])
+# Embed the small PNG in the CLI bundle; startup never depends on cwd or asset paths.
+$terminalAsset = @{ png = [Convert]::ToBase64String($images[128]) } | ConvertTo-Json
+[System.IO.File]::WriteAllText((Join-Path $terminalDirectory 'alfi-image.json'), $terminalAsset + "`n", [System.Text.UTF8Encoding]::new($false))
 
 # ICO entries contain complete RGBA PNGs (Windows Vista and newer).
 $iconSizes = @(16, 24, 32, 48, 64, 128, 256)

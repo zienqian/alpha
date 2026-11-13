@@ -20,6 +20,8 @@ it("injects query, stream, command and search capabilities without using the HTT
   const subscriptions = new Map<string, { receive: (view: SessionView) => void; signal: AbortSignal }>();
   const gateway = {
     list: vi.fn<SessionGateway["list"]>(async () => [snapshot("one").session]),
+    rename: vi.fn<SessionGateway["rename"]>(async (id, title) => ({ session: { ...snapshot(id).session, title } })),
+    delete: vi.fn<SessionGateway["delete"]>(async () => undefined),
     get: vi.fn<SessionGateway["get"]>(async id => snapshot(id)),
     search: vi.fn<SessionGateway["search"]>(async () => [{ session: snapshot("one").session, snippets: [], matchCount: 0 }]),
     send: vi.fn<SessionGateway["send"]>(async (_id, requestId) => ({ requestId, status: "accepted" })),

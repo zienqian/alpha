@@ -1,8 +1,8 @@
 {
   "title": "Available skills",
   "none": "No skills loaded.",
-  "modelOnly": "model only",
-  "manualOnly": "manual only",
-  "configure": "Configure skills in the global config.yaml. Project skills require an exact trustedProjects entry. Restart to reload.",
-  "permissionHint": "Use the /permission picker to change session permissions."
+  "modelOnly": "Model only",
+  "manualOnly": "Manual only",
+  "configure": "Configure skills in the global config.yaml. Project skills require an exact project path in skills.trustedProjects. Restart to reload.",
+  "permissionHint": "Use the /permission menu to change the approval mode for this session."
 }

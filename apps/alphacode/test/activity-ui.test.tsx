@@ -65,10 +65,10 @@ test("flat tool records and the composer status render above the input without d
   try {
     await ui.renderOnce();
     const frame = ui.captureCharFrame();
-    expect(frame).toContain("Failed (exit 1) bun test");
+    expect(frame).toContain("Failed (exit code 1) bun test");
     expect(frame).toContain("验证消息状态");
     expect(frame).toContain("one test failed");
-    expect(frame).toContain("exit 1 · 1h 1m");
+    expect(frame).toContain("Exit code 1 · 1h 1m");
     expect(frame).not.toContain("Thinking…");
     const activity = ui.renderer.root.findDescendantById("composer-status");
     const composer = ui.renderer.root.findDescendantById("composer");
@@ -76,14 +76,14 @@ test("flat tool records and the composer status render above the input without d
     const label = ui.renderer.root.findDescendantById("activity-label");
     const elapsed = ui.renderer.root.findDescendantById("activity-elapsed");
     expect(label && elapsed && label.x + label.width + 1 === elapsed.x).toBe(true);
-    expect(frame).toContain("(0s · esc to interrupt)");
+    expect(frame).toContain("(0s · Esc to interrupt)");
     await ui.mockInput.typeText("保留草稿");
     state = { ...state, busy: false, phase: "idle", status: "Ready", canSend: true, messages: [...state.messages, {
       id: "reply", role: "assistant", text: "已确认测试失败。", completion: { durationMs: 11000, completedAt: Date.now(), status: "completed" },
     }] };
     notify?.(state);
     await ui.renderOnce();
-    expect(ui.captureCharFrame()).toContain("Worked for 11s ·");
+    expect(ui.captureCharFrame()).toContain("Ran for 11s ·");
     expect(ui.renderer.root.findDescendantById("composer-status")).toBeUndefined();
     const reply = ui.renderer.root.findDescendantById("message-reply");
     const completion = ui.renderer.root.findDescendantById("completion-reply");

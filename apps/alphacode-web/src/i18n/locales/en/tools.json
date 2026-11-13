@@ -21,7 +21,7 @@
     "failed": "Failed",
     "denied": "Denied",
     "not_executed": "Not executed",
-    "outcome_unknown": "Result unconfirmed"
+    "outcome_unknown": "Outcome unconfirmed"
   },
   "description": {
     "command": "Run command: {{target}}",
@@ -53,8 +53,8 @@
     "failed_other": "{{count}} actions failed",
     "denied_one": "{{count}} action denied",
     "denied_other": "{{count}} actions denied",
-    "outcome_unknown_one": "{{count}} action unconfirmed",
-    "outcome_unknown_other": "{{count}} actions unconfirmed",
+    "outcome_unknown_one": "{{count}} action with an unconfirmed outcome",
+    "outcome_unknown_other": "{{count}} actions with unconfirmed outcomes",
     "not_executed_one": "{{count}} action not executed",
     "not_executed_other": "{{count}} actions not executed"
   }

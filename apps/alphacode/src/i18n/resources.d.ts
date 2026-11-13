@@ -19,7 +19,7 @@ export default interface Resources {
     },
     "completion": {
       "cancelled": "Stopped after {{duration}} · {{time}}",
-      "completed": "Worked for {{duration}} · {{time}}",
+      "completed": "Ran for {{duration}} · {{time}}",
       "failed": "Failed after {{duration}} · {{time}}",
       "other": "Ended after {{duration}} · {{time}}"
     },
@@ -29,8 +29,8 @@ export default interface Resources {
       "queueCount_one": "{{count}} message queued",
       "queueCount_other": "{{count}} messages queued"
     },
-    "interrupt": " · esc to interrupt",
-    "newConversation": "New conversation",
+    "interrupt": " · Esc to interrupt",
+    "newConversation": "New session",
     "note": {
       "incomplete": "Response incomplete",
       "preview": "Incomplete preview",
@@ -84,12 +84,12 @@ export default interface Resources {
     "approveCommand": "Run this command? [y] / [n]",
     "approveTool": "Run this tool? [y] / [n]",
     "ask": {
-      "description": "Ask before commands; allow workspace file tools",
+      "description": "Ask before running commands; allow workspace file tools",
       "name": "Ask for approval"
     },
     "auto": {
-      "description": "Approve routine commands; ask for everything else",
-      "name": "Approve for me"
+      "description": "Auto-approve predefined routine commands; ask before other commands",
+      "name": "Auto approval"
     },
     "busy": "/permission · Available after this task",
     "full": {
@@ -100,15 +100,15 @@ export default interface Resources {
     "saving": "/permission · Saving…"
   },
   "skills": {
-    "configure": "Configure skills in the global config.yaml. Project skills require an exact trustedProjects entry. Restart to reload.",
-    "manualOnly": "manual only",
-    "modelOnly": "model only",
+    "configure": "Configure skills in the global config.yaml. Project skills require an exact project path in skills.trustedProjects. Restart to reload.",
+    "manualOnly": "Manual only",
+    "modelOnly": "Model only",
     "none": "No skills loaded.",
-    "permissionHint": "Use the /permission picker to change session permissions.",
+    "permissionHint": "Use the /permission menu to change the approval mode for this session.",
     "title": "Available skills"
   },
   "tools": {
-    "cwd": "cwd: {{path}}",
+    "cwd": "Working directory: {{path}}",
     "description": {
       "command": "Run command: {{target}}",
       "create": "Create file: {{target}}",
@@ -119,14 +119,14 @@ export default interface Resources {
       "search": "Search: {{target}}",
       "skill": "Read skill: {{target}}"
     },
-    "exit": "exit {{code}}",
-    "failedExit": "Failed (exit {{code}})",
+    "exit": "Exit code {{code}}",
+    "failedExit": "Failed (exit code {{code}})",
     "incomplete": "Output incomplete",
     "invalidResult": "Invalid tool result",
     "missingExit": "Command exit code unavailable",
     "omission_one": "… {{count}} line omitted …",
     "omission_other": "… {{count}} lines omitted …",
-    "preview": "Output preview (up to 8 rows)",
+    "preview": "Output preview (up to 8 lines)",
     "reportedFailure": "Tool reported failure",
     "result": {
       "created": "File created.",
@@ -137,7 +137,7 @@ export default interface Resources {
       "denied": "Denied",
       "failed": "Failed",
       "not_executed": "Not executed",
-      "outcome_unknown": "Result unconfirmed",
+      "outcome_unknown": "Outcome unconfirmed",
       "queued": "Queued",
       "running": "Running",
       "succeeded": "Completed"

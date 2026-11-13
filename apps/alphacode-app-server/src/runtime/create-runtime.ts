@@ -69,7 +69,7 @@ export async function createRuntime(config: AppConfig, options: {
       }
       const snapshot = await session.getSnapshot();
       messages = restoreMessages(snapshot.data);
-      title = displayText(snapshot.data.title, 80);
+      title = displayText(snapshot.data.title, 200);
     }
     const model = createProvider({ providers: { main: {
       adapter: "openai-completions",
@@ -84,9 +84,9 @@ export async function createRuntime(config: AppConfig, options: {
       // A new CLI/Web session is only a draft until a valid prompt reaches here.
       if (!session) {
         session = await activeManager.createSession({ id: sessionId,
-          title: "", metadata: { alphacode: { ...settings } },
+          title, metadata: { alphacode: { ...settings } },
         });
-        title = initialTitle = "";
+        initialTitle = title;
         titleInput = input;
         emitTitle("ready");
       }
@@ -206,6 +206,27 @@ export async function createRuntime(config: AppConfig, options: {
     workspaceRoot: cwd,
     sessionId,
     get sessionTitle() { return title; },
+    setTitle(value) {
+      const next = value.trim();
+      if (!next || next.length > 200 || displayText(next, 200) !== next) return Promise.reject(settingsError("INVALID_TITLE"));
+      if (closing || running || changing || session?.state.persistence?.status === "pending") return Promise.reject(settingsError("SESSION_BUSY"));
+      const work = (async () => {
+        // Stop the first-message generator before taking ownership of the title.
+        titleAbort?.abort();
+        await titleWork;
+        await titleSaving;
+        if (session) {
+          const saved = await session.getSnapshot();
+          await activeManager.updateSession(session.id, { title: next }, { expectedRevision: saved.revision });
+        }
+        titleStarted = true;
+        titleDirty = false;
+        title = initialTitle = next;
+        emitTitle("ready");
+      })();
+      changing = work.finally(() => { changing = undefined; });
+      return changing;
+    },
     messages,
     get permissionMode() { return settings.permissionMode; },
     get canSteer() { return !closing && !cancelled && Boolean(agent?.state.canSteer); },

@@ -1,18 +1,16 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
-import { Folder, Plus, Search, X, Blocks, SquarePen, RefreshCw } from "lucide-react";
+import { Folder, Plus, Search, X, Blocks, SquarePen, RefreshCw, Settings } from "lucide-react";
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
-import { SessionTitle } from "@/features/sessions/session-title";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { LanguageToggle } from "@/components/language-toggle";
+import { SessionNavItem } from "@/features/sessions/session-nav-item";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu,
-  SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton,
+  SidebarMenuButton, SidebarMenuItem, SidebarMenuSub,
   SidebarMenuSubItem, SidebarTrigger, useSidebar,
 } from "@/components/ui/sidebar";
 import type { SessionFolder } from "@/features/sessions/types";
@@ -22,15 +20,20 @@ interface SessionSidebarProps {
   selectedSessionId: string | undefined;
   onSelectSession: (sessionId: string) => void;
   onNewSession: (folderId?: string) => void;
+  onRenameSession: (id: string, title: string) => Promise<void>;
+  onDeleteSession: (id: string) => Promise<void>;
+  creatingIds: Record<string, boolean>;
   loading: boolean;
   refreshing: boolean;
   error: Error | null;
   onRefresh: () => void;
   onOpenSkills?: () => void;
   skillsActive?: boolean;
+  onOpenSettings: () => void;
+  settingsActive: boolean;
 }
 
-export function SessionSidebar({ folders, selectedSessionId, onSelectSession, onNewSession, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive }: SessionSidebarProps) {
+export function SessionSidebar({ folders, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive }: SessionSidebarProps) {
   const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set());
@@ -123,7 +126,7 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
           <nav aria-label={t("workspace:folders")} className="flex flex-col gap-2">
             {folders.map(folder => <Tooltip key={folder.id}><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="rail-action" aria-label={t("workspace:folder", { name: folder.name })} aria-expanded={false}
-                data-active={!skillsActive && activeFolderId === folder.id}
+                data-active={!skillsActive && !settingsActive && activeFolderId === folder.id}
                 onClick={() => { folderFocusRequest.current = folder.id; setFolderOpen(folder.id, true); setOpen(true); }}><Folder strokeWidth={1.7} aria-hidden="true" /></Button>
             </TooltipTrigger><TooltipContent side="right">{folder.name}</TooltipContent></Tooltip>)}
             {error && <Tooltip><TooltipTrigger asChild>
@@ -131,7 +134,11 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
             </TooltipTrigger><TooltipContent side="right">{t("sessions:retryList")}</TooltipContent></Tooltip>}
           </nav>
         </SidebarContent>
-        <SidebarFooter className="items-center gap-2 px-1.5 py-3"><LanguageToggle /><ThemeToggle /></SidebarFooter>
+        <SidebarFooter className="items-center px-1.5 py-3">
+          <Tooltip><TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="rail-action" aria-label={t("settings:title")} aria-current={settingsActive ? "page" : undefined} onClick={onOpenSettings}><Settings aria-hidden="true" /></Button>
+          </TooltipTrigger><TooltipContent side="right">{t("settings:title")}</TooltipContent></Tooltip>
+        </SidebarFooter>
       </> : <>
       <SidebarHeader className="gap-0 p-0">
         <div className="space-y-1 px-2.5 pt-2">
@@ -175,13 +182,9 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
                         <SidebarMenuSub className="mx-0 mt-1 translate-x-0 gap-0.5 border-0 p-0">
                           {folder.sessions.map((session) => (
                             <SidebarMenuSubItem key={session.id}>
-                              <SidebarMenuSubButton asChild isActive={!skillsActive && selectedSessionId === session.id}
-                                className="session-nav-item h-9 w-full translate-x-0 rounded-lg pr-2 pl-7 text-[13px] text-sidebar-foreground/80 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8">
-                                <button type="button" title={session.title} aria-label={session.title} aria-current={!skillsActive && selectedSessionId === session.id ? "page" : undefined}
-                                  onClick={() => { onSelectSession(session.id); setOpenMobile(false); }}>
-                                  <SessionTitle title={session.title} pending={session.titleStatus === "pending"} />
-                                </button>
-                              </SidebarMenuSubButton>
+                              <SessionNavItem session={session} active={!skillsActive && !settingsActive && selectedSessionId === session.id} disabled={creatingIds[session.id]}
+                                onSelect={() => { onSelectSession(session.id); setOpenMobile(false); }}
+                                onRename={onRenameSession} onDelete={onDeleteSession} />
                             </SidebarMenuSubItem>
                           ))}
                           {folder.sessions.length === 0 && <SidebarMenuSubItem className="px-2 py-2 text-xs text-muted-foreground">{t("sessions:none")}</SidebarMenuSubItem>}
@@ -196,8 +199,11 @@ export function SessionSidebar({ folders, selectedSessionId, onSelectSession, on
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="h-11 flex-row items-center justify-end gap-2 px-3 py-1.5">
-        <div className="flex items-center"><LanguageToggle /><ThemeToggle /></div>
+      <SidebarFooter className="px-2.5 pt-2 pb-3">
+        <Button variant="ghost" className="h-9 w-full justify-start gap-2 rounded-lg px-2.5 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
+          aria-current={settingsActive ? "page" : undefined} onClick={() => { onOpenSettings(); setOpenMobile(false); }}>
+          <Settings className="size-3.5" aria-hidden="true" /><span>{t("settings:title")}</span>
+        </Button>
       </SidebarFooter>
       </>}
     </Sidebar>

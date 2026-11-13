@@ -35,7 +35,7 @@ it("keeps normal titles visible and caps a stale loading snapshot at eight secon
     expect(screen.getByRole("status").textContent).toBe("正在生成标题…");
     act(() => { vi.advanceTimersByTime(8_000); });
     expect(screen.queryByRole("status")).toBeNull();
-    expect(screen.getByText("新对话")).toBeTruthy();
+    expect(screen.getByText("新会话")).toBeTruthy();
     view.rerender(<AppProviders><SessionTitle title="已生成标题" pending={false} /></AppProviders>);
     expect(screen.getByText("已生成标题")).toBeTruthy();
   } finally { vi.useRealTimers(); }
@@ -47,8 +47,8 @@ it("uses the same fallback for untitled saved conversations in the header, sideb
   api.info(id).title = " ";
   window.history.replaceState(null, "", `/?session=${id}`);
   render(<AppProviders><App /></AppProviders>);
-  expect(await screen.findByRole("heading", { level: 1, name: "新对话" })).toBeTruthy();
-  expect((await screen.findByRole("button", { name: "新对话" })).getAttribute("aria-current")).toBe("page");
+  expect(await screen.findByRole("heading", { level: 1, name: "新会话" })).toBeTruthy();
+  expect((await screen.findByRole("button", { name: "新会话" })).getAttribute("aria-current")).toBe("page");
   fireEvent.keyDown(window, { key: "k", ctrlKey: true });
-  expect(await screen.findByRole("option", { name: /新对话/ })).toBeTruthy();
+  expect(await screen.findByRole("option", { name: /新会话/ })).toBeTruthy();
 });

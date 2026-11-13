@@ -34,6 +34,8 @@ Web 按单机使用、信任本机进程的前提设计，不使用浏览器登�
 | POST | `/api/skills/install?projectId=...&directoryId=...` | `application/zip` 二进制或 JSON `{url}`；默认目录 `user-local`，返回 201 `{installed, directory, requiresNewSession: true}` |
 | POST | `/api/connect` | 原生专用：`{config, credential?}`；登记项目并新建/恢复 config.sessionId，返回 SessionView |
 | GET | `/api/sessions` | `{sessions: SessionInfo[]}`，覆盖所有已登记项目 |
+| PATCH | `/api/sessions/:id` | `{title}`，1–200 个字符的单行标题，返回 `{session: SessionInfo}`。手动标题中止并替代自动生成，保存后通过 SSE 同步；未打开的历史直接以 revision CAS 更新，无需启动 runtime |
+| DELETE | `/api/sessions/:id` | 关闭空闲 runtime，以 revision CAS tombstone 删除档案，关闭该会话的 SSE 并通知列表；重复删除返回 `{ok:true}`。运行、排队、保存或未恢复的 pending 状态返回 `SESSION_BUSY` |
 | GET | `/api/sessions/search?q=...` | `{results: SessionSearchResult[]}`；跨项目搜索标题、路径、消息正文和工具记录，忽略大小写、按字面匹配；关键词最多 500 字符，空值返回空结果。读取历史不启动 runtime；每个会话返回匹配消息总数及最多三条上下文片段 |
 | POST | `/api/sessions` | `{projectId}`；在已登记项目中新建内存草稿，返回 SessionView；首条有效消息才落盘 |
 | GET | `/api/events` | 全局 SSE：`{instanceId, sequence}`；提示重新读取列表 |

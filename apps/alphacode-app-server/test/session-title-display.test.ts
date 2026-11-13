@@ -7,6 +7,42 @@ import { controlledStream, fixture, textResponse, waitFor } from "./helpers";
 
 const titleResponse = (title: string) => Response.json({ choices: [{ message: { content: title }, finish_reason: "stop" }] });
 
+test("manual titles cancel late generation, survive later turns and restore without truncation", async () => {
+  let finish!: (response: Response) => void;
+  const app = await fixture(() => textResponse("done"), () => new Promise(resolve => { finish = resolve; }));
+  const database = new Database(app.config.databasePath);
+  let resumed: Chat | undefined;
+  const title = "用户自定义标题".repeat(20);
+  try {
+    await app.chat.send("first message");
+    expect(app.chat.state.titleStatus).toBe("pending");
+    await app.chat.setTitle!(title);
+    finish(titleResponse("late generated title"));
+    await app.chat.send("continue");
+    expect(app.chat.state.sessionTitle).toBe(title);
+    expect(archive(database, app.chat.sessionId).title).toBe(title);
+    await app.chat.close();
+    resumed = await createApplication({ ...app.config, sessionId: app.chat.sessionId });
+    expect(resumed.state.sessionTitle).toBe(title);
+  } finally { await resumed?.close(); database.close(); await app.dispose(); }
+});
+
+test("a manual draft title is retained on first send and a failed rename keeps the saved title", async () => {
+  const app = await fixture(() => textResponse("done"));
+  const database = new Database(app.config.databasePath);
+  try {
+    await app.chat.setTitle!("My title");
+    await app.chat.send("first message");
+    expect(app.titleRequests).toHaveLength(0);
+    expect(archive(database, app.chat.sessionId).title).toBe("My title");
+    database.exec("CREATE TRIGGER reject_manual_title BEFORE UPDATE ON sessions WHEN json_extract(NEW.body, '$.title') <> json_extract(OLD.body, '$.title') BEGIN SELECT RAISE(ABORT, 'Rejected title write'); END");
+    await expect(app.chat.setTitle!("Not saved")).rejects.toThrow();
+    expect(app.chat.state.sessionTitle).toBe("My title");
+    expect(app.chat.state.canSend).toBe(true);
+    expect(archive(database, app.chat.sessionId).title).toBe("My title");
+  } finally { database.close(); await app.dispose(); }
+});
+
 function archive(database: Database, id: string): SessionData {
   const row = database.query("SELECT body FROM sessions WHERE id = ?").get(id) as { body: string };
   return JSON.parse(row.body);

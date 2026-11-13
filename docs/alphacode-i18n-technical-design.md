@@ -119,7 +119,7 @@ apps/alphacode/src/i18n/
 
 apps/alphacode/src/ui/i18n-provider.tsx
                               OpenTUI React 绑定
-docs/i18n-glossary.md          后续维护的中英术语表
+docs/i18n-glossary.md          中英术语表与开源项目参考依据
 ```
 
 根目录负责汇总检查；每个应用独立配置词典扫描和类型生成，明确输入目录、源语言、目标语言及命名空间。英文和中文目录中每个命名空间对应一个 JSON 文件，不为单个组件建立文件。
@@ -307,7 +307,7 @@ TUI 当前的 `en-GB` 时间格式实例位于模块顶层，应移动到实例�
 
 英文源文案改变而 key 不变时，中文也必须重新审核；“目标语言存在相同 key”不能证明译文仍准确。以源消息版本或 hash 记录审核基准。若 x18n 的固定版本不能可靠覆盖此流程，PR 检查必须根据源词典变更列出待复核译文。
 
-术语建议统一为：session＝会话，workspace＝工作区，tool＝工具，approval＝审批，permission＝权限，draft＝草稿；Skill 保留产品术语或在首次出现时加解释。不同权限模式的译文必须准确表达当前实现，不能因为名称变得友好而弱化执行范围。
+术语按 [中英术语表](i18n-glossary.md) 统一：session＝会话，workspace＝工作区，tool＝工具，approval＝审批，permission＝权限，draft＝草稿，skill＝技能；`SKILL.md` 等文件名和配置标识保留原样。不同权限模式的译文必须准确表达当前实现，不能因为名称变得友好而弱化执行范围。
 
 ### 10.2 x18n 试点要求
 

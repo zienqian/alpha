@@ -8,10 +8,10 @@
   "sidebar": "Workspace sidebar",
   "closeSidebar": "Close sidebar",
   "title": "Workspaces",
-  "folders": "Folders and conversations",
+  "folders": "Folders and sessions",
   "computer": "This computer",
-  "mobileTitle": "Projects and conversations",
-  "mobileDescription": "Search projects and select a conversation to view its history.",
+  "mobileTitle": "Projects and sessions",
+  "mobileDescription": "Search projects and select a session to view its history.",
   "folder": "Folder {{name}}",
-  "createIn": "New conversation in {{name}}"
+  "createIn": "New session in {{name}}"
 }

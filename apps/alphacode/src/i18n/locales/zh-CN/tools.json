@@ -4,10 +4,10 @@
     "running": "执行中",
     "awaiting_approval": "等待审批",
     "succeeded": "已完成",
-    "failed": "失败",
+    "failed": "已失败",
     "denied": "已拒绝",
     "not_executed": "未执行",
-    "outcome_unknown": "结果未知"
+    "outcome_unknown": "结果未确认"
   },
   "description": {
     "command": "执行命令：{{target}}",
@@ -16,7 +16,7 @@
     "create": "创建文件：{{target}}",
     "search": "搜索：{{target}}",
     "list": "列出文件：{{target}}",
-    "skill": "读取 Skill：{{target}}",
+    "skill": "读取技能：{{target}}",
     "other": "调用工具：{{target}}"
   },
   "result": {

@@ -53,7 +53,7 @@ async function createWindow() {
   const position = typeof x === "number" && typeof y === "number" && Number.isFinite(x) && Number.isFinite(y) && screen.getAllDisplays().some(({ workArea }) =>
     x + width > workArea.x + 100 && x < workArea.x + workArea.width - 100
     && y >= workArea.y && y < workArea.y + workArea.height - 100) ? { x, y } : {};
-  const backgroundColor = nativeTheme.shouldUseDarkColors ? "#171b22" : "#e6ebf2";
+  const backgroundColor = nativeTheme.shouldUseDarkColors ? "#171b22" : "#f1f4f9";
   const created = new BrowserWindow({ ...position, width, height, minWidth: 680, minHeight: 520,
     title: applicationName, icon: applicationIcon, show: false, autoHideMenuBar: true,
     backgroundColor, titleBarStyle: "hidden",

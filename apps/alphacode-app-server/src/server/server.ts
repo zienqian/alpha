@@ -16,6 +16,7 @@ import { createTraceService, createMemoryTraceStore, type TraceService } from "@
 import { createSqliteTraceStore } from "@alpha/adk-trace/sqlite";
 import { createRuntimeTrace } from "../runtime/trace-bridge";
 import { createTraceRoutes } from "./traces";
+import { displayText } from "../runtime/tool-records";
 import type { ServerHandoff, SessionHandoff, UpdateStatus } from "./handoff";
 
 interface Entry {
@@ -66,6 +67,7 @@ export async function startServer(options: ServerOptions) {
   await mkdir(receipts, { recursive: true, mode: 0o700 });
   const entries = new Map<string, Entry>();
   const opening = new Map<string, Promise<Entry>>();
+  const managing = new Set<string>();
   const listeners = new Set<() => void>();
   const streams = new Set<() => void>();
   const running = new Set<Promise<void>>();
@@ -125,6 +127,7 @@ export async function startServer(options: ServerOptions) {
   }
 
   async function open(id: string): Promise<Entry> {
+    if (managing.has(id)) return fail(409, "SESSION_BUSY");
     const existing = entries.get(id);
     if (existing) return existing;
     const pending = opening.get(id);
@@ -160,7 +163,7 @@ export async function startServer(options: ServerOptions) {
     };
   }
 
-  function stream(value: () => unknown, signal: AbortSignal) {
+  function stream(value: () => unknown, signal: AbortSignal, alive = () => true) {
     const encoder = new TextEncoder();
     let controller: ReadableStreamDefaultController<Uint8Array>;
     let dirty = true;
@@ -171,7 +174,7 @@ export async function startServer(options: ServerOptions) {
         controller.enqueue(encoder.encode(`id: ${instanceId}:${sequence}\ndata: ${JSON.stringify(value())}\n\n`));
       }
     };
-    const notify = () => { dirty = true; flush(); };
+    const notify = () => { if (!alive()) { finish(); return; } dirty = true; flush(); };
     const heartbeat = setInterval(notify, 15000);
     const finish = () => {
       if (ended) return;
@@ -195,7 +198,7 @@ export async function startServer(options: ServerOptions) {
 
   function canAccept(entry: Entry) {
     const state = entry.chat.state;
-    return !stopping && !state.closing && !state.settingsSaving && state.phase !== "stopping"
+    return !managing.has(entry.chat.sessionId) && !stopping && !state.closing && !state.settingsSaving && state.phase !== "stopping"
       && (state.canSend || state.busy);
   }
 
@@ -390,10 +393,13 @@ export async function startServer(options: ServerOptions) {
       }
       const match = /^\/api\/sessions\/([^/]+)(?:\/(events|requests|cancel|approval|permission|queue))?$/.exec(path);
       if (match?.[1]) {
-        const entry = await open(decodeURIComponent(match[1]));
+        const id = decodeURIComponent(match[1]);
         const action = match[2];
+        if (!action && (request.method === "PATCH" || request.method === "DELETE")) return manageSession(id, request);
+        const entry = await open(id);
+        if (managing.has(id)) fail(409, "SESSION_BUSY");
         if (request.method === "GET" && !action) return Response.json(snapshot(entry));
-        if (request.method === "GET" && action === "events") { server.timeout(request, 0); return stream(() => snapshot(entry), request.signal); }
+        if (request.method === "GET" && action === "events") { server.timeout(request, 0); return stream(() => snapshot(entry), request.signal, () => entries.get(id) === entry); }
         if (request.method !== "POST") fail(405, "METHOD_NOT_ALLOWED");
         const body = await jsonBody(request);
         if (action === "requests") return send(entry, body);
@@ -421,14 +427,66 @@ export async function startServer(options: ServerOptions) {
     }
     if (request.method !== "GET" || !webDirectory) return fail(404, "WEB_NOT_STARTED");
     const directory = resolve(await webDirectory);
-    const filePath = resolve(directory, path === "/" ? "index.html" : `.${decodeURIComponent(path)}`);
+    const decodedPath = decodeURIComponent(path);
+    const appRoute = /^\/(?:settings\/?|skills\/?)?$/.test(decodedPath);
+    const filePath = resolve(directory, appRoute ? "index.html" : `.${decodedPath}`);
     if (!filePath.startsWith(`${directory}${sep}`)) fail(404, "NOT_FOUND");
     let file = Bun.file(filePath);
     // Already open pages may still request a lazy chunk from the previous build.
     if (!await file.exists() && options.assetDirectory && /^\/assets\/[a-zA-Z0-9_.-]+$/.test(path)) file = Bun.file(join(options.assetDirectory, path.slice("/assets/".length)));
     if (!await file.exists()) fail(404, "NOT_FOUND");
-    if (path === "/" && options.revision) return new Response((await file.text()).replace("<head>", `<head><meta name="alphacode-revision" content="${options.revision}">`), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    if (appRoute && options.revision) return new Response((await file.text()).replace("<head>", `<head><meta name="alphacode-revision" content="${options.revision}">`), { headers: { "Content-Type": "text/html; charset=utf-8" } });
     return new Response(file);
+  }
+
+  async function manageSession(id: string, request: Request) {
+    if (managing.has(id)) return fail(409, "SESSION_BUSY");
+    managing.add(id);
+    try {
+      const title = request.method === "PATCH" ? requiredString(await jsonBody(request), "title", 200).trim() : undefined;
+      if (title !== undefined && displayText(title, 200) !== title) fail(400, "INVALID_TITLE");
+      await opening.get(id);
+      const entry = entries.get(id);
+      const state = entry?.chat.state;
+      if (entry && (entry.admission || entry.queue.length || entry.requestId || entry.draining || state?.busy || state?.closing || state?.settingsSaving || state?.approval)) fail(409, "SESSION_BUSY");
+      const found = await registry.find(id);
+      if (!entry && !found) {
+        if (title === undefined) return Response.json({ ok: true }); // Safe retry after a lost delete acknowledgement.
+        return fail(404, "SESSION_NOT_FOUND");
+      }
+      if (title !== undefined && entry) {
+        const setTitle = entry.chat.setTitle;
+        if (!setTitle) return fail(409, "SESSION_BUSY");
+        await setTitle.call(entry.chat, title);
+        return Response.json({ session: snapshot(entry).session });
+      }
+      const projectId = entry?.projectId ?? found?.projectId;
+      if (!projectId) return fail(404, "SESSION_NOT_FOUND");
+      const key = { namespace: projectId, id };
+      if (title === undefined && entry) {
+        // Closing drains optional title writes before tombstoning the archive.
+        await entry.chat.close();
+        entry.unsubscribe();
+        entries.delete(id);
+        changed();
+      }
+      const saved = await registry.store.read(key);
+      if (!saved) {
+        if (title === undefined) return Response.json({ ok: true });
+        return fail(404, "SESSION_NOT_FOUND");
+      }
+      if (saved.data.pending) fail(409, "SESSION_BUSY");
+      const updatedAt = new Date().toISOString();
+      const result = await registry.store.compareAndSet(key, saved.revision,
+        title === undefined ? null : { ...saved.data, title, updatedAt });
+      if (!result.applied) fail(409, "SESSION_CONFLICT");
+      changed();
+      if (title === undefined) return Response.json({ ok: true });
+      const config = registry.configs.get(projectId);
+      if (!config) return fail(404, "PROJECT_NOT_FOUND");
+      return Response.json({ session: { id, projectId, workspaceRoot: config.workspaceRoot, title, titleStatus: "ready", updatedAt,
+        status: saved.data.turns.at(-1)?.historyStatus === "blocked" ? "blocked" : "ready", defaultContext: modelContext(config.modelId, config.contextWindow) } });
+    } finally { managing.delete(id); }
   }
 
   try {

@@ -138,7 +138,7 @@ describe("reply activity", () => {
     expect(trigger.textContent).toContain("1 项执行中");
     view.rerender(<SessionContent session={session(user, tool("failed"))} phase="idle" />);
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
-    expect(trigger.textContent).toContain("1 项失败");
+    expect(trigger.textContent).toContain("1 项已失败");
   });
 
   it("shows a disconnected state instead of continuing the live thinking animation", () => {

@@ -121,7 +121,20 @@ export function mockSessionApi() {
       });
       return Response.json({ results });
     }
-    const currentView = views.get(decodeURIComponent(path.slice("/api/sessions/".length)));
+    const id = decodeURIComponent(path.slice("/api/sessions/".length));
+    const currentView = views.get(id);
+    if (currentView && init.method === "PATCH") {
+      currentView.session.title = JSON.parse(String(init.body)).title;
+      currentView.session.titleStatus = "ready";
+      publish(id);
+      return Response.json({ session: currentView.session });
+    }
+    if (init.method === "DELETE") {
+      views.delete(id);
+      const index = infos.findIndex(info => info.id === id);
+      if (index >= 0) infos.splice(index, 1);
+      return Response.json({ ok: true });
+    }
     return currentView ? Response.json(currentView) : Response.json({ code: "SESSION_NOT_FOUND" }, { status: 404 });
   });
   vi.stubGlobal("fetch", fetch);

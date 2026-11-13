@@ -67,9 +67,9 @@ it("reorders with the keyboard and steers a specific pending request without can
   await open();
   fireEvent.keyDown(screen.getByRole("button", { name: "调整第 2 条排队消息的顺序" }), { key: "ArrowUp" });
   await waitFor(() => expect(api.view(id).state.queuedRequests?.[0]?.requestId).toBe("two"));
-  await waitFor(() => expect((screen.getByRole("button", { name: "用第 1 条排队消息引导" }) as HTMLButtonElement).disabled).toBe(false));
-  fireEvent.click(screen.getByRole("button", { name: "用第 1 条排队消息引导" }));
-  await screen.findByText("引导中…");
+  await waitFor(() => expect((screen.getByRole("button", { name: "用第 1 条排队消息调整方向" }) as HTMLButtonElement).disabled).toBe(false));
+  fireEvent.click(screen.getByRole("button", { name: "用第 1 条排队消息调整方向" }));
+  await screen.findByText("正在调整方向…");
   expect(api.view(id).requestId).toBe("active");
   expect(api.fetch.mock.calls.filter(([url]) => url.endsWith("/cancel"))).toHaveLength(0);
   expect(api.fetch.mock.calls.filter(([url]) => url.endsWith("/queue")).map(([, init]) => JSON.parse(String(init.body)))).toEqual([

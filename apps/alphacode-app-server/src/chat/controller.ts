@@ -81,6 +81,12 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals, restored?
       runtime.cancel();
     },
     answerApproval(allow) { approvals.answer(allow); },
+    async setTitle(title) {
+      if (state.busy || state.closing || state.settingsSaving || !runtime.setTitle) throw Object.assign(new Error("SESSION_BUSY"), { code: "SESSION_BUSY" });
+      update({ settingsSaving: true, canSend: false });
+      try { await runtime.setTitle(title); }
+      finally { update({ settingsSaving: false, canSend: !state.closing && !runtime.unsaved && !runtime.blocked }); }
+    },
     async setPermissionMode(mode) {
       if (state.busy || state.closing || state.settingsSaving || !state.canSend || state.approval || !["ask", "auto", "full"].includes(mode)) return false;
       update({ settingsSaving: true, canSend: false, error: undefined, notice: undefined });

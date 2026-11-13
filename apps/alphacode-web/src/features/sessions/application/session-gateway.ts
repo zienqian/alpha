@@ -9,6 +9,8 @@ export interface SessionGateway {
   list(signal: AbortSignal): Promise<SessionInfo[]>;
   get(id: string, signal: AbortSignal): Promise<SessionView>;
   search(query: string, signal: AbortSignal): Promise<SessionSearchResult[]>;
+  rename(id: string, title: string): Promise<{ session: SessionInfo }>;
+  delete(id: string): Promise<unknown>;
   send(id: string, requestId: string, input: string): Promise<RequestReceipt>;
   cancel(id: string, requestId: string, queuedOnly?: boolean): Promise<unknown>;
   updateQueue(id: string, action: QueueAction): Promise<SessionView>;

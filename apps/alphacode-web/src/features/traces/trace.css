@@ -165,6 +165,7 @@
   align-items: center;
   gap: 6px;
   border-radius: 999px;
+  corner-shape: round;
   padding: 2px 8px;
   font-size: 12px;
   line-height: 16px;
@@ -200,6 +201,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
+  corner-shape: round;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -237,6 +239,7 @@
   border: 1px solid var(--border);
   padding: 2px 8px;
   border-radius: 999px;
+  corner-shape: round;
   font-size: 11px;
   line-height: 15px;
   font-variant-numeric: tabular-nums;
@@ -427,6 +430,7 @@
   top: 10px;
   width: 2px;
   border-radius: 999px;
+  corner-shape: round;
   background: var(--brand);
 }
 .trace-ui .zoom {
@@ -529,6 +533,7 @@
 }
 .trace-ui .filter-number {
   border-radius: 999px;
+  corner-shape: round;
   background: color-mix(in oklab, var(--brand-foreground) 20%, transparent);
   padding: 0 6px;
   font-size: 11px;
@@ -581,6 +586,7 @@
   align-self: stretch;
   margin-top: 2px;
   border-radius: 999px;
+  corner-shape: round;
   background: var(--border);
 }
 .trace-ui .selected .marker {

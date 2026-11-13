@@ -10,7 +10,7 @@ import { installSkill, listSkills, skillError, type SkillDirectory } from "./api
 
 const selectClass = "h-9 min-w-0 rounded-md border border-input bg-background px-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50 md:text-xs";
 
-export function SkillsMarket({ initialProjectId, onBack }: { initialProjectId?: string; onBack: () => void }) {
+export function SkillsMarket({ initialProjectId, onBack, showHeader = true }: { initialProjectId?: string; onBack: () => void; showHeader?: boolean }) {
   const { t } = useTranslation();
   const client = useQueryClient();
   const [projectId, setProjectId] = useState(initialProjectId);
@@ -45,12 +45,12 @@ export function SkillsMarket({ initialProjectId, onBack }: { initialProjectId?: 
   }
 
   return <>
-    <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
+    {showHeader && <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
       <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} className="text-muted-foreground" />
       <span className="flex-1 text-[13px] font-medium">{t("skills:market.title")}</span>
       <Button variant="ghost" size="sm" onClick={onBack}><ArrowLeft aria-hidden="true" />{t("skills:market.back")}</Button>
-    </header>
-    <section id="session-content" aria-labelledby="skills-title" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto outline-none">
+    </header>}
+    <section id="skills-content" aria-labelledby="skills-title" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto outline-none">
       <div className="mx-auto max-w-4xl px-5 py-7 sm:px-8 sm:py-9">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

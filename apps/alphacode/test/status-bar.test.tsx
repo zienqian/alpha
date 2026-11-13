@@ -28,12 +28,12 @@ test("status bar displays the shortened workspace and reactive session title, no
   try {
     await ui.renderOnce();
     expect(ui.captureCharFrame()).toContain("~/projects/alpha");
-    expect(ui.captureCharFrame()).toContain("New conversation");
+    expect(ui.captureCharFrame()).toContain("New session");
     expect(ui.renderer.root.findDescendantById("permission-info")).toBeFalsy();
     ui.rerender(<StatusBar modelId="test-model" workspaceRoot={workspaceRoot} sessionTitle="修复输入框布局" />);
     await ui.renderOnce();
     expect(ui.captureCharFrame()).toContain("修复输入框布局");
-    expect(ui.captureCharFrame()).not.toContain("New conversation");
+    expect(ui.captureCharFrame()).not.toContain("New session");
     ui.rerender(<StatusBar modelId="test-model" workspaceRoot={workspaceRoot} sessionTitle={"检查输入框布局和会话标题".repeat(8)} />);
     for (const width of [100, 60, 40, 28]) {
       ui.resize(width, 3);

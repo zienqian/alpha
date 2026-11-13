@@ -2,7 +2,7 @@
   "usage": "用法：alphacode [--lang system|en|zh-CN] [工作区路径]",
   "invalidLanguage": "{{source}} 必须为 system、en 或 zh-CN。",
   "modelRequired": "请设置 ADK_MODEL 或 {{file}} 中的 model.id。",
-  "auth": "ADK_AUTH 必须为 none 或 api_key。请在 ADK_API_KEY_ENV 指定的环境变量中设置 API key。",
+  "auth": "ADK_AUTH 必须为 none 或 api_key。请在 ADK_API_KEY_ENV 指定的环境变量中设置 API 密钥。",
   "permission": "ALPHACODE_PERMISSION 必须为 ask、auto 或 full。",
   "invalidConfig": "{{file}}：{{field}} 配置无效，请检查字段名、类型和允许值。",
   "invalidYaml": "{{file}}：YAML 无效，请检查缩进、重复键、不支持的标签和别名。",

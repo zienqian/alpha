@@ -44,7 +44,7 @@ test("slash commands filter, complete and select permissions locally, with Escap
     expect(input.plainText).toBe("/permission");
     ui.mockInput.pressEnter();
     await ui.renderOnce();
-    for (const label of ["Ask for approval", "Approve for me", "Full access"]) expect(ui.captureCharFrame()).toContain(label);
+    for (const label of ["Ask for approval", "Auto approval", "Full access"]) expect(ui.captureCharFrame()).toContain(label);
     ui.mockInput.pressArrow("down");
     ui.mockInput.pressEnter();
     await waitFor(() => !app.chat.state.settingsSaving && !ui.renderer.root.findDescendantById("command-panel"));
@@ -58,7 +58,7 @@ test("slash commands filter, complete and select permissions locally, with Escap
     await ui.mockInput.typeText("/permission");
     ui.mockInput.pressEnter();
     await ui.renderOnce();
-    expect(ui.captureCharFrame()).toContain("Approve for me ✓");
+    expect(ui.captureCharFrame()).toContain("Auto approval ✓");
     ui.mockInput.pressArrow("down");
     ui.mockInput.pressEscape();
     await waitFor(() => !ui.renderer.root.findDescendantById("command-panel"));

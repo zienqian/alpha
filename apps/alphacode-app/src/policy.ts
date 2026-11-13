@@ -37,7 +37,8 @@ export function externalURL(value: string) {
 export function assetPath(directory: string, pathname: string) {
   const decoded = decodeURIComponent(pathname);
   if (decoded.includes("\0") || decoded.includes("\\")) throw new Error("INVALID_ASSET_PATH");
-  const file = resolve(directory, decoded === "/" ? "index.html" : `.${decoded}`);
+  const appRoute = /^\/(?:settings\/?|skills\/?)?$/.test(decoded);
+  const file = resolve(directory, appRoute ? "index.html" : `.${decoded}`);
   const within = relative(directory, file);
   if (!within || within.startsWith("..") || isAbsolute(within)) throw new Error("INVALID_ASSET_PATH");
   return file;

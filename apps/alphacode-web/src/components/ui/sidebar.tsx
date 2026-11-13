@@ -244,7 +244,7 @@ function Sidebar({
         inert={offcanvas}
         aria-hidden={offcanvas || undefined}
         className={cn(
-          "sidebar-width-transition fixed top-[var(--desktop-titlebar-height,0px)] bottom-0 z-10 hidden h-[calc(100svh-var(--desktop-titlebar-height,0px))] w-(--sidebar-width) md:flex",
+          "sidebar-width-transition fixed top-[var(--window-header-height)] bottom-0 z-10 hidden h-[calc(100svh-var(--window-header-height))] w-(--sidebar-width) md:flex",
           side === "left"
             ? "left-0"
             : "right-0",

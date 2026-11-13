@@ -1,0 +1,15 @@
+AlphaCode ALFI transparent icon
+Created: 2026-11-13 (Asia/Shanghai)
+Mode: built-in image_gen background extraction.
+Source: alfi-app-icon-concept.png
+Output: alfi-icon-transparent.png
+User request: remove the colored background, retain only the character, and reuse it in the terminal.
+
+Full edit prompt:
+Use case: background-extraction
+Asset type: production AlphaCode ALFI transparent mascot icon.
+Input image 1 is the edit target: the approved 2D ALFI icon, a white stoat/cat-like mascot with thick dark outline, focused friendly eyes, smiling mouth, and blue scarf with one white underscore on its hanging end, currently sitting on a pale blue rounded-square tile.
+Primary request: REMOVE THE ENTIRE PALE BLUE ROUNDED SQUARE BACKPLATE and every bit of background. Keep ONLY the mascot itself (white head with two ears, dark facial features and outline, blue scarf and small white shoulder/bust shapes enclosed by the dark outline). Everything outside the mascot's outline must be genuine alpha transparency, including the space around the ears and beside the scarf. No square, no rounded tile, no circle, no colored background, no white background, no checkerboard rendered into pixels.
+Preserve the character identity and approved flat 2D drawing exactly: same ear shape, proportions, focused expression with small smile, charcoal outline thickness, white interior, cobalt blue scarf, white terminal underscore. Keep the WHITE INTERIOR of the head and bust solid opaque white, not transparent. Keep blue scarf and dark strokes fully opaque. Do not make the whole character semi-transparent.
+Composition: a square PNG canvas, whole character fully visible, tightly centered and framed with about 6 to 8 percent clear transparent breathing room on every side. No cropping of ears or bottom outline.
+Output quality: crisp clean anti-aliased silhouette edge. Absolutely no old tile remnants, colored halo, stray speckles, shadow, border around canvas, props, text, watermark, redesign or added details. The only thing removed is the background plate. Retain real alpha transparency outside the character.
