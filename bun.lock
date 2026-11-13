@@ -19,7 +19,7 @@
     },
     "apps/alphacode": {
       "name": "@alpha/alphacode",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "alphacode": "./bin/alphacode.ts",
       },
@@ -39,7 +39,7 @@
     },
     "apps/alphacode-app": {
       "name": "@alpha/alphacode-app",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "devDependencies": {
         "@alpha/alphacode-app-server": "workspace:*",
         "@alpha/alphacode-web": "workspace:*",
