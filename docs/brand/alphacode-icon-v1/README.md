@@ -1,6 +1,6 @@
 # AlphaCode 产品图标
 
-当前源图为 `alfi-icon-transparent.png`，只保留 ALFI 二维人物、蓝围巾和深色轮廓，人物外部为透明 alpha，没有底板或背景色。`alfi-app-icon-concept.png` 保留为最初的带底板概念稿。部署资源直接随源码提交，正常开发和打包不需要图像生成服务或额外图像依赖。
+当前源图为 `alfi-icon-transparent.png`，只保留 ALFI 二维人物、蓝围巾和深色轮廓，人物外部为透明 alpha，没有底板或背景色。部署资源直接随源码提交，正常开发和打包不需要图像生成服务或额外图像依赖。原始角色设定见 [设定图](../alphacode-ip-v1/alfi-character-sheet.png)，半身动画资源见 [ALFI 宠物](../alphacode-pet/README.md)。
 
 | 用途 | 资源 |
 | --- | --- |
