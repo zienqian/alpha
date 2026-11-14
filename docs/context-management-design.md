@@ -6,6 +6,14 @@
 
 范围：Alpha ADK、Session 与 AlphaCode 的单会话上下文管理，包含同一会话重启后的恢复。本文保留设计依据，以下实施记录说明当前代码行为。
 
+## 2026-11-14：Artifact 与显式上下文引用
+
+在第一版基础上增加 `@alpha/adk-artifact`，提供会话隔离的不可变 UTF-8 文本存储、Memory / SQLite 实现和带 SHA-256 的 `context://` 引用。AlphaCode 默认保存命令 stdout / stderr，保留有限预览；通过 `read_context` 分页读取 Artifact 或摘要引用的原始消息。消息引用携带来源 ID、会话范围及完整消息内容校验值，不改写 Session 归档。
+
+摘要输入现在为带显式引用的来源消息，要求保留重要约束与证据引用，并拒绝生成输入中不存在的标准引用。运行时负责将 reader 绑定正式历史；压缩、重启和重复请求均不重放工具。会话删除同时清理 Artifact，并通过墓碑阻止旧连接再次写入。
+
+采集和读取有明确上限：每个命令通道 8 MiB，单会话 128 MiB / 10,000 个产物，单次回读最多 4096 字节。`complete=false` 表示采集本身不完整，不能与分页的 `hasMore` 混淆。保存失败只影响证据可回读性，不修改退出码和执行事实。存储在命令结束时提交，不承诺宿主中途崩溃后的未提交日志恢复。下面原第一版“不提供完整日志或消息回读”的描述属于历史范围，以本节及 [Artifact API](../packages/adk-artifact/README.md)、[Context API](../packages/adk-context/README.md) 为准。
+
 ## 第一版实施记录
 
 - `packages/adk-context` 提供可选的上下文管理插件、结构化摘要策略和 SQLite 检查点存储；core 增加单一 `provideModelContext` 最终投影扩展，不接管 Session 的运行边界。

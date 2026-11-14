@@ -19,5 +19,5 @@ test('published root exposes static tools without Workspace, Session or runtime 
   }
   await inspect(new URL('../dist/index.js', import.meta.url)); assert.ok(visited.size >= 5);
   const root = await import('../dist/index');
-  assert.deepEqual(Object.keys(root).sort(), ['codingTools', 'createCodingAgent', 'createFileTool', 'createProjectInstructionsPlugin', 'editFileTool', 'formatSkillsForPrompt', 'listFilesTool', 'loadSkills', 'readFileTool', 'readSkill', 'readSkillTool', 'runCommandTool', 'searchTool']);
+  assert.deepEqual(Object.keys(root).sort(), ['codingTools', 'createCodingAgent', 'createFileTool', 'createProjectInstructionsPlugin', 'editFileTool', 'formatSkillsForPrompt', 'listFilesTool', 'loadSkills', 'readContextTool', 'readFileTool', 'readSkill', 'readSkillTool', 'runCommandTool', 'searchTool']);
 });

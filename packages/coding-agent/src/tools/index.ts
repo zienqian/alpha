@@ -8,17 +8,20 @@ import { createFileTool, prepareCreate } from './create-file';
 import { editFileTool, prepareEdit } from './edit-file';
 import { runCommandTool, prepareCommand } from './run-command';
 import { readSkillTool, prepareReadSkill } from './read-skill';
+import { readContextTool, prepareReadContext } from './read-context';
 import type { Prepare } from './shared';
 
-export { readFileTool, listFilesTool, searchTool, createFileTool, editFileTool, runCommandTool, readSkillTool };
+export { readFileTool, listFilesTool, searchTool, createFileTool, editFileTool, runCommandTool, readSkillTool, readContextTool };
 export const codingTools = Object.freeze([readFileTool, listFilesTool, searchTool, editFileTool, createFileTool, runCommandTool]);
 const preparations: Readonly<Record<string, readonly [CodingActionKind, Prepare]>> = Object.freeze({
   read_file: ['read', prepareRead], list_files: ['search', prepareList], search: ['search', prepareSearch],
   create_file: ['create', prepareCreate], edit_file: ['edit', prepareEdit], run_command: ['command', prepareCommand],
   readSkill: ['read', prepareReadSkill],
+  read_context: ['read', prepareReadContext],
 });
-export async function prepareCodingCall(context: CodingContext, call: ValidatedCall, signal: AbortSignal, hasReadSkillTool = false): Promise<CodingPlan> {
-  const entry = Object.hasOwn(preparations, call.name) && (call.name !== 'readSkill' || hasReadSkillTool) ? preparations[call.name] : undefined;
+export async function prepareCodingCall(context: CodingContext, call: ValidatedCall, signal: AbortSignal, hasReadSkillTool = false, hasReadContextTool = false): Promise<CodingPlan> {
+  const entry = Object.hasOwn(preparations, call.name) && (call.name !== 'readSkill' || hasReadSkillTool)
+    && (call.name !== 'read_context' || hasReadContextTool) ? preparations[call.name] : undefined;
   let plan: CodingPlan = { kind: entry?.[0] ?? 'custom', args: { ...call.arguments }, preview: { type: 'custom', description: call.name } };
   try { if (entry) plan = await entry[1](context, plan.args, signal); }
   catch (cause) { checkSignal(signal); plan = { ...plan, rejected: codeOf(cause, 'PREFLIGHT_FAILED') }; }

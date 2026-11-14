@@ -1,5 +1,5 @@
 export { createCodingAgent } from './create-coding-agent';
-export { codingTools, readFileTool, listFilesTool, searchTool, editFileTool, createFileTool, runCommandTool, readSkillTool } from './tools/index';
+export { codingTools, readFileTool, listFilesTool, searchTool, editFileTool, createFileTool, runCommandTool, readSkillTool, readContextTool } from './tools/index';
 export { loadSkills } from './skills/load';
 export { formatSkillsForPrompt } from './skills/format';
 export { readSkill } from './skills/read';

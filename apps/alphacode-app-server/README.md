@@ -33,6 +33,8 @@ Web / App 未选择项目时，`POST /api/sessions` 可省略 `projectId`。服�
 
 ## AlphaCode 内部集成入口
 
+运行时默认将命令 stdout / stderr 保存到 `<databasePath>.artifacts.db`，与正式会话库、`.context.db` 摘要检查点分开管理。工具结果携带 `context://` 引用，模型可用只读 `read_context` 按 UTF-8 字节分页回读日志或摘要引用的原始消息。引用限定在当前 namespace / sessionId，重启恢复后仍有效；删除会话同时清理产物并阻止旧连接写回。命令每个通道最多采集 8 MiB，超出标记不完整；单会话保存限额为 128 MiB / 10,000 项，失败以 `artifactStorage` 返回，不改变执行事实。详见 [Artifact](../../packages/adk-artifact/README.md) 与 [Context](../../packages/adk-context/README.md)。
+
 | 入口 | 用途 |
 | --- | --- |
 | `@alpha/alphacode-app-server/client` | 原生客户端连接、发现服务、HTTP/SSE、Chat 适配器 |

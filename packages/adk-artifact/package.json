@@ -1,0 +1,16 @@
+{
+  "name": "@alpha/adk-artifact", "version": "0.0.0", "private": true, "type": "module",
+  "exports": {
+    ".": { "alpha-source": "./src/index.ts", "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./sqlite": { "alpha-source": "./src/sqlite.ts", "types": "./dist/sqlite.d.ts", "import": "./dist/sqlite.js" }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "bun --bun run tsrs -p tsconfig.json",
+    "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit",
+    "lint": "bun --bun run eslint src test",
+    "test": "bun test ./test --timeout 30000"
+  },
+  "nx": { "tags": ["layer:artifact"] },
+  "engines": { "bun": ">=1.4.4" }
+}

@@ -2,10 +2,14 @@ import type { Shell } from './process/shell';
 import type { SkillMetadata } from './skills/contracts';
 import type { AgentOptions, AppOption, Awaitable, JsonObject, ToolContext, ValidatedCall } from '@alpha/adk/core';
 import type { LanguageModel } from '@alpha/provider';
+import type { ArtifactStore, ContextReader, ContextScope } from '@alpha/adk-artifact';
 
 export type CodingDecision = 'allow' | 'ask' | 'deny';
 export type FileAccess = 'workspace' | 'host';
 export interface CodingExecutionOptions {
+  /** Optional durable command evidence. Capture is bounded independently from the model preview. */
+  readonly artifacts?: { readonly store: ArtifactStore; readonly scope: ContextScope; readonly maxOutputBytes?: number };
+  readonly readContext?: ContextReader;
   /** Default workspace rejects paths outside cwd and symbolic links; host follows filesystem paths. */
   readonly fileAccess?: FileAccess;
   /** Default 60 seconds. null disables command deadlines, including model-requested timeouts. */
@@ -49,6 +53,8 @@ export interface CodingControls {
 }
 /** Per-agent execution context. Static tools receive it through ToolContext.app. */
 export interface CodingContext<C = unknown> {
+  readonly artifacts?: CodingExecutionOptions['artifacts'];
+  readonly readContext?: ContextReader;
   readonly skills: readonly SkillMetadata[];
   readonly cwd: string;
   readonly fileAccess: FileAccess;

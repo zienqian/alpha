@@ -33,6 +33,7 @@
     }
   },
   "dependencies": {
+    "@alpha/adk-artifact": "workspace:*",
     "@alpha/adk": "workspace:*",
     "@alpha/provider": "workspace:*",
     "zod": "4.6.7",

@@ -17,11 +17,12 @@ export default [
           { sourceTag: 'layer:provider', onlyDependOnLibsWithTags: ['layer:provider'] },
           { sourceTag: 'layer:session', onlyDependOnLibsWithTags: ['layer:session', 'layer:adk'] },
           { sourceTag: 'layer:trace', onlyDependOnLibsWithTags: ['layer:trace', 'layer:adk'] },
-          { sourceTag: 'layer:context', onlyDependOnLibsWithTags: ['layer:context', 'layer:adk'] },
-          { sourceTag: 'layer:coding', onlyDependOnLibsWithTags: ['layer:coding', 'layer:adk', 'layer:provider', 'layer:session'] },
+          { sourceTag: 'layer:artifact', onlyDependOnLibsWithTags: ['layer:artifact'] },
+          { sourceTag: 'layer:context', onlyDependOnLibsWithTags: ['layer:context', 'layer:adk', 'layer:artifact'] },
+          { sourceTag: 'layer:coding', onlyDependOnLibsWithTags: ['layer:coding', 'layer:adk', 'layer:provider', 'layer:session', 'layer:artifact'] },
           { sourceTag: 'layer:app', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider', 'layer:session', 'layer:coding', 'layer:trace'] },
           { sourceTag: 'layer:alphacode-cli', onlyDependOnLibsWithTags: ['layer:app-server', 'layer:provider', 'layer:session'] },
-          { sourceTag: 'layer:app-server', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider', 'layer:session', 'layer:coding', 'layer:trace', 'layer:context'] },
+          { sourceTag: 'layer:app-server', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider', 'layer:session', 'layer:coding', 'layer:trace', 'layer:context', 'layer:artifact'] },
           { sourceTag: 'layer:web', onlyDependOnLibsWithTags: ['layer:trace'] }
         ]
       }]

@@ -16,6 +16,7 @@ import { skillUploadLimit } from "./skill-archive";
 import { createTraceService, createMemoryTraceStore, type TraceService } from "@alpha/adk-trace";
 import { createSqliteTraceStore } from "@alpha/adk-trace/sqlite";
 import { createSqliteContextStore } from "@alpha/adk-context/sqlite";
+import { createSqliteArtifactStore } from "@alpha/adk-artifact/sqlite";
 import { createRuntimeTrace } from "../runtime/trace-bridge";
 import { createTraceRoutes } from "./traces";
 import { displayText } from "../runtime/tool-records";
@@ -470,10 +471,18 @@ export async function startServer(options: ServerOptions) {
 
   async function removeContext(id: string, namespace?: string) {
     const filename = `${options.databasePath}.context.db`;
-    if (!await Bun.file(filename).exists()) return;
-    const cache = createSqliteContextStore(filename);
-    try { for (const scope of namespace ? [namespace] : registry.configs.keys()) cache.remove(scope, id); }
-    finally { cache.close(); }
+    const scopes = namespace ? [namespace] : [...registry.configs.keys()];
+    if (await Bun.file(filename).exists()) {
+      const cache = createSqliteContextStore(filename);
+      try { for (const scope of scopes) cache.remove(scope, id); }
+      finally { cache.close(); }
+    }
+    const artifactFile = `${options.databasePath}.artifacts.db`;
+    if (await Bun.file(artifactFile).exists()) {
+      const artifacts = createSqliteArtifactStore(artifactFile);
+      try { for (const scope of scopes) await artifacts.remove({ namespace: scope, sessionId: id }); }
+      finally { artifacts.close(); }
+    }
   }
 
   async function removeProject(projectId: string) {

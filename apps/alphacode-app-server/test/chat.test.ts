@@ -35,7 +35,7 @@ test("Provider → ADK → coding tools → streaming reply → SQLite; subseque
     const running = app.chat.send("读取 hello.txt，再用 Markdown 回答。");
     await waitFor(() => app.requests.length === 2);
     expect(app.requests[0]?.tools.map(tool => tool.function.name).sort()).toEqual([
-      "create_file", "edit_file", "list_files", "readSkill", "read_file", "run_command", "search",
+      "create_file", "edit_file", "list_files", "readSkill", "read_context", "read_file", "run_command", "search",
     ]);
     expect(JSON.stringify(app.requests[0])).toContain("Project fixture instruction");
     expect(JSON.stringify(app.requests[1])).toContain("hello-from-workspace");

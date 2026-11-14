@@ -48,6 +48,20 @@ test("large output keeps a bounded head and tail, strips terminal controls and p
   expect(tool.truncated).toBe(true);
 });
 
+test("context reads display lookup failures and preserve paging versus incomplete-capture flags", () => {
+  const tool = createToolRecord('assistant', { id: 'read', name: 'read_context', arguments: { reference: 'context://example' } });
+  const failed = completeToolRecord(tool, { execution: 'succeeded', content: JSON.stringify({ ok: false, code: 'CONTEXT_NOT_FOUND' }) });
+  expect(failed).toMatchObject({ status: 'failed', errorCode: 'CONTEXT_NOT_FOUND' });
+  const page = completeToolRecord(tool, { execution: 'succeeded', content: JSON.stringify({ ok: true, data: {
+    content: 'exact evidence', hasMore: true, complete: true,
+  } }) });
+  expect(page).toMatchObject({ status: 'succeeded', output: 'exact evidence', truncated: true, outputIncomplete: false });
+  const incomplete = completeToolRecord(tool, { execution: 'succeeded', content: JSON.stringify({ ok: true, data: {
+    content: 'partial capture', hasMore: false, complete: false,
+  } }) });
+  expect(incomplete).toMatchObject({ status: 'succeeded', truncated: false, outputIncomplete: true });
+});
+
 test("committed calls appear before approval; denial without a start and repeated updates do not duplicate records", () => {
   let state = applyChatEvent(initial(), { type: "assistant.start", id: "model" });
   const tool = command({ description: "运行相关测试" });

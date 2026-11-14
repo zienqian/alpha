@@ -19,6 +19,8 @@ bun run dev
 
 - `packages/adk`：Agent 开发框架。
 - `packages/adk-session`：可选的会话管理与 Memory / SQLite 归档扩展。
+- `packages/adk-artifact`：会话隔离的不可变文本产物、内容校验引用与 Memory / SQLite 存储。
+- `packages/adk-context`：上下文预算、摘要检查点与原始消息引用回读。
 - `packages/coding-agent`：六个独立静态工具、cwd 上下文和跨平台 Shell 执行。
 - `packages/provider`：模型提供商配置和适配。
 - `apps/alphacode-app-server`：独立本地应用服务，负责会话、Agent 执行、审批和 HTTP/SSE；[独立启动与接口](apps/alphacode-app-server/README.md)。

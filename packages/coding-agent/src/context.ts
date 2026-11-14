@@ -3,6 +3,7 @@ import type { CodingContext, CodingContextOptions, CodingEvent } from './contrac
 import { selectShell } from './process/shell';
 import { failure, positive } from './internal';
 import { validateSkillMetadata } from './skills/read';
+import { maxArtifactBytes } from '@alpha/adk-artifact';
 
 export function createCodingContext<C = undefined>(options: CodingContextOptions<C>): CodingContext<C> {
   if (options.skills !== undefined && !Array.isArray(options.skills)) throw failure('SKILL_INVALID_METADATA');
@@ -18,7 +19,10 @@ export function createCodingContext<C = undefined>(options: CodingContextOptions
   const fileAccess = options.fileAccess ?? 'workspace';
   if (fileAccess !== 'workspace' && fileAccess !== 'host') throw failure('INVALID_FILE_ACCESS');
   const commandTimeoutMs = options.commandTimeoutMs === null ? null : positive(options.commandTimeoutMs ?? 60000, 'COMMAND_TIMEOUT', 2_147_483_647);
+  const artifacts = options.artifacts ? Object.freeze({ store: options.artifacts.store, scope: Object.freeze({ ...options.artifacts.scope }),
+    maxOutputBytes: positive(options.artifacts.maxOutputBytes ?? maxArtifactBytes, 'ARTIFACT_LIMIT', maxArtifactBytes) }) : undefined;
   return Object.freeze({
+    artifacts, readContext: options.readContext ?? (artifacts ? request => artifacts.store.read(artifacts.scope, request) : undefined),
     skills,
     fileAccess, commandTimeoutMs,
     cwd: options.cwd, shell: selectShell({ configured: options.shell }), data: options.appContext as C,

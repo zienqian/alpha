@@ -16,6 +16,8 @@ interface ProcessOptions {
   env?: NodeJS.ProcessEnv;
   windowsVerbatimArguments?: boolean;
   onOutput?: (channel: 'stdout' | 'stderr', text: string) => void;
+  /** Every decoded chunk, before preview clipping. Capture failures must not alter process facts. */
+  captureOutput?: (channel: 'stdout' | 'stderr', text: string) => void;
 }
 
 async function killTree(child: ChildProcess, signal: NodeJS.Signals): Promise<void> {
@@ -57,6 +59,7 @@ export async function runProcess(executable: string, args: readonly string[], op
     const decoders = { stdout: new StringDecoder('utf8'), stderr: new StringDecoder('utf8') };
     const capture = (channel: 'stdout' | 'stderr', text: string) => {
       if (settled || !text) return;
+      try { options.captureOutput?.(channel, text); } catch { /* The collector owns its failure status. */ }
       if (options.outputMode !== 'head-tail') {
         if (truncated) return;
         const retained = clip(text, Math.max(0, max - captured));

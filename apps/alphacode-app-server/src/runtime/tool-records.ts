@@ -3,7 +3,7 @@ import type { ToolResultMessage } from "@alpha/adk/core";
 import type { ToolRecord } from "../chat/contracts";
 
 interface Call { id: string; name: string; arguments: Readonly<Record<string, unknown>> }
-const codingTools = new Set(["run_command", "read_file", "edit_file", "create_file", "search", "list_files", "readSkill"]);
+const codingTools = new Set(["run_command", "read_file", "edit_file", "create_file", "search", "list_files", "readSkill", "read_context"]);
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 function plain(value: string): string {
@@ -61,7 +61,7 @@ function codingOutput(name: string, data: Record<string, unknown>): string {
     typeof data.stdout === "string" ? data.stdout.trimEnd() : "",
     typeof data.stderr === "string" && data.stderr ? `stderr:\n${data.stderr.trimEnd()}` : "",
   ].filter(Boolean).join("\n");
-  if (name === "read_file" && typeof data.content === "string") return data.content;
+  if ((name === "read_file" || name === "read_context") && typeof data.content === "string") return data.content;
   if (name === "edit_file" && data.changed === true) return "File updated.";
   if (name === "create_file" && data.created === true) return "File created.";
   return JSON.stringify(data, null, 2);
@@ -85,8 +85,8 @@ export function completeToolRecord(tool: ToolRecord, result: Pick<ToolResultMess
         output = codingOutput(tool.name, data);
         if (value.ok && tool.name === "edit_file" && data.changed === true) record.summaryCode = "FILE_UPDATED";
         if (value.ok && tool.name === "create_file" && data.created === true) record.summaryCode = "FILE_CREATED";
-        record.truncated = data.truncated === true;
-        record.outputIncomplete = data.outputIncomplete === true;
+        record.truncated = data.truncated === true || (tool.name === "read_context" && data.hasMore === true);
+        record.outputIncomplete = data.outputIncomplete === true || (tool.name === "read_context" && data.complete === false);
         if (typeof data.exitCode === "number" && Number.isInteger(data.exitCode)) {
           record.exitCode = data.exitCode;
           if (data.exitCode !== 0) record.status = "failed";

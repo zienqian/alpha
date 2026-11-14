@@ -2,6 +2,8 @@
 
 为 ADK 增加六个静态编程工具和 `readSkill` 工具。`createCodingAgent` 返回普通 core Agent，复用同一套 Loop；Session 通过插件组合。
 
+配置 `artifacts` 或 `readContext` 时，默认额外提供只读 `read_context` 工具，详见下方 Artifact 章节。
+
 ```ts
 import { createCodingAgent } from '@alpha/coding-agent';
 
@@ -76,6 +78,26 @@ SDK 不自动信任项目、不发现个人目录、不执行脚本、不热更�
 - `files.ts`、`search.ts` 是显式接收 cwd 的普通函数；`process/` 处理 Shell 选择、启动、输出、取消和超时。
 
 原 `createLocalWorkspace`、`CodingWorkspace`、`WorkspaceLease`、公开 `createCodingContext/createCodingPlugin`、长生命周期目录锁和 PowerShell/C# bridge 已移除。调用方只需关闭 Agent，不再创建或关闭 Workspace。
+
+## Artifact 与上下文回读
+
+```ts
+import { createSqliteArtifactStore } from '@alpha/adk-artifact/sqlite';
+import { createCodingAgent } from '@alpha/coding-agent';
+
+const store = createSqliteArtifactStore('/data/artifacts.db');
+const agent = await createCodingAgent({ model, cwd: '/repo',
+  artifacts: { store, scope: { namespace: 'project', sessionId: 'session' } },
+});
+try { await agent.prompt('运行测试，必要时读取完整日志。'); }
+finally { await agent.close(); store.close(); }
+```
+
+命令 stdout / stderr 在预览裁剪前独立采集，每个通道默认最多 8 MiB，可通过 `artifacts.maxOutputBytes` 降低。进程结束后等待保存，再把 `artifacts.stdout/stderr.reference`、`bytes`、`complete` 与 `artifactStorage.status` 放入工具结果；模型预览仍保持原有头尾限量。保存失败保留原始退出码与执行状态，并返回失败码；不能据此重跑有副作用命令。
+
+`read_context({ reference, offset?, maxBytes? })` 返回精确片段及 `nextOffset/hasMore/totalBytes/complete`。默认可读取本 Agent 配置的 ArtifactStore；需要恢复消息引用时，传入 `@alpha/adk-context` 的 `createContextReader` 作为 `readContext`。`read_context` 沿用 read 审批，不授予文件编辑凭据。显式 `tools` 列表覆盖默认工具，需自行加入导出的 `readContextTool`；自定义同名工具仍按 custom 权限处理。
+
+超过采集额度、取消或管道未完全排空时，保存的正文明确标记 `complete=false`。未知执行结果仍按 core 规则阻断会话；部分日志不能证明操作完成。保存发生在命令收束后，进程崩溃前尚未保存的日志不保证恢复。未配置存储时保留原有七项默认工具与有限预览行为。
 
 ## Shell 与进程
 

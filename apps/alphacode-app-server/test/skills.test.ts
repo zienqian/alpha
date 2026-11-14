@@ -199,7 +199,7 @@ test("legacy sessions always load skills and include readSkill when resumed", as
   const resumed = await workspace.open({ sessionId: legacy.sessionId });
   expect(resumed.skills?.map(skill => skill.name)).toEqual(["review"]);
   await resumed.send("hi");
-  expect(workspace.requests[0]?.tools).toHaveLength(7);
+  expect(workspace.requests[0]?.tools).toHaveLength(8);
   expect(workspace.requests[0]?.tools.some(tool => tool.function.name === "readSkill")).toBe(true);
   await resumed.send("/review");
   expect(workspace.requests[1]?.messages.at(-1)?.content).toContain(skillInputPrefix);

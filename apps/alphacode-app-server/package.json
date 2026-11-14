@@ -65,6 +65,7 @@
     "test": "bun test ./test --timeout 30000"
   },
   "dependencies": {
+    "@alpha/adk-artifact": "workspace:*",
     "@alpha/adk": "workspace:*",
     "@alpha/adk-context": "workspace:*",
     "@alpha/adk-session": "workspace:*",

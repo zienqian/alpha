@@ -14,6 +14,8 @@ import { openBrowser } from "../src/server/web";
 import type { AppConfig } from "../src/config";
 import type { Chat } from "../src/chat/contracts";
 import { controlledStream, textResponse, toolResponse, waitFor, type RequestBody } from "./helpers";
+import { createSqliteArtifactStore } from "@alpha/adk-artifact/sqlite";
+import { sessionNamespace } from "../runtime/create-runtime";
 
 async function serverFixture(reply: (body: RequestBody, count: number) => Response = () => textResponse("hello"), idleMs = 60000,
   wrap: (chat: Chat) => Chat = chat => chat) {
@@ -355,8 +357,16 @@ test("deleting an open session closes its stream and prevents runtime resurrecti
     const response = await fetch(`${fixture.server.origin}${path}/events`, { proxy: false });
     const reader = response.body!.getReader();
     await reader.read();
+    const artifactScope = { namespace: sessionNamespace(await realpath(fixture.config.workspaceRoot)), sessionId: initial.session.id };
+    const artifacts = createSqliteArtifactStore(`${fixture.config.databasePath}.artifacts.db`);
+    try { await artifacts.put(artifactScope, { content: 'session evidence' }); } finally { artifacts.close(); }
     const removed = await fetch(`${fixture.server.origin}${path}`, { method: "DELETE", headers: { Origin: fixture.server.origin }, proxy: false });
     expect(removed.status).toBe(200);
+    const remaining = createSqliteArtifactStore(`${fixture.config.databasePath}.artifacts.db`);
+    try {
+      expect(await remaining.list(artifactScope)).toHaveLength(0);
+      await expect(remaining.put(artifactScope, { content: 'stale write' })).rejects.toMatchObject({ code: 'ARTIFACT_SCOPE_DELETED' });
+    } finally { remaining.close(); }
     while (!(await reader.read()).done) { /* Drain closing snapshots. */ }
     expect((await fetch(`${fixture.server.origin}${path}`, { proxy: false })).status).toBe(404);
   } finally { await fixture.dispose(); }

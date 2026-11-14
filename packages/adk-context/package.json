@@ -6,7 +6,7 @@
   },
   "files": ["dist"],
   "scripts": { "build": "bun --bun run tsrs -p tsconfig.json", "typecheck": "bun --bun run tsrs -p tsconfig.json --noEmit", "lint": "bun --bun run eslint src test", "test": "bun test ./test --timeout 30000" },
-  "dependencies": { "@alpha/adk": "workspace:*" },
+  "dependencies": { "@alpha/adk": "workspace:*", "@alpha/adk-artifact": "workspace:*" },
   "nx": { "tags": ["layer:context"], "targets": { "typecheck": { "dependsOn": ["build"] } } },
   "engines": { "bun": ">=1.4.4" }
 }

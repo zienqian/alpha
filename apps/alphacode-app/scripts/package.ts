@@ -26,7 +26,7 @@ try {
   await cp(join(appDirectory, "assets"), join(shell, "assets"), { recursive: true });
   await writeFile(join(runtime, "package.json"), JSON.stringify({ name: "alphacode-app-runtime", private: true,
     workspaces: ["apps/alphacode", "apps/alphacode-app-server", "packages/*"] }));
-  for (const path of ["apps/alphacode", "apps/alphacode-app-server", ...["adk", "adk-session", "adk-trace", "coding-agent", "provider"].map(name => `packages/${name}`)]) {
+  for (const path of ["apps/alphacode", "apps/alphacode-app-server", ...["adk", "adk-artifact", "adk-context", "adk-session", "adk-trace", "coding-agent", "provider"].map(name => `packages/${name}`)]) {
     const source = join(repository, path);
     const target = join(runtime, path);
     await mkdir(target, { recursive: true });
@@ -45,7 +45,7 @@ try {
   await run(["install", "--production", "--frozen-lockfile", "--ignore-scripts", "--linker=hoisted"], runtime);
   // Workspace links point into the staging directory. Materialize them before
   // moving the distribution so nothing depends on the build machine's paths.
-  for (const name of ["adk", "adk-session", "adk-trace", "coding-agent", "provider", "alphacode-app-server", "alphacode"]) {
+  for (const name of ["adk", "adk-artifact", "adk-context", "adk-session", "adk-trace", "coding-agent", "provider", "alphacode-app-server", "alphacode"]) {
     const link = join(runtime, "node_modules/@alpha", name);
     if ((await lstat(link)).isSymbolicLink()) {
       const target = resolve(dirname(link), await readlink(link));

@@ -3,8 +3,9 @@ import { createHash, randomUUID } from "node:crypto";
 import { dirname } from "node:path";
 import type { Agent } from "@alpha/adk/core";
 import { createTracePlugin } from "@alpha/adk-trace";
-import { createContextManager } from "@alpha/adk-context";
+import { createContextManager, createContextReader } from "@alpha/adk-context";
 import { createSqliteContextStore } from "@alpha/adk-context/sqlite";
+import { createSqliteArtifactStore } from "@alpha/adk-artifact/sqlite";
 import type { RuntimeTrace } from "./trace-bridge";
 import { createSessionManager, createSessionPlugin, type Session, type SessionManager, type SessionStore } from "@alpha/adk-session";
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
@@ -37,6 +38,7 @@ export async function createRuntime(config: AppConfig, options: {
   let detachTrace: (() => void) | undefined;
   let contextManager: ReturnType<typeof createContextManager>;
   let contextStore: ReturnType<typeof createSqliteContextStore> | undefined;
+  let artifactStore: ReturnType<typeof createSqliteArtifactStore> | undefined;
   const sessionId = config.sessionId ?? options.draftSessionId ?? randomUUID();
   const subscriptions = new Map<(event: ChatEvent) => void, (() => void) | undefined>();
   let initialize: (input?: string) => Promise<{ agent: Agent; session: Session }>;
@@ -57,6 +59,11 @@ export async function createRuntime(config: AppConfig, options: {
     await mkdir(dirname(config.databasePath), { recursive: true });
     store = await createSqliteSessionStore({ filename: config.databasePath });
     const namespace = sessionNamespace(cwd);
+    artifactStore = createSqliteArtifactStore(`${config.databasePath}.artifacts.db`);
+    const artifacts = artifactStore;
+    const readContext = createContextReader({ scope: { namespace, sessionId }, artifacts,
+      messages: () => agent?.state.messages ?? [],
+    });
     const saved = config.sessionId ? await store.read({ namespace, id: config.sessionId }) : undefined;
     if (config.sessionId && !saved) throw settingsError("SESSION_NOT_FOUND");
     if (saved) settings = readSessionSettings(saved.data);
@@ -116,6 +123,7 @@ export async function createRuntime(config: AppConfig, options: {
           return model.stream(input);
         } }, cwd,
         skills: loadedSkills.skills,
+        artifacts: { store: artifacts, scope: { namespace, sessionId } }, readContext,
         fileAccess: "host", commandTimeoutMs: null,
         limits: {
           timeoutMs: undefined, maxModelCalls: null, maxToolCalls: null,
@@ -157,6 +165,7 @@ export async function createRuntime(config: AppConfig, options: {
     if (saved) await initialize();
   } catch (error) {
     contextStore?.close();
+    artifactStore?.close();
     detachTrace?.();
     // Startup has not accepted a prompt; release only resources created here.
     for (const resource of [agent, session, manager, store]) {
@@ -383,6 +392,7 @@ export async function createRuntime(config: AppConfig, options: {
         await activeManager.close();
         await activeStore.close();
         contextStore?.close();
+        artifactStore?.close();
       })().catch(error => {
         closing = undefined;
         throw error;

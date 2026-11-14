@@ -60,6 +60,7 @@
       },
       "dependencies": {
         "@alpha/adk": "workspace:*",
+        "@alpha/adk-artifact": "workspace:*",
         "@alpha/adk-context": "workspace:*",
         "@alpha/adk-session": "workspace:*",
         "@alpha/adk-trace": "workspace:*",
@@ -149,11 +150,16 @@
         "zod": "4.6.7",
       },
     },
+    "packages/adk-artifact": {
+      "name": "@alpha/adk-artifact",
+      "version": "0.0.0",
+    },
     "packages/adk-context": {
       "name": "@alpha/adk-context",
       "version": "0.0.0",
       "dependencies": {
         "@alpha/adk": "workspace:*",
+        "@alpha/adk-artifact": "workspace:*",
       },
     },
     "packages/adk-session": {
@@ -175,6 +181,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@alpha/adk": "workspace:*",
+        "@alpha/adk-artifact": "workspace:*",
         "@alpha/provider": "workspace:*",
         "cross-spawn": "7.0.6",
         "minimatch": "10.2.6",
@@ -196,6 +203,8 @@
   ],
   "packages": {
     "@alpha/adk": ["@alpha/adk@workspace:packages/adk"],
+
+    "@alpha/adk-artifact": ["@alpha/adk-artifact@workspace:packages/adk-artifact"],
 
     "@alpha/adk-context": ["@alpha/adk-context@workspace:packages/adk-context"],
 
