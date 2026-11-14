@@ -14,7 +14,7 @@ export function SessionContext({ folder, session, draft }: {
     <Popover.Root defaultOpen={false}>
       <Popover.Trigger asChild>
         <Button variant="ghost" size="icon-sm" aria-label={t("sessions:summary")} title={t("sessions:summary")} className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground">
-          <ListTree className="size-3.5" aria-hidden="true" />
+          <ListTree className="size-icon" aria-hidden="true" />
         </Button>
       </Popover.Trigger>
       <Popover.Portal>
@@ -24,7 +24,7 @@ export function SessionContext({ folder, session, draft }: {
             <Popover.Close asChild><Button variant="ghost" size="icon-xs" className="text-muted-foreground" aria-label={t("sessions:closeSummary")}><X aria-hidden="true" /></Button></Popover.Close>
           </div>
           <div className="space-y-3 border-b p-3">
-            <div className="flex items-center gap-2 text-[13px] font-medium"><FolderOpen className="size-3.5 text-muted-foreground" aria-hidden="true" /><span className="truncate">{folder?.name ?? t("workspace:unselected")}</span></div>
+            <div className="flex items-center gap-2 text-[13px] font-medium"><FolderOpen className="size-icon text-muted-foreground" aria-hidden="true" /><span className="truncate">{folder?.name ?? t("workspace:unselected")}</span></div>
             {folder && <div className="flex items-center gap-1 rounded-md bg-muted/60 py-1 pr-1 pl-2"><code className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground" title={folder.path}>{folder.path}</code><CopyButton value={folder.path} label={t("workspace:copyPath")} /></div>}
             <dl className="grid grid-cols-2 gap-y-2 text-xs">
               <dt className="text-muted-foreground">{t("sessions:messageHistory")}</dt><dd className="text-right tabular-nums">{session && !session.local && !session.historyLoaded ? t("sessions:notLoaded") : t("sessions:messageCount", { count: session?.messages.length ?? 0 })}</dd>
@@ -35,7 +35,7 @@ export function SessionContext({ folder, session, draft }: {
             <h3 className="mb-3 flex items-center justify-between text-xs font-medium">{t("sessions:draftAttachments")}<span className="font-normal text-muted-foreground tabular-nums">{draft.attachments.length}</span></h3>
             {draft.attachments.length ? (
               <ul className="max-h-48 space-y-2 overflow-y-auto">
-                {draft.attachments.map(({ id, file }) => <li key={id} className="flex items-center gap-2 text-xs"><FileText className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" /><span className="min-w-0 flex-1 truncate" title={file.name}>{file.name}</span><span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">{file.size < 1024 ? `${file.size} B` : `${Math.ceil(file.size / 1024)} KB`}</span></li>)}
+                {draft.attachments.map(({ id, file }) => <li key={id} className="flex items-center gap-2 text-xs"><FileText className="size-icon shrink-0 text-muted-foreground" aria-hidden="true" /><span className="min-w-0 flex-1 truncate" title={file.name}>{file.name}</span><span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">{file.size < 1024 ? `${file.size} B` : `${Math.ceil(file.size / 1024)} KB`}</span></li>)}
               </ul>
             ) : <p className="text-xs leading-5 text-muted-foreground">{t("sessions:noAttachments")}</p>}
           </div>

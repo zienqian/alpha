@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "@/app";
 import { AppProviders } from "@/components/providers";
@@ -150,6 +150,8 @@ describe("Workspace settings and navigation", () => {
     expect(window.location.search).toBe("");
     fireEvent.click(button("后退"));
     await screen.findByRole("heading", { name: "技能市场" });
+    // POP renders the page before the history availability effect settles.
+    await waitFor(() => expect(button("前进").disabled).toBe(false));
     fireEvent.click(button("前进"));
     await screen.findByRole("heading", { name: "常规" });
   });
@@ -163,13 +165,13 @@ describe("Workspace settings and navigation", () => {
     expect(button("设置").getAttribute("aria-current")).toBe("page");
   });
 
-  it("closes the mobile drawer when entering settings", async () => {
+  it("keeps the small-screen sidebar expanded when entering settings", async () => {
     vi.stubGlobal("innerWidth", 390);
     renderApp();
     await screen.findByText("此计算机");
-    fireEvent.click(button("切换侧栏"));
-    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "设置" }));
+    fireEvent.click(button("设置"));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.querySelector('[data-slot="sidebar"][data-state]')?.getAttribute("data-state")).toBe("expanded");
     expect(await screen.findByRole("combobox", { name: "主题" })).toBeTruthy();
   });
 });

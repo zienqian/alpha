@@ -57,7 +57,7 @@ export function CreateProjectDialog({ open, onOpenChange, onCreate }: {
         <Dialog.Description className="sr-only">{t("workspace:projectDescription")}</Dialog.Description>
         <form className="space-y-5" onSubmit={event => { event.preventDefault(); void submit(); }} onKeyDown={event => { if (event.key === "Enter" && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault(); }}>
           <div className="relative">
-            <Folder className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <Folder className="pointer-events-none absolute top-1/2 left-3 size-icon -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input ref={nameInput} value={name} onChange={event => { setName(event.target.value); setError(undefined); }} maxLength={100} disabled={pending || picking} className="h-11 pl-10" aria-label={t("workspace:projectName")} placeholder={t("workspace:projectName")} autoComplete="off" />
           </div>
           <div className="space-y-2">

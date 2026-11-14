@@ -1,0 +1,187 @@
+/* Loaded with the experimental workspace. Theme tokens follow the app in both modes. */
+.workspace-canvas[data-docking="true"] { background: transparent; border-radius: 0; box-shadow: none; }
+.workspace-shell .session-nav-item[data-canvas-draggable="true"] { cursor: grab; }
+.workspace-shell .session-nav-item[data-canvas-draggable="true"]:active { cursor: grabbing; }
+.session-canvas {
+  --canvas-dock-accent: var(--primary);
+  --canvas-panel-radius: var(--radius-xl);
+  --flexlayout-font-size: 14px;
+  --flexlayout-font-family: inherit;
+  --flexlayout-color-text: var(--foreground);
+  --flexlayout-color-background: transparent;
+  --flexlayout-color-base: var(--background);
+  --flexlayout-color-1: var(--muted);
+  --flexlayout-color-2: var(--secondary);
+  --flexlayout-color-3: var(--accent);
+  --flexlayout-color-4: var(--border);
+  --flexlayout-color-5: var(--muted);
+  --flexlayout-color-6: var(--border);
+  --flexlayout-color-icon: var(--muted-foreground);
+  --flexlayout-color-overflow: var(--muted-foreground);
+  --flexlayout-color-focus: var(--ring);
+  --flexlayout-color-tabset-background: color-mix(in srgb, var(--muted) 45%, var(--background));
+  --flexlayout-color-tabset-divider-line: var(--border);
+  --flexlayout-color-tab-content: var(--background);
+  --flexlayout-color-tab-selected: var(--foreground);
+  --flexlayout-color-tab-selected-background: transparent;
+  --flexlayout-color-tab-unselected: var(--muted-foreground);
+  --flexlayout-color-tab-unselected-background: transparent;
+  --flexlayout-color-splitter: transparent;
+  --flexlayout-color-splitter-hover: transparent;
+  --flexlayout-color-splitter-drag: transparent;
+  --flexlayout-color-drag1: var(--ring);
+  --flexlayout-color-drag1-background: color-mix(in srgb, var(--primary) 12%, transparent);
+  --flexlayout-color-drag-rect-border: var(--border);
+  --flexlayout-color-drag-rect-background: var(--popover);
+  --flexlayout-color-drag-rect: var(--foreground);
+  --flexlayout-color-popup-border: var(--border);
+  --flexlayout-color-popup-unselected: var(--foreground);
+  --flexlayout-color-popup-unselected-background: var(--popover);
+  --flexlayout-color-popup-selected: var(--foreground);
+  --flexlayout-color-popup-selected-background: var(--accent);
+  --flexlayout-color-toolbar-button-hover: var(--accent);
+  --flexlayout-splitter-size: 8px;
+  --flexlayout-splitter-active-size: 8px;
+}
+.session-canvas .flexlayout__tabset {
+  container-type: inline-size;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--canvas-panel-radius);
+}
+/* Content is portalled beside the tabset, so its bottom corners must clip too. */
+.session-canvas .flexlayout__tab {
+  overflow: hidden;
+  border-radius: 0 0 calc(var(--canvas-panel-radius) - 1px) calc(var(--canvas-panel-radius) - 1px);
+}
+/* Flat title tabs follow the supplied LeetCode workspace reference. */
+.session-canvas .flexlayout__tabset_tabbar_outer { min-height: 40px; padding: 0 8px; border: 0; background: color-mix(in srgb, var(--muted) 45%, var(--background)); }
+.session-canvas .flexlayout__tabset_tabbar_outer { cursor: grab; touch-action: none; }
+.session-canvas .flexlayout__tabset_tabbar_inner_tab_container { padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--muted-foreground); }
+.session-canvas .flexlayout__tabset_tab_divider { width: 1px; height: 14px; margin: 0 2px; background: var(--border); }
+.session-canvas .flexlayout__tab_button {
+  gap: 5px; min-height: 32px; padding: 4px 6px; border: 1px solid transparent; border-radius: 0;
+  background: transparent; color: var(--muted-foreground); font-size: 14px; font-weight: 400; line-height: 20px;
+  box-shadow: none; transition: color 120ms ease-out;
+}
+.session-canvas .flexlayout__tab_button { position: relative; max-width: min(240px, calc(100cqw - 72px)); cursor: grab; }
+.session-canvas .flexlayout__tab_button:active { cursor: grabbing; }
+.session-canvas .flexlayout__tab_button:hover { background: transparent; color: var(--foreground); }
+.session-canvas .flexlayout__tab_button--selected { background: transparent; color: var(--foreground); font-weight: 500; box-shadow: none; }
+.session-canvas [data-canvas-tab] { color: color-mix(in srgb, var(--canvas-dock-accent) 60%, var(--muted-foreground)); }
+.session-canvas .flexlayout__tab_button--selected [data-canvas-tab] { color: var(--canvas-dock-accent); }
+.session-canvas [data-canvas-tab] > svg { width: var(--spacing-icon); height: var(--spacing-icon); color: inherit; }
+.session-canvas .flexlayout__tab_button_content { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Replace the tab icon on hover, keeping compact titles and separators still. */
+.session-canvas .flexlayout__tab_button_trailing { position: absolute; left: 5px; top: 50%; transform: translateY(-50%); width: 20px; height: 24px; align-items: center; justify-content: center; margin: 0; border-radius: var(--radius-sm); color: var(--muted-foreground); visibility: visible; }
+.session-canvas .flexlayout__tab_button_trailing > svg { width: var(--spacing-icon); height: var(--spacing-icon); }
+.session-canvas .flexlayout__tab_button_trailing { opacity: 0; pointer-events: none; }
+.session-canvas .flexlayout__tab_button:hover .flexlayout__tab_button_trailing,
+.session-canvas .flexlayout__tab_button:focus-visible .flexlayout__tab_button_trailing,
+.session-canvas .flexlayout__tab_button_trailing:focus-visible { opacity: 1; pointer-events: auto; }
+.session-canvas .flexlayout__tab_button:hover [data-canvas-tab],
+.session-canvas .flexlayout__tab_button:focus-visible [data-canvas-tab] { opacity: 0; }
+@media (hover: none) {
+  .session-canvas .flexlayout__tab_button_trailing { opacity: 1; pointer-events: auto; }
+  .session-canvas .flexlayout__tab_button_trailing { position: static; transform: none; margin-left: 2px; }
+  .session-canvas .flexlayout__tab_button:hover [data-canvas-tab],
+  .session-canvas .flexlayout__tab_button:focus-visible [data-canvas-tab] { opacity: 1; }
+}
+.session-canvas .flexlayout__tab_toolbar { gap: 2px; padding-right: 2px; }
+.session-canvas .flexlayout__tab_toolbar [data-slot="button"],
+.session-canvas .flexlayout__tab_toolbar_button,
+.session-canvas .flexlayout__tab_button_overflow {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 28px; height: 28px; padding: 0; border-radius: var(--radius-md);
+  color: var(--muted-foreground); cursor: pointer; transition: color 120ms ease-out, background-color 120ms ease-out;
+}
+.session-canvas .flexlayout__tab_toolbar svg,
+.session-canvas .flexlayout__tab_button_overflow > svg { width: var(--spacing-icon); height: var(--spacing-icon); }
+.session-canvas .flexlayout__tab_toolbar_button:hover,
+.session-canvas .flexlayout__tab_button_overflow:hover { background: var(--accent); color: var(--accent-foreground); }
+.session-canvas .flexlayout__tab_toolbar_button:focus-visible,
+.session-canvas .flexlayout__tab_button_overflow:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.session-canvas .flexlayout__tab_toolbar_button-min,
+.session-canvas .flexlayout__tab_toolbar_button-max { order: -1; }
+/* Keep a small measured strip while its titles fill the collapsed rail. */
+.session-canvas .canvas-tabbar-collapsed { position: static; height: 40px; padding: 0; }
+.session-canvas .canvas-tabbar-collapsed .flexlayout__mini_scrollbar_container,
+.session-canvas .canvas-tabbar-collapsed .flexlayout__tab_toolbar,
+.session-canvas .flexlayout__tabset:has(> .canvas-tabbar-collapsed) > .flexlayout__tabset_content { display: none; }
+.session-canvas .canvas-tabbar-collapsed .flexlayout__tabset_leading { position: absolute; inset: 0; z-index: 1; margin: 0; padding: 0; overflow: hidden; }
+.session-canvas .canvas-tabbar-collapsed [data-canvas-group] { width: 100%; height: 100%; }
+.canvas-collapsed-titles { display: flex; width: 100%; height: 100%; overflow: auto; scrollbar-width: thin; background: var(--background); }
+.canvas-collapsed-title { position: relative; display: flex; flex: 0 0 auto; align-items: center; gap: 6px; margin: 4px 2px; padding: 4px 10px; border-radius: var(--radius-sm); background: transparent; color: var(--muted-foreground); font-size: 14px; cursor: pointer; }
+.canvas-collapsed-title + .canvas-collapsed-title::before { position: absolute; content: ""; left: -3px; top: 50%; width: 1px; height: 16px; transform: translateY(-50%); background: var(--border); }
+.canvas-collapsed-title > svg { width: var(--spacing-icon); height: var(--spacing-icon); flex-shrink: 0; color: var(--canvas-dock-accent); }
+.canvas-collapsed-title > span { max-width: 220px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.canvas-collapsed-title[data-selected="true"] { color: var(--foreground); }
+.canvas-collapsed-title:hover { color: var(--foreground); background: var(--muted); }
+.canvas-collapsed-title:focus-visible { outline: 2px solid var(--ring); outline-offset: -3px; }
+.canvas-tabbar-vertical .canvas-collapsed-titles { flex-direction: column; align-items: stretch; }
+.canvas-tabbar-vertical .canvas-collapsed-title { flex-direction: column; margin: 3px 4px; padding: 8px 4px; }
+.canvas-tabbar-vertical .canvas-collapsed-title + .canvas-collapsed-title::before { top: -4px; left: 50%; width: 16px; height: 1px; transform: translateX(-50%); }
+.canvas-tabbar-vertical .canvas-collapsed-title > span { writing-mode: vertical-rl; max-width: none; max-height: 220px; }
+.session-canvas .flexlayout__splitter { position: relative; touch-action: none; }
+.session-canvas .flexlayout__splitter::after {
+  position: absolute; content: ""; top: 50%; left: 50%;
+  width: 3px; height: 24px; border-radius: 2px; background: color-mix(in srgb, var(--muted-foreground) 26%, transparent); transform: translate(-50%, -50%);
+}
+.session-canvas .flexlayout__splitter_vert::after { width: 24px; height: 3px; }
+.session-canvas .flexlayout__splitter:hover::after,
+.session-canvas .flexlayout__splitter:focus-visible::after,
+.session-canvas .flexlayout__splitter_drag::after { background: var(--canvas-dock-accent); }
+.session-canvas .flexlayout__splitter_horz:hover::after { width: 3px; height: 48px; }
+.session-canvas .flexlayout__splitter_vert:hover::after { width: 48px; height: 3px; }
+.session-canvas .canvas-resize-active::after { width: 2px; height: calc(100% - 16px); background: var(--canvas-dock-accent); }
+.session-canvas .canvas-resize-active.flexlayout__splitter_vert::after { width: calc(100% - 16px); height: 2px; }
+.session-canvas .flexlayout__splitter_drag .flexlayout__splitter_handle { visibility: visible; background: var(--ring); }
+.session-canvas .flexlayout__splitter_drag .flexlayout__splitter_handle_horz { width: 2px; height: calc(100% - 16px); }
+.session-canvas .flexlayout__splitter_drag .flexlayout__splitter_handle_vert { width: calc(100% - 16px); height: 2px; }
+.session-canvas .flexlayout__outline_rect,
+.session-canvas .flexlayout__outline_rect_edge { border-radius: var(--canvas-panel-radius); }
+.session-canvas .flexlayout__drag_rect { border-radius: var(--radius-sm); padding: 6px 12px; }
+.session-canvas-panel { display: flex; flex: 1; height: 100%; min-height: 0; min-width: 0; flex-direction: column; overflow: hidden; background: var(--background); }
+.canvas-panel-body .max-w-\[744px\] { padding-left: 16px; padding-right: 16px; }
+.canvas-panel-body .welcome-stage { padding: 24px 16px; }
+.canvas-panel-body .task-entry { padding-top: 0; }
+.canvas-panel-body .welcome-stage h1 { font-size: 18px; line-height: 28px; }
+.canvas-panel-body .composer-context { gap: 8px; flex-wrap: wrap; }
+.canvas-panel-body [data-slot="message-scroller-content"] { padding-top: 16px; padding-bottom: 16px; }
+.session-canvas .canvas-panel-body .tiptap { max-height: 140px; overflow-y: auto; }
+.session-canvas .composer [data-align="block-end"] { flex-wrap: nowrap; gap: 4px; }
+.session-canvas .composer [data-align="block-end"] > button { max-width: 100%; }
+.session-canvas .composer [data-align="block-end"] > button:first-child { min-width: 0; flex-shrink: 1; }
+.session-canvas .composer [data-align="block-end"] > [role="status"] { padding: 0; flex-shrink: 2; }
+.session-canvas .composer [data-align="block-end"] > button:last-child { margin-left: auto; }
+.canvas-drag-layer { position: fixed; inset: 0; z-index: 100; pointer-events: none; }
+.canvas-drop-preview {
+  position: absolute; top: 0; left: 0; border: 1px solid var(--canvas-dock-accent); border-radius: var(--canvas-panel-radius);
+  background: color-mix(in srgb, var(--canvas-dock-accent) 10%, transparent);
+  transition: transform 110ms cubic-bezier(.16, 1, .3, 1), width 110ms cubic-bezier(.16, 1, .3, 1), height 110ms cubic-bezier(.16, 1, .3, 1);
+}
+.canvas-drop-preview[data-initial="true"] { transition: none; }
+.canvas-tab-insertion { position: absolute; top: 0; left: 0; border-radius: 1px; background: var(--canvas-dock-accent); }
+.canvas-drag-ghost {
+  position: absolute; top: 0; left: 0; max-width: min(260px, 70vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-radius: var(--radius-sm); background: var(--popover); color: var(--popover-foreground); padding: 7px 12px;
+  box-shadow: var(--overlay-shadow); font-size: 12px; line-height: 18px; will-change: transform;
+}
+.canvas-drag-ghost[data-valid="false"] { opacity: .65; }
+.canvas-dock-guides { position: absolute; }
+.canvas-dock-edge { position: absolute; border-radius: 4px; background: var(--canvas-dock-accent); }
+.canvas-dock-edge-left, .canvas-dock-edge-right { top: 50%; width: 5px; height: min(120px, 25%); transform: translateY(-50%); }
+.canvas-dock-edge-left { left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.canvas-dock-edge-right { right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.canvas-dock-edge-top, .canvas-dock-edge-bottom { left: 50%; height: 5px; width: min(160px, 25%); transform: translateX(-50%); }
+.canvas-dock-edge-top { top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+.canvas-dock-edge-bottom { bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .canvas-drop-preview { transition: none; }
+  .session-canvas .flexlayout__tab_button,
+  .session-canvas .flexlayout__tab_toolbar [data-slot="button"],
+  .session-canvas .flexlayout__tab_toolbar_button,
+  .session-canvas .flexlayout__tab_button_overflow { transition: none; }
+  .session-canvas .flexlayout__outline_rect,
+  .session-canvas .flexlayout__outline_rect_edge { transition: none; }
+}

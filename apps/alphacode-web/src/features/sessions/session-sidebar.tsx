@@ -34,9 +34,10 @@ interface SessionSidebarProps {
   skillsActive?: boolean;
   onOpenSettings: () => void;
   settingsActive: boolean;
+  onAddToCanvas?: (id: string) => void;
 }
 
-export function SessionSidebar({ folders, selectedFolderId, onCreateProject, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive }: SessionSidebarProps) {
+export function SessionSidebar({ folders, selectedFolderId, onCreateProject, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive, onAddToCanvas }: SessionSidebarProps) {
   const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set());
@@ -136,7 +137,7 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
             {folders.map(folder => <Tooltip key={folder.id}><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="rail-action" aria-label={t("workspace:folder", { name: folder.name })} aria-expanded={false}
                 data-active={!skillsActive && !settingsActive && activeFolderId === folder.id}
-                onClick={() => { folderFocusRequest.current = folder.id; setFolderOpen(folder.id, true); setOpen(true); }}><Folder strokeWidth={1.7} aria-hidden="true" /></Button>
+                onClick={() => { folderFocusRequest.current = folder.id; setFolderOpen(folder.id, true); setOpen(true); }}><Folder aria-hidden="true" /></Button>
             </TooltipTrigger><TooltipContent side="right">{folder.name}</TooltipContent></Tooltip>)}
             {error && <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="rail-action" aria-label={t("sessions:retryList")} disabled={refreshing} onClick={onRefresh}><RefreshCw aria-hidden="true" /></Button>
@@ -151,14 +152,14 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
       </> : <>
       <SidebarHeader className="gap-0 p-0">
         <div className="space-y-1 px-(--sidebar-inset) pt-2">
-        <Button ref={searchTriggerRef} variant="ghost" size="sm" className="h-9 w-full justify-start gap-2.5 rounded-lg px-3 text-[13px] font-normal text-muted-foreground" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
+        <Button ref={searchTriggerRef} variant="ghost" size="sm" className="h-9 w-full justify-start gap-2 rounded-lg px-3 text-[13px] font-normal text-muted-foreground" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
           onClick={() => setSearchOpen(true)}>
-          <Search className="size-3.5" aria-hidden="true" /><span>{t("sessions:search")}</span>
+          <Search className="size-icon" aria-hidden="true" /><span>{t("sessions:search")}</span>
           <kbd className="ml-auto rounded border border-sidebar-border px-1 font-sans text-[10px] leading-4 text-muted-foreground">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}</kbd>
         </Button>
-        {onOpenSkills && <Button variant="ghost" size="sm" className="h-9 w-full justify-start gap-2.5 rounded-lg px-3 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
+        {onOpenSkills && <Button variant="ghost" size="sm" className="h-9 w-full justify-start gap-2 rounded-lg px-3 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
           aria-current={skillsActive ? "page" : undefined} onClick={() => { onOpenSkills(); setOpenMobile(false); }}>
-          <Blocks className="size-3.5" aria-hidden="true" /><span>{t("skills:market.title")}</span>
+          <Blocks className="size-icon" aria-hidden="true" /><span>{t("skills:market.title")}</span>
         </Button>}
         </div>
       </SidebarHeader>
@@ -185,8 +186,8 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
                     <SidebarMenuItem>
                       <div className="group/folder-header relative w-full">
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton ref={element => { if (element) folderTriggers.current.set(folder.id, element); else folderTriggers.current.delete(folder.id); }} title={folder.path} aria-label={t("workspace:folder", { name: folder.name })} className="h-8 w-full gap-2.5 rounded-lg pr-8 pl-3 text-xs text-muted-foreground group-hover/folder-header:bg-sidebar-accent md:h-7">
-                            <Folder className="size-3.5!" strokeWidth={1.7} aria-hidden="true" />
+                          <SidebarMenuButton ref={element => { if (element) folderTriggers.current.set(folder.id, element); else folderTriggers.current.delete(folder.id); }} title={folder.path} aria-label={t("workspace:folder", { name: folder.name })} className="h-8 w-full gap-2 rounded-lg pr-8 pl-3 text-xs text-muted-foreground group-hover/folder-header:bg-sidebar-accent md:h-7">
+                            <Folder className="size-icon" aria-hidden="true" />
                             <span className="font-medium">{folder.name}</span>
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
@@ -198,6 +199,7 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
                             <SidebarMenuSubItem key={session.id}>
                               <SessionNavItem session={session} active={!skillsActive && !settingsActive && selectedSessionId === session.id} disabled={creatingIds[session.id]}
                                 onSelect={() => { onSelectSession(session.id); setOpenMobile(false); }}
+                                onAddToCanvas={onAddToCanvas ? () => { onAddToCanvas(session.id); setOpenMobile(false); } : undefined}
                                 onRename={onRenameSession} onDelete={onDeleteSession} />
                             </SidebarMenuSubItem>
                           ))}
@@ -219,9 +221,9 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
       </SidebarContent>
       </ScrollArea.Root>
       <SidebarFooter className="px-(--sidebar-inset) pt-2 pb-3">
-        <Button variant="ghost" size="sm" className="h-9 w-full justify-start gap-2.5 rounded-lg px-3 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
+        <Button variant="ghost" size="sm" className="h-9 w-full justify-start gap-2 rounded-lg px-3 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
           aria-current={settingsActive ? "page" : undefined} onClick={() => { onOpenSettings(); setOpenMobile(false); }}>
-          <Settings className="size-3.5" aria-hidden="true" /><span>{t("settings:title")}</span>
+          <Settings className="size-icon" aria-hidden="true" /><span>{t("settings:title")}</span>
         </Button>
       </SidebarFooter>
       </>}

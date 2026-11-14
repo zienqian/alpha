@@ -1,4 +1,8 @@
 {
+  "experiments": "Experimental features",
+  "sessionCanvas": "Session canvas",
+  "sessionCanvasDescription": "Arrange conversations freely across the workspace. Drag from the sidebar, combine tabs and resize dividers. Experimental; turn off to return to one conversation.",
+  "preferenceSaveFailed": "This change applies now, but could not be saved. It may reset after reloading.",
   "title": "Settings",
   "navigation": "Settings categories",
   "general": "General",

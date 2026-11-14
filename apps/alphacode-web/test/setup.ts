@@ -2,6 +2,9 @@ import { cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 
 beforeEach(() => {
+  localStorage.removeItem("alphacode-experiments-v1");
+  localStorage.removeItem("alphacode-session-canvas-v1");
+  localStorage.removeItem("alphacode-session-canvas-v2");
   localStorage.removeItem("alphacode-language-v1");
   Object.defineProperty(navigator, "languages", { configurable: true, value: ["zh-CN"] });
   // Layout/scroll APIs used by cmdk are not implemented by jsdom.

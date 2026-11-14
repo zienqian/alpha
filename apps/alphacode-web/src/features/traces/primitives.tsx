@@ -59,7 +59,7 @@ export const IconButton = forwardRef<
     label: string;
     size?: number;
   }
->(({ icon, label, size = 14, ...props }, ref) => (
+>(({ icon, label, size = 16, ...props }, ref) => (
   <Hint label={label}>
     <button
       {...props}

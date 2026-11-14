@@ -1,4 +1,8 @@
 {
+  "experiments": "实验性功能",
+  "sessionCanvas": "多会话画布",
+  "sessionCanvasDescription": "将整个工作区作为画布，自由拖入侧栏会话、组合标签、拉动分隔条。实验性功能，关闭后恢复单会话界面。",
+  "preferenceSaveFailed": "修改已生效，但未能保存。刷新后可能恢复原设置。",
   "title": "设置",
   "navigation": "设置分类",
   "general": "常规",

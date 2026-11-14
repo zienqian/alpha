@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { AlertDialog } from "radix-ui";
-import { Check, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
+import { Check, PanelsTopLeft, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
+import { useExperimentalFeatures } from "@/features/settings/experimental-features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -10,15 +11,17 @@ import { SessionApiError } from "./api";
 import { SessionTitle } from "./session-title";
 import type { Session } from "./types";
 
-export function SessionNavItem({ session, active, disabled, onSelect, onRename, onDelete }: {
+export function SessionNavItem({ session, active, disabled, onSelect, onRename, onDelete, onAddToCanvas }: {
   session: Session;
   active: boolean;
   disabled?: boolean;
   onSelect: () => void;
   onRename: (id: string, title: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onAddToCanvas?: () => void;
 }) {
   const { t } = useTranslation();
+  const experiments = useExperimentalFeatures();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(session.title);
   const [confirming, setConfirming] = useState(false);
@@ -66,7 +69,12 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
       </form> : <>
         <SidebarMenuSubButton asChild isActive={active}
           className="session-nav-item h-9 w-full translate-x-0 rounded-lg px-9 text-[13px] text-sidebar-foreground/80 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8">
-          <button type="button" title={session.title} aria-label={session.title} aria-current={active ? "page" : undefined} onClick={onSelect}>
+          <button type="button" title={session.title} aria-label={session.title} aria-current={active ? "page" : undefined} onClick={onSelect}
+            data-canvas-draggable={Boolean(onAddToCanvas) && !disabled || undefined}
+            onPointerDown={event => {
+              // Keep touch scrolling in the sidebar; its menu remains an add alternative.
+              if (onAddToCanvas && !disabled && event.pointerType !== "touch") experiments.sessionDragHandler.current?.(event, session.id);
+            }}>
             <SessionTitle title={session.title} pending={session.titleStatus === "pending"} />
           </button>
         </SidebarMenuSubButton>
@@ -80,6 +88,7 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
             if (focusEditor.current) { event.preventDefault(); focusEditor.current = false; input.current?.focus(); input.current?.select(); }
             if (confirming) event.preventDefault();
           }}>
+            {onAddToCanvas && <DropdownMenuItem onSelect={onAddToCanvas}><PanelsTopLeft aria-hidden="true" />{t("sessions:canvas.add")}</DropdownMenuItem>}
             <DropdownMenuItem onSelect={() => { setTitle(session.title); setError(undefined); focusEditor.current = true; setEditing(true); }}><Pencil aria-hidden="true" />{t("sessions:rename")}</DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={() => { setError(undefined); setConfirming(true); }}><Trash2 aria-hidden="true" />{t("sessions:delete")}</DropdownMenuItem>
           </DropdownMenuContent>

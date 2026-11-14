@@ -64,7 +64,7 @@ export function ToolMessage({ message, active = false }: { message: SessionMessa
           <TraceTitle className="flex-1" title={label}>{label}</TraceTitle>
           {tool && <TraceDescription>{presentStatus(t, tool.status)}</TraceDescription>}
         </TraceLine>
-        <ChevronRight className="size-3 shrink-0 transition-transform group-open/tool:rotate-90" aria-hidden="true" />
+        <ChevronRight className="size-icon shrink-0 transition-transform group-open/tool:rotate-90" aria-hidden="true" />
       </summary>
       <div className="my-1 ml-2.5 min-w-0 space-y-2 border-l py-2 pr-1 pl-4">
         {tool && <p className="text-muted-foreground">{tool.name}{tool.exitCode !== undefined ? ` · ${t("tools:exit", { code: tool.exitCode })}` : ""}</p>}

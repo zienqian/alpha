@@ -20,7 +20,7 @@ export function TraceLine({ className, status, ...props }: ComponentProps<"span"
 
 export function TraceIcon({ className, ...props }: ComponentProps<"span">) {
   return <span data-slot="trace-icon" aria-hidden="true" className={cn(
-    "flex size-3.5 shrink-0 items-center justify-center [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-3.5 [[data-slot=trace-title]~&]:-ml-1",
+    "flex size-icon shrink-0 items-center justify-center [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-icon [[data-slot=trace-title]~&]:-ml-1",
     className,
   )} {...props} />;
 }

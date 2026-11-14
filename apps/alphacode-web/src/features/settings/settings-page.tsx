@@ -6,6 +6,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useLanguage } from "@/i18n/provider";
 import { isLanguagePreference } from "@/i18n/locale";
 import { useTranslation } from "@/i18n/react";
+import { useExperimentalFeatures } from "./experimental-features";
 
 const selectClass = "h-8 w-32 shrink-0 rounded-md border border-transparent bg-transparent px-2 text-base text-foreground outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 sm:h-7 sm:text-xs";
 
@@ -13,6 +14,7 @@ export function SettingsPage() {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { preference, setPreference } = useLanguage();
+  const experiments = useExperimentalFeatures();
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => { searchRef.current?.focus({ preventScroll: true }); }, []);
@@ -28,7 +30,9 @@ export function SettingsPage() {
   };
   const showTheme = matches("theme");
   const showLanguage = matches("language");
-  const resultCount = Number(showTheme) + Number(showLanguage);
+  const canvasTerms = ["zh-CN", "en"].flatMap(lng => [t("settings:experiments", { lng }), t("settings:sessionCanvas", { lng }), t("settings:sessionCanvasDescription", { lng })]).join(" ").toLocaleLowerCase();
+  const showCanvas = terms.every(term => canvasTerms.includes(term));
+  const resultCount = Number(showTheme) + Number(showLanguage) + Number(showCanvas);
 
   function clearSearch() {
     setQuery("");
@@ -38,7 +42,7 @@ export function SettingsPage() {
   return <section id="settings-content" tabIndex={-1} aria-labelledby="settings-title" className="min-h-0 flex-1 overflow-y-auto outline-none">
     <div className="mx-auto w-full max-w-[688px] px-5 py-6 sm:px-6">
       <div role="search" aria-label={t("settings:search")} className="relative mb-6">
-        <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-2.5 size-icon -translate-y-1/2 text-muted-foreground" />
         <Input ref={searchRef} type="search" aria-label={t("settings:search")} placeholder={t("settings:search")} value={query}
           className="h-9 pr-10 pl-8 shadow-none sm:h-8 sm:text-xs [&::-webkit-search-cancel-button]:appearance-none"
           onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); clearSearch(); } }} />
@@ -47,7 +51,7 @@ export function SettingsPage() {
       </div>
       <h1 id="settings-title" tabIndex={-1} className="text-lg leading-7 font-semibold tracking-tight outline-none">{t("settings:general")}</h1>
       <p role="status" className="sr-only">{terms.length > 0 ? t("settings:searchResults", { count: resultCount }) : ""}</p>
-      {resultCount > 0 ? <section aria-labelledby="settings-preferences" className="mt-5">
+      {(showTheme || showLanguage) && <section aria-labelledby="settings-preferences" className="mt-5">
         <h2 id="settings-preferences" className="mb-1 text-xs font-medium">{t("settings:preferences")}</h2>
         {showTheme && <div className="flex min-h-14 items-center justify-between gap-3 border-b border-border/60 py-2.5">
           <div className="min-w-0">
@@ -73,7 +77,24 @@ export function SettingsPage() {
             <option value="en" lang="en">{t("settings:english")}</option>
           </select>
         </div>}
-      </section> : <div className="mt-5 py-6 text-center">
+      </section>}
+      {showCanvas && <section aria-labelledby="settings-experiments" className="mt-7">
+        <h2 id="settings-experiments" className="mb-1 text-xs font-medium">{t("settings:experiments")}</h2>
+        <div className="flex min-h-14 items-center justify-between gap-5 border-b border-border/60 py-2.5">
+          <div className="min-w-0">
+            <label htmlFor="settings-session-canvas" className="block text-xs leading-4 font-medium">{t("settings:sessionCanvas")}</label>
+            <p id="settings-session-canvas-description" className="mt-0.5 max-w-md text-[11px] leading-4 text-muted-foreground">{t("settings:sessionCanvasDescription")}</p>
+          </div>
+          <button id="settings-session-canvas" type="button" role="switch" aria-checked={experiments.sessionCanvas}
+            aria-label={t("settings:sessionCanvas")} aria-describedby="settings-session-canvas-description"
+            onClick={() => experiments.setSessionCanvas(!experiments.sessionCanvas)}
+            className="relative inline-flex h-6 w-10 shrink-0 items-center rounded-full bg-input p-0.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-checked:bg-primary">
+            <span data-checked={experiments.sessionCanvas} className="size-5 rounded-full bg-background shadow-sm transition-transform data-[checked=true]:translate-x-4 motion-reduce:transition-none" />
+          </button>
+        </div>
+        {experiments.storageError && <p role="status" className="mt-2 text-xs text-muted-foreground">{t("settings:preferenceSaveFailed")}</p>}
+      </section>}
+      {resultCount === 0 && <div className="mt-5 py-6 text-center">
         <p className="text-xs font-medium">{t("settings:noResults")}</p>
         <p className="mt-1 text-xs text-muted-foreground">{t("settings:noResultsHint")}</p>
       </div>}

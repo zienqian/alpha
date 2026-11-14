@@ -31,6 +31,8 @@
 }
 
 @theme inline {
+  /* Shared size for interface icons; button size only changes the hit area. */
+  --spacing-icon: 1rem;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -73,6 +75,7 @@
 }
 
 :root {
+  --icon-stroke-width: 2;
   --radius: 0.625rem;
   --corner-shape: superellipse(1.3);
   --background: #ffffff;
@@ -161,6 +164,21 @@
 }
 
 @layer base {
+  svg.lucide {
+    width: var(--spacing-icon);
+    height: var(--spacing-icon);
+    flex-shrink: 0;
+  }
+
+  /* A chevron fills only 12/24 of its viewBox, versus 18/24 for most controls.
+   * Scale the path, not the SVG box, so labels and hit areas stay aligned. */
+  svg:is(.lucide-chevron-left, .lucide-chevron-right, .lucide-chevron-up, .lucide-chevron-down) > path {
+    transform-box: view-box;
+    transform-origin: center;
+    transform: scale(1.5);
+    stroke-width: calc(var(--icon-stroke-width) / 1.5);
+  }
+
   * {
     @apply border-border outline-ring/50;
     /* Keep backgrounds, borders, shadows and clipping on the same curve.
@@ -484,6 +502,15 @@
 }
 
 @media (max-width: 767px) {
+  .workspace-shell[data-sidebar-mode="inline"] {
+    --workspace-sidebar-width: clamp(10rem, 32vw, 16.5rem);
+  }
+
+  .workspace-shell[data-sidebar-mode="inline"] .workspace-canvas {
+    margin: 8px 8px 8px 0;
+    border-radius: var(--radius-xl);
+  }
+
   .workspace-canvas {
     margin: 0;
     border-radius: 0;

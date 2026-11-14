@@ -1,5 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { StrictMode, type PropsWithChildren } from "react";
+import { MemoryRouter } from "react-router";
+import { SessionWorkspaceProvider, useWorkspaceDrafts } from "@/features/sessions/workspace-state";
 import { expect, it, vi } from "vitest";
 import { AppProviders } from "@/components/providers";
 import type { SessionView } from "@/features/sessions/api";
@@ -37,19 +39,20 @@ it("injects query, stream, command and search capabilities without using the HTT
       await new Promise<void>(resolve => signal.addEventListener("abort", () => resolve(), { once: true }));
     }),
   } satisfies SessionGateway;
-  const accepted = vi.fn();
-  const wrapper = ({ children }: PropsWithChildren) => <StrictMode><AppProviders sessionGateway={gateway}>{children}</AppProviders></StrictMode>;
+  const wrapper = ({ children }: PropsWithChildren) => <StrictMode><AppProviders sessionGateway={gateway}><MemoryRouter><SessionWorkspaceProvider>{children}</SessionWorkspaceProvider></MemoryRouter></AppProviders></StrictMode>;
   const { result, rerender, unmount } = renderHook(({ id }) => {
     const history = useSessionQuery(id);
-    const actions = useSessionActions(history.data, id, accepted);
+    const actions = useSessionActions(history.data, id);
+    const drafts = useWorkspaceDrafts();
     const search = useSessionSearch([]);
-    return { history, actions, search };
+    return { history, actions, search, ...drafts };
   }, { initialProps: { id: "one" }, wrapper });
 
   await waitFor(() => expect(result.current.history.connection).toBe("connected"));
+  act(() => result.current.setDrafts(() => ({ one: { text: "hello", attachments: [] } })));
   await act(async () => { await result.current.actions.send("one", "hello"); });
   expect(gateway.send).toHaveBeenCalledExactlyOnceWith("one", expect.any(String), "hello");
-  expect(accepted).toHaveBeenCalledWith("one", "hello");
+  expect(result.current.drafts.one?.text).toBe("");
   expect(result.current.actions.pending?.status).toBe("accepted");
   const original = subscriptions.get("one");
   act(() => { original?.receive({ ...snapshot("one"), sequence: 2 }); });

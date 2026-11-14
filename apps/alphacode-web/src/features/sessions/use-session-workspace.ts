@@ -1,11 +1,12 @@
 import { useTranslation } from "@/i18n/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createProject, createSession, type PermissionMode, type ProjectInfo, type SessionInfo, type SessionView } from "@/features/sessions/api";
 import { useSessionActions } from "@/features/sessions/use-session-actions";
 import { useProjectsQuery, useSessionQuery, useSessionsQuery } from "@/features/sessions/queries";
 import { groupSessions, sessionFromView, type Session } from "@/features/sessions/types";
-import { clearReloadDrafts, preserveReloadDrafts, readReloadDrafts } from "./reload-drafts";
+import { preserveReloadDrafts } from "./reload-drafts";
+import { createLocalSession, emptyDraft, useSharedWorkspace, useWorkspaceDrafts } from "./workspace-state";
 import { useSessionGateway } from "./application/session-gateway-provider";
 import { sessionKeys } from "./application/session-cache";
 import { useLocation, useNavigate } from "react-router";
@@ -21,15 +22,9 @@ export interface SessionDraft {
   permissionMode?: PermissionMode;
 }
 
-const emptyDraft: SessionDraft = { text: "", attachments: [] };
 const defaultDraftFolderId = "local-default-workspace";
-type LocalSession = Session & { folderId?: string };
 
-function createLocalSession(id: string, folderId?: string): LocalSession {
-  return { id, folderId, title: "", description: "", messages: [], local: true };
-}
-
-export function useSessionWorkspace() {
+export function useSessionWorkspace(paneId?: string) {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,26 +36,20 @@ export function useSessionWorkspace() {
   });
   const client = useQueryClient();
   const gateway = useSessionGateway();
-  const index = useSessionsQuery();
-  const projects = useProjectsQuery();
-  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
-  const [reloadDrafts] = useState(readReloadDrafts);
-  useEffect(clearReloadDrafts, []);
-  const [localSessions, setLocalSessions] = useState<LocalSession[]>(() => reloadDrafts?.localSessions.map(item => ({ ...createLocalSession(item.id, item.folderId), title: item.title ?? "" })) ?? [createLocalSession("local-initial")]);
-  const [selectedSessionId, setSelectedSessionId] = useState(() =>
-    new URLSearchParams(location.search).get("session")
-      || ((!location.state?.sessionLocal || localSessions.some(session => session.id === location.state?.sessionId)) ? location.state?.sessionId : undefined)
-      || reloadDrafts?.selectedSessionId || "local-initial",
-  );
+  const index = useSessionsQuery(Boolean(paneId));
+  const projects = useProjectsQuery(Boolean(paneId));
+  const shared = useSharedWorkspace();
+  const { localSessions, setLocalSessions, setSelectedSessionId, selection, creating, creatingIds, setCreatingIds,
+    creationErrors, setCreationErrors, deletedIds, setDeletedIds, openedProjects, setOpenedProjects,
+    projectDialogOpen, setProjectDialogOpen, replacements, setReplacements } = shared;
+  const selectedSessionId = paneId ?? shared.selectedSessionId;
   const isLocal = localSessions.some((session) => session.id === selectedSessionId);
   const history = useSessionQuery(isLocal ? undefined : selectedSessionId);
-  const [drafts, setDrafts] = useState<Record<string, SessionDraft>>(() => reloadDrafts?.drafts ?? {});
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
+  const { drafts, setDrafts } = useWorkspaceDrafts(paneId);
   const hasDraft = (id: string) => Boolean(drafts[id]?.text.trim() || drafts[id]?.attachments.length);
   const projectId = history.data?.session.projectId;
   const workspaceRoot = history.data?.session.workspaceRoot;
   const defaultContext = history.data?.session.defaultContext;
-  const [openedProjects, setOpenedProjects] = useState<Pick<SessionInfo, "projectId" | "workspaceRoot" | "defaultContext">[]>([]);
   useEffect(() => {
     if (projectId && workspaceRoot) setOpenedProjects(previous => previous.some(project => project.projectId === projectId && project.workspaceRoot === workspaceRoot && project.defaultContext === defaultContext)
       ? previous : [...previous.filter(project => project.projectId !== projectId), { projectId, workspaceRoot, defaultContext }]);
@@ -79,14 +68,7 @@ export function useSessionWorkspace() {
     ...infos.filter(info => !views.some(view => view.session.id === info.id)),
     ...views.map(view => view.session),
   ], [...openedProjects, ...(projects.data ?? [])]);
-  const selection = useRef(selectedSessionId);
-  const creating = useRef(new Set<string>());
-  const [creatingIds, setCreatingIds] = useState<Record<string, boolean>>({});
-  const [creationErrors, setCreationErrors] = useState<Record<string, boolean | undefined>>({});
-  const actions = useSessionActions(history.data, selectedSessionId, (id, input) => {
-    setDrafts(previous => previous[id]?.text === input
-      ? { ...previous, [id]: { ...previous[id], text: "" } } : previous);
-  });
+  const actions = useSessionActions(history.data, selectedSessionId);
   const [focusRequest, setFocusRequest] = useState(0);
   const defaultFolderId = sourceFolders.find(folder => folder.isDefaultWorkspace)?.id ?? defaultDraftFolderId;
   // Keep unsent default-workspace drafts reachable without registering a project.
@@ -105,13 +87,14 @@ export function useSessionWorkspace() {
   const selectedFolderId = isLocal ? localSession?.folderId ?? defaultFolderId : history.data?.session.projectId;
   const selectedFolder = folders.find(folder => folder.id === selectedFolderId)
     ?? folders.find(folder => folder.sessions.some(session => session.id === selectedSessionId));
+  const loadedSession = useMemo(() => history.data ? sessionFromView(history.data) : undefined, [history.data]);
   const selectedSession = isWelcome ? displaySession(localSession ?? createLocalSession(selectedSessionId, selectedFolder?.id))
-    : history.data ? displaySession(sessionFromView(history.data))
-      : selectedFolder?.sessions.find((session) => session.id === selectedSessionId);
+    : loadedSession ?? selectedFolder?.sessions.find((session) => session.id === selectedSessionId);
   const draft = drafts[selectedSessionId] ?? emptyDraft;
 
   const previousLocation = useRef(location);
   useEffect(() => {
+    if (paneId) return;
     if (previousLocation.current === location) return;
     previousLocation.current = location;
     const localId = location.state?.localSessionId;
@@ -127,18 +110,22 @@ export function useSessionWorkspace() {
     if (id === "local-initial" && !localSessions.some(session => session.id === id)) {
       setLocalSessions(previous => [createLocalSession(id), ...previous]);
     }
+    if (localSessions.some(session => session.id === id)) setReplacements(previous => {
+      if (!previous[id]) return previous;
+      const next = { ...previous }; delete next[id]; return next;
+    });
     selection.current = id;
     setSelectedSessionId(id);
-  }, [location, localSessions, deletedIds, navigate]);
+  }, [location, localSessions, deletedIds, navigate, paneId, selection, setSelectedSessionId, setLocalSessions, setReplacements]);
 
-  function selectSession(id: string, local = localSessions.some((session) => session.id === id), reveal = true) {
+  function selectSession(id: string, local = localSessions.some((session) => session.id === id), reveal = true, replace = false) {
     const current = currentLocation.current;
     if (!reveal && current.pathname !== "/") {
       // A pending session creation must not pull the user out of settings.
       void navigate(current.pathname, { replace: true, state: { ...current.state, sessionId: id, sessionLocal: local } });
     } else if (id !== selection.current || current.pathname !== "/") {
       void navigate({ pathname: "/", search: local ? "" : `?${new URLSearchParams({ session: id })}` },
-        { state: { localSessionId: local ? id : undefined } });
+        { replace, state: { localSessionId: local ? id : undefined } });
     }
     selection.current = id;
     setSelectedSessionId(id);
@@ -154,14 +141,23 @@ export function useSessionWorkspace() {
     if (folderId && !sourceFolders.some((folder) => folder.id === folderId)) return;
     const reusable = localSessions.find((session) => session.folderId === folderId &&
       !session.title && !drafts[session.id]?.text.trim() && !drafts[session.id]?.attachments.length);
+    let id = reusable?.id;
     if (reusable) {
+      // A reused blank draft starts a new lifetime; its previous server binding
+      // must not remap this panel when another conversation receives focus.
+      setReplacements(previous => {
+        if (!previous[reusable.id]) return previous;
+        const next = { ...previous }; delete next[reusable.id]; return next;
+      });
       selectSession(reusable.id);
     } else {
       const session = createLocalSession(`local-${crypto.randomUUID()}`, folderId);
+      id = session.id;
       setLocalSessions((previous) => [session, ...previous]);
       selectSession(session.id, true);
     }
     setFocusRequest((previous) => previous + 1);
+    return id;
   }
 
   function selectProject(folderId?: string) {
@@ -267,6 +263,7 @@ export function useSessionWorkspace() {
       ]);
       void client.invalidateQueries({ queryKey: ["projects"] });
       setDrafts(previous => ({ ...previous, [id]: previous[localId] ?? draft, [localId]: emptyDraft }));
+      setReplacements(previous => ({ ...previous, [localId]: id }));
       setLocalSessions(previous => previous.map(session => session.id === localId ? { ...session, title: "" } : session));
       if (selection.current === localId) selectSession(id, false, false);
       const customTitle = localSessions.find(session => session.id === localId)?.title;
@@ -285,7 +282,7 @@ export function useSessionWorkspace() {
   }
 
   useEffect(() => {
-    if (!import.meta.hot || import.meta.env.MODE === "test") return;
+    if (paneId || !import.meta.hot || import.meta.env.MODE === "test") return;
     // Fast Refresh keeps React state. For Vite's full-reload fallback, preserve
     // text drafts only when no unresolved action would be lost or replayed.
     const preserve = () => {
@@ -295,9 +292,9 @@ export function useSessionWorkspace() {
     };
     import.meta.hot.on("vite:beforeFullReload", preserve);
     return () => import.meta.hot?.off("vite:beforeFullReload", preserve);
-  }, [selectedSessionId, localSessions, drafts, creatingIds, actions.canRefresh]);
+  }, [selectedSessionId, localSessions, drafts, creatingIds, actions.canRefresh, paneId]);
 
-  return { folders, selectedFolder, selectedSession, selectedSessionId, selectSession, draft, updateDraft,
+  return { folders, selectedFolder, selectedSession, selectedSessionId, selectSession, draft, updateDraft, replacements, deletedIds,
     projects, selectProject, addProject, projectDialogOpen, setProjectDialogOpen,
     newSession, renameSession, deleteSession, creatingIds, focusRequest, isLocal, isWelcome, index, history, canSend, send, busy, connected, actions,
     permissionMode, canChangePermission, changePermission,

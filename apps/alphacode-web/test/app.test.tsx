@@ -118,14 +118,20 @@ describe("Session workspace", () => {
     expect(screen.queryByRole("button", { name: "新建会话" })).toBeNull();
   });
 
-  it("opens a mobile drawer and closes it after selecting a session", async () => {
+  it("keeps the sidebar inline at small widths and only collapses on request", async () => {
     vi.stubGlobal("innerWidth", 390);
     await renderWorkspace();
     expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("button", { name: "项目说明与约定" })).toBeTruthy();
+    const sidebar = document.querySelector('[data-slot="sidebar"][data-state]');
+    expect(sidebar?.getAttribute("data-state")).toBe("expanded");
     fireEvent.click(screen.getByRole("button", { name: "切换侧栏" }));
-    const drawer = screen.getByRole("dialog");
-    fireEvent.click(within(drawer).getByRole("button", { name: "项目说明与约定" }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(sidebar?.getAttribute("data-state")).toBe("collapsed");
+    fireEvent.click(screen.getByRole("button", { name: "切换侧栏" }));
+    expect(sidebar?.getAttribute("data-state")).toBe("expanded");
+    fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(sidebar?.getAttribute("data-state")).toBe("expanded");
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("项目说明与约定");
   });
 

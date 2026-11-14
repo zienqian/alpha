@@ -104,8 +104,8 @@ export function SessionQueue({ requests = [], disabled, canSteer, onRemove, onEd
                 event.preventDefault();
                 if (event.key === "ArrowUp" && index > 0) void onMove(request.requestId, requests[index - 1]?.requestId ?? null);
                 if (event.key === "ArrowDown" && index < requests.length - 1) void onMove(request.requestId, requests[index + 2]?.requestId ?? null);
-              }}><GripVertical className="size-3" aria-hidden="true" /></button>
-            <ListEnd className="mx-1 size-3.5" aria-hidden="true" />
+              }}><GripVertical className="size-icon" aria-hidden="true" /></button>
+            <ListEnd className="mx-1 size-icon" aria-hidden="true" />
           </div>
           {isEditing ? <div className="min-w-0 flex-1 py-2 pr-1">
             <textarea autoFocus aria-label={t("sessions:editQueued")} value={editing.input} disabled={disabled}
@@ -127,7 +127,7 @@ export function SessionQueue({ requests = [], disabled, canSteer, onRemove, onEd
               <Button variant="ghost" size="sm" className="gap-1 px-1.5 font-normal" disabled={locked || !canSteer}
                 title={t("sessions:steerHint")} aria-label={t("sessions:steerQueued", { position: index + 1 })}
                 onClick={() => void onSteer(request.requestId)}>
-                {request.steering ? <LoaderCircle className="size-3.5 motion-safe:animate-spin" aria-hidden="true" /> : <CornerDownRight className="size-3.5" aria-hidden="true" />}
+                {request.steering ? <LoaderCircle className="size-icon motion-safe:animate-spin" aria-hidden="true" /> : <CornerDownRight className="size-icon" aria-hidden="true" />}
                 {t(request.steering ? "sessions:steering" : "sessions:steer")}
               </Button>
               <Button variant="ghost" size="icon-sm" className="rounded-full" disabled={locked}

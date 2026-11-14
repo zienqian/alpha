@@ -16,7 +16,7 @@ export function ProjectPicker({ folders, selectedId, onSelect, onCreate, disable
         aria-label={t("workspace:changeProject")} title={selected?.path}>
         <Folder className="shrink-0" aria-hidden="true" />
         <span className="truncate">{selected?.name ?? t("workspace:defaultWorkspace")}</span>
-        <ChevronDown className="size-3 shrink-0" aria-hidden="true" />
+        <ChevronDown className="size-icon shrink-0" aria-hidden="true" />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="start" collisionPadding={12} className="w-72 max-w-[calc(100vw-24px)]">

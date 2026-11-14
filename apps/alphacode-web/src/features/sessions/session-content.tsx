@@ -1,4 +1,5 @@
 import { useTranslation } from "@/i18n/react";
+import { memo } from "react";
 import { MessageSquare } from "lucide-react";
 import { ChatMessage } from "@/components/ai-elements/message";
 import { ReplyProgress } from "@/components/ai-elements/chain-of-thought";
@@ -13,7 +14,7 @@ import { ToolActivity } from "@/features/sessions/tool-message";
 import { buildSessionHistory } from "@/features/sessions/domain/history";
 import { TraceLauncher } from '@/features/traces/trace-launcher';
 
-export function SessionContent({ session, busy = false, phase, connected = true }: {
+export const SessionContent = memo(function SessionContent({ session, busy = false, phase, connected = true }: {
   session: Session;
   busy?: boolean;
   phase?: string;
@@ -59,4 +60,4 @@ export function SessionContent({ session, busy = false, phase, connected = true 
       </MessageScroller>
     </MessageScrollerProvider>
   );
-}
+});

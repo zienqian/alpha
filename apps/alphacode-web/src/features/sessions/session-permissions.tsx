@@ -35,8 +35,8 @@ export function SessionPermissions({ mode, onChange, disabled, saving, busy }: {
     <DropdownMenuTrigger asChild disabled={disabled}>
       <InputGroupButton size="sm" disabled={disabled} aria-label={title} title={title} aria-busy={saving}
         className={cn("shrink-0 gap-1.5 rounded-full px-2 text-muted-foreground", mode === "full" && "bg-muted/60 text-orange-700 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300")}>
-        {saving ? <LoaderCircle className="size-3.5 motion-safe:animate-spin" aria-hidden="true" /> : <Icon className="size-3.5" aria-hidden="true" />}
-        {saving ? t("settings:permissions.saving") : label}
+        {saving ? <LoaderCircle className="size-icon motion-safe:animate-spin" aria-hidden="true" /> : <Icon className="size-icon" aria-hidden="true" />}
+        <span className="truncate">{saving ? t("settings:permissions.saving") : label}</span>
       </InputGroupButton>
     </DropdownMenuTrigger>
     <DropdownMenuContent side="top" align="start" sideOffset={8} collisionPadding={12}
@@ -57,13 +57,13 @@ export function SessionPermissions({ mode, onChange, disabled, saving, busy }: {
           disabled={disabled} textValue={t(`settings:permissions.${value}.name`)}
           className={cn("group relative flex cursor-default items-center gap-2.5 rounded-md px-2 py-2 pr-8 outline-none select-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
             value === "full" && "text-orange-700 focus:text-orange-800 dark:text-orange-400 dark:focus:text-orange-300")}>
-          <OptionIcon className="size-4 shrink-0" aria-hidden="true" />
+          <OptionIcon className="size-icon shrink-0" aria-hidden="true" />
           <span className="min-w-0">
             <span className="block text-[13px] leading-5">{t(`settings:permissions.${value}.name`)}</span>
             <span className={cn("block text-xs leading-4 text-muted-foreground group-focus:text-accent-foreground", value === "full" && "text-current group-focus:text-current")}>{t(`settings:permissions.${value}.description`)}</span>
           </span>
           <MenuPrimitive.ItemIndicator className="absolute right-2 flex items-center">
-            <Check className="size-4" aria-hidden="true" />
+            <Check className="size-icon" aria-hidden="true" />
           </MenuPrimitive.ItemIndicator>
         </MenuPrimitive.RadioItem>)}
       </DropdownMenuRadioGroup>

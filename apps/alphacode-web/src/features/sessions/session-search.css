@@ -63,8 +63,8 @@
 }
 
 .session-search-command .search-input-icon {
-  width: 16px;
-  height: 16px;
+  width: var(--spacing-icon);
+  height: var(--spacing-icon);
   flex-shrink: 0;
   color: var(--search-secondary);
 }
@@ -143,10 +143,10 @@
 }
 
 .session-search-command .search-result-icon {
-  width: 14px;
-  height: 14px;
+  width: var(--spacing-icon);
+  height: var(--spacing-icon);
   flex-shrink: 0;
-  stroke-width: 1.6;
+  stroke-width: var(--icon-stroke-width);
 }
 
 .session-search-command [data-search-hit="true"] .search-result-icon {

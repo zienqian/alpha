@@ -33,8 +33,8 @@ function SkillEntry({ skill }: { skill: InstalledSkill }) {
           <p className="mt-0.5 truncate text-xs leading-5 text-muted-foreground">{skill.description}</p>
         </div>
         <span className="ml-1 flex shrink-0 items-center gap-1.5 pr-1 text-muted-foreground" title={t(`skills:market.status.${skill.status}`)}>
-          {skill.status === "available" ? <><Check className="size-4 opacity-65" aria-hidden="true" /><span className="sr-only">{t("skills:market.status.available")}</span></>
-            : <><CircleAlert className="size-3.5" aria-hidden="true" /><span className="max-w-20 text-[11px] leading-4">{t(`skills:market.status.${skill.status}`)}</span></>}
+          {skill.status === "available" ? <><Check className="size-icon opacity-65" aria-hidden="true" /><span className="sr-only">{t("skills:market.status.available")}</span></>
+            : <><CircleAlert className="size-icon" aria-hidden="true" /><span className="max-w-20 text-[11px] leading-4">{t(`skills:market.status.${skill.status}`)}</span></>}
         </span>
       </summary>
       <div className="space-y-2 px-3 pt-1 pb-4 text-xs leading-5 sm:pl-[60px]">
@@ -98,7 +98,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
           </div>
           <div className="flex shrink-0 items-center gap-2 @min-[740px]:pt-0.5">
             <div className="relative min-w-0 flex-1 @min-[740px]:w-60 @min-[740px]:flex-none">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-icon -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
               <Input className="h-8 rounded-full border-border/80 bg-transparent pl-8 shadow-none md:text-xs" type="search" aria-label={t("skills:market.search")} placeholder={t("skills:market.search")} value={search} onChange={event => setSearch(event.target.value)} />
             </div>
             <Button variant="ghost" size="icon-sm" className="size-8 rounded-full text-muted-foreground" aria-label={t("skills:market.refresh")} title={t("skills:market.refresh")} disabled={query.isFetching} onClick={() => void query.refetch()}>
@@ -128,7 +128,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
         {catalog.directories.length > 0 && <details className="mt-4 border-t border-border/60 pt-4">
           <summary className="cursor-pointer rounded-sm text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/50">{t("skills:market.directories")}</summary>
           <ul className="mt-3 space-y-4">{catalog.directories.map(item => <li key={item.id} className="flex items-start gap-2 text-xs leading-5">
-            <FolderOpen className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <FolderOpen className="mt-0.5 size-icon shrink-0 text-muted-foreground" aria-hidden="true" />
             <div className="min-w-0"><p>{directoryLabel(item)} <span className="text-muted-foreground">· {t(!item.enabled ? "skills:market.directoryDisabled" : !item.trusted ? "skills:market.directoryUntrusted" : !item.exists ? "skills:market.directoryMissing" : "skills:market.directoryActive")}</span></p>
               <p className="break-all text-muted-foreground">{item.path}</p></div>
           </li>)}</ul>
@@ -140,7 +140,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
         </div>}
 
         {installation.isSuccess && <div role="status" className="mt-5 flex items-start gap-2 rounded-md bg-muted p-3 text-xs leading-5">
-          <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <Check className="mt-0.5 size-icon shrink-0" aria-hidden="true" />
           <div className="min-w-0"><p className="break-words font-medium">{t("skills:market.success", { names: installation.data.installed.join(", ") })}</p>
             <p className="mt-1 text-muted-foreground">{t("skills:market.newSession")}</p></div>
         </div>}
@@ -196,7 +196,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
           <div className="mt-6 flex min-h-9 items-center justify-between gap-3 border-b border-border/50 pb-3">
             <h2 className="text-sm font-medium">{t("skills:market.installed")}</h2>
             {filter !== "all" && <Button variant="secondary" size="sm" className="rounded-full" onClick={() => setFilter("all")} aria-label={t("skills:market.clearFilter")}>
-              {t(`skills:market.kind.${filter}`)}<X className="size-3" aria-hidden="true" />
+              {t(`skills:market.kind.${filter}`)}<X className="size-icon" aria-hidden="true" />
             </Button>}
             <p role="status" className="sr-only">{t("skills:market.count", { count: visible.length })}</p>
           </div>
