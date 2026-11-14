@@ -45,7 +45,7 @@ function WorkspaceLayout() {
       className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
       {sessionOpen ? t("sessions:skip") : t("common:skipContent")}</a>
     <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={id => workspace.selectSession(id)} onNewSession={id => workspace.newSession(id)}
-      selectedFolderId={selectedFolder?.id} onCreateProject={() => workspace.setProjectDialogOpen(true)}
+      selectedFolderId={selectedFolder?.id} onCreateProject={() => workspace.setProjectDialogOpen(true)} onDeleteProject={workspace.removeProject}
       onRenameSession={workspace.renameSession} onDeleteSession={workspace.deleteSession} creatingIds={workspace.creatingIds}
       onOpenSkills={() => openPage("/skills")} skillsActive={skillsOpen}
       onOpenSettings={() => openPage("/settings")} settingsActive={settingsOpen}

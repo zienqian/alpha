@@ -5,6 +5,7 @@ import { Folder, Plus, Search, X, Blocks, SquarePen, RefreshCw, Settings } from 
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
 import { SessionNavItem } from "@/features/sessions/session-nav-item";
+import { ProjectActions } from "@/features/sessions/project-actions";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -20,6 +21,7 @@ interface SessionSidebarProps {
   folders: SessionFolder[];
   selectedFolderId?: string;
   onCreateProject: () => void;
+  onDeleteProject: (id: string) => Promise<void>;
   selectedSessionId: string | undefined;
   onSelectSession: (sessionId: string) => void;
   onNewSession: (folderId?: string) => void;
@@ -37,7 +39,7 @@ interface SessionSidebarProps {
   onAddToCanvas?: (id: string) => void;
 }
 
-export function SessionSidebar({ folders, selectedFolderId, onCreateProject, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive, onAddToCanvas }: SessionSidebarProps) {
+export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onDeleteProject, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive, onAddToCanvas }: SessionSidebarProps) {
   const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set());
@@ -169,7 +171,7 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
         <SidebarGroup className="px-(--sidebar-inset) py-0">
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <SidebarGroupLabel className="h-7 px-3 text-muted-foreground">{t("workspace:projects")}</SidebarGroupLabel>
-            <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button>
+            <Button data-create-project variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button>
           </div>
           <SidebarGroupContent>
             {loading && <p role="status" className="px-2 py-5 text-xs text-muted-foreground">{t("sessions:loadingList")}</p>}
@@ -186,12 +188,12 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, sel
                     <SidebarMenuItem>
                       <div className="group/folder-header relative w-full">
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton ref={element => { if (element) folderTriggers.current.set(folder.id, element); else folderTriggers.current.delete(folder.id); }} title={folder.path} aria-label={t("workspace:folder", { name: folder.name })} className="h-8 w-full gap-2 rounded-lg pr-8 pl-3 text-xs text-muted-foreground group-hover/folder-header:bg-sidebar-accent md:h-7">
+                          <SidebarMenuButton ref={element => { if (element) folderTriggers.current.set(folder.id, element); else folderTriggers.current.delete(folder.id); }} title={folder.path} aria-label={t("workspace:folder", { name: folder.name })} className="h-8 w-full gap-2 rounded-lg pr-16 pl-3 text-xs text-muted-foreground group-hover/folder-header:bg-sidebar-accent md:h-7">
                             <Folder className="size-icon" aria-hidden="true" />
                             <span className="font-medium">{folder.name}</span>
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
-                        <Button variant="ghost" size="icon-xs" className="pointer-events-none absolute top-1/2 right-1 -translate-y-1/2 text-muted-foreground opacity-0 group-hover/folder-header:pointer-events-auto group-hover/folder-header:opacity-100 group-focus-within/folder-header:pointer-events-auto group-focus-within/folder-header:opacity-100" aria-label={t("workspace:createIn", { name: folder.name })} onClick={() => startSession(folder.id)}><Plus aria-hidden="true" /></Button>
+                        <ProjectActions folder={folder} onNewSession={() => startSession(folder.id)} onDelete={onDeleteProject} />
                       </div>
                       <CollapsibleContent>
                         <SidebarMenuSub className="mx-0 mt-1 translate-x-0 gap-0.5 border-0 p-0">

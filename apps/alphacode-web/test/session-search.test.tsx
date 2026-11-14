@@ -98,11 +98,10 @@ describe("full conversation search", () => {
     expect(await screen.findByRole("heading", { name: "开发约定" })).toBeTruthy();
   });
 
-  it("opens from the mobile search button and dismisses both dialogs after selection", async () => {
+  it("returns focus to the persistent sidebar search button after selection on narrow screens", async () => {
     vi.stubGlobal("innerWidth", 390);
     render(<AppProviders><App /></AppProviders>);
     await screen.findByText("此计算机");
-    fireEvent.click(screen.getByRole("button", { name: "切换侧栏" }));
     fireEvent.click(screen.getByRole("button", { name: "搜索会话" }));
     const input = screen.getByRole("combobox");
     expect(document.activeElement).toBe(input);
@@ -110,7 +109,7 @@ describe("full conversation search", () => {
     fireEvent.click(await screen.findByRole("option", { name: /项目说明与约定/ }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(await screen.findByRole("heading", { name: "开发约定" })).toBeTruthy();
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "切换侧栏" })));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "搜索会话" })));
   });
 
   it("can interrupt search exit without duplicating the dialog or losing keyboard focus", async () => {

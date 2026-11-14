@@ -70,6 +70,8 @@ export async function startServer(options: ServerOptions) {
   const entries = new Map<string, Entry>();
   const opening = new Map<string, Promise<Entry>>();
   const managing = new Set<string>();
+  const removingProjects = new Set<string>();
+  const creatingProjects = new Map<string, number>();
   const listeners = new Set<() => void>();
   const streams = new Set<() => void>();
   const running = new Set<Promise<void>>();
@@ -108,6 +110,17 @@ export async function startServer(options: ServerOptions) {
   });
 
   async function createEntry(projectId: string, sessionId?: string, restore?: SessionHandoff): Promise<Entry> {
+    if (removingProjects.has(projectId)) return fail(409, "PROJECT_BUSY");
+    creatingProjects.set(projectId, (creatingProjects.get(projectId) ?? 0) + 1);
+    try { return await initializeEntry(projectId, sessionId, restore); }
+    finally {
+      const remaining = (creatingProjects.get(projectId) ?? 1) - 1;
+      if (remaining) creatingProjects.set(projectId, remaining);
+      else creatingProjects.delete(projectId);
+    }
+  }
+
+  async function initializeEntry(projectId: string, sessionId?: string, restore?: SessionHandoff): Promise<Entry> {
     const config = registry.configs.get(projectId);
     if (!config) return fail(404, "PROJECT_NOT_FOUND");
     const saved = sessionId ? await registry.store.read({ namespace: projectId, id: sessionId }) : undefined;
@@ -201,7 +214,8 @@ export async function startServer(options: ServerOptions) {
 
   function canAccept(entry: Entry) {
     const state = entry.chat.state;
-    return !managing.has(entry.chat.sessionId) && !stopping && !state.closing && !state.settingsSaving && state.phase !== "stopping"
+    return entries.get(entry.chat.sessionId) === entry && !removingProjects.has(entry.projectId)
+      && !managing.has(entry.chat.sessionId) && !stopping && !state.closing && !state.settingsSaving && state.phase !== "stopping"
       && (state.canSend || state.busy);
   }
 
@@ -331,6 +345,11 @@ export async function startServer(options: ServerOptions) {
     if (path.startsWith("/api/")) {
       security.checkAccess(request, path === "/api/connect" || path === "/api/web");
       if (path === "/api/projects") return projectRoutes(request);
+      const projectMatch = /^\/api\/projects\/([^/]+)$/.exec(path);
+      if (projectMatch?.[1]) {
+        if (request.method !== "DELETE") return fail(405, "METHOD_NOT_ALLOWED");
+        return removeProject(decodeURIComponent(projectMatch[1]));
+      }
       if (/^\/api\/sessions\/[^/]+\/traces(?:\/|$)/.test(path)) {
         if (path.endsWith('/traces/events')) server.timeout(request, 0);
         return await traceRoutes(request, url) ?? fail(404, 'NOT_FOUND');
@@ -406,10 +425,12 @@ export async function startServer(options: ServerOptions) {
         if (!action && (request.method === "PATCH" || request.method === "DELETE")) return manageSession(id, request);
         const entry = await open(id);
         if (managing.has(id)) fail(409, "SESSION_BUSY");
+        if (removingProjects.has(entry.projectId)) fail(409, "PROJECT_BUSY");
         if (request.method === "GET" && !action) return Response.json(snapshot(entry));
         if (request.method === "GET" && action === "events") { server.timeout(request, 0); return stream(() => snapshot(entry), request.signal, () => entries.get(id) === entry); }
         if (request.method !== "POST") fail(405, "METHOD_NOT_ALLOWED");
         const body = await jsonBody(request);
+        if (removingProjects.has(entry.projectId) || entries.get(id) !== entry) fail(409, "PROJECT_BUSY");
         if (action === "requests") return send(entry, body);
         if (action === "queue") return updateQueue(entry, body);
         if (action === "cancel" || action === "approval") {
@@ -455,6 +476,26 @@ export async function startServer(options: ServerOptions) {
     finally { cache.close(); }
   }
 
+  async function removeProject(projectId: string) {
+    if (removingProjects.has(projectId) || creatingProjects.has(projectId) || managing.size) return fail(409, "PROJECT_BUSY");
+    const live = [...entries.values()].filter(entry => entry.projectId === projectId);
+    if (live.some(entry => entry.admission || entry.queue.length || entry.requestId || entry.draining
+      || entry.chat.state.busy || entry.chat.state.closing || entry.chat.state.settingsSaving || entry.chat.state.approval)) return fail(409, "PROJECT_BUSY");
+    removingProjects.add(projectId);
+    try {
+      for (const entry of live) {
+        await entry.chat.close();
+        entry.unsubscribe();
+        entries.delete(entry.chat.sessionId);
+        changed();
+      }
+      // Unregister only: local files, saved conversations and traces remain recoverable.
+      await registry.unregister(projectId);
+      changed();
+      return Response.json({ ok: true });
+    } finally { removingProjects.delete(projectId); }
+  }
+
   async function manageSession(id: string, request: Request) {
     if (managing.has(id)) return fail(409, "SESSION_BUSY");
     managing.add(id);
@@ -466,6 +507,8 @@ export async function startServer(options: ServerOptions) {
       const state = entry?.chat.state;
       if (entry && (entry.admission || entry.queue.length || entry.requestId || entry.draining || state?.busy || state?.closing || state?.settingsSaving || state?.approval)) fail(409, "SESSION_BUSY");
       const found = await registry.find(id);
+      const owner = entry?.projectId ?? found?.projectId;
+      if (owner && removingProjects.has(owner)) fail(409, "PROJECT_BUSY");
       if (!entry && !found) {
         if (title === undefined) { await removeContext(id); return Response.json({ ok: true }); } // Safe retry after a lost delete acknowledgement.
         return fail(404, "SESSION_NOT_FOUND");

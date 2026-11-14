@@ -1,7 +1,7 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { createProject, createSession, type PermissionMode, type ProjectInfo, type SessionInfo, type SessionView } from "@/features/sessions/api";
+import { createProject, createSession, deleteProject, SessionApiError, type PermissionMode, type ProjectInfo, type SessionInfo, type SessionView } from "@/features/sessions/api";
 import { useSessionActions } from "@/features/sessions/use-session-actions";
 import { useProjectsQuery, useSessionQuery, useSessionsQuery } from "@/features/sessions/queries";
 import { groupSessions, sessionFromView, type Session } from "@/features/sessions/types";
@@ -40,20 +40,20 @@ export function useSessionWorkspace(paneId?: string) {
   const projects = useProjectsQuery(Boolean(paneId));
   const shared = useSharedWorkspace();
   const { localSessions, setLocalSessions, setSelectedSessionId, selection, creating, creatingIds, setCreatingIds,
-    creationErrors, setCreationErrors, deletedIds, setDeletedIds, openedProjects, setOpenedProjects,
+    creationErrors, setCreationErrors, deletedIds, setDeletedIds, removedProjects, setRemovedProjects, openedProjects, setOpenedProjects,
     projectDialogOpen, setProjectDialogOpen, replacements, setReplacements } = shared;
   const selectedSessionId = paneId ?? shared.selectedSessionId;
   const isLocal = localSessions.some((session) => session.id === selectedSessionId);
-  const history = useSessionQuery(isLocal ? undefined : selectedSessionId);
+  const history = useSessionQuery(isLocal || deletedIds.has(selectedSessionId) ? undefined : selectedSessionId);
   const { drafts, setDrafts } = useWorkspaceDrafts(paneId);
   const hasDraft = (id: string) => Boolean(drafts[id]?.text.trim() || drafts[id]?.attachments.length);
   const projectId = history.data?.session.projectId;
   const workspaceRoot = history.data?.session.workspaceRoot;
   const defaultContext = history.data?.session.defaultContext;
   useEffect(() => {
-    if (projectId && workspaceRoot) setOpenedProjects(previous => previous.some(project => project.projectId === projectId && project.workspaceRoot === workspaceRoot && project.defaultContext === defaultContext)
+    if (projectId && workspaceRoot && !removedProjects[projectId]) setOpenedProjects(previous => previous.some(project => project.projectId === projectId && project.workspaceRoot === workspaceRoot && project.defaultContext === defaultContext)
       ? previous : [...previous.filter(project => project.projectId !== projectId), { projectId, workspaceRoot, defaultContext }]);
-  }, [projectId, workspaceRoot, defaultContext]);
+  }, [projectId, workspaceRoot, defaultContext, removedProjects]);
   // A direct /web link can load its history even if the index request fails.
   // Keep its project usable without inventing a session row for an empty draft.
   const infos = (index.data ?? []).filter(info => !deletedIds.has(info.id));
@@ -67,7 +67,7 @@ export function useSessionWorkspace(paneId?: string) {
   const sourceFolders = groupSessions([
     ...infos.filter(info => !views.some(view => view.session.id === info.id)),
     ...views.map(view => view.session),
-  ], [...openedProjects, ...(projects.data ?? [])]);
+  ], [...openedProjects, ...(projects.data ?? [])]).filter(folder => !removedProjects[folder.id]);
   const actions = useSessionActions(history.data, selectedSessionId);
   const [focusRequest, setFocusRequest] = useState(0);
   const defaultFolderId = sourceFolders.find(folder => folder.isDefaultWorkspace)?.id ?? defaultDraftFolderId;
@@ -172,8 +172,50 @@ export function useSessionWorkspace(paneId?: string) {
     setFocusRequest(previous => previous + 1);
   }
 
+  function restoreProject(id: string) {
+    const removed = new Set(removedProjects[id] ?? []);
+    setDeletedIds(previous => new Set([...previous].filter(sessionId => !removed.has(sessionId))));
+    setRemovedProjects(previous => { const next = { ...previous }; delete next[id]; return next; });
+  }
+
+  async function removeProject(id: string) {
+    const folder = folders.find(item => item.id === id);
+    if (!folder) return;
+    const cached = client.getQueriesData<SessionView>({ queryKey: ["session"] }).flatMap(([, view]) => view?.session.projectId === id ? [view.session.id] : []);
+    const ids = new Set([
+      ...folder.sessions.map(session => session.id), ...cached,
+      ...localSessions.filter(session => session.folderId === id || (folder.isDefaultWorkspace && !session.folderId)).map(session => session.id),
+    ]);
+    if ([...ids].some(sessionId => creating.current.has(sessionId))) throw new SessionApiError(409, "PROJECT_BUSY");
+    if (id !== defaultDraftFolderId) await deleteProject(id);
+    await Promise.all([
+      client.cancelQueries({ queryKey: ["projects"] }), client.cancelQueries({ queryKey: sessionKeys.list }),
+      client.cancelQueries({ queryKey: ["session-search"] }),
+      ...[...ids].map(sessionId => client.cancelQueries({ queryKey: sessionKeys.detail(sessionId) })),
+    ]);
+    setRemovedProjects(previous => ({ ...previous, [id]: [...ids] }));
+    setDeletedIds(previous => new Set([...previous, ...ids]));
+    setOpenedProjects(previous => previous.filter(project => project.projectId !== id));
+    setLocalSessions(previous => previous.filter(session => !ids.has(session.id)));
+    setDrafts(previous => Object.fromEntries(Object.entries(previous).filter(([sessionId]) => !ids.has(sessionId))));
+    setReplacements(previous => Object.fromEntries(Object.entries(previous).filter(([from, to]) => !ids.has(from) && !ids.has(to))));
+    if (ids.has(selection.current)) {
+      const next = createLocalSession(`local-${crypto.randomUUID()}`);
+      setLocalSessions(previous => [next, ...previous]);
+      selectSession(next.id, true, true, true);
+      setFocusRequest(previous => previous + 1);
+    }
+    client.setQueryData<ProjectInfo[]>(["projects"], previous => previous?.filter(project => project.projectId !== id));
+    client.setQueryData<SessionInfo[]>(sessionKeys.list, previous => previous?.filter(session => session.projectId !== id));
+    for (const sessionId of ids) client.removeQueries({ queryKey: sessionKeys.detail(sessionId) });
+    client.removeQueries({ queryKey: ["session-search"] });
+    void client.invalidateQueries({ queryKey: ["projects"] });
+    void client.invalidateQueries({ queryKey: sessionKeys.list });
+  }
+
   async function addProject(name: string, path: string) {
     const project = await createProject(name, path, isLocal ? localSession?.folderId : selectedFolder?.id);
+    restoreProject(project.projectId);
     client.setQueryData<ProjectInfo[]>(["projects"], previous => [...(previous ?? []).filter(item => item.projectId !== project.projectId), project]);
     setOpenedProjects(previous => [...previous.filter(item => item.projectId !== project.projectId), project]);
     if (isLocal && !creating.current.has(selectedSessionId)) {
@@ -186,6 +228,7 @@ export function useSessionWorkspace(paneId?: string) {
     }
     setFocusRequest(previous => previous + 1);
     void client.invalidateQueries({ queryKey: ["projects"] });
+    void client.invalidateQueries({ queryKey: sessionKeys.list });
   }
 
   async function renameSession(id: string, title: string) {
@@ -239,7 +282,7 @@ export function useSessionWorkspace(paneId?: string) {
     if (isLocal) updateDraft({ permissionMode: mode });
     else void actions.setPermissionMode(selectedSessionId, mode);
   }
-  const canSend = Boolean(draft.text.trim()) && !draft.attachments.length && !actions.pending
+  const canSend = !deletedIds.has(selectedSessionId) && Boolean(draft.text.trim()) && !draft.attachments.length && !actions.pending
     && !actions.controlling && !creatingIds[selectedSessionId] && (isLocal ? !localSession?.folderId || Boolean(selectedFolder) : connected
       && Boolean(history.data?.state.canQueue || (!busy && history.data?.state.canSend))
       && !history.data?.state.closing && !history.data?.state.settingsSaving);
@@ -254,6 +297,7 @@ export function useSessionWorkspace(paneId?: string) {
     setCreationErrors(previous => ({ ...previous, [localId]: undefined }));
     try {
       const created = await createSession(localSession?.folderId);
+      restoreProject(created.session.projectId);
       const id = created.session.id;
       client.setQueryData(["session", id], created);
       client.setQueryData<SessionInfo[]>(["sessions"], previous => [created.session, ...(previous ?? []).filter(info => info.id !== id)]);
@@ -295,7 +339,7 @@ export function useSessionWorkspace(paneId?: string) {
   }, [selectedSessionId, localSessions, drafts, creatingIds, actions.canRefresh, paneId]);
 
   return { folders, selectedFolder, selectedSession, selectedSessionId, selectSession, draft, updateDraft, replacements, deletedIds,
-    projects, selectProject, addProject, projectDialogOpen, setProjectDialogOpen,
+    projects, selectProject, addProject, removeProject, projectDialogOpen, setProjectDialogOpen,
     newSession, renameSession, deleteSession, creatingIds, focusRequest, isLocal, isWelcome, index, history, canSend, send, busy, connected, actions,
     permissionMode, canChangePermission, changePermission,
     submitting: creatingIds[selectedSessionId] || actions.pending?.status === "sending" || actions.pending?.status === "accepted",

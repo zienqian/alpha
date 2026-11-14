@@ -4,6 +4,7 @@ import type { ProjectInfo, SessionInfo, SessionView } from "@/features/sessions/
 
 export function mockSessionApi() {
   const projects: ProjectInfo[] = [];
+  const removedProjects = new Set<string>();
   const infos: SessionInfo[] = demoFolders.flatMap((folder) => folder.sessions.map((session) => ({
     id: session.id, projectId: folder.id, workspaceRoot: folder.path, title: session.title,
     updatedAt: "2026-11-09T01:00:00.000Z", status: "ready",
@@ -32,7 +33,19 @@ export function mockSessionApi() {
   const fetch = vi.fn(async (path: string, init: RequestInit) => {
     const override = overrides.get(path);
     if (override) return override(init);
-    if (path === "/api/projects") return Response.json({ projects });
+    if (path === "/api/projects" && init.method === "POST") {
+      const body = JSON.parse(String(init.body));
+      const projectId = infos.find(info => info.workspaceRoot === body.workspaceRoot)?.projectId ?? crypto.randomUUID();
+      const project = { projectId, workspaceRoot: body.workspaceRoot, name: body.name };
+      removedProjects.delete(projectId);
+      projects.splice(0, projects.length, ...projects.filter(item => item.projectId !== projectId), project);
+      return Response.json({ project }, { status: 201 });
+    }
+    if (path === "/api/projects") return Response.json({ projects: projects.filter(project => !removedProjects.has(project.projectId)) });
+    if (path.startsWith("/api/projects/") && init.method === "DELETE") {
+      removedProjects.add(decodeURIComponent(path.slice("/api/projects/".length)));
+      return Response.json({ ok: true });
+    }
     if (path.endsWith("/events")) {
       const id = path.slice("/api/sessions/".length, -"/events".length);
       const initial = path === "/api/events" ? { instanceId: "test-server", sequence: 1 } : views.get(id);
@@ -118,10 +131,10 @@ export function mockSessionApi() {
       publish(current.session.id);
       return Response.json({ ok: true });
     }
-    if (path === "/api/sessions") return Response.json({ sessions: infos });
+    if (path === "/api/sessions") return Response.json({ sessions: infos.filter(info => !removedProjects.has(info.projectId)) });
     if (path.startsWith("/api/sessions/search?")) {
       const query = (new URL(path, "http://localhost").searchParams.get("q") ?? "").toLowerCase();
-      const results = infos.flatMap(session => {
+      const results = infos.filter(info => !removedProjects.has(info.projectId)).flatMap(session => {
         const snippets = (views.get(session.id)?.state.messages ?? []).filter(message => message.text.toLowerCase().includes(query))
           .map(message => ({ messageId: message.id, role: message.role, text: message.text }));
         return snippets.length || `${session.title}\n${session.workspaceRoot}`.toLowerCase().includes(query)
@@ -131,6 +144,7 @@ export function mockSessionApi() {
     }
     const id = decodeURIComponent(path.slice("/api/sessions/".length));
     const currentView = views.get(id);
+    if (currentView && removedProjects.has(currentView.session.projectId)) return Response.json({ code: "SESSION_NOT_FOUND" }, { status: 404 });
     if (currentView && init.method === "PATCH") {
       currentView.session.title = JSON.parse(String(init.body)).title;
       currentView.session.titleStatus = "ready";

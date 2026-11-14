@@ -119,6 +119,81 @@ test("projects can be registered without a session, deduplicate directories and 
   } finally { await fixture.dispose(); }
 });
 
+test("deleting a project unregisters it across restarts and keeps files and conversation history recoverable", async () => {
+  const fixture = await serverFixture();
+  try {
+    const initial = await fixture.connect();
+    const projectId = initial.session.projectId;
+    const sessionPath = `/api/sessions/${initial.session.id}`;
+    const file = join(fixture.config.workspaceRoot, "keep.txt");
+    await writeFile(file, "keep this file");
+    await fixture.client().request(`${sessionPath}/requests`, { input: "saved before removing workspace", requestId: "remove-project" });
+    await waitFor(async () => !(await fixture.client().request<SessionView>(sessionPath)).requestId);
+    const other = join(fixture.root, "other");
+    await mkdir(other);
+    await fixture.browser().request("/api/projects", { name: "Other", workspaceRoot: other });
+    const response = await fetch(`${fixture.server.origin}${sessionPath}/events`, { proxy: false });
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Missing session stream");
+    await reader.read();
+    const remove = (origin = fixture.server.origin) => fetch(`${fixture.server.origin}/api/projects/${projectId}`, {
+      method: "DELETE", headers: { Origin: origin }, proxy: false,
+    });
+    expect((await remove("https://other.invalid")).status).toBe(403);
+    expect((await remove()).status).toBe(200);
+    while (!(await reader.read()).done) { /* Removal closes the live stream. */ }
+    expect((await remove()).status).toBe(200);
+    expect((await fixture.browser().request<{ projects: { projectId: string }[] }>("/api/projects")).projects.map(project => project.projectId)).not.toContain(projectId);
+    expect((await fixture.browser().request<{ sessions: SessionInfo[] }>("/api/sessions")).sessions).toHaveLength(0);
+    expect((await fixture.browser().request<{ results: unknown[] }>("/api/sessions/search?q=saved")).results).toHaveLength(0);
+    await expect(fixture.browser().request(sessionPath)).rejects.toMatchObject({ status: 404 });
+    await expect(fixture.browser().request("/api/sessions", { projectId })).rejects.toMatchObject({ status: 404 });
+    await fixture.restart();
+    expect((await fixture.browser().request<{ projects: unknown[] }>("/api/projects")).projects).toHaveLength(1);
+    expect(await readFile(file, "utf8")).toBe("keep this file");
+    const restored = await fixture.browser().request<{ project: { projectId: string } }>("/api/projects", { name: "Restored", workspaceRoot: fixture.config.workspaceRoot });
+    expect(restored.project.projectId).toBe(projectId);
+    const view = await fixture.browser().request<SessionView>(sessionPath);
+    expect(view.state.messages.some(message => message.text === "saved before removing workspace")).toBe(true);
+  } finally { await fixture.dispose(); }
+});
+
+test("project deletion rejects running work without removing the project", async () => {
+  const model = controlledStream();
+  const fixture = await serverFixture(() => model.response);
+  try {
+    const session = await fixture.connect();
+    await fixture.client().request(`/api/sessions/${session.session.id}/requests`, { input: "running", requestId: "project-busy" });
+    await waitFor(() => fixture.calls.length === 1);
+    const response = await fetch(`${fixture.server.origin}/api/projects/${session.session.projectId}`, {
+      method: "DELETE", headers: { Origin: fixture.server.origin }, proxy: false,
+    });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "PROJECT_BUSY" });
+    expect((await fixture.browser().request<{ projects: unknown[] }>("/api/projects")).projects).toHaveLength(1);
+    model.text("done"); model.end();
+    await waitFor(async () => !(await fixture.client().request<SessionView>(`/api/sessions/${session.session.id}`)).requestId);
+  } finally { model.end(); await fixture.dispose(); }
+});
+
+test("project removal locks session creation and mutations while runtimes close", async () => {
+  let release!: () => void;
+  let closing = false;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const fixture = await serverFixture(undefined, undefined, chat => ({ ...chat, close: async () => { closing = true; await gate; await chat.close(); } }));
+  try {
+    const session = await fixture.connect();
+    const deletion = fetch(`${fixture.server.origin}/api/projects/${session.session.projectId}`, {
+      method: "DELETE", headers: { Origin: fixture.server.origin }, proxy: false,
+    });
+    await waitFor(() => closing);
+    await expect(fixture.browser().request("/api/sessions", { projectId: session.session.projectId })).rejects.toMatchObject({ status: 409, code: "PROJECT_BUSY" });
+    await expect(fixture.browser().request(`/api/sessions/${session.session.id}/requests`, { input: "too late", requestId: "late" })).rejects.toMatchObject({ status: 409 });
+    release();
+    expect((await deletion).status).toBe(200);
+  } finally { release(); await fixture.dispose(); }
+});
+
 test("project registration rejects missing folders, files and invalid names without changing the registry", async () => {
   const fixture = await serverFixture();
   try {

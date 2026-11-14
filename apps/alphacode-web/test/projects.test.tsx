@@ -16,6 +16,93 @@ async function setup(search = "/") {
   return api;
 }
 
+async function openDeleteWorkspace(name: string) {
+  fireEvent.keyDown(screen.getByRole("button", { name: `${name} 的工作区操作` }), { key: "Enter" });
+  fireEvent.click(await screen.findByRole("menuitem", { name: "删除工作区" }));
+  return screen.findByRole("alertdialog", { name: `删除工作区“${name}”？` });
+}
+
+it("keeps workspace creation beside its menu and cancels removal without changing anything", async () => {
+  const api = await setup();
+  const folder = screen.getByRole("button", { name: "文件夹 alphacode-web" });
+  const header = folder.parentElement;
+  if (!header) throw new Error("Missing workspace header");
+  expect(within(header).getByRole("button", { name: "在 alphacode-web 中新建会话" })).toBeTruthy();
+  expect(within(header).getByRole("button", { name: "alphacode-web 的工作区操作" })).toBeTruthy();
+  const dialog = await openDeleteWorkspace("alphacode-web");
+  fireEvent.click(within(dialog).getByRole("button", { name: "取消" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "alphacode-web 的工作区操作" }));
+  expect(folder.getAttribute("aria-expanded")).toBe("true");
+  expect(api.fetch.mock.calls.some(([, init]) => init.method === "DELETE")).toBe(false);
+});
+
+it("removes the active workspace and its drafts, preserves other workspaces, and restores saved history when re-added", async () => {
+  const api = await setup("/?session=workspace-layout");
+  await screen.findByRole("heading", { name: "搭建前端工作区", level: 1 });
+  replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "清理此草稿");
+  const dialog = await openDeleteWorkspace("alphacode-web");
+  fireEvent.click(within(dialog).getByRole("button", { name: "删除工作区" }));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "文件夹 alphacode-web" })).toBeNull());
+  expect(await screen.findByRole("heading", { name: "从这里，开始构建。" })).toBeTruthy();
+  expect(screen.getByRole("textbox", { name: "消息草稿" }).textContent).toBe("");
+  expect(screen.getByRole("button", { name: "文件夹 docs" })).toBeTruthy();
+  expect(new URL(window.location.href).searchParams.has("session")).toBe(false);
+  expect(api.fetch.mock.calls.filter(([, init]) => init.method === "DELETE").map(([path]) => path)).toEqual(["/api/projects/alphacode-web"]);
+  fireEvent.click(screen.getByRole("button", { name: "创建项目" }));
+  const create = await screen.findByRole("dialog", { name: "创建项目" });
+  fireEvent.change(within(create).getByRole("textbox", { name: "项目名称" }), { target: { value: "恢复工作区" } });
+  fireEvent.change(within(create).getByRole("textbox", { name: "源文件夹" }), { target: { value: api.info("workspace-layout").workspaceRoot } });
+  fireEvent.click(within(create).getByRole("button", { name: "创建项目" }));
+  await screen.findByRole("button", { name: "文件夹 恢复工作区" });
+  fireEvent.click(await screen.findByRole("button", { name: "搭建前端工作区" }));
+  await screen.findByRole("heading", { name: "搭建前端工作区", level: 1 });
+  expect(screen.getByRole("textbox", { name: "消息草稿" }).textContent).toBe("");
+  expect(api.view("workspace-layout").state.messages.length).toBeGreaterThan(0);
+});
+
+it("keeps a failed deletion and draft available for retry", async () => {
+  const api = await setup("/?session=workspace-layout");
+  await screen.findByRole("heading", { name: "搭建前端工作区", level: 1 });
+  replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "失败后保留");
+  api.overrides.set("/api/projects/alphacode-web", () => Response.json({ code: "PROJECT_BUSY" }, { status: 409 }));
+  const dialog = await openDeleteWorkspace("alphacode-web");
+  fireEvent.click(within(dialog).getByRole("button", { name: "删除工作区" }));
+  expect((await within(dialog).findByRole("alert")).textContent).toContain("正在运行或保存");
+  expect(screen.getByRole("textbox", { name: "消息草稿", hidden: true }).textContent).toBe("失败后保留");
+  api.overrides.delete("/api/projects/alphacode-web");
+  fireEvent.click(within(dialog).getByRole("button", { name: "删除工作区" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+  expect(screen.queryByRole("button", { name: "文件夹 alphacode-web" })).toBeNull();
+});
+
+it("removes an empty workspace and keeps it removed after remounting", async () => {
+  const api = mockSessionApi();
+  api.projects.push({ projectId: "empty", workspaceRoot: "/projects/empty", name: "空项目" });
+  window.history.replaceState(null, "", "/");
+  const app = render(<AppProviders><App /></AppProviders>);
+  await screen.findByRole("button", { name: "文件夹 空项目" });
+  const dialog = await openDeleteWorkspace("空项目");
+  fireEvent.click(within(dialog).getByRole("button", { name: "删除工作区" }));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "文件夹 空项目" })).toBeNull());
+  app.unmount();
+  render(<AppProviders><App /></AppProviders>);
+  await screen.findByRole("button", { name: "文件夹 alphacode-web" });
+  expect(screen.queryByRole("button", { name: "文件夹 空项目" })).toBeNull();
+});
+
+it("removes a local default workspace draft without calling a remote deletion", async () => {
+  const api = await setup();
+  replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "未发送默认草稿");
+  const dialog = await openDeleteWorkspace("默认工作区");
+  fireEvent.click(within(dialog).getByRole("button", { name: "删除工作区" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+  expect(screen.getByRole("textbox", { name: "消息草稿" }).textContent).toBe("");
+  expect(api.fetch.mock.calls.some(([, init]) => init.method === "DELETE")).toBe(false);
+  replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "新的默认草稿");
+  expect(await screen.findByRole("button", { name: "文件夹 默认工作区" })).toBeTruthy();
+});
+
 it.each([false, true])("sends an unselected chat to the default workspace (empty installation: %s)", async empty => {
   const api = mockSessionApi();
   if (empty) { api.infos.splice(0); api.views.clear(); }

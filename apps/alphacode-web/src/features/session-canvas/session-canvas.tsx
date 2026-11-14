@@ -169,8 +169,14 @@ export default function SessionCanvas({ workspace }: { workspace: SessionWorkspa
       }
       if (actions.length) model.doAction(Actions.group(actions));
       if (previousSelection.current !== workspace.selectedSessionId) {
+        const removedSelection = workspace.deletedIds.has(previousSelection.current);
         previousSelection.current = workspace.selectedSessionId;
-        selectPanel(model, workspace.selectedSessionId, workspace.selectedSession?.title || t("sessions:new"));
+        const title = workspace.selectedSession?.title || t("sessions:new");
+        // A replacement draft must not overwrite a surviving workspace's panel.
+        if (removedSelection && getPanels(model).length) {
+          const panelId = addPanel(model, workspace.selectedSessionId, title);
+          if (panelId) focusPanel(model, panelId);
+        } else selectPanel(model, workspace.selectedSessionId, title);
       }
       const names: Action[] = [];
       for (const panel of getPanels(model)) {

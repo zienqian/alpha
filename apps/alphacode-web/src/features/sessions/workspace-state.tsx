@@ -44,6 +44,7 @@ function useWorkspaceState() {
   const [creatingIds, setCreatingIds] = useState<Record<string, boolean>>({});
   const [creationErrors, setCreationErrors] = useState<Record<string, boolean | undefined>>({});
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
+  const [removedProjects, setRemovedProjects] = useState<Record<string, string[]>>({});
   const [openedProjects, setOpenedProjects] = useState<Pick<SessionInfo, "projectId" | "workspaceRoot" | "defaultContext">[]>([]);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [replacements, setReplacements] = useState<Record<string, string>>({});
@@ -54,7 +55,7 @@ function useWorkspaceState() {
   }, (id, input) => draftStore.set(previous => previous[id]?.text === input
     ? { ...previous, [id]: { ...previous[id], text: "" } } : previous)), [client, gateway, draftStore]);
   return { localSessions, setLocalSessions, selectedSessionId, setSelectedSessionId, selection, creating,
-    creatingIds, setCreatingIds, creationErrors, setCreationErrors, deletedIds, setDeletedIds,
+    creatingIds, setCreatingIds, creationErrors, setCreationErrors, deletedIds, setDeletedIds, removedProjects, setRemovedProjects,
     openedProjects, setOpenedProjects, projectDialogOpen, setProjectDialogOpen, replacements, setReplacements, draftStore, commands };
 }
 

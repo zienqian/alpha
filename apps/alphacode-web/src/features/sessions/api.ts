@@ -131,6 +131,9 @@ export async function createProject(name: string, workspaceRoot: string, sourceP
   return (await requestJson<{ project: ProjectInfo }>("/api/projects", AbortSignal.timeout(15_000), { name, workspaceRoot, sourceProjectId })).project;
 }
 
+export const deleteProject = (id: string) =>
+  requestJson<{ ok: true }>(`/api/projects/${encodeURIComponent(id)}`, AbortSignal.timeout(15_000), undefined, "DELETE");
+
 export function getSession(id: string, signal: AbortSignal) {
   return requestJson<SessionView>(sessionPath(id), signal);
 }

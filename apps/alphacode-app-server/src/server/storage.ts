@@ -53,11 +53,23 @@ export async function createRegistry(databasePath: string, directory: string) {
         traceEnabled: input.traceEnabled,
         globalInstructions: input.globalInstructions, globalInstructionsPath: input.globalInstructionsPath,
       };
-      configs.set(projectId, config);
-      credentials.set(projectId, credential);
-      writing = writing.catch(() => undefined).then(() => writeJson(file, Object.fromEntries(configs)));
+      writing = writing.catch(() => undefined).then(async () => {
+        await writeJson(file, { ...Object.fromEntries(configs), [projectId]: config });
+        configs.set(projectId, config);
+        credentials.set(projectId, credential);
+      });
       await writing;
       return projectId;
+    },
+    async unregister(projectId: string) {
+      writing = writing.catch(() => undefined).then(async () => {
+        const next = Object.fromEntries(configs);
+        delete next[projectId];
+        await writeJson(file, next);
+        configs.delete(projectId);
+        credentials.delete(projectId);
+      });
+      await writing;
     },
     async list(): Promise<SessionInfo[]> {
       const sessions: SessionInfo[] = [];

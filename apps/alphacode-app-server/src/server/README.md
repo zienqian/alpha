@@ -35,6 +35,7 @@ Web 按单机使用、信任本机进程的前提设计，不使用浏览器登�
 | POST | `/api/connect` | 原生专用：`{config, credential?}`；登记项目并新建/恢复 config.sessionId，返回 SessionView |
 | GET | `/api/projects` | `{projects: [{projectId, workspaceRoot, name, defaultContext, isDefaultWorkspace?}]}`；默认工作区以真实路径匹配配置并标记，客户端使用本地化名称。包含没有会话的项目，不返回模型端点或凭据 |
 | POST | `/api/projects` | `{name, workspaceRoot, sourceProjectId?}`；登记已存在的绝对目录，名称最多 100 字符，返回 `{project}`。相同真实目录复用原项目；不创建会话。沿用指定或最近登记项目的模型配置，没有项目时使用全局配置；新项目权限默认 ask |
+| DELETE | `/api/projects/:projectId` | 返回 `{ok: true}`；关闭空闲会话并持久移除项目登记，保留本地文件、会话归档与 trace，重新添加同一目录可恢复历史。运行、排队、保存或创建中的会话返回 `409 PROJECT_BUSY`；重复删除可安全重试 |
 | GET | `/api/sessions` | `{sessions: SessionInfo[]}`，覆盖所有已登记项目 |
 | PATCH | `/api/sessions/:id` | `{title}`，1–200 个字符的单行标题，返回 `{session: SessionInfo}`。手动标题中止并替代自动生成，保存后通过 SSE 同步；未打开的历史直接以 revision CAS 更新，无需启动 runtime |
 | DELETE | `/api/sessions/:id` | 关闭空闲 runtime，以 revision CAS tombstone 删除档案，关闭该会话的 SSE 并通知列表；重复删除返回 `{ok:true}`。运行、排队、保存或未恢复的 pending 状态返回 `SESSION_BUSY` |

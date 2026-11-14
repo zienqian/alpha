@@ -249,6 +249,23 @@ describe("experimental session canvas", () => {
     expect(api.fetch.mock.calls.filter(([url, init]) => url === "/api/sessions" && init.method === "POST")).toHaveLength(1);
   });
 
+  it("removes every panel owned by a deleted workspace while keeping other workspaces open", async () => {
+    renderCanvas();
+    await screen.findByRole("region", { name: "项目说明与约定" });
+    await addSecond();
+    replaceDraft(editor("搭建前端工作区"), "此工作区的未发送草稿");
+    fireEvent.keyDown(screen.getByRole("button", { name: "alphacode-web 的工作区操作" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "删除工作区" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "删除工作区“alphacode-web”？" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "删除工作区" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("region", { name: "搭建前端工作区" })).toBeNull());
+    expect(screen.getByRole("region", { name: "项目说明与约定" })).toBeTruthy();
+    expect(getPanels(readCanvas()).some(panel => panel.sessionId === "workspace-layout")).toBe(false);
+    expect(api.views.has("workspace-layout")).toBe(true);
+    await waitFor(() => expect(api.streams.get("/api/sessions/workspace-layout/events")?.size).toBe(0));
+  });
+
   it("preserves canvas geometry on focus and closes panels without deleting sessions", async () => {
     renderCanvas();
     await screen.findByRole("region", { name: "项目说明与约定" });
