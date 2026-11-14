@@ -3,6 +3,8 @@
 .workspace-shell .session-nav-item[data-canvas-draggable="true"] { cursor: grab; }
 .workspace-shell .session-nav-item[data-canvas-draggable="true"]:active { cursor: grabbing; }
 .session-canvas {
+  /* Keep the outer 8px gap equal on all sides; reserve scrollbars only on overflow. */
+  scrollbar-gutter: auto;
   --canvas-dock-accent: var(--primary);
   --canvas-panel-radius: var(--radius-xl);
   --flexlayout-font-size: 14px;

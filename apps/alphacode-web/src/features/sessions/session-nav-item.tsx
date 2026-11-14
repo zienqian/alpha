@@ -81,7 +81,7 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button ref={menu} variant="ghost" size="icon-sm" disabled={disabled}
-              className="absolute top-1/2 right-0.5 -translate-y-1/2 text-muted-foreground md:opacity-0 md:group-hover/session-row:opacity-100 md:group-focus-within/session-row:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+              className="absolute top-1/2 right-0.5 -translate-y-1/2 text-muted-foreground md:opacity-0 md:group-hover/session-row:opacity-100 md:group-has-[:focus-visible]/session-row:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
               aria-label={t("sessions:sessionMenu", { title: session.title })}><MoreHorizontal aria-hidden="true" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onCloseAutoFocus={event => {

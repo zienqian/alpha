@@ -84,7 +84,8 @@ async function createWindow() {
     title: applicationName, icon: applicationIcon, show: false, autoHideMenuBar: true,
     backgroundColor, titleBarStyle: "hidden",
     titleBarOverlay: process.platform === "darwin" ? true : {
-      color: backgroundColor, symbolColor: nativeTheme.shouldUseDarkColors ? "#e7ebf1" : "#252a34", height: 36,
+      // Let the renderer's titlebar and modal backdrops show through the controls.
+      color: "#00000000", symbolColor: nativeTheme.shouldUseDarkColors ? "#e7ebf1" : "#252a34", height: 36,
     },
     ...(process.platform === "darwin" ? { trafficLightPosition: { x: 14, y: 11 } } : {}),
     webPreferences: { preload: join(__dirname, "preload.cjs"), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: true },
@@ -103,7 +104,7 @@ async function createWindow() {
     const { color, symbolColor } = appearance;
     if (typeof color !== "string" || typeof symbolColor !== "string" || !/^#[\da-f]{6}$/i.test(color) || !/^#[\da-f]{6}$/i.test(symbolColor)) return;
     created.setBackgroundColor(color);
-    if (process.platform !== "darwin") created.setTitleBarOverlay({ color, symbolColor });
+    if (process.platform !== "darwin") created.setTitleBarOverlay({ symbolColor });
   });
   created.once("ready-to-show", () => { if (saved.maximized) created.maximize(); created.show(); });
   created.on("page-title-updated", event => { event.preventDefault(); created.setTitle(applicationName); });

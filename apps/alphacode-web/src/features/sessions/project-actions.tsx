@@ -33,7 +33,7 @@ export function ProjectActions({ folder, onNewSession, onDelete }: {
   }
 
   return <>
-    <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5 text-muted-foreground md:opacity-0 md:group-hover/folder-header:opacity-100 md:group-focus-within/folder-header:opacity-100 has-[[data-state=open]]:opacity-100 [@media(hover:none)]:opacity-100">
+    <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5 text-muted-foreground md:opacity-0 md:group-hover/folder-header:opacity-100 md:group-has-[:focus-visible]/folder-header:opacity-100 has-[[data-state=open]]:opacity-100 [@media(hover:none)]:opacity-100">
       <Button variant="ghost" size="icon-xs" className="size-7 md:size-6" disabled={pending}
         aria-label={t("workspace:createIn", { name: folder.name })} onClick={onNewSession}><Plus aria-hidden="true" /></Button>
       <DropdownMenu>
