@@ -13,12 +13,15 @@ import { presentNote, presentLocalResult } from "@/i18n/presentation";
 import { ToolActivity } from "@/features/sessions/tool-message";
 import { buildSessionHistory } from "@/features/sessions/domain/history";
 import { TraceLauncher } from '@/features/traces/trace-launcher';
+import type { ModelActivity } from './api';
+import { LocalFileLinks } from '@/components/local-file-links';
 
-export const SessionContent = memo(function SessionContent({ session, busy = false, phase, connected = true }: {
+export const SessionContent = memo(function SessionContent({ session, busy = false, phase, connected = true, modelActivity }: {
   session: Session;
   busy?: boolean;
   phase?: string;
   connected?: boolean;
+  modelActivity?: ModelActivity;
 }) {
   const { t } = useTranslation();
   const { items, finalReplyIds, last, streamingReply, showProgress, empty } = buildSessionHistory(session.messages, busy, phase, connected);
@@ -42,9 +45,9 @@ export const SessionContent = memo(function SessionContent({ session, busy = fal
               <MessageScrollerItem key={item.id} messageId={item.id} role="listitem">
                 <article aria-label={item.type === "tools" ? t("tools:activity") : item.message.role === "user" ? t("sessions:userMessage") : t("sessions:assistantMessage")}>
                   {item.type === "tools" ? <ToolActivity messages={item.messages} active={busy && connected && phase !== "stopping" && item === last} /> : <>
-                    <ChatMessage role={item.message.role} content={item.message.localResult ? presentLocalResult(t, item.message.localResult) : item.message.content} streaming={busy && item.message.streaming}
+                    <LocalFileLinks sessionId={session.id} replyId={item.message.role === 'assistant' ? item.message.sourceId ?? item.id : undefined}><ChatMessage role={item.message.role} content={item.message.localResult ? presentLocalResult(t, item.message.localResult) : item.message.content} streaming={busy && item.message.streaming}
                       actions={item.message.role==='assistant'&&finalReplyIds.has(item.id)&&!item.message.localResult&&!session.local ? <TraceLauncher sessionId={session.id} replyId={item.id}/> : undefined}
-                      showCopy={item.message.role === "user" || finalReplyIds.has(item.id)} />
+                      showCopy={item.message.role === "user" || finalReplyIds.has(item.id)} /></LocalFileLinks>
                     {item.message.note && <p className="mt-2 text-xs text-muted-foreground">{presentNote(t, item.message)}</p>}
                   </>}
                 </article>
@@ -52,7 +55,7 @@ export const SessionContent = memo(function SessionContent({ session, busy = fal
             ))}
             {/* Keep every reply phase in the same trailing row, after prose and notes. */}
             {showProgress && <MessageScrollerItem key="reply-progress" messageId={`${session.id}-progress`} role="listitem">
-              <ReplyProgress hasContent={streamingReply} phase={phase} connected={connected} />
+              <ReplyProgress hasContent={streamingReply} phase={phase} connected={connected} activity={modelActivity} />
             </MessageScrollerItem>}
           </MessageScrollerContent>
         </MessageScrollerViewport>

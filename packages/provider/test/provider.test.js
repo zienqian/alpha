@@ -10,6 +10,55 @@ const config = () => defineProviderConfig({ providers: {
 const reply = (data) => new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
 const collect = async (iterable) => { const values = []; for await (const value of iterable) values.push(value); return values; };
 
+test('partial tool input reports metadata before completion across all protocols and releases on exit', async () => {
+  const fragment = '{"content":"你';
+  const cases = [
+    ['local', [{ choices: [{ delta: { tool_calls: [{ index: 0, id: 'call', function: { name: 'create_file', arguments: fragment } }] } }] }]],
+    ['openai', [
+      { type: 'response.output_item.added', item: { type: 'function_call', id: 'item', name: 'create_file' } },
+      { type: 'response.function_call_arguments.delta', item_id: 'item', delta: fragment },
+    ]],
+    ['anthropic', [
+      { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'call', name: 'create_file', input: {} } },
+      { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: fragment } },
+    ]],
+  ];
+  for (const [name, events] of cases) {
+    let cancelled = false;
+    const body = new ReadableStream({
+      start(controller) { for (const event of events) controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`)); },
+      cancel() { cancelled = true; },
+    });
+    const model = createProvider(config(), { getEnv: () => 'key', fetch: async () => new Response(body) }).use(name, 'chat');
+    for await (const event of model.stream({ messages: [{ role: 'user', content: 'create' }] })) {
+      assert.equal(event.type, 'activity');
+      assert.equal(event.activity.toolName, 'create_file');
+      assert.equal(event.activity.kind, 'tool-input');
+      assert.equal(JSON.stringify(event).includes('content'), false);
+      if (event.activity.bytes) {
+        assert.equal(event.activity.bytes, new TextEncoder().encode(fragment).byteLength);
+        break;
+      }
+    }
+    assert.equal(cancelled, true, name);
+  }
+});
+
+test('reasoning deltas become content-free activity across protocols', async () => {
+  const secret = 'private reasoning 你';
+  const cases = [
+    ['local', { choices: [{ delta: { reasoning_content: secret } }] }],
+    ['openai', { type: 'response.reasoning_summary_text.delta', delta: secret }],
+    ['anthropic', { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: secret } }],
+  ];
+  for (const [name, event] of cases) {
+    const model = createProvider(config(), { getEnv: () => 'key', fetch: async () => new Response(`data: ${JSON.stringify(event)}\n\n`) }).use(name, 'chat');
+    const iterator = model.stream({ messages: [{ role: 'user', content: 'hi' }] })[Symbol.asyncIterator]();
+    assert.deepEqual((await iterator.next()).value, { type: 'activity', activity: { kind: 'reasoning', bytes: new TextEncoder().encode(secret).byteLength } });
+    await iterator.return();
+  }
+});
+
 test('only structured context overflow codes normalize into a retryable error', async () => {
   for (const [body, expected] of [
     [{ error: { code: 'context_length_exceeded', message: 'private' } }, 'CONTEXT_LENGTH_EXCEEDED'],
@@ -233,11 +282,14 @@ test('stream delivers split UTF-8 text, assembled tool calls and a final result 
     const model = createProvider(config(), { getEnv: () => 'key', fetch }).use(name, 'chat');
     const result = await collect(model.stream({ messages: [{ role: 'user', content: 'hi' }] }));
     assert.equal(request.stream, true);
-    assert.deepEqual(result.map((event) => event.type), ['text-delta', 'tool-call', 'finish'], name);
-    assert.equal(result[0].text, '你好');
-    assert.deepEqual(result[1].toolCall, { id: 'id', name: 'lookup', arguments: { x: 1 } });
-    assert.equal(result[2].result.outcome, 'tool_calls');
-    assert.equal(result[2].result.text, '你好');
+    const activity = result.filter(event => event.type === 'activity');
+    assert.equal(activity.reduce((sum, event) => sum + event.activity.bytes, 0), 7);
+    const output = result.filter(event => event.type !== 'activity');
+    assert.deepEqual(output.map((event) => event.type), ['text-delta', 'tool-call', 'finish'], name);
+    assert.equal(output[0].text, '你好');
+    assert.deepEqual(output[1].toolCall, { id: 'id', name: 'lookup', arguments: { x: 1 } });
+    assert.equal(output[2].result.outcome, 'tool_calls');
+    assert.equal(output[2].result.text, '你好');
   }
 });
 
@@ -256,8 +308,8 @@ test('stream reports refusals, truncation, malformed data and provider failures 
     { type: 'content_block_stop', index: 0 },
     { type: 'message_delta', delta: { stop_reason: 'max_tokens' } }, { type: 'message_stop' },
   ]);
-  assert.deepEqual(incomplete.map((event) => event.type), ['finish']);
-  assert.equal(incomplete[0].result.outcome, 'incomplete');
+  assert.deepEqual(incomplete.filter(event => event.type !== 'activity').map((event) => event.type), ['finish']);
+  assert.equal(incomplete.at(-1).result.outcome, 'incomplete');
   await assert.rejects(() => run('openai', [{ type: 'response.failed', response: { error: { message: 'secret' } } }]), (error) => error.code === 'RESPONSE_FAILED' && !error.message.includes('secret'));
   await assert.rejects(() => run('anthropic', [{ type: 'error', error: { message: 'secret' } }]), { code: 'RESPONSE_FAILED' });
   await assert.rejects(() => run('local', [{ choices: [{ delta: { content: 'partial' } }] }]), { code: 'INVALID_RESPONSE' });

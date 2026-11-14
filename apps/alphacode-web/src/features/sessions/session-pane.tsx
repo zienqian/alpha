@@ -79,7 +79,7 @@ export function SessionPane({ workspace, contentId = "session-content" }: { work
         {workspace.history.data?.state.error && <HistoryColumn role="status" className="py-2 text-xs leading-5 text-destructive">{presentNotice(t, workspace.history.data.state.notice, workspace.history.data.state.error)}</HistoryColumn>}
         {!workspace.connected && workspace.history.data && <HistoryColumn role="status" className="py-2 text-xs leading-5 text-muted-foreground">{workspace.history.connection === "error" ? t("errors:subscribe") : t("sessions:connectingPreserved")}</HistoryColumn>}
         {workspace.history.isPending ? <HistoryLoading /> : selectedSession?.historyLoaded && (
-          <Suspense fallback={<HistoryLoading />}><SessionContent session={selectedSession} busy={workspace.busy} phase={view?.state.phase} connected={workspace.connected} /></Suspense>
+          <Suspense fallback={<HistoryLoading />}><SessionContent session={selectedSession} busy={workspace.busy} phase={view?.state.phase} connected={workspace.connected} modelActivity={view?.state.modelActivity} /></Suspense>
         )}
       </div>
       <HistoryColumn className="pt-3 pb-4">{composer}</HistoryColumn>

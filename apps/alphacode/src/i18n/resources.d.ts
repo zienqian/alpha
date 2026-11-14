@@ -5,11 +5,17 @@ export default interface Resources {
       "approval": "Waiting for approval",
       "closing": "Saving and exiting…",
       "compacting": "Compacting context",
+      "generatedSize": "{{label}} · {{size}} KB received",
+      "generatingFile": "Generating file content",
+      "generatingTool": "Generating tool input",
+      "modelQuiet": "No model output for {{seconds}}s; wait or stop",
       "queued": "Preparing next step…",
       "reconnecting": "Reconnecting to local server…",
       "reviewing": "Reviewing results…",
       "saving": "Saving session…",
       "stopping": "Stopping…",
+      "thinking": "Thinking…",
+      "waitingModel": "Waiting for model response…",
       "working": "Working…"
     },
     "commands": {

@@ -1,6 +1,6 @@
 import { Database } from 'bun:sqlite';
 import { contentHash, contextError, maxSessionArtifactBytes, parseContextReference, prepareArtifact, readContextText } from './index';
-import type { Artifact, ArtifactStore } from './index';
+import type { Artifact, ArtifactStore, ContextScope } from './index';
 
 /** Separate immutable evidence store; no changes to Session archive format or revision. */
 export function createSqliteArtifactStore(filename: string): ArtifactStore & { close(): void } {
@@ -12,7 +12,18 @@ export function createSqliteArtifactStore(filename: string): ArtifactStore & { c
       PRIMARY KEY(namespace, session_id, id));
     CREATE TABLE IF NOT EXISTS artifact_tombstones (
       namespace TEXT NOT NULL, session_id TEXT NOT NULL, PRIMARY KEY(namespace, session_id));`);
+  async function get(scope: ContextScope, reference: string) {
+    scope = { ...scope };
+    const ref = await parseContextReference(scope, reference);
+    if (ref.kind !== 'artifact') throw contextError('CONTEXT_REFERENCE_INVALID');
+    const row = db.query('SELECT metadata, content FROM artifacts WHERE namespace = ? AND session_id = ? AND id = ?').get(scope.namespace, scope.sessionId, ref.id) as { metadata: string; content: string } | null;
+    if (!row) throw contextError('CONTEXT_NOT_FOUND');
+    const artifact = JSON.parse(row.metadata) as Artifact;
+    if (artifact.sha256 !== ref.sha256 || await contentHash(row.content) !== ref.sha256) throw contextError('CONTEXT_CONTENT_MISMATCH');
+    return { artifact, content: row.content };
+  }
   return {
+    get,
     async put(scope, input) {
       scope = { ...scope }; input = { ...input, ...(input.source ? { source: { ...input.source } } : {}) };
       const metadata = await prepareArtifact(scope, input);
@@ -26,13 +37,8 @@ export function createSqliteArtifactStore(filename: string): ArtifactStore & { c
     },
     async read(scope, request) {
       scope = { ...scope }; request = { ...request };
-      const ref = await parseContextReference(scope, request.reference);
-      if (ref.kind !== 'artifact') throw contextError('CONTEXT_REFERENCE_INVALID');
-      const row = db.query('SELECT metadata, content FROM artifacts WHERE namespace = ? AND session_id = ? AND id = ?').get(scope.namespace, scope.sessionId, ref.id) as { metadata: string; content: string } | null;
-      if (!row) throw contextError('CONTEXT_NOT_FOUND');
-      const metadata = JSON.parse(row.metadata) as Artifact;
-      if (metadata.sha256 !== ref.sha256 || await contentHash(row.content) !== ref.sha256) throw contextError('CONTEXT_CONTENT_MISMATCH');
-      return readContextText(row.content, request, metadata.complete);
+      const entry = await get(scope, request.reference);
+      return readContextText(entry.content, request, entry.artifact.complete);
     },
     async list(scope) {
       return (db.query('SELECT metadata FROM artifacts WHERE namespace = ? AND session_id = ? ORDER BY rowid').all(scope.namespace, scope.sessionId) as { metadata: string }[]).map(row => JSON.parse(row.metadata) as Artifact);

@@ -5,6 +5,15 @@ import type { Notice, LocalResult } from "@/i18n/presentation";
 // Keep this module free of CLI, runtime and Bun imports.
 export type PermissionMode = "ask" | "auto" | "full";
 
+export interface ModelActivity {
+  id: string;
+  kind: "waiting" | "text" | "tool-input" | "reasoning";
+  bytes: number;
+  toolName?: string;
+  startedAt: number;
+  updatedAt: number;
+}
+
 export interface ContextUsage {
   modelId: string;
   contextWindow?: number;
@@ -56,6 +65,7 @@ export interface ToolRecord {
 }
 
 export interface HistoryMessage {
+  sourceId?: string;
   id: string;
   role: "user" | "assistant" | "tool";
   text: string;
@@ -75,6 +85,7 @@ export interface SessionView {
   requestId?: string;
   approvalId?: string;
   state: {
+    modelActivity?: ModelActivity;
     contextUsage?: ContextUsage;
     messages: readonly HistoryMessage[];
     busy: boolean;

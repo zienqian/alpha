@@ -32,6 +32,12 @@
     "compact": "Compact earlier context"
   },
   "activity": {
+    "waitingModel": "Waiting for model response…",
+    "thinking": "Thinking…",
+    "generatingFile": "Generating file content",
+    "generatingTool": "Generating tool input",
+    "generatedSize": "{{label}} · {{size}} KB received",
+    "modelQuiet": "No model output for {{seconds}}s; wait or stop",
     "closing": "Saving and exiting…",
     "stopping": "Stopping…",
     "approval": "Waiting for approval",

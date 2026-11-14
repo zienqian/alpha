@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, within } from "./render";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen, within } from "./render";
+import { describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SessionContent } from "@/features/sessions/session-content";
 import type { Session, SessionMessage } from "@/features/sessions/types";
@@ -12,6 +12,46 @@ const tool = (status: string): SessionMessage => ({
 const session = (...messages: SessionMessage[]): Session => ({ id: "session", title: "测试", description: "", messages });
 
 describe("reply activity", () => {
+  it("shows file input progress after prose, reports silence and clears stale progress on transitions", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+    const activity = { id: "model", kind: "tool-input" as const, toolName: "create_file", bytes: 49152,
+      startedAt: Date.now(), updatedAt: Date.now() };
+    const conversation = session(user, { id: "reply", role: "assistant", content: "准备写文件。", streaming: true });
+    const view = render(<SessionContent session={conversation} busy phase="thinking" modelActivity={activity} />, { wrapper: TooltipProvider });
+    try {
+      expect(screen.getByRole("status").textContent).toBe("正在生成文件内容");
+      expect(screen.getByText(/已接收 48 KB/)).toBeTruthy();
+      act(() => vi.advanceTimersByTime(31000));
+      expect(screen.getByText(/模型已 31 秒没有新输出/)).toBeTruthy();
+      expect(screen.getAllByRole("status")).toHaveLength(1);
+      view.rerender(<SessionContent session={conversation} busy phase="thinking" modelActivity={{ ...activity, bytes: 65536, updatedAt: Date.now() }} />);
+      expect(screen.queryByText(/没有新输出/)).toBeNull();
+      expect(screen.getByText(/已接收 64 KB/)).toBeTruthy();
+      view.rerender(<SessionContent session={conversation} busy phase="thinking" modelActivity={{ ...activity, kind: "reasoning", toolName: undefined }} />);
+      expect(screen.getByRole("status").textContent).toBe("正在思考");
+      expect(screen.queryByText(/KB/)).toBeNull();
+      view.rerender(<SessionContent session={conversation} busy phase="thinking" modelActivity={{ ...activity, id: "next-model", kind: "waiting", bytes: 0, startedAt: Date.now(), updatedAt: Date.now() }} />);
+      expect(screen.getByRole("status").textContent).toBe("等待模型响应");
+      expect(screen.queryByText(/没有新输出/)).toBeNull();
+      for (const props of [{ phase: "stopping" }, { phase: "saving" }, { connected: false }]) {
+        view.rerender(<SessionContent session={conversation} busy modelActivity={activity} {...props} />);
+        expect(screen.queryByText(/KB|没有新输出/)).toBeNull();
+      }
+      view.rerender(<SessionContent session={conversation} busy={false} modelActivity={activity} />);
+      expect(screen.queryByRole("status")).toBeNull();
+    } finally { view.unmount(); vi.useRealTimers(); }
+  });
+
+  it("keeps arbitrary tool names as text and uses generic progress without exposing arguments", () => {
+    render(<SessionContent session={session(user)} busy phase="thinking" modelActivity={{
+      id: "model", kind: "tool-input", toolName: "<custom>".repeat(20), bytes: 1024,
+      startedAt: Date.now(), updatedAt: Date.now(),
+    }} />, { wrapper: TooltipProvider });
+    expect(screen.getByRole("status").textContent).toBe("正在生成工具输入");
+    expect(screen.getByText(/<custom>/).querySelector("custom")).toBeNull();
+  });
+
   it("only offers copying on the last non-empty assistant block of each completed turn", () => {
     render(<SessionContent session={session(
       user,

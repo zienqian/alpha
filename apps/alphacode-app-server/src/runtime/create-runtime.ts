@@ -23,6 +23,7 @@ import { parseInput } from "../input";
 import { displayText } from "./tool-records";
 import { generateSessionTitle, titleTimeoutMs } from "./session-title";
 import { modelContext, restoreContext } from "./context-usage";
+import { fileInputReferences } from "./artifact-context";
 
 export async function createRuntime(config: AppConfig, options: {
   approve?: RequestApproval;
@@ -72,6 +73,7 @@ export async function createRuntime(config: AppConfig, options: {
     try { contextStore = createSqliteContextStore(`${config.databasePath}.context.db`); } catch { /* Derived checkpoints may remain in memory. */ }
     contextManager = createContextManager({ namespace, sessionId, contextWindow: contextUsage.contextWindow,
       maxOutputTokens: config.maxOutputTokens, auto: config.autoCompact, store: contextStore,
+      toolInputReferences: fileInputReferences(artifacts, { namespace, sessionId }),
       onEvent(event) {
         if (event.type === 'usage') contextUsage = { ...contextUsage, tokens: event.tokens, inputBudget: event.inputBudget,
           maxOutputTokens: event.maxOutputTokens, automatic: event.automatic };

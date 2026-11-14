@@ -34,6 +34,11 @@ export function sanitizeEvent(event: AgentEvent): {
     }
   }
   if (event.type === "model.delta") fields.text = event.text ? "1" : "";
+  if (event.type === "model.activity") {
+    fields.kind = event.kind;
+    fields.bytes = event.bytes;
+    if (event.toolName) fields.toolName = clip(event.toolName, 256);
+  }
   const source = event.telemetry;
   if (source) {
     const telemetry: Record<string, unknown> = {

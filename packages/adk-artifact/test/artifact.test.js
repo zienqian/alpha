@@ -34,6 +34,7 @@ for (const kind of ['memory', 'sqlite']) test(`${kind}: exact UTF-8 paging, scop
     await expect(store.put(scope, { content: 'x'.repeat(maxArtifactBytes + 1) })).rejects.toMatchObject({ code: 'ARTIFACT_TOO_LARGE' });
     await expect(store.put(scope, { content: '\ud800' })).rejects.toMatchObject({ code: 'ARTIFACT_INVALID' });
     expect(await store.list(scope)).toEqual([saved]);
+    expect(await store.get(scope, saved.reference)).toEqual({ artifact: saved, content });
     await store.remove(scope);
     expect(await store.list(scope)).toEqual([]);
     await expect(store.read(scope, { reference: saved.reference })).rejects.toMatchObject({ code: 'CONTEXT_NOT_FOUND' });
@@ -63,6 +64,7 @@ test('SQLite evidence survives restart, detects corruption and rejects writes fr
     const raw = new Database(filename);
     try { raw.query('UPDATE artifacts SET content = ? WHERE id = ?').run('corrupt content', saved.id); } finally { raw.close(); }
     await expect(store.read(scope, { reference: saved.reference })).rejects.toMatchObject({ code: 'CONTEXT_CONTENT_MISMATCH' });
+    await expect(store.get(scope, saved.reference)).rejects.toMatchObject({ code: 'CONTEXT_CONTENT_MISMATCH' });
     await store.remove(scope);
     await expect(stale.put(scope, { content: 'late' })).rejects.toMatchObject({ code: 'ARTIFACT_SCOPE_DELETED' });
   } finally {

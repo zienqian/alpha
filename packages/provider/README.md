@@ -137,6 +137,7 @@ try {
     signal: controller.signal,
   })) {
     if (event.type === 'text-delta') process.stdout.write(event.text);
+    if (event.type === 'activity') console.log(event.activity.kind, event.activity.toolName, event.activity.bytes);
     if (event.type === 'tool-call') console.log(event.toolCall);
     if (event.type === 'finish') console.log(event.result.outcome, event.result.usage);
   }
@@ -149,6 +150,8 @@ try {
 `stream()` 是惰性的异步迭代：开始迭代时才发请求。文本增量是暂定内容，最终仍需检查 `finish.result.outcome`，因为流可能拒答、截断或失败。完整工具调用在最终状态确认后发出，`finish.result.toolCalls` 也包含它们；只在一处处理，避免重复执行。正常流最后有且只有一个 `finish`；网络失败、无效流或服务端报错会从迭代器抛出错误，不发送 `finish`。使用 `AbortSignal` 取消；提前 `break` 会取消响应体。Completions 用量只在上游主动返回时提供。自定义 adapter 需要实现相同契约。
 
 ### 生成结果与失败
+
+`activity` 是暂定的进度元数据：`tool-input` 表示工具参数正在生成，`reasoning` 表示收到思考活动；`bytes` 是当前增量的 UTF-8 字节数，不是 token 数或完成百分比。三个内置协议均转发支持的活动事件，不暴露部分 JSON 或思考正文，也不据此执行工具。没有活动事件不代表请求已经失败；上游可能正在计算或缓冲输出。
 
 使用 `result.outcome` 判断结果：`completed` 表示文本生成完成；`tool_calls` 表示有可处理的工具调用；`refused` 表示拒答；`incomplete` 表示生成未完成；`unknown` 表示无法确认结果状态。`text` 在拒答或不完整时也可能包含部分文本；`refusal` 和 `incompleteReason` 在服务提供信息时返回详情，`finishReason` 保留协议原始状态。只有 `tool_calls` 状态下才应执行 `toolCalls`。自定义适配器也需要实现这一结果约定。
 

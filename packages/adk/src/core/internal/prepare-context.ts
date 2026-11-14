@@ -72,7 +72,7 @@ export async function prepareContext<C>(options: {
       copyMessages(selected, limits.maxToolCalls, 'MODEL_PROTOCOL');
       ensure(Number.isSafeInteger(plan.maxOutputTokens) && plan.maxOutputTokens > 0, 'MODEL_PROTOCOL');
       ensure(plan.summary === undefined || (typeof plan.summary === 'string' && plan.summary.trim() && bytes(plan.summary) <= limits.maxModelOutputBytes), 'MODEL_PROTOCOL');
-      const projected = projectContextMessages(selected);
+      const projected = projectContextMessages(selected, plan.toolInputReferences);
       const firstHistory = selected.findIndex(m => originals.has(m.id));
       if (plan.summary) projected.splice(firstHistory < 0 ? projected.length : firstHistory, 0, { role: 'assistant', content: plan.summary });
       input = { ...input, maxOutputTokens: plan.maxOutputTokens, messages: [{ role: 'system', content: instructions },

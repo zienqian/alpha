@@ -9,7 +9,7 @@ import { useTranslation } from "../../i18n/react";
 import type { Translate } from "../../i18n/instance";
 import { presentToolDescription, presentNote } from "../../i18n/presentation";
 
-export function composerActivity(t: Translate, state: ChatState): { text: string; animated: boolean; color: string } {
+export function composerActivity(t: Translate, state: ChatState, now = Date.now()): { text: string; animated: boolean; color: string } {
   if (state.closing) return { text: t("chat:activity.closing"), animated: true, color: colors.muted };
   if (state.connection === "reconnecting") return { text: t("chat:activity.reconnecting"), animated: true, color: colors.muted };
   if (state.phase === "stopping") return { text: t("chat:activity.stopping"), animated: true, color: colors.muted };
@@ -22,6 +22,18 @@ export function composerActivity(t: Translate, state: ChatState): { text: string
   }
   if (state.phase === "saving") return { text: t("chat:activity.saving"), animated: true, color: colors.muted };
   if (state.phase === "queued") return { text: t("chat:activity.queued"), animated: true, color: colors.muted };
+  const model = state.modelActivity;
+  if (model) {
+    const quiet = Math.max(0, Math.floor((now - model.updatedAt) / 1000));
+    if (quiet >= 30) return { text: t("chat:activity.modelQuiet", { seconds: quiet }), animated: false, color: colors.muted };
+    if (model.kind === "tool-input") {
+      const label = ["create_file", "edit_file"].includes(model.toolName ?? "") ? t("chat:activity.generatingFile") : t("chat:activity.generatingTool");
+      return { text: model.bytes ? t("chat:activity.generatedSize", { label, size: Math.round(model.bytes / 102.4) / 10 }) : label, animated: true, color: colors.muted };
+    }
+    if (model.kind === "waiting" || model.kind === "reasoning") return {
+      text: model.kind === "waiting" ? t("chat:activity.waitingModel") : t("chat:activity.thinking"), animated: true, color: colors.muted,
+    };
+  }
   const turnStart = state.messages.findLastIndex(message => message.role === "user");
   const hasResults = state.messages.slice(turnStart + 1).some(message => message.tool?.finishedAt !== undefined);
   return { text: hasResults ? t("chat:activity.reviewing") : t("chat:activity.working"), animated: true, color: colors.muted };

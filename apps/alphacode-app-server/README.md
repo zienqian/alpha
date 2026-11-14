@@ -35,6 +35,8 @@ Web / App 未选择项目时，`POST /api/sessions` 可省略 `projectId`。服�
 
 运行时默认将命令 stdout / stderr 保存到 `<databasePath>.artifacts.db`，与正式会话库、`.context.db` 摘要检查点分开管理。工具结果携带 `context://` 引用，模型可用只读 `read_context` 按 UTF-8 字节分页回读日志或摘要引用的原始消息。引用限定在当前 namespace / sessionId，重启恢复后仍有效；删除会话同时清理产物并阻止旧连接写回。命令每个通道最多采集 8 MiB，超出标记不完整；单会话保存限额为 128 MiB / 10,000 项，失败以 `artifactStorage` 返回，不改变执行事实。详见 [Artifact](../../packages/adk-artifact/README.md) 与 [Context](../../packages/adk-context/README.md)。
 
+内置文件工具生成的文档也保存到同一产物库。运行时校验快照、工具结果及写入版本后，在后续模型输入中将 `create_file.content` 替换为 Artifact 引用；超过 1024 字符的 `edit_file.oldText/newText` 使用正式消息引用，以便恢复精确编辑参数。原始会话归档保留全部输入，带 provider continuation 的消息保持原样。文档链接在浏览器打开或下载快照，应用内不提供预览，普通文件路径链接则按对应回复之前的最后一次文件写入查找版本。快照保存失败时使用当前文件，不拿旧版本代替；旧会话没有快照的链接继续读取项目文件。
+
 | 入口 | 用途 |
 | --- | --- |
 | `@alpha/alphacode-app-server/client` | 原生客户端连接、发现服务、HTTP/SSE、Chat 适配器 |
@@ -59,7 +61,7 @@ const info = await client.request("/api/info");
 
 ## 兼容与验证
 
-输入框按钮栏显示上下文用量，点击或悬停可查看系统提示词、工具定义和对话消息的分组。服务端按最近一次实际模型请求的 UTF-8 序列化字节数除以 4 估算 token；包含原始工具调用和结果，不包含未发送草稿、排队消息、本次回复或会话标题生成。它不是计费累计用量，也不是模型 tokenizer 的精确结果。首次请求前显示未统计；已统计的聚合值随会话保存，不向前端暴露提示词内容。
+输入框按钮栏显示上下文用量，点击或悬停可查看系统提示词、工具定义和对话消息的分组。服务端按最近一次实际模型请求的 UTF-8 序列化字节数除以 4 估算 token；包含投影后的工具调用和结果，不包含未发送草稿、排队消息、本次回复或会话标题生成。它不是计费累计用量，也不是模型 tokenizer 的精确结果。首次请求前显示未统计；已统计的聚合值随会话保存，不向前端暴露提示词内容。
 
 窗口数值于 2026-11-13 核对 [OpenAI 官方模型文档](https://developers.openai.com/api/docs/models/gpt-6.1-sol)：`gpt-6.1-sol` / `openai/gpt-6.1-sol` 的 API 窗口为 1,050,000；`codex/gpt-6.1-sol` 使用 Codex 默认值 500,000。代理可能限制或调整窗口，可在全局 `config.yaml` 中覆盖，并通过 CLI 重新登记项目配置：
 

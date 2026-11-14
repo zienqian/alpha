@@ -45,6 +45,8 @@ input 同时提供 Standard Schema 校验和 Standard JSON Schema 输入描述�
 
 三个 hook 为 beforeModel、authorizeTool、mapToolResult。注册顺序确定；首个 deny 短路。插件不持有 Loop 或内部 callModel / callTool 句柄。需要应用依赖的工具标注 ToolContext<App>，通过 appContext 提供；无依赖工具可以混用于不同 Agent。
 
+`provideModelContext` 可返回 `ModelContextPlan.toolInputReferences`，显式指定 `{assistantId, callId, field, reference}`，将已成功执行工具的字符串参数替换为模型输入中的引用标记。宿主负责保存并验证引用内容；core 校验调用与结果配对、字段类型、重复项及 provider continuation，不修改正式历史。`projectContextHistory` / `projectContextMessages` 可用于按同一规则统计预算和生成摘要。该机制不放宽 `beforeModel` 对调用身份和工具结果的保护。
+
 `provideRunBoundary` 接入可等待的通用运行边界，至多一个贡献者。prepare 可在执行前恢复完整历史、完成准入，或返回旧结果并跳过 Loop；execute 计划的 complete 在运行收束后被等待。history.restore 仅在 prepare 期间有效，不向插件开放可写消息引用。Session 插件使用这个扩展点，core 不依赖 Session 或存储实现。
 
 边界准备失败拒绝本次调用，仅暴露脱敏 code。complete 意外抛错时，保留已完成的 RunResult，将 `agent.state.boundaryStatus` 标为 failed，拒绝后续执行并通过 onObserverError 报告。正常存储失败由 Session 表达为 unsaved，不触发此兜底。
@@ -53,6 +55,7 @@ input 同时提供 Standard Schema 校验和 Standard JSON Schema 输入描述�
 
 - 一个 Agent 同时只接受一个 prompt；并发请求 reject，不排队。
 - text-delta 是预览；正常情况下仅完整 finish 且流正常结束后提交 assistant，并从其 toolCalls 执行。引导中断时可将已显示文字保存为 `incompleteReason: "steered"` 的 assistant；不保存未完成的工具参数或 provider continuation。
+- `model.activity` 提供工具参数/思考的暂定进度，`bytes` 按当前模型调用和活动种类累计。相同阶段最多每 250ms 通知一次，阶段或工具名称变化立即通知；不写入消息历史，不参与工具执行。
 - 工具结果按 assistantId + callId 配对。effect 默认 unknown；write / unknown 工具抛错会将历史标为 blocked。
 - 同一响应中连续的 `effect: 'read'` 调用最多 4 个并行，空位释放后继续调度。`limits.maxConcurrentTools` 可设为正整数，设为 1 恢复全串行。write / unknown 调用等待前面的读取和结果处理完成，后续读取也不会越过它们；不推断 shell 命令是否只读。
 - 工具准备和 authorizeTool 按调用顺序执行，至多一个待审批调用。并行 read 的 execute / mapToolResult 可能交错，结果及 tool.end 按完成顺序提交；消费者应使用 assistantId + callId 关联。声明 read 的工具及结果钩子须支持并发调用；存在依赖的读取应分轮请求，或配置串行。

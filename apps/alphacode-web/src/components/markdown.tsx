@@ -6,6 +6,8 @@ import { CopyButton } from "@/components/copy-button";
 import { CodeBlock, CodeBlockActions, CodeBlockContent, CodeBlockHeader, CodeBlockLine, CodeBlockTitle } from "@/components/ui/code-block";
 import { useHighlightedCode } from "@/hooks/use-highlighted-code";
 import { cn } from "@/lib/utils";
+import { markdownURL } from "@/lib/file-links";
+import { MarkdownLink } from "@/components/local-file-links";
 
 interface MarkdownProps {
   children: string;
@@ -14,9 +16,7 @@ interface MarkdownProps {
 
 // Stable component identities preserve code highlighting and selection as tokens arrive.
 const markdownComponents: Components = {
-  a: ({ href, children }) => (
-    <a href={href} target={href?.startsWith("http") ? "_blank" : undefined} rel="noreferrer noopener">{children}</a>
-  ),
+  a: MarkdownLink,
   table: ({ children }) => <div className="my-5 max-w-full overflow-x-auto rounded-md border"><table>{children}</table></div>,
   pre: ({ children }) => <MarkdownCodeBlock>{children}</MarkdownCodeBlock>,
 };
@@ -27,6 +27,7 @@ export function Markdown({ children, className }: MarkdownProps) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
+        urlTransform={markdownURL}
         components={markdownComponents}
       >
         {children}

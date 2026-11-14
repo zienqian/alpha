@@ -2,6 +2,7 @@ import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { createTool } from '@alpha/adk/core';
 import { z } from 'zod';
+import { createMemoryArtifactStore } from '@alpha/adk-artifact';
 import { createCodingAgent, readFileTool, runCommandTool } from '../dist/index';
 import { answer, fakeModel, fixture } from './helpers';
 
@@ -31,7 +32,8 @@ test('read-only and empty presets do not advertise disabled built-in workflows',
   await using f = await fixture();
   for (const tools of [[readFileTool], []]) {
     const model = fakeModel(answer());
-    const agent = await createCodingAgent({ cwd: f.cwd, model, shell: false, tools, fileAccess: 'host', commandTimeoutMs: null });
+    const agent = await createCodingAgent({ cwd: f.cwd, model, shell: false, tools, fileAccess: 'host', commandTimeoutMs: null,
+      artifacts: { store: createMemoryArtifactStore(), scope: { namespace: 'test', sessionId: 'read-only' } } });
     try {
       await agent.prompt('inspect');
       const prompt = model.inputs[0].messages[0].content;

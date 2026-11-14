@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import { createBackend } from "./backend";
 import { withBundledCommands } from "./cli-command";
 import { installCliCommand } from "./install-cli";
-import { applicationURL, assetPath, databaseArgument, developmentURL, externalURL, isApplicationURL, isRendererURL } from "./policy";
+import { applicationURL, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL } from "./policy";
 
 const applicationName = "AlphaCode";
 const applicationIcon = join(app.getAppPath(), "assets", process.platform === "win32" ? "icon.ico" : "icon.png");
@@ -24,6 +24,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: "alphacode-app", privileges: {
 
 let window: BrowserWindow | undefined;
 let opening: Promise<void> | undefined;
+let backend: ReturnType<typeof createBackend> | undefined;
 const chinese = () => app.getLocale().startsWith("zh");
 const label = (zh: string, en: string) => chinese() ? zh : en;
 const focus = () => { if (window?.isMinimized()) window.restore(); window?.show(); window?.focus(); };
@@ -111,10 +112,20 @@ async function createWindow() {
     try { mkdirSync(app.getPath("userData"), { recursive: true }); writeFileSync(stateFile, JSON.stringify(state)); } catch { /* Closing must not depend on preference storage. */ }
   });
   created.on("closed", () => { if (window === created) window = undefined; });
-  const openExternal = (value: string) => { const safe = externalURL(value); if (safe) void shell.openExternal(safe).catch(() => undefined); };
+  const openExternal = (value: string) => {
+    const path = documentPath(value, rendererURL);
+    if (path && backend) {
+      void backend.connect().then(descriptor => shell.openExternal(new URL(path, descriptor.origin).href)).catch(() => {
+        void dialog.showMessageBox(created, { type: 'error', title: applicationName,
+          message: label('无法在浏览器中打开文档，请重试。', 'Could not open the document in your browser. Please try again.') });
+      });
+      return;
+    }
+    const safe = externalURL(value); if (safe) void shell.openExternal(safe).catch(() => undefined);
+  };
   created.webContents.setWindowOpenHandler(({ url }) => { openExternal(url); return { action: "deny" }; });
   created.webContents.on("will-navigate", (event, url) => {
-    if (!trustedRenderer(url)) { event.preventDefault(); openExternal(url); }
+    if (documentPath(url, rendererURL) || !trustedRenderer(url)) { event.preventDefault(); openExternal(url); }
   });
   created.webContents.on("will-redirect", (event, url) => { if (!trustedRenderer(url)) event.preventDefault(); });
   created.webContents.on("will-attach-webview", event => event.preventDefault());
@@ -122,7 +133,7 @@ async function createWindow() {
     const items: MenuItemConstructorOptions[] = params.isEditable
       ? [{ role: "undo" }, { role: "redo" }, { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "selectAll" }]
       : params.selectionText ? [{ role: "copy" }, { role: "selectAll" }] : [];
-    if (params.linkURL && externalURL(params.linkURL)) items.push({ label: label("在浏览器中打开链接", "Open link in browser"), click: () => openExternal(params.linkURL) });
+    if (params.linkURL && (documentPath(params.linkURL, rendererURL) || externalURL(params.linkURL))) items.push({ label: label("在浏览器中打开链接", "Open link in browser"), click: () => openExternal(params.linkURL) });
     if (items.length) Menu.buildFromTemplate(items).popup({ window: created });
   });
   await created.loadURL(rendererURL ?? applicationURL);
@@ -133,13 +144,14 @@ async function start() {
   const binary = process.platform === "win32" ? "bun.exe" : "bun";
   const bun = app.isPackaged ? join(root, "bin", binary) : process.env.ALPHACODE_APP_BUN || (existsSync(join(homedir(), ".bun/bin", binary)) ? join(homedir(), ".bun/bin", binary) : binary);
   if (app.isPackaged) Object.assign(process.env, withBundledCommands(root, process.env));
-  const backend = createBackend({ root, bun, database: databaseArgument(process.argv) });
+  const connection = createBackend({ root, bun, database: databaseArgument(process.argv) });
+  backend = connection;
   const web = join(root, "apps/alphacode-web/dist");
-  const csp = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
+  const csp = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src 'none'; frame-ancestors 'none'";
   protocol.handle("alphacode-app", async request => {
     if (!isApplicationURL(request.url)) return new Response("Forbidden", { status: 403 });
     const url = new URL(request.url);
-    if (url.pathname.startsWith("/api/")) return backend.forward(request);
+    if (url.pathname.startsWith("/api/")) return connection.forward(request);
     if (request.method !== "GET") return new Response("Method not allowed", { status: 405 });
     try {
       const response = await net.fetch(pathToFileURL(assetPath(web, url.pathname)).toString());
@@ -158,7 +170,7 @@ async function start() {
   installMenu();
   if (process.platform === "darwin") app.dock?.setIcon(applicationIcon);
   for (;;) {
-    try { if (!rendererURL) await backend.connect(); await createWindow(); break; }
+    try { if (!rendererURL) await connection.connect(); await createWindow(); break; }
     catch {
       const choice = await dialog.showMessageBox({ type: "error", title: applicationName,
         message: label("无法启动本地工作区", "Could not start the local workspace"),

@@ -7,6 +7,43 @@ import { defaultLimits } from '../dist/core/internal/config';
 import { createAssistant } from '../dist/core/internal/messages';
 import { bytes } from '../dist/core/internal/json';
 
+test('activity is throttled metadata and cannot execute tools before a validated finish', async () => {
+  let executed = 0;
+  const events = [];
+  const model = fakeModel(async function* () {
+    for (let i = 0; i < 500; i++) yield { type: 'activity', activity: { kind: 'tool-input', bytes: 1, toolName: 'lookup' } };
+    assert.equal(executed, 0);
+    assert.equal(agent.state.messages.length, 1);
+    await Bun.sleep(275);
+    yield { type: 'activity', activity: { kind: 'tool-input', bytes: 3, toolName: 'lookup' } };
+    assert.equal(events.filter(event => event.type === 'model.activity').at(-1).bytes, 503);
+    yield { type: 'finish', result: request(call()) };
+  }, answer());
+  const agent = await createAgent({ ...options(model), tools: [tool(() => { executed++; return 'ok'; })] });
+  agent.subscribe(event => events.push(event));
+  assert.equal((await agent.prompt('go')).status, 'completed');
+  const activity = events.filter(event => event.type === 'model.activity');
+  assert.ok(activity.length >= 2 && activity.length < 10);
+  assert.equal(executed, 1);
+  assert.equal(agent.state.messages.some(message => 'activity' in message), false);
+  await agent.close();
+});
+
+test('invalid or oversized provisional activity fails before any tool can run', async () => {
+  for (const activity of [
+    { kind: 'tool-input', bytes: -1 }, { kind: 'reasoning', bytes: NaN },
+    { kind: 'unknown', bytes: 1 }, { kind: 'tool-input', bytes: 501 },
+  ]) {
+    let executed = 0;
+    const agent = await createAgent({ ...options(fakeModel([
+      { type: 'activity', activity }, { type: 'finish', result: request(call()) },
+    ])), tools: [tool(() => { executed++; return ''; })], limits: { maxModelOutputBytes: 500 } });
+    assert.equal((await agent.prompt('go')).status, 'failed');
+    assert.equal(executed, 0);
+    await agent.close();
+  }
+});
+
 describe('malformed streams never commit an assistant or execute a hinted tool', () => {
   const finish = { type: 'finish', result: request(call()) };
   const cases = [

@@ -3,6 +3,7 @@ import type { CodingContext, CodingPlan, CodingToolResult } from '../contracts';
 import { callKey, emitCodingEvent } from '../context';
 import { codeOf, encode, failure, type OutputMode } from '../internal';
 import { writeFile } from '../files';
+import { saveFileArtifact } from '../file-artifacts';
 
 export type Prepare = (context: CodingContext, args: JsonObject, signal: AbortSignal) => Promise<CodingPlan> | CodingPlan;
 export const result = (ctx: ToolContext<CodingContext>, value: CodingToolResult, mode: OutputMode = 'exact') => encode(value, ctx.app.state.budget, mode);
@@ -27,7 +28,8 @@ export async function executeWrite(ctx: ToolContext<CodingContext>, kind: 'creat
   ctx.app.state.observations.delete(plan.write.path);
   emitCodingEvent(ctx.app, { type: 'file.changed', runId: ctx.runId, callId: ctx.callId,
     path: plan.write.path, beforeRevision: plan.write.expectedRevision, afterRevision: outcome.revision });
+  const evidence = await saveFileArtifact(ctx, plan.write, outcome.revision);
   return result(ctx, { ok: true, data: kind === 'create'
-    ? { path: plan.write.path, created: true, afterRevision: outcome.revision }
-    : { path: plan.write.path, changed: true, beforeRevision: plan.write.expectedRevision, afterRevision: outcome.revision } });
+    ? { path: plan.write.path, created: true, afterRevision: outcome.revision, ...evidence }
+    : { path: plan.write.path, changed: true, beforeRevision: plan.write.expectedRevision, afterRevision: outcome.revision, ...evidence } });
 }

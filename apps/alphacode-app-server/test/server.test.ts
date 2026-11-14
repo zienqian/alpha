@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 import { request as httpRequest } from "node:http";
 import { basename, dirname, join, resolve } from "node:path";
@@ -15,7 +16,7 @@ import type { AppConfig } from "../src/config";
 import type { Chat } from "../src/chat/contracts";
 import { controlledStream, textResponse, toolResponse, waitFor, type RequestBody } from "./helpers";
 import { createSqliteArtifactStore } from "@alpha/adk-artifact/sqlite";
-import { sessionNamespace } from "../runtime/create-runtime";
+import { sessionNamespace } from "../src/runtime/create-runtime";
 
 async function serverFixture(reply: (body: RequestBody, count: number) => Response = () => textResponse("hello"), idleMs = 60000,
   wrap: (chat: Chat) => Chat = chat => chat) {
@@ -77,6 +78,136 @@ async function serverFixture(reply: (body: RequestBody, count: number) => Respon
     },
   };
 }
+
+test('document artifacts survive workspace changes and restart; model input and reply links use immutable references', async () => {
+  const original = '<!doctype html><h1>Original</h1><!--' + 'DOCUMENT-BODY'.repeat(1500) + '-->';
+  const revised = original.replace('Original', 'Revised');
+  const refs: string[] = [];
+  const fixture = await serverFixture((body, count) => {
+    if (count === 1) return toolResponse('create_file', { path: 'report.html', content: original });
+    if (count === 2) {
+      const data = JSON.parse(body.messages.at(-1)?.content ?? '{}').data;
+      refs.push(data.artifact.reference);
+      expect(JSON.stringify(body)).not.toContain('DOCUMENT-BODY');
+      expect(JSON.stringify(body)).toContain(refs[0] ?? 'missing artifact');
+      return textResponse(`[Report](${refs[0]})`);
+    }
+    if (count === 3) return toolResponse('read_file', { path: 'report.html' });
+    if (count === 4) return toolResponse('edit_file', { path: 'report.html', oldText: 'Original', newText: 'Revised' });
+    if (count === 5) {
+      refs.push(JSON.parse(body.messages.at(-1)?.content ?? '{}').data.artifact.reference);
+      return textResponse('[Report](report.html)');
+    }
+    return textResponse('done');
+  });
+  try {
+    const view = await fixture.connect({ ...fixture.config, permissionMode: 'full' });
+    const base = `/api/sessions/${view.session.id}`;
+    const send = async (requestId: string) => {
+      await fixture.client().request(`${base}/requests`, { requestId, input: requestId });
+      await waitFor(async () => !(await fixture.client().request<SessionView>(base)).state.busy);
+      return fixture.client().request<SessionView>(base);
+    };
+    const first = await send('create'), firstReply = first.state.messages.findLast(message => message.role === 'assistant')?.sourceId ?? '';
+    const second = await send('edit'), secondReply = second.state.messages.findLast(message => message.role === 'assistant')?.sourceId ?? '';
+    expect(firstReply).not.toBe(''); expect(secondReply).not.toBe('');
+    expect(refs).toHaveLength(2);
+    expect(refs[0]).not.toBe(refs[1]);
+    await writeFile(join(fixture.config.workspaceRoot, 'report.html'), 'UNRELATED FILE');
+    for (const [replyId, reference] of [[firstReply, refs[0]], [secondReply, refs[1]]] as const) {
+      const info = await fixture.browser().request<{ reference: string }>(`${base}/files?${new URLSearchParams({ path: 'report.html', replyId })}`);
+      expect(info.reference).toBe(reference ?? 'missing artifact');
+    }
+    await rm(join(fixture.config.workspaceRoot, 'report.html'));
+    await fixture.restart();
+    for (const [reference, expected] of [[refs[0], original], [refs[1], revised]] as const) {
+      const path = `${base}/artifacts?${new URLSearchParams({ reference: reference ?? '', mode: 'download' })}`;
+      const response = await fetch(fixture.server.origin + path, { proxy: false });
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-disposition')).toContain('report.html');
+      expect(await response.text()).toBe(expected);
+    }
+    expect(await fixture.browser().request(`${base}/files?${new URLSearchParams({ path: 'report.html', replyId: firstReply })}`)).toMatchObject({ reference: refs[0] });
+    const opened = await fetch(fixture.server.origin + `${base}/artifacts?${new URLSearchParams({ reference: refs[0] ?? '', mode: 'open' })}`, { proxy: false });
+    expect(opened.headers.get('content-security-policy')).toContain('sandbox allow-scripts');
+    expect(await opened.text()).toBe(original);
+    const other = await fixture.connect();
+    await expect(fixture.browser().request(`/api/sessions/${other.session.id}/artifacts?${new URLSearchParams({ reference: refs[0] ?? '' })}`)).rejects.toThrow('CONTEXT_SCOPE_MISMATCH');
+    await expect(fixture.browser().request(`${base}/artifacts?reference=file:///secret`)).rejects.toThrow('CONTEXT_REFERENCE_INVALID');
+  } finally { await fixture.dispose(); }
+});
+
+test("session file links resolve absolute, file URL and relative paths to the real document", async () => {
+  const fixture = await serverFixture();
+  try {
+    const view = await fixture.connect();
+    const directory = join(fixture.config.workspaceRoot, "docs");
+    await mkdir(directory);
+    const path = join(directory, "方案 demo.html");
+    const content = '<!doctype html><title>方案</title><button onclick="this.textContent=123">Demo</button>';
+    await writeFile(path, content);
+    const route = `/api/sessions/${view.session.id}/files?`;
+    for (const input of [path, path.replaceAll("\\", "/"), pathToFileURL(path).href, "docs/方案%20demo.html", "./docs/方案 demo.html#demo", `${path}:12:2`]) {
+      const response = await fixture.browser().request<{ path: string; name: string; mediaType: string }>(route + new URLSearchParams({ path: input }));
+      expect(response.path).toBe(await realpath(path));
+      expect(response.name).toBe("方案 demo.html");
+      expect(response.mediaType).toBe("text/html");
+    }
+    for (const mode of ["open", "download"]) {
+      const response = await fetch(fixture.server.origin + route + new URLSearchParams({ path, mode }), { proxy: false });
+      expect(response.status).toBe(200);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(response.headers.get("content-security-policy")).toContain("sandbox allow-scripts");
+      if (mode === "open") {
+        expect(response.headers.get("content-type")).toContain("text/html");
+        const html = await response.text();
+        expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+        expect(html).toBe(content);
+      } else {
+        expect(response.headers.get("content-disposition")).toContain("attachment; filename*=UTF-8''");
+        expect(await response.text()).toBe(content);
+      }
+    }
+    await fixture.client().request(`/api/sessions/${view.session.id}/requests`, { requestId: "persist-file-session", input: "hello" });
+    await waitFor(async () => !(await fixture.client().request<SessionView>(`/api/sessions/${view.session.id}`)).state.busy);
+    await fixture.restart();
+    const creations = fixture.creations;
+    expect(await fixture.browser().request(route + new URLSearchParams({ path }))).toMatchObject({ name: "方案 demo.html" });
+    expect(fixture.creations).toBe(creations);
+  } finally { await fixture.dispose(); }
+});
+
+test("file browser routes reject workspace escapes, network paths and missing files with explicit errors", async () => {
+  const fixture = await serverFixture();
+  try {
+    const view = await fixture.connect();
+    await writeFile(join(fixture.root, "outside.txt"), "private");
+    const outside = join(fixture.root, "outside");
+    await mkdir(outside);
+    await writeFile(join(outside, "secret.txt"), "private");
+    await symlink(outside, join(fixture.config.workspaceRoot, "escape"), process.platform === "win32" ? "junction" : "dir");
+    const route = `/api/sessions/${view.session.id}/files?`;
+    for (const [path, code] of [
+      ["../outside.txt", "FILE_OUTSIDE_WORKSPACE"], ["%2e%2e/outside.txt", "FILE_OUTSIDE_WORKSPACE"],
+      [join(fixture.root, "outside.txt"), "FILE_OUTSIDE_WORKSPACE"], ["escape/secret.txt", "FILE_OUTSIDE_WORKSPACE"],
+      ["missing.html", "FILE_NOT_FOUND"], [".", "NOT_A_FILE"],
+      ["https://example.com/secret", "INVALID_FILE_PATH"], ["file://remote/share/doc.html", "INVALID_FILE_PATH"],
+      ["\\\\remote\\share\\doc.html", "INVALID_FILE_PATH"], ["C:/path/file.txt:secret", "INVALID_FILE_PATH"],
+      ["%00.html", "INVALID_FILE_PATH"], ["%ZZ", "INVALID_FILE_PATH"],
+    ] as const) await expect(fixture.browser().request(route + new URLSearchParams({ path }))).rejects.toThrow(code);
+    await expect(fixture.browser().request("/api/sessions/missing/files?path=README.md")).rejects.toThrow("SESSION_NOT_FOUND");
+    const crossSite = await fetch(fixture.server.origin + route + "path=missing.html", { headers: { Origin: "https://evil.invalid" }, proxy: false });
+    expect(crossSite.status).toBe(403);
+    await writeFile(join(fixture.config.workspaceRoot, "large.html"), "x".repeat(8 * 1024 * 1024 + 1));
+    const large = await fetch(fixture.server.origin + route + "path=large.html&mode=open", { proxy: false });
+    expect(large.status).toBe(200);
+    expect((await large.text()).length).toBe(8 * 1024 * 1024 + 1);
+    await expect(fixture.browser().request(route + "path=large.html&mode=preview")).rejects.toThrow("INVALID_FILE_MODE");
+    await writeFile(join(fixture.config.workspaceRoot, "script.svg"), '<svg onload="alert(1)"/>');
+    const download = await fetch(fixture.server.origin + route + "path=script.svg&mode=open", { proxy: false });
+    expect(download.headers.get('content-disposition')).toContain('attachment');
+  } finally { await fixture.dispose(); }
+});
 
 test("Web page routes serve the entry document without masking missing assets or APIs", async () => {
   const fixture = await serverFixture();

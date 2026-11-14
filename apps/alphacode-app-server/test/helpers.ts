@@ -23,6 +23,11 @@ export function controlledStream() {
   return {
     response: new Response(stream, { headers: { "content-type": "text/event-stream" } }),
     text(text: string) { event({ content: text }); },
+    reasoning(text: string) { event({ reasoning_content: text }); },
+    toolDelta(args: string, name?: string) {
+      event({ tool_calls: [{ index: 0, ...(name ? { id: "test-call", type: "function" } : {}),
+        function: { ...(name ? { name } : {}), arguments: args } }] });
+    },
     tool(name: string, args: object) {
       event({ tool_calls: [{ index: 0, id: "test-call", type: "function", function: { name, arguments: JSON.stringify(args) } }] });
     },

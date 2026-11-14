@@ -3,6 +3,16 @@ export type PermissionMode = "ask" | "auto" | "full";
 export type ChatPhase = "idle" | "thinking" | "queued" | "running" | "saving" | "stopping";
 export type ToolStatus = "queued" | "running" | "awaiting_approval" | "succeeded" | "failed" | "denied" | "not_executed" | "outcome_unknown";
 
+/** Transient model activity; never persisted as conversation content. Times are Unix ms. */
+export interface ModelActivity {
+  id: string;
+  kind: "waiting" | "text" | "tool-input" | "reasoning";
+  bytes: number;
+  toolName?: string;
+  startedAt: number;
+  updatedAt: number;
+}
+
 export interface ContextUsage {
   modelId: string;
   contextWindow?: number;
@@ -49,6 +59,8 @@ export interface ToolRecord {
 }
 
 export interface ChatMessage {
+  /** Canonical archive identity; a streaming preview may have a different id. */
+  sourceId?: string;
   rawText?: string;
   id: string;
   role: "user" | "assistant" | "tool";
@@ -71,6 +83,7 @@ export interface ApprovalRequest {
 export type RequestApproval = (action: ApprovalRequest, signal: AbortSignal) => Promise<boolean>;
 
 export interface ChatState {
+  modelActivity?: ModelActivity;
   contextUsage?: ContextUsage;
   sessionTitle: string;
   titleStatus?: "pending" | "ready";
@@ -119,7 +132,8 @@ export type ChatEvent =
   | { type: "session.title"; title: string; status: "pending" | "ready" }
   | { type: "assistant.start"; id: string }
   | { type: "assistant.delta"; id: string; text: string }
-  | { type: "assistant.commit"; id: string; text: string; tools?: readonly ToolRecord[] }
+  | { type: "assistant.activity"; id: string; kind: "tool-input" | "reasoning"; bytes: number; toolName?: string }
+  | { type: "assistant.commit"; id: string; sourceId?: string; text: string; tools?: readonly ToolRecord[] }
   | { type: "assistant.end"; id: string; outcome: ChatRunStatus | "tool_calls" | "steered" }
   | { type: "tool.start"; tool: ToolRecord }
   | { type: "tool.end"; tool: ToolRecord }

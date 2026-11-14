@@ -12,6 +12,8 @@ import { createRegistry, digest, readJson, writeJson } from "./storage";
 import { createSecurity, fail, jsonBody, requiredString, secret } from "./security";
 import { createSkillRoutes } from "./skills";
 import { createProjectRoutes, ensureDefaultProject } from "./projects";
+import { sessionFile } from "./files";
+import { artifactDocument, artifactForPath, documentWrites } from './artifacts';
 import { skillUploadLimit } from "./skill-archive";
 import { createTraceService, createMemoryTraceStore, type TraceService } from "@alpha/adk-trace";
 import { createSqliteTraceStore } from "@alpha/adk-trace/sqlite";
@@ -346,6 +348,44 @@ export async function startServer(options: ServerOptions) {
     if (path.startsWith("/api/")) {
       security.checkAccess(request, path === "/api/connect" || path === "/api/web");
       if (path === "/api/projects") return projectRoutes(request);
+      const fileMatch = /^\/api\/sessions\/([^/]+)\/(files|artifacts)$/.exec(path);
+      if (fileMatch?.[1]) {
+        if (request.method !== "GET") return fail(405, "METHOD_NOT_ALLOWED");
+        const id = decodeURIComponent(fileMatch[1]);
+        const entry = entries.get(id), saved = entry ? undefined : await registry.find(id);
+        const projectId = entry?.projectId ?? saved?.projectId;
+        if (!projectId) return fail(404, "SESSION_NOT_FOUND");
+        const config = registry.configs.get(projectId);
+        if (!config) return fail(404, "PROJECT_NOT_FOUND");
+        const scope = { namespace: projectId, sessionId: id };
+        const filename = `${options.databasePath}.artifacts.db`;
+        if (fileMatch[2] === 'artifacts') {
+          if (!await Bun.file(filename).exists()) return fail(404, 'CONTEXT_NOT_FOUND');
+          const artifacts = createSqliteArtifactStore(filename);
+          try { return await artifactDocument(artifacts, scope, url.searchParams.get('reference') ?? '', url); }
+          finally { artifacts.close(); }
+        }
+        const replyId = url.searchParams.get('replyId');
+        if (replyId && await Bun.file(filename).exists()) {
+          const archive = await registry.store.read({ namespace: projectId, id });
+          const messages = archive?.data.turns.flatMap(turn => turn.messages) ?? [];
+          const index = messages.findIndex(message => message.id === replyId);
+          // Live replies retain their canonical sourceId. Before persistence,
+          // use completed tool records visible before the clicked reply.
+          const live = entry?.chat.state.messages ?? [], liveIndex = live.findIndex(message => message.id === replyId || message.sourceId === replyId);
+          const writes = index >= 0 ? documentWrites(messages.slice(0, index))
+            : liveIndex >= 0 ? live.slice(0, liveIndex).flatMap(({ tool }) => tool?.status === 'succeeded' && tool.path && ['create_file', 'edit_file'].includes(tool.name)
+              ? [{ assistantId: tool.assistantId, callId: tool.callId, path: tool.path }] : []) : [];
+          if (writes.length) {
+            const artifacts = createSqliteArtifactStore(filename);
+            try {
+              const reference = await artifactForPath(artifacts, scope, config.workspaceRoot, url.searchParams.get('path') ?? '', writes);
+              if (reference) return await artifactDocument(artifacts, scope, reference, url);
+            } finally { artifacts.close(); }
+          }
+        }
+        return sessionFile(config.workspaceRoot, url);
+      }
       const projectMatch = /^\/api\/projects\/([^/]+)$/.exec(path);
       if (projectMatch?.[1]) {
         if (request.method !== "DELETE") return fail(405, "METHOD_NOT_ALLOWED");
@@ -583,7 +623,7 @@ export async function startServer(options: ServerOptions) {
         response.headers.set("Cache-Control", "no-store");
         response.headers.set("X-Content-Type-Options", "nosniff");
         response.headers.set("Referrer-Policy", "no-referrer");
-        response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+        if (!response.headers.has("Content-Security-Policy")) response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
         return response;
       } catch (error) {
         const known = error as { status?: number; code?: string };

@@ -40,9 +40,17 @@ export interface GenerateResult {
   usage?: { inputTokens?: number; outputTokens?: number };
 }
 
-/** Text is provisional until finish; tool calls are emitted only after a safe terminal outcome. */
+/** Metadata only: never expose partial arguments or reasoning as executable calls or reply text. */
+export interface StreamActivity {
+  kind: 'tool-input' | 'reasoning';
+  /** UTF-8 bytes in this delta, not a token count or completion percentage. */
+  bytes: number;
+  toolName?: string;
+}
+/** Text/activity are provisional until finish; calls require a safe terminal outcome. */
 export type StreamEvent =
   | { type: 'text-delta'; text: string }
+  | { type: 'activity'; activity: StreamActivity }
   | { type: 'tool-call'; toolCall: ToolCall }
   | { type: 'finish'; result: GenerateResult };
 

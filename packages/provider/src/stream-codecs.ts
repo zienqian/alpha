@@ -2,13 +2,18 @@ import { anthropicProtocol } from './protocols/anthropic';
 import { completionsProtocol } from './protocols/completions';
 import { responsesProtocol } from './protocols/responses';
 import { responseError, responseFailed } from './protocols/shared';
-import type { GenerateResult } from './types';
+import type { GenerateResult, StreamActivity } from './types';
 
 // Wire events are untrusted and differ per protocol; validate accessed fields below.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Obj = Record<string, any>;
 export type ProtocolName = 'completions' | 'responses' | 'anthropic';
-export interface StreamCodec { push(data: string): { text?: string; result?: GenerateResult } }
+export interface StreamCodec { push(data: string): { text?: string; activity?: StreamActivity[]; result?: GenerateResult } }
+const encoder = new TextEncoder();
+const activity = (kind: StreamActivity['kind'], delta: string, toolName?: string): StreamActivity => ({
+  kind, bytes: encoder.encode(delta).byteLength,
+  ...(toolName ? { toolName: toolName.slice(0, 256) } : {}),
+});
 
 function json(data: string): Obj {
   let value: unknown;
@@ -35,6 +40,10 @@ function completions(): StreamCodec {
     if (!choice.delta || typeof choice.delta !== 'object') return responseError();
     if (choice.finish_reason != null) { if (typeof choice.finish_reason !== 'string') return responseError(); reason = choice.finish_reason; }
     const delta = choice.delta;
+    const progress: StreamActivity[] = [];
+    // Common OpenAI-compatible reasoning extensions; retain metadata only.
+    const reasoning = delta.reasoning_content ?? delta.reasoning;
+    if (typeof reasoning === 'string' && reasoning) progress.push(activity('reasoning', reasoning));
     if (delta.content != null && typeof delta.content !== 'string') return responseError();
     if (delta.refusal != null && typeof delta.refusal !== 'string') return responseError();
     if (delta.refusal) refusal += delta.refusal;
@@ -48,14 +57,16 @@ function completions(): StreamCodec {
         if (part.function?.name != null) { if (typeof part.function.name !== 'string') return responseError(); call.name += part.function.name; }
         if (part.function?.arguments != null) { if (typeof part.function.arguments !== 'string') return responseError(); call.arguments += part.function.arguments; }
         calls.set(part.index, call);
+        progress.push(activity('tool-input', part.function?.arguments ?? '', call.name));
       }
     }
-    if (delta.content) { text += delta.content; return { text: delta.content }; }
-    return {};
+    if (delta.content) text += delta.content;
+    return { ...(delta.content ? { text: delta.content } : {}), ...(progress.length ? { activity: progress } : {}) };
   } };
 }
 
 function responses(): StreamCodec {
+  const names = new Map<string, string>();
   return { push(data) {
     if (data === '[DONE]') return responseError();
     const event = json(data);
@@ -67,6 +78,22 @@ function responses(): StreamCodec {
     if (event.type === 'response.output_text.delta') {
       if (typeof event.delta !== 'string') return responseError();
       return { text: event.delta };
+    }
+    if (event.type === 'response.output_item.added' && event.item?.type === 'function_call') {
+      if (typeof event.item.name !== 'string') return responseError();
+      if (typeof event.item.id === 'string') names.set(event.item.id, event.item.name);
+      return { activity: [activity('tool-input', '', event.item.name)] };
+    }
+    if (event.type === 'response.output_item.added' && event.item?.type === 'reasoning') {
+      return { activity: [activity('reasoning', '')] };
+    }
+    if (event.type === 'response.function_call_arguments.delta') {
+      if (typeof event.delta !== 'string') return responseError();
+      return { activity: [activity('tool-input', event.delta, names.get(event.item_id))] };
+    }
+    if (event.type === 'response.reasoning_summary_text.delta' || event.type === 'response.reasoning_text.delta') {
+      if (typeof event.delta !== 'string') return responseError();
+      return { activity: [activity('reasoning', event.delta)] };
     }
     if (typeof event.type !== 'string') return responseError();
     return {};
@@ -86,14 +113,20 @@ function anthropic(): StreamCodec {
       if (!Number.isInteger(event.index) || !event.content_block || blocks.has(event.index)) return responseError();
       const block = event.content_block;
       if (block.type === 'text') { if (typeof block.text !== 'string') return responseError(); blocks.set(event.index, { type: 'text', text: block.text }); if (block.text) return { text: block.text }; }
-      else if (block.type === 'tool_use') blocks.set(event.index, { type: 'tool_use', id: block.id, name: block.name, input: block.input, partial: '' });
-      else blocks.set(event.index, { ...block });
+      else if (block.type === 'tool_use') {
+        if (typeof block.name !== 'string') return responseError();
+        blocks.set(event.index, { type: 'tool_use', id: block.id, name: block.name, input: block.input, partial: '' });
+        return { activity: [activity('tool-input', '', block.name)] };
+      } else {
+        blocks.set(event.index, { ...block });
+        if (block.type === 'thinking') return { activity: [activity('reasoning', typeof block.thinking === 'string' ? block.thinking : '')] };
+      }
     } else if (event.type === 'content_block_delta') {
       const block = blocks.get(event.index), delta = event.delta;
       if (!block || stopped.has(event.index) || !delta || typeof delta.type !== 'string') return responseError();
       if (delta.type === 'text_delta') { if (block.type !== 'text' || typeof delta.text !== 'string') return responseError(); block.text += delta.text; return { text: delta.text }; }
-      if (delta.type === 'input_json_delta') { if (block.type !== 'tool_use' || typeof delta.partial_json !== 'string') return responseError(); block.partial += delta.partial_json; }
-      if (delta.type === 'thinking_delta') { if (block.type !== 'thinking' || typeof delta.thinking !== 'string' || typeof block.thinking !== 'string') return responseError(); block.thinking += delta.thinking; }
+      if (delta.type === 'input_json_delta') { if (block.type !== 'tool_use' || typeof delta.partial_json !== 'string') return responseError(); block.partial += delta.partial_json; return { activity: [activity('tool-input', delta.partial_json, block.name)] }; }
+      if (delta.type === 'thinking_delta') { if (block.type !== 'thinking' || typeof delta.thinking !== 'string' || typeof block.thinking !== 'string') return responseError(); block.thinking += delta.thinking; return { activity: [activity('reasoning', delta.thinking)] }; }
       if (delta.type === 'signature_delta') { if (block.type !== 'thinking' || typeof delta.signature !== 'string') return responseError(); block.signature = (block.signature ?? '') + delta.signature; }
     } else if (event.type === 'content_block_stop') {
       if (!blocks.has(event.index) || stopped.has(event.index)) return responseError();

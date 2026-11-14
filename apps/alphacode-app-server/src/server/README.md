@@ -43,6 +43,8 @@ Web 按单机使用、信任本机进程的前提设计，不使用浏览器登�
 | POST | `/api/sessions` | `{projectId?}`；指定项目时在该项目中新建内存草稿，省略时自动创建并复用全局 `defaultWorkspace`（默认 `~/.alphacode/workspace`）项目，返回 SessionView；首条有效消息才落盘。显式无效 ID 不回退 |
 | GET | `/api/events` | 全局 SSE：`{instanceId, sequence}`；提示重新读取列表 |
 | GET | `/api/sessions/:id` | SessionView 全量快照 |
+| GET | `/api/sessions/:id/files?path=...&mode=info` | 解析所属项目内的绝对路径、file URL 或相对路径；返回 `{path,name,size,mediaType}`，历史会话无需启动 runtime。`mode=open` 在浏览器打开 HTML、文本或图片，不支持的类型作为附件下载；HTML 禁止嵌入应用，保留脚本隔离与网络访问限制。`mode=download` 返回原始文件附件。拒绝目录、网络路径、项目外路径与指向项目外的符号链接；不移动或复制源文件 |
+| GET | `/api/sessions/:id/artifacts?reference=...&mode=info` | 在会话范围内校验 `context://` 引用与内容哈希，返回文档元数据及 `reference,createdAt`；`mode=open/download` 在浏览器读取或下载不可变快照，沿用文件的类型及隔离规则。缺失或损坏的显式引用报错，不回退到当前文件 |
 | GET | `/api/sessions/:id/events` | SSE SessionView，全量替换客户端投影 |
 | POST | `/api/sessions/:id/requests` | `{requestId, input}`；202 `{requestId, status:"accepted"}`，不代表执行成功或已保存 |
 | POST | `/api/sessions/:id/queue` | `{requestId, action:"edit", input, expectedInput}` / `{requestId, action:"move", beforeRequestId:string\|null}` / `{requestId, action:"steer"}`；返回 SessionView |
@@ -52,6 +54,8 @@ Web 按单机使用、信任本机进程的前提设计，不使用浏览器登�
 | POST | `/api/web` | 原生专用：`{sessionId}` → `{url:"http://127.0.0.1:<port>/?session=<sessionId>"}`，懒加载静态资源 |
 
 失败响应为 `{code}`，不暴露上游原始错误或凭证。协议类型位于 `protocol.ts`，HTTP/SSE 通信实现位于 `transport.ts`，原生直连封装位于 `http.ts`；聊天契约位于 `../chat/contracts.ts`。
+
+`files` 接口可附带 `replyId`，优先查找该回复之前同路径最后一次成功写入的快照；存在时 info 返回 `reference,createdAt`，open 和 download 直接返回此快照内容。实时回复的 `sourceId` 对应正式归档消息 ID，重启后仍可定位同一版本。最新写入未保存快照时读取当前文件；不会选取更早的快照。未提供 replyId、旧会话或非内置工具生成的文件保留直接文件访问行为。
 
 ## 同步与去重
 

@@ -128,6 +128,7 @@ export default interface Resources {
     "draftBadge": "Draft",
     "draftDescription": "Draft saved only in this page",
     "editQueued": "Edit message",
+    "elapsedSeconds": "{{seconds}}s elapsed",
     "empty": {
       "description": "Enter a message below to start a session.",
       "title": "No messages yet"
@@ -135,7 +136,10 @@ export default interface Resources {
     "enqueue": "Add to queue",
     "found_one": "Found {{count}} session",
     "found_other": "Found {{count}} sessions",
+    "generatedSize": "{{size}} KB received",
+    "generatingFile": "Generating file content",
     "generatingTitle": "Generating title…",
+    "generatingTool": "Generating tool input",
     "history": "Session history",
     "invalidTitle": "Enter a single-line title of 1–200 characters.",
     "loadingHistory": "Loading session history",
@@ -148,6 +152,7 @@ export default interface Resources {
     "messageCount_other": "{{count}} messages",
     "messageHistory": "Messages",
     "messages": "Session messages",
+    "modelQuiet": "No new model output for {{seconds}}s. You can keep waiting or stop generation.",
     "new": "New session",
     "noAttachments": "No attachments yet.",
     "noMatches": "No matching sessions",
@@ -219,7 +224,8 @@ export default interface Resources {
     "titleLabel": "Session title",
     "type": "Session type",
     "unavailable": "Sending is currently unavailable",
-    "userMessage": "Your message"
+    "userMessage": "Your message",
+    "waitingModel": "Waiting for model response"
   },
   "settings": {
     "appearance": "Appearance",

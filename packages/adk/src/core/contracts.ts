@@ -154,12 +154,20 @@ export interface ModelContextRequest {
   /** A bounded, tool-free auxiliary call; charged to the current run's model budget. */
   readonly summarize: (text: string, maxOutputTokens: number) => Promise<string>;
 }
+/** Explicit model-only projection. The host guarantees the reference can recover the exact field. */
+export interface ModelToolInputReference {
+  readonly assistantId: string;
+  readonly callId: string;
+  readonly field: string;
+  readonly reference: string;
+}
 export interface ModelContextPlan {
   readonly messageIds: readonly string[];
   readonly summary?: string;
   readonly maxOutputTokens: number;
   readonly inputBudget?: number;
   readonly tokenScale?: number;
+  readonly toolInputReferences?: readonly ModelToolInputReference[];
   /** Called only after kernel validation and cancellation checks. */
   readonly accept?: () => void;
 }
@@ -191,6 +199,8 @@ export type AgentEvent = EventMeta & (
   | { type: 'run.stop_requested'; status: 'cancelled' | 'failed' | 'limited' }
   | { type: 'model.start'; modelCallId: string }
   | { type: 'model.delta'; modelCallId: string; text: string }
+  /** Provisional metadata; bytes are cumulative for this kind in the current model call. */
+  | { type: 'model.activity'; modelCallId: string; kind: 'tool-input' | 'reasoning'; bytes: number; toolName?: string }
   | { type: 'model.end'; modelCallId: string;
       outcome: GenerateResult['outcome'] | 'failed' | 'cancelled' | 'steered' }
   | { type: 'tool.start'; assistantId: string; callId: string; name: string }

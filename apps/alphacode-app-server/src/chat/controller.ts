@@ -21,7 +21,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals, restored?
   };
   const unsubscribe = runtime.subscribe(event => {
     const next = applyChatEvent(state, event);
-    update(state.phase === "stopping" && event.type !== "run.end" ? { ...next, phase: "stopping", status: "Stopping…" } : next);
+    update(state.phase === "stopping" && event.type !== "run.end" ? { ...next, phase: "stopping", status: "Stopping…", modelActivity: undefined } : next);
   });
   const unsubscribeApproval = approvals.subscribe(approval => update(applyApproval(state, approval)));
   let closePromise: Promise<void> | undefined;
@@ -42,7 +42,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals, restored?
       let completion: ChatMessage["completion"];
       let local = false;
       update({
-        busy: true, canSend: false, status: "Connecting…", phase: "thinking", error: undefined, notice: undefined, activeRunStartedAt: started,
+        busy: true, canSend: false, status: "Connecting…", phase: "thinking", error: undefined, notice: undefined, activeRunStartedAt: started, modelActivity: undefined,
         // Tool results belong to the conversation, including earlier turns.
         // Clearing them here also removes them from every CLI/Web snapshot.
         messages: [...state.messages.map(message => message.completion ? { ...message, completion: undefined } : message),
@@ -68,7 +68,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals, restored?
         } };
         update({
           messages,
-          busy: false, phase: "idle", activeRunStartedAt: undefined, canSend: !unsaved && !blocked && !state.closing,
+          busy: false, phase: "idle", activeRunStartedAt: undefined, modelActivity: undefined, canSend: !unsaved && !blocked && !state.closing,
           ...(unsaved ? { error: "Session not saved. Saving will be retried on exit.", notice: { code: "SESSION_UNSAVED" } } : {}),
           ...(blocked ? { error: "Execution state could not be confirmed. Exit and start a new session.", notice: { code: "EXECUTION_UNCONFIRMED" } } : {}),
         });
@@ -76,7 +76,7 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals, restored?
     },
     cancel() {
       if (!state.busy) return;
-      update({ status: "Stopping…", phase: "stopping" });
+      update({ status: "Stopping…", phase: "stopping", modelActivity: undefined });
       approvals.answer(false);
       runtime.cancel();
     },

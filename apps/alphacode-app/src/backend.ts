@@ -34,7 +34,10 @@ export function forwardRequest(descriptor: Descriptor, path: string, method: str
     }, incoming => {
       clearTimeout(timer);
       const headers = new Headers({ "cache-control": "no-store" });
-      if (incoming.headers["content-type"]) headers.set("content-type", incoming.headers["content-type"]);
+      for (const name of ["content-type", "content-disposition", "content-security-policy", "x-content-type-options", "referrer-policy"] as const) {
+        const value = incoming.headers[name];
+        if (typeof value === "string") headers.set(name, value);
+      }
       const status = incoming.statusCode ?? 502;
       // Never follow backend redirects or expose cookies/native credentials.
       if (status >= 300 && status < 400) { incoming.destroy(); reject(new Error("SERVER_REDIRECT_REJECTED")); return; }

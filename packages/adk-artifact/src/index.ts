@@ -10,7 +10,10 @@ export type ArtifactInput = {
   readonly mediaType?: string;
   /** False when capture stopped early, including cancellation or a capture limit. */
   readonly complete?: boolean;
-  readonly source?: { readonly runId: string; readonly assistantId: string; readonly callId: string; readonly channel: 'stdout' | 'stderr' };
+  readonly source?: { readonly runId: string; readonly assistantId: string; readonly callId: string } & (
+    | { readonly channel: 'stdout' | 'stderr' }
+    | { readonly channel: 'file'; readonly path: string; readonly revision: string }
+  );
 };
 export type Artifact = {
   readonly id: string; readonly reference: string; readonly sha256: string; readonly bytes: number;
@@ -19,6 +22,8 @@ export type Artifact = {
 };
 export interface ArtifactStore {
   put(scope: ContextScope, input: ArtifactInput): Promise<Artifact>;
+  /** Host-only full snapshot, still bounded by maxArtifactBytes. Model reads use read(). */
+  get(scope: ContextScope, reference: string): Promise<{ artifact: Artifact; content: string }>;
   read(scope: ContextScope, request: ContextReadRequest): Promise<ContextReadResult>;
   list(scope: ContextScope): Promise<readonly Artifact[]>;
   /** Tombstones the scope, rejecting subsequent writes from stale owners. */
@@ -72,14 +77,26 @@ export async function prepareArtifact(scope: ContextScope, input: ArtifactInput)
   if (typeof mediaType !== 'string' || mediaType.length > 256 || (input.complete !== undefined && typeof input.complete !== 'boolean') ||
     (input.source && (typeof input.source.runId !== 'string' || input.source.runId.length > 1024 ||
       typeof input.source.assistantId !== 'string' || input.source.assistantId.length > 1024 ||
-      typeof input.source.callId !== 'string' || input.source.callId.length > 1024 || !['stdout', 'stderr'].includes(input.source.channel)))) throw contextError('ARTIFACT_INVALID');
+      typeof input.source.callId !== 'string' || input.source.callId.length > 1024 || !['stdout', 'stderr', 'file'].includes(input.source.channel)))) throw contextError('ARTIFACT_INVALID');
+  if (input.source?.channel === 'file' && (typeof input.source.path !== 'string' || !input.source.path || input.source.path.length > 8192 ||
+    !/^[a-f0-9]{64}$/.test(input.source.revision))) throw contextError('ARTIFACT_INVALID');
   const id = crypto.randomUUID(), sha256 = await contentHash(input.content);
   return { id, reference: await createContextReference(scope, 'artifact', id, sha256), sha256, bytes, mediaType,
     complete: input.complete ?? true, createdAt: new Date().toISOString(), ...(input.source ? { source: { ...input.source } } : {}) };
 }
 export function createMemoryArtifactStore(): ArtifactStore {
   const scopes = new Map<string, Map<string, { metadata: Artifact; content: string }>>(), deleted = new Set<string>();
+  async function get(scope: ContextScope, reference: string) {
+    scope = { ...scope };
+    const ref = await parseContextReference(scope, reference);
+    if (ref.kind !== 'artifact') throw contextError('CONTEXT_REFERENCE_INVALID');
+    const entry = scopes.get(scopeKey(scope))?.get(ref.id);
+    if (!entry) throw contextError('CONTEXT_NOT_FOUND');
+    if (entry.metadata.sha256 !== ref.sha256) throw contextError('CONTEXT_CONTENT_MISMATCH');
+    return { artifact: structuredClone(entry.metadata), content: entry.content };
+  }
   return {
+    get,
     async put(scope, input) {
       scope = { ...scope }; input = { ...input, ...(input.source ? { source: { ...input.source } } : {}) };
       const key = scopeKey(scope), metadata = await prepareArtifact(scope, input);
@@ -91,12 +108,8 @@ export function createMemoryArtifactStore(): ArtifactStore {
     },
     async read(scope, request) {
       scope = { ...scope }; request = { ...request };
-      const ref = await parseContextReference(scope, request.reference);
-      if (ref.kind !== 'artifact') throw contextError('CONTEXT_REFERENCE_INVALID');
-      const entry = scopes.get(scopeKey(scope))?.get(ref.id);
-      if (!entry) throw contextError('CONTEXT_NOT_FOUND');
-      if (entry.metadata.sha256 !== ref.sha256) throw contextError('CONTEXT_CONTENT_MISMATCH');
-      return readContextText(entry.content, request, entry.metadata.complete);
+      const entry = await get(scope, request.reference);
+      return readContextText(entry.content, request, entry.artifact.complete);
     },
     async list(scope) { return structuredClone([...(scopes.get(scopeKey(scope))?.values() ?? [])].map(e => e.metadata)); },
     async remove(scope) { const key = scopeKey(scope); deleted.add(key); scopes.delete(key); },

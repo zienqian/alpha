@@ -1,5 +1,6 @@
 import { useTranslation } from "@/i18n/react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import type { ModelActivity } from "@/features/sessions/api";
 import { Workflow, type LucideIcon } from "lucide-react";
 import { MorphingSpinner } from "@/components/ui/morphing-spinner";
 import {
@@ -32,13 +33,40 @@ export function ChainOfThought({ label, description, running = false, status, ic
   </Trace>;
 }
 
-export function ReplyProgress({ hasContent = false, phase, connected = true }: {
+export function ReplyProgress({ hasContent = false, phase, connected = true, activity }: {
   hasContent?: boolean;
   phase?: string;
   connected?: boolean;
+  activity?: ModelActivity;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [now, setNow] = useState(Date.now);
+  const active = connected && phase !== "stopping" && phase !== "saving";
+  const activityId = active ? activity?.id : undefined;
+  useEffect(() => {
+    if (!activityId) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [activityId]);
+  const quietSeconds = activity ? Math.max(0, Math.floor((now - activity.updatedAt) / 1000)) : 0;
+  const fileInput = activity?.kind === "tool-input" && ["create_file", "edit_file"].includes(activity.toolName ?? "");
   const label = !connected ? t("sessions:awaitConnection") : phase === "stopping" ? t("sessions:stoppingShort")
-    : phase === "saving" ? t("sessions:saving") : hasContent ? t("sessions:replying") : t("sessions:thinking");
-  return <ChainOfThought label={label} running={connected} indicator={<MorphingSpinner active={connected} />} />;
+    : phase === "saving" ? t("sessions:saving") : activity?.kind === "tool-input"
+      ? fileInput ? t("sessions:generatingFile") : t("sessions:generatingTool")
+    : activity?.kind === "reasoning" ? t("sessions:thinking")
+    : activity?.kind === "waiting" ? t("sessions:waitingModel") : hasContent ? t("sessions:replying") : t("sessions:thinking");
+  const amount = activity?.kind === "tool-input" && activity.bytes > 0
+    ? t("sessions:generatedSize", { size: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(activity.bytes / 1024) }) : undefined;
+  const detail = active && activity ? [
+    activity.kind === "tool-input" && !fileInput ? activity.toolName : undefined,
+    amount,
+    t("sessions:elapsedSeconds", { seconds: Math.max(0, Math.floor((now - activity.startedAt) / 1000)) }),
+  ].filter(Boolean).join(" · ") : undefined;
+  return <div className="min-w-0">
+    <ChainOfThought label={label} running={connected} indicator={<MorphingSpinner active={connected} />} />
+    {detail && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground" aria-live="off">{detail}</p>}
+    {active && activity && quietSeconds >= 30 && <p className="mt-1 text-xs leading-5 text-muted-foreground">
+      {t("sessions:modelQuiet", { seconds: quietSeconds })}
+    </p>}
+  </div>;
 }

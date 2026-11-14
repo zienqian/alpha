@@ -1,5 +1,5 @@
-import { estimateContextTokens, projectContextMessages } from '@alpha/adk/core';
-import type { Message, ModelContextPlan, ModelContextRequest, Plugin } from '@alpha/adk/core';
+import { estimateContextTokens, projectContextMessages, projectContextHistory } from '@alpha/adk/core';
+import type { Awaitable, Message, ModelContextPlan, ModelContextRequest, ModelToolInputReference, Plugin } from '@alpha/adk/core';
 import { referenceForMessage } from './references';
 export { createContextReader, referenceForMessage } from './references';
 
@@ -20,6 +20,8 @@ export type ContextEvent = {
 export interface ContextOptions {
   namespace: string; sessionId: string; contextWindow?: number; maxOutputTokens?: number;
   auto?: boolean; store?: ContextStore; onEvent?: (event: ContextEvent) => void;
+  /** Only reference fields whose exact source is recoverable; failures should return no projections. */
+  toolInputReferences?: (history: readonly Message[], signal: AbortSignal) => Awaitable<readonly ModelToolInputReference[]>;
 }
 const fail = (code: string): never => { throw Object.assign(new Error(code), { code }); };
 const hash = async (value: unknown): Promise<string> => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value)))), b => b.toString(16).padStart(2, '0')).join('');
@@ -67,6 +69,13 @@ export function createContextManager(options: ContextOptions) {
     const check = () => request.signal.throwIfAborted();
     check();
     const { history, messages, protectedIds } = request;
+    const inputReferences = await options.toolInputReferences?.(history, request.signal) ?? [];
+    check();
+    const projectedHistory = projectContextHistory(history, inputReferences);
+    const project = (selected: readonly Message[]) => {
+      const ids = new Set(selected.map(message => message.id));
+      return projectContextMessages(selected, inputReferences.filter(input => ids.has(input.assistantId)));
+    };
     const maxOutputTokens = Math.min(options.maxOutputTokens ?? 8192, request.model.metadata?.maxTokens ?? Infinity);
     const knownWindows = [options.contextWindow, request.model.metadata?.contextWindow].filter((n): n is number => n !== undefined);
     if (knownWindows.some(n => !Number.isSafeInteger(n) || n <= 0)) return fail('CONTEXT_CONFIG_INVALID');
@@ -78,7 +87,8 @@ export function createContextManager(options: ContextOptions) {
     const tools = request.tools.map(t => ({ name: t.name, description: t.description, inputSchema: JSON.parse(JSON.stringify(t.inputSchema)) }));
     const system = [{ role: 'system' as const, content: request.instructions }, ...projectContextMessages(fixed)];
     const fingerprint = await hash({ model: request.model, instructions: request.instructions, tools,
-      fixed: fixed.map(m => ({ ...m, id: '' })), maxOutputTokens, window });
+      fixed: fixed.map(m => ({ ...m, id: '' })), maxOutputTokens, window,
+      inputProjection: options.toolInputReferences ? 1 : undefined });
     const valid = checkpoint && checkpoint.fingerprint === fingerprint && checkpoint.coverage <= history.length
       && checkpoint.sourceHash === await hash(history.slice(0, checkpoint.coverage));
     let active = valid ? checkpoint : undefined;
@@ -88,7 +98,7 @@ export function createContextManager(options: ContextOptions) {
     };
     const count = (covered: number, summary?: string) => estimateContextTokens({ messages: [...system,
       ...(summary ? [{ role: 'assistant' as const, content: summary }] : []),
-      ...projectContextMessages(keep(covered).filter(m => originalIds.has(m.id)))], tools }, scale);
+      ...project(keep(covered).filter(m => originalIds.has(m.id)))], tools }, scale);
     const before = count(active?.coverage ?? 0, active?.summary);
     const plan = (value: ContextCheckpoint | undefined): ModelContextPlan => {
       const retained = keep(value?.coverage ?? 0);
@@ -96,8 +106,10 @@ export function createContextManager(options: ContextOptions) {
       const systemTokens = estimateContextTokens({ messages: system }, scale);
       const toolTokens = estimateContextTokens({ messages: [], tools }, scale);
       const summaryTokens = estimateContextTokens({ messages: summaryMessages }, scale);
-      const messageTokens = estimateContextTokens({ messages: projectContextMessages(retained.filter(m => originalIds.has(m.id))) }, scale);
+      const messageTokens = estimateContextTokens({ messages: project(retained.filter(m => originalIds.has(m.id))) }, scale);
+      const retainedIds = new Set(retained.map(message => message.id));
       return { messageIds: retained.map(m => m.id), summary: value?.summary, maxOutputTokens, inputBudget, tokenScale: scale,
+        toolInputReferences: inputReferences.filter(input => retainedIds.has(input.assistantId)),
         accept() {
           check(); checkpoint = value;
           emit({ type: 'usage', inputBudget, maxOutputTokens, automatic: options.auto !== false && window !== undefined,
@@ -122,7 +134,7 @@ export function createContextManager(options: ContextOptions) {
     let cutoff = lastEnd;
     for (const end of forced ? [] : [...ends].reverse()) {
       if (end > lastEnd) continue;
-      if (estimateContextTokens({ messages: projectContextMessages(history.slice(end)) }, scale) <= tailBudget) cutoff = end;
+      if (estimateContextTokens({ messages: project(history.slice(end)) }, scale) <= tailBudget) cutoff = end;
       else break;
     }
     const summaryBudget = Math.max(1, Math.floor(Math.min(6000, inputBudget * .08)));
@@ -137,7 +149,7 @@ export function createContextManager(options: ContextOptions) {
     emit({ type: 'start', before });
     try {
       let covered = active?.coverage ?? 0, summary = active?.summary;
-      const sources = await Promise.all(history.slice(0, cutoff).map(async message => ({ message,
+      const sources = await Promise.all(history.slice(0, cutoff).map(async (message, index) => ({ message: projectedHistory[index],
         reference: await referenceForMessage(options, message) })));
       let calls = 0;
       while (covered < cutoff) {

@@ -18,7 +18,9 @@ try {
 } finally { store.close(); }
 ```
 
-`put`、`read`、`list`、`remove` 都显式传入 namespace / sessionId。`remove` 删除该会话的全部产物并保留墓碑，拒绝并发旧连接的后续写入；不影响其他会话。没有跨会话检索、自动执行或覆盖已有产物的接口。
+`put`、`get`、`read`、`list`、`remove` 都显式传入 namespace / sessionId。`get(scope, reference)` 为宿主返回通过作用域与完整哈希校验的 `{artifact, content}`，用于预览和下载；模型回读使用分页的 `read`。`remove` 删除该会话的全部产物并保留墓碑，拒绝并发旧连接的后续写入；不影响其他会话。没有跨会话检索、自动执行或覆盖已有产物的接口。
+
+文件快照使用 `source: {runId, assistantId, callId, channel: 'file', path, revision}`，其中 path 为宿主记录的文件路径，revision 为写入版本的 SHA-256。每次保存分配独立引用；后续文件修改、重命名或删除不会改变已有快照。文件来源不授予访问宿主路径的权限。
 
 引用格式为 `context://<scope-sha256>/<artifact|message>/<encoded-id>?sha256=<content-sha256>`。作用域摘要由 namespace / sessionId 生成；引用只用于定位和校验，不是身份认证凭证。读取必须同时通过宿主传入的当前会话范围和完整内容的 SHA-256 校验，不能将 URI 当成本地路径。消息引用的创建和解析由 `@alpha/adk-context` 提供。
 

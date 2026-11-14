@@ -95,6 +95,8 @@ finally { await agent.close(); store.close(); }
 
 命令 stdout / stderr 在预览裁剪前独立采集，每个通道默认最多 8 MiB，可通过 `artifacts.maxOutputBytes` 降低。进程结束后等待保存，再把 `artifacts.stdout/stderr.reference`、`bytes`、`complete` 与 `artifactStorage.status` 放入工具结果；模型预览仍保持原有头尾限量。保存失败保留原始退出码与执行状态，并返回失败码；不能据此重跑有副作用命令。
 
+内置 `create_file` / `edit_file` 成功写入 HTML、Markdown、TXT、CSV、JSON、SVG 后，将此次实际写入的完整内容保存为不可变快照，返回 `data.artifact.{reference,sha256,bytes,mediaType}` 与 `data.artifactStorage`。交付文档时使用 `[文档名](context://...)`；每次编辑生成新引用，旧链接保留原版本。保存失败不撤销文件写入，也不能重放写入。通过 `run_command` 或外部程序生成的文件目前不会自动注册；二进制文件也不进入此链路。模型输入的引用替换由宿主的上下文管理器完成，配置 ArtifactStore 本身不会改写历史。
+
 `read_context({ reference, offset?, maxBytes? })` 返回精确片段及 `nextOffset/hasMore/totalBytes/complete`。默认可读取本 Agent 配置的 ArtifactStore；需要恢复消息引用时，传入 `@alpha/adk-context` 的 `createContextReader` 作为 `readContext`。`read_context` 沿用 read 审批，不授予文件编辑凭据。显式 `tools` 列表覆盖默认工具，需自行加入导出的 `readContextTool`；自定义同名工具仍按 custom 权限处理。
 
 超过采集额度、取消或管道未完全排空时，保存的正文明确标记 `complete=false`。未知执行结果仍按 core 规则阻断会话；部分日志不能证明操作完成。保存发生在命令收束后，进程崩溃前尚未保存的日志不保证恢复。未配置存储时保留原有七项默认工具与有限预览行为。

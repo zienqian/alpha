@@ -6,6 +6,7 @@ import { invalid } from './validation-helpers';
 import type { CheckedConfig, CreateProviderOptions, LanguageModel, Provider, ProviderConfig } from './types';
 
 export { ProviderError } from './errors';
+export type { StreamActivity } from './types';
 export type { ProviderErrorCode } from './errors';
 export type { OpenAIChatCompletionRequest, OpenAIChatMessage, OpenAIResponseRequest, OpenAIResponseInput, AnthropicMessageRequest, AnthropicMessageBlock } from './protocols/official-types';
 export type { Fetch, AdapterContext, AnthropicContinuation, AnthropicOptions, CheckedConfig, CommonOptions, OpenAICompletionsOptions, OpenAIResponsesOptions, OpenAICodexResponsesOptions, CreateProviderOptions, Credential, HeaderValue, GenerateInput, GenerateResult, StreamEvent, Json, JsonObject, LanguageModel, Message, ModelConfig, ModelMetadata, ThinkingLevel, Provider, ProviderAdapter, ProviderConfig, ProviderEntry, ToolCall, ToolDefinition } from './types';

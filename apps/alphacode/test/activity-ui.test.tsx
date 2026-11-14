@@ -20,6 +20,19 @@ const t = createI18n("en").getFixedT(null, namespaces);
 
 const stateFor = (): ChatState => ({ sessionTitle: "New session", messages: [], busy: true, closing: false, canSend: false, status: "Generating…", phase: "thinking", permissionMode: "ask", settingsSaving: false });
 
+test("CLI distinguishes partial file generation, waiting and silent streams", () => {
+  const state: ChatState = { ...stateFor(), modelActivity: {
+    id: "model", kind: "tool-input", toolName: "create_file", bytes: 49152, startedAt: 0, updatedAt: 1000,
+  } };
+  expect(composerActivity(t, state, 2000).text).toBe("Generating file content · 48 KB received");
+  expect(composerActivity(t, state, 32000).text).toContain("No model output for 31s");
+  expect(composerActivity(t, { ...state, phase: "stopping" }, 32000).text).toBe("Stopping…");
+  expect(composerActivity(t, { ...state, connection: "reconnecting" }, 32000).text).toBe("Reconnecting to local server…");
+  const modelActivity = { id: "next", kind: "waiting" as const, bytes: 0, startedAt: 30000, updatedAt: 30000 };
+  expect(composerActivity(t, { ...state, modelActivity }, 32000).text).toBe("Waiting for model response…");
+  expect(composerActivity(t, { ...state, modelActivity: { ...modelActivity, kind: "reasoning" } }, 32000).text).toBe("Thinking…");
+});
+
 test("composer status follows the active turn, approval, stopping and persistence instead of a previous tool result", () => {
   const tool: ToolRecord = { id: "a:c", assistantId: "a", callId: "c", name: "read_file", path: "a", target: "a",
     description: "Read file: a", descriptionSource: "fallback", status: "succeeded", finishedAt: 1 };

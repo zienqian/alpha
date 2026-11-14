@@ -5,6 +5,34 @@ import { captureCommandArtifacts } from '../dist/command-artifacts';
 import { answer, call, fakeModel, fixture, request, results, scriptCommand } from './helpers';
 
 const scope = { namespace: 'project', sessionId: 'session' };
+test('document writes save exact immutable versions and failed storage preserves the applied write', async () => {
+  await using f = await fixture();
+  const store = createMemoryArtifactStore();
+  const first = '<!doctype html><h1>Original</h1>', second = '<!doctype html><h1>Revised</h1>';
+  const agent = await createCodingAgent({ cwd: f.cwd, artifacts: { store, scope }, policy: { decide: () => 'allow' },
+    model: fakeModel(request(call('create_file', { path: 'report.html', content: first })),
+      request(call('read_file', { path: 'report.html' }, 'read')), request(call('edit_file', { path: 'report.html', oldText: 'Original', newText: 'Revised' }, 'edit')), answer()) });
+  try {
+    expect((await agent.prompt('write and revise')).status).toBe('completed');
+    const snapshots = await store.list(scope);
+    expect(snapshots).toHaveLength(2);
+    expect(snapshots[0].source).toMatchObject({ channel: 'file', callId: 'c1' });
+    expect(snapshots[0].mediaType).toBe('text/html');
+    expect((await store.get(scope, snapshots[0].reference)).content).toBe(first);
+    expect((await store.get(scope, snapshots[1].reference)).content).toBe(second);
+    expect(await f.read('report.html')).toBe(second);
+    expect(results(agent)[0].data.data.artifact.reference).toBe(snapshots[0].reference);
+  } finally { await agent.close(); }
+  const broken = { put() { throw Error('private disk failure'); } };
+  const failure = await createCodingAgent({ cwd: f.cwd, artifacts: { store: broken, scope }, policy: { decide: () => 'allow' },
+    model: fakeModel(request(call('create_file', { path: 'saved.md', content: 'Written once' })), answer()) });
+  try {
+    expect((await failure.prompt('write')).status).toBe('completed');
+    expect(await f.read('saved.md')).toBe('Written once');
+    expect(results(failure)[0].data).toMatchObject({ ok: true, data: { created: true, artifactStorage: { status: 'failed', code: 'ARTIFACT_SAVE_FAILED' } } });
+    expect(results(failure)[0].content).not.toContain('private disk failure');
+  } finally { await failure.close(); }
+});
 test('command preview retains references to omitted output; read_context recovers it without rerunning', async () => {
   await using f = await fixture({ 'output.cjs': "process.stdout.write('HEAD'+'x'.repeat(60000)+'MIDDLE-EVIDENCE'+'y'.repeat(60000)+'TAIL'); process.stderr.write('stderr evidence');" });
   const store = createMemoryArtifactStore();

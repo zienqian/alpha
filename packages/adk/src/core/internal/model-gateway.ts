@@ -14,6 +14,8 @@ export function callModel<C>(run: Run<C>, model: LanguageModel, instructions: st
     const check = () => { run.check(); context.signal.throwIfAborted(); };
     let modelCallId: string | undefined, candidate: AssistantMessage | undefined, deltaBytes = 0, ended = false;
     const chunks: string[] = [];
+    const activityBytes = { 'tool-input': 0, reasoning: 0 };
+    let activityKey = '', activityAt = -Infinity;
     const commit = (message: AssistantMessage) => {
       ensure(modelCallId, 'INTERNAL_INVARIANT');
       run.history.commitAssistant(message);
@@ -50,6 +52,22 @@ export function callModel<C>(run: Run<C>, model: LanguageModel, instructions: st
               ensure(deltaBytes <= run.limits.maxModelOutputBytes, 'MODEL_OUTPUT_TOO_LARGE');
               if (event.text) chunks.push(event.text);
               run.emit({ type: 'model.delta', modelCallId, text: event.text });
+              if (event.text) activityKey = '';
+            } else if (event.type === 'activity') {
+              const activity = event.activity;
+              ensure(record(activity) && (activity.kind === 'tool-input' || activity.kind === 'reasoning')
+                && Number.isSafeInteger(activity.bytes) && activity.bytes >= 0
+                && (activity.toolName === undefined || (typeof activity.toolName === 'string' && activity.toolName.length <= 256)), 'MODEL_PROTOCOL');
+              deltaBytes += activity.bytes;
+              ensure(deltaBytes <= run.limits.maxModelOutputBytes, 'MODEL_OUTPUT_TOO_LARGE');
+              activityBytes[activity.kind] += activity.bytes;
+              const key = `${activity.kind}:${activity.toolName ?? ''}`, now = performance.now();
+              // Do not broadcast a full session snapshot for every argument token.
+              if (key !== activityKey || now - activityAt >= 250) {
+                run.emit({ type: 'model.activity', modelCallId, kind: activity.kind,
+                  bytes: activityBytes[activity.kind], ...(activity.toolName ? { toolName: activity.toolName } : {}) });
+                activityKey = key; activityAt = now;
+              }
             } else if (event.type === 'tool-call') {
               // Provider also reports these in finish. They are never a separate execution source.
             } else {

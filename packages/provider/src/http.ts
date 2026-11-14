@@ -102,6 +102,7 @@ export function createHttpModel(options: HttpOptions): LanguageModel {
         try { event = codec.push(data); }
         catch (error) { if (error instanceof ProviderError) throw error; return responseError(); }
         if (event.text) yield { type: 'text-delta', text: event.text };
+        for (const activity of event.activity ?? []) yield { type: 'activity', activity };
         if (event.result) {
           for (const toolCall of event.result.toolCalls) {
             if (input.signal?.aborted) throw input.signal.reason;

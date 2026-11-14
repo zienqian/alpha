@@ -25,6 +25,27 @@ async function fixture(options = {}, suppliedModel = model()) {
   return { manager, agent, model: suppliedModel, events };
 }
 
+test('input references are used for budget counts and compaction without changing canonical evidence', async () => {
+  const document = 'DOCUMENT-BODY'.repeat(10000);
+  const source = [{ id: 'user', role: 'user', content: 'Create report ' + 'requirements '.repeat(700) },
+    { id: 'write', role: 'assistant', ...answer(''), outcome: 'tool_calls', finishReason: 'tool_calls', toolCalls: [{ id: 'c', name: 'create_file', arguments: { path: 'report.html', content: document } }] },
+    { id: 'saved', role: 'toolResult', assistantId: 'write', callId: 'c', execution: 'succeeded', content: 'Saved artifact' },
+    { id: 'reply', role: 'assistant', ...answer('Report ready') }];
+  const references = [{ assistantId: 'write', callId: 'c', field: 'content', reference: 'context://saved-document' }];
+  const f = await fixture({ contextWindow: 16000, toolInputReferences: () => references });
+  try {
+    f.agent.replaceMessages(source);
+    expect((await f.agent.prompt('continue')).status).toBe('completed');
+    expect(f.model.summaries).toHaveLength(0);
+    expect(JSON.stringify(f.model.inputs[0])).not.toContain('DOCUMENT-BODY');
+    expect(estimateContextTokens(f.model.inputs[0])).toBeLessThan(5000);
+    expect(f.agent.state.messages.slice(0, source.length)).toEqual(source);
+    await f.agent.compact();
+    expect(JSON.stringify(f.model.summaries)).not.toContain('DOCUMENT-BODY');
+    expect(JSON.stringify(f.model.summaries)).toContain('context://saved-document');
+  } finally { await f.agent.close(); }
+});
+
 test('automatic compaction preserves canonical history, anchors, structured state and actual output reservation', async () => {
   const f = await fixture();
   const source = history(); f.agent.replaceMessages(source);

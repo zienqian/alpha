@@ -1,6 +1,7 @@
 import type { HistoryMessage, ProjectInfo, SessionInfo, SessionView, ToolRecord } from "@/features/sessions/api";
 
 export interface SessionMessage {
+  sourceId?: string;
   id: string;
   role: HistoryMessage["role"];
   content: string;

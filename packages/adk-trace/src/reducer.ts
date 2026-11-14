@@ -122,6 +122,15 @@ export function reduceEvent(
 ): boolean {
   const { snapshot, models, tools } = live,
     { summary } = snapshot;
+  // Frequent activity must advance the live clock without consuming span/dedup capacity.
+  if (event.type === "model.activity") {
+    if (summary.runStatus !== "running" || !models.has(event.modelCallId)) return false;
+    const offset = event.telemetry ? event.telemetry.elapsedMs - live.sourceStart : observed - live.observedStart;
+    if (offset <= summary.lastOffsetMs) return false;
+    summary.lastOffsetMs = offset;
+    summary.revision++;
+    return true;
+  }
   // Delta payloads are never retained; only the first nonempty arrival matters.
   if (event.type === "model.delta") {
     const model = models.get(event.modelCallId);

@@ -2,7 +2,20 @@ import { expect, test } from "bun:test";
 import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { forwardRequest, parseDescriptor } from "../src/backend";
-import { assetPath, databaseArgument, developmentURL, externalURL, isApplicationURL, isRendererURL } from "../src/policy";
+import { assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL } from "../src/policy";
+
+test('document links map from the trusted desktop origin to a browser route without exposing credentials', () => {
+  const path = '/api/sessions/s/files?path=C%3A%2Fdoc.html&mode=open&replyId=reply#section';
+  expect(documentPath('alphacode-app://app' + path)).toBe(path);
+  expect(documentPath('http://127.0.0.1:5173' + path, 'http://127.0.0.1:5173/')).toBe(path);
+  expect(documentPath('alphacode-app://app/api/sessions/s/artifacts?reference=context%3A%2F%2Ftest&mode=open')).toContain('/artifacts?');
+  for (const value of ['https://evil.test' + path, 'alphacode-app://other' + path,
+    'alphacode-app://app/api/info?mode=open', 'alphacode-app://app/api/sessions/s/files?mode=info',
+    'alphacode-app://app/api/sessions/s/files?mode=preview', 'file:///C:/doc.html']) {
+    expect(documentPath(value)).toBeUndefined();
+  }
+  expect(documentPath('http://127.0.0.1:5174' + path, 'http://127.0.0.1:5173/')).toBeUndefined();
+});
 
 test("development navigation is limited to the selected loopback origin and disabled in packages", () => {
   const url = "http://127.0.0.1:5173/";
@@ -59,7 +72,8 @@ test("the bridge forwards JSON, preserves API errors, and refuses redirects", as
     if (request.url === "/api/redirect") { response.writeHead(302, { location: "https://example.com" }); response.end(); return; }
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);
-    response.writeHead(409, { "content-type": "application/json", "set-cookie": "secret=hidden" });
+    response.writeHead(409, { "content-type": "application/json", "set-cookie": "secret=hidden",
+      "content-security-policy": "sandbox allow-scripts; default-src 'none'", "content-disposition": "attachment; filename=doc.html", "x-content-type-options": "nosniff" });
     response.end(JSON.stringify({ code: "STALE_REQUEST", body: Buffer.concat(chunks).toString() }));
   });
   await new Promise<void>(ready => server.listen(0, "127.0.0.1", ready));
@@ -68,6 +82,9 @@ test("the bridge forwards JSON, preserves API errors, and refuses redirects", as
     const response = await forwardRequest(descriptor, "/api/send", "POST", new TextEncoder().encode('{"text":"你好"}'), "application/json");
     expect(response.status).toBe(409);
     expect(response.headers.has("set-cookie")).toBe(false);
+    expect(response.headers.get("content-security-policy")).toBe("sandbox allow-scripts; default-src 'none'");
+    expect(response.headers.get("content-disposition")).toBe("attachment; filename=doc.html");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(await response.json()).toEqual({ code: "STALE_REQUEST", body: '{"text":"你好"}' });
     await expect(forwardRequest(descriptor, "/api/redirect", "GET")).rejects.toThrow("SERVER_REDIRECT_REJECTED");
   } finally { server.closeAllConnections(); await new Promise<void>(done => server.close(() => done())); }

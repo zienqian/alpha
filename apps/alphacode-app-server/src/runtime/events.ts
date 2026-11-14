@@ -1,6 +1,6 @@
 import type { Agent } from "@alpha/adk/core";
 import type { ChatEvent, ToolRecord } from "../chat/contracts";
-import { completeToolRecord, createToolRecord } from "./tool-records";
+import { completeToolRecord, createToolRecord, displayText } from "./tool-records";
 import { skillInputDisplay } from "../input";
 
 export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => void): () => void {
@@ -29,6 +29,10 @@ export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => v
       case "model.delta":
         listener({ type: "assistant.delta", id: event.modelCallId, text: event.text });
         break;
+      case "model.activity":
+        listener({ type: "assistant.activity", id: event.modelCallId, kind: event.kind, bytes: event.bytes,
+          ...(event.toolName ? { toolName: displayText(event.toolName, 128) } : {}) });
+        break;
       case "message.commit": {
         if (event.role === "user") {
           const message = agent.state.messages.find(message => message.id === event.messageId);
@@ -44,7 +48,7 @@ export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => v
             records.set(tool.id, tool);
             return tool;
           });
-          listener({ type: "assistant.commit", id: currentModel, text: message.text, tools });
+          listener({ type: "assistant.commit", id: currentModel, sourceId: message.id, text: message.text, tools });
         }
         break;
       }

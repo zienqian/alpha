@@ -2,6 +2,60 @@ import { expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { createApplication } from "../src/application";
 import { controlledStream, fixture, textResponse, toolResponse, waitFor } from "./helpers";
+import { join } from "node:path";
+
+test("partial file generation updates activity without exposing content or writing early", async () => {
+  const stream = controlledStream();
+  const app = await fixture((_body, index) => index === 1 ? stream.response : textResponse("done"));
+  try {
+    await app.chat.setPermissionMode("full");
+    const run = app.chat.send("create a file");
+    await waitFor(() => app.requests.length === 1);
+    expect(app.chat.state.modelActivity?.kind).toBe("waiting");
+    stream.reasoning("private reasoning must not appear");
+    await waitFor(() => app.chat.state.modelActivity?.kind === "reasoning");
+    expect(JSON.stringify(app.chat.state)).not.toContain("private reasoning");
+    stream.text("Preparing a file.");
+    stream.toolDelta('{"path":"generated.txt","content":"', "create_file");
+    await waitFor(() => app.chat.state.modelActivity?.kind === "tool-input");
+    const initial = app.chat.state.modelActivity;
+    if (!initial) throw new Error("Missing model activity");
+    expect(initial.toolName).toBe("create_file");
+    expect(app.chat.state.messages.some(message => message.tool)).toBe(false);
+    expect(await Bun.file(join(app.config.workspaceRoot, "generated.txt")).exists()).toBe(false);
+    await Bun.sleep(275);
+    stream.toolDelta("你".repeat(1000));
+    await waitFor(() => (app.chat.state.modelActivity?.bytes ?? 0) > 3000);
+    expect(app.chat.state.modelActivity?.updatedAt).toBeGreaterThan(initial.updatedAt);
+    expect(JSON.stringify(app.chat.state)).not.toContain("你你");
+    stream.toolDelta('"}');
+    stream.end("tool_calls");
+    await run;
+    expect(await Bun.file(join(app.config.workspaceRoot, "generated.txt")).text()).toBe("你".repeat(1000));
+    expect(app.chat.state.modelActivity).toBeUndefined();
+    expect(app.chat.state.lastRunStatus).toBe("completed");
+  } finally { stream.end(); await app.dispose(); }
+});
+
+for (const ending of ["cancel", "fail", "steer"] as const) test(`${ending} clears partial tool activity without executing it`, async () => {
+  const stream = controlledStream();
+  const app = await fixture((_body, index) => index === 1 ? stream.response : textResponse("recovered"));
+  try {
+    const run = app.chat.send("create a file");
+    await waitFor(() => app.requests.length === 1);
+    stream.toolDelta('{"path":"never.txt","content":"', "create_file");
+    await waitFor(() => app.chat.state.modelActivity?.kind === "tool-input");
+    if (ending === "cancel") app.chat.cancel();
+    else if (ending === "fail") stream.fail();
+    else expect(await app.chat.steer?.("change direction")).toBe(true);
+    await run;
+    expect(app.chat.state.modelActivity).toBeUndefined();
+    expect(app.chat.state.messages.some(message => message.tool)).toBe(false);
+    expect(await Bun.file(join(app.config.workspaceRoot, "never.txt")).exists()).toBe(false);
+    if (ending !== "steer") await app.chat.send("continue");
+    expect(app.chat.state.messages.at(-1)?.text).toBe("recovered");
+  } finally { stream.end(); await app.dispose(); }
+});
 
 test("steering before the first text leaves no empty replies and saves a single continued turn", async () => {
   const stream = controlledStream();

@@ -53,14 +53,25 @@ export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
     case "session.title":
       return { ...state, sessionTitle: event.title, titleStatus: event.status };
     case "assistant.start":
-      return { ...state, phase: "thinking", status: "Generating…", messages: state.messages.some(message => message.id === event.id)
+      return { ...state, phase: "thinking", status: "Generating…",
+        modelActivity: { id: event.id, kind: "waiting", bytes: 0, startedAt: Date.now(), updatedAt: Date.now() },
+        messages: state.messages.some(message => message.id === event.id)
         ? state.messages : append({ id: event.id, role: "assistant", text: "", streaming: true }) };
     case "assistant.delta":
-      return { ...state, messages: change(event.id, message => ({ text: message.text + event.text })) };
+      return { ...state, ...(state.modelActivity?.id === event.id && event.text ? {
+        modelActivity: { ...state.modelActivity, kind: "text" as const, toolName: undefined, bytes: 0, updatedAt: Date.now() },
+        status: "Generating…",
+      } : {}), messages: change(event.id, message => ({ text: message.text + event.text })) };
+    case "assistant.activity":
+      if (state.modelActivity?.id !== event.id) return state;
+      return { ...state, modelActivity: { ...state.modelActivity, kind: event.kind, bytes: event.bytes,
+        toolName: event.toolName, updatedAt: Date.now() },
+        status: event.kind === "reasoning" ? "Thinking…" : event.toolName ? `Preparing ${event.toolName}…` : "Preparing tool input…" };
     case "assistant.commit":
-      return { ...state, ...(event.tools?.length ? { phase: "queued" as const, status: "Preparing tools…" } : {}),
-        messages: upsertTools(change(event.id, () => ({ text: event.text })), event.tools ?? []) };
+      return { ...state, modelActivity: undefined, ...(event.tools?.length ? { phase: "queued" as const, status: "Preparing tools…" } : {}),
+        messages: upsertTools(change(event.id, () => ({ text: event.text, sourceId: event.sourceId })), event.tools ?? []) };
     case "assistant.end": {
+      if (state.modelActivity?.id === event.id) state = { ...state, modelActivity: undefined };
       const outcome = event.outcome;
       if (outcome === "steered") return { ...state, messages: state.messages
         .filter(message => message.id !== event.id || message.text.length > 0)
@@ -84,6 +95,6 @@ export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
       return { ...state, messages, phase: running ? "running" : "queued", status: running?.description ?? "Preparing next step…" };
     }
     case "run.end":
-      return { ...state, phase: "saving", lastRunStatus: event.status, status: "Saving session…", messages: settlePendingTools(state.messages) };
+      return { ...state, modelActivity: undefined, phase: "saving", lastRunStatus: event.status, status: "Saving session…", messages: settlePendingTools(state.messages) };
   }
 }

@@ -10,6 +10,7 @@ import {
   type TraceStore,
 } from "../src";
 import { createSqliteTraceStore } from "../src/sqlite";
+import { createLive, reduceEvent } from "../src/reducer";
 
 const scope = { namespace: "project-a", sessionId: "session-a" };
 function verifyCleanup(directory: string) {
@@ -95,6 +96,23 @@ function event(seq: number, payload: object, elapsedMs = seq * 10): AgentEvent {
     ...payload,
   } as AgentEvent;
 }
+test("long tool-input streams advance the trace clock without exhausting span capacity", () => {
+  const live = createLive(scope, event(0, { type: "run.start" }), 0);
+  reduceEvent(live, event(1, { type: "model.start", modelCallId: "model" }), 10, 3);
+  for (let seq = 2; seq < 500; seq++) reduceEvent(live, event(seq, {
+    type: "model.activity", modelCallId: "model", kind: "tool-input", bytes: seq * 1024, toolName: "create_file",
+  }), seq * 10, 3);
+  expect(live.snapshot.summary.lastOffsetMs).toBe(4990);
+  expect(live.snapshot.summary.captureStatus).toBe("complete");
+  expect(live.snapshot.summary.droppedEvents).toBe(0);
+  expect(live.snapshot.spans).toHaveLength(2);
+  expect(live.seen.size).toBe(1);
+  expect(live.models.get("model")?.firstTextMs).toBeUndefined();
+  reduceEvent(live, event(500, { type: "model.end", modelCallId: "model", outcome: "completed" }), 5000, 3);
+  reduceEvent(live, event(501, { type: "run.end", status: "completed" }), 5010, 3);
+  expect(live.snapshot.summary.runStatus).toBe("completed");
+  expect(reduceEvent(live, event(502, { type: "model.activity", modelCallId: "model", kind: "tool-input", bytes: 1 }), 5020, 3)).toBe(false);
+});
 test("pairing uses assistant + call identity, tolerates out-of-order end, and preserves unknown execution", async () => {
   const service = createTraceService();
   try {
