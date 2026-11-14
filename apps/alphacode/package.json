@@ -1,6 +1,6 @@
 {
   "name": "@alpha/alphacode",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "module": "src/index.tsx",
   "type": "module",
   "private": true,
