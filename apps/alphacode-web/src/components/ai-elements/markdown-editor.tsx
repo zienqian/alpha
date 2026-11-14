@@ -54,7 +54,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         "aria-multiline": "true",
         "aria-describedby": "composer-status",
         "data-slot": "input-group-control",
-        class: "markdown composer-editor min-h-20 max-h-48 w-full overflow-y-auto px-4 pt-3.5 pb-2 text-base leading-6 outline-none md:text-sm md:leading-6",
+        class: "markdown composer-editor min-h-14 max-h-48 w-full overflow-y-auto px-4 pt-3 pb-2 text-base leading-6 outline-none md:text-sm md:leading-6",
       },
       handleDOMEvents: {
         keydown(view, event) {
