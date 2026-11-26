@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 describe("ThemeProvider", () => {
-  it("syncs the desktop window with the active palette on mount and theme changes", () => {
+  it("syncs the desktop window on mount and theme changes", () => {
     const setAppearance = vi.fn();
     vi.stubGlobal("alphacodeDesktop", { platform: "win32", setAppearance });
     const root = document.documentElement;
@@ -34,10 +34,20 @@ describe("ThemeProvider", () => {
     const first = renderHook(useTheme, { wrapper: ThemeProvider });
     act(() => first.result.current.setTheme("dark"));
     expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(first.result.current.resolvedTheme).toBe("dark");
     expect(localStorage.getItem("alphacode-theme")).toBe("dark");
     first.unmount();
     const second = renderHook(useTheme, { wrapper: ThemeProvider });
     expect(second.result.current.theme).toBe("dark");
+    expect(second.result.current.resolvedTheme).toBe("dark");
+  });
+
+  it("syncs theme changes across windows and falls back when storage is cleared", () => {
+    const { result } = renderHook(useTheme, { wrapper: ThemeProvider });
+    act(() => window.dispatchEvent(new StorageEvent("storage", { key: "alphacode-theme", newValue: "dark" })));
+    expect(result.current.theme).toBe("dark");
+    act(() => window.dispatchEvent(new StorageEvent("storage", { key: null, newValue: null })));
+    expect(result.current.theme).toBe("system");
   });
 
   it("keeps switching when storage is unavailable", () => {
@@ -46,6 +56,7 @@ describe("ThemeProvider", () => {
     const { result } = renderHook(useTheme, { wrapper: ThemeProvider });
     act(() => result.current.setTheme("dark"));
     expect(result.current.theme).toBe("dark");
+    expect(result.current.storageError).toBe(true);
     expect(document.documentElement.style.colorScheme).toBe("dark");
   });
 

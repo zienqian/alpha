@@ -1,11 +1,18 @@
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
+
+// Canvas, settings and Markdown compile on their first lazy import. The default
+// one-second DOM query deadline can expire before that cold import on Windows.
+configure({ asyncUtilTimeout: 5000 });
 
 beforeEach(() => {
   localStorage.removeItem("alphacode-experiments-v1");
   localStorage.removeItem("alphacode-session-canvas-v1");
   localStorage.removeItem("alphacode-session-canvas-v2");
   localStorage.removeItem("alphacode-language-v1");
+  HTMLElement.prototype.hasPointerCapture = vi.fn(() => false);
+  HTMLElement.prototype.setPointerCapture = vi.fn();
+  HTMLElement.prototype.releasePointerCapture = vi.fn();
   Object.defineProperty(navigator, "languages", { configurable: true, value: ["zh-CN"] });
   // Layout/scroll APIs used by cmdk are not implemented by jsdom.
   vi.stubGlobal("ResizeObserver", class {

@@ -65,7 +65,6 @@ export async function startServer(options: ServerOptions) {
   const token = options.token ?? secret();
   const instanceId = options.instanceId ?? randomUUID();
   const registry = await createRegistry(options.databasePath, options.directory);
-  const skillRoutes = createSkillRoutes(registry.configs);
   const traces = options.traces ?? createTraceService({ store: await createSqliteTraceStore({ filename: join(options.directory, 'traces.db') }).catch(() => createMemoryTraceStore()) });
   const trace = createRuntimeTrace(traces);
   const receipts = join(options.directory, "requests");
@@ -87,6 +86,10 @@ export async function startServer(options: ServerOptions) {
   let webDirectory: Promise<string> | undefined;
   let updating = options.paused ?? false;
   const changed = () => { sequence++; lastActivity = Date.now(); for (const listener of listeners) listener(); };
+  const skillRoutes = createSkillRoutes(registry.configs, {
+    onChanged: changed,
+    onSkillsSettingsChanged: registry.updateSkills,
+  });
   const projectRoutes = createProjectRoutes(registry, options.databasePath, changed);
   const security = createSecurity(token, () => origin);
   const factory = options.createChat ?? ((config, credential, restore) => createApplication(config, {
@@ -395,7 +398,7 @@ export async function startServer(options: ServerOptions) {
         if (path.endsWith('/traces/events')) server.timeout(request, 0);
         return await traceRoutes(request, url) ?? fail(404, 'NOT_FOUND');
       }
-      if (path === "/api/skills" || path === "/api/skills/install") return skillRoutes(request, url);
+      if (path === "/api/skills" || path.startsWith("/api/skills/")) return skillRoutes(request, url);
       if (path === "/api/info" && request.method === "GET") return Response.json({ protocolVersion, instanceId, databasePath: options.databasePath,
         revision: options.revision, managed: Boolean(options.updateStatus), updateStatus: options.updateStatus?.() });
       if (path === "/api/server/update" && request.method === "POST" && options.onUpdateRequest) {

@@ -1,7 +1,8 @@
 export type LanguagePreference = "system" | "en" | "zh-CN";
 export const isLanguagePreference = (value: unknown): value is LanguagePreference =>
   value === "system" || value === "en" || value === "zh-CN";
-import { mkdir, open, writeFile } from "node:fs/promises";
+import { mkdir, open, rename, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
@@ -40,6 +41,13 @@ export interface SkillsSettings {
   claudeDirectories: boolean;
   trustedProjects: readonly string[];
   disabledNames: readonly string[];
+}
+
+export interface SkillsSettingsPatch {
+  sharedDirectories?: boolean;
+  claudeDirectories?: boolean;
+  trustedProjects?: readonly string[];
+  disabledNames?: readonly string[];
 }
 
 export const defaultSkillsSettings: SkillsSettings = Object.freeze({
@@ -223,4 +231,35 @@ export async function readGlobalConfig(directory: string): Promise<{
   const defaults = parseGlobalConfig(await readBounded(configPath, 64 * 1024), configPath);
   const instructions = (await readBounded(instructionsPath, 32 * 1024)).trim();
   return { defaults, instructions, instructionsPath };
+}
+
+export async function updateSkillsSettings(directory: string, patch: SkillsSettingsPatch): Promise<SkillsSettings> {
+  const configPath = join(directory, "config.yaml");
+  await mkdir(directory, { recursive: true });
+  try { await writeFile(configPath, template, { flag: "wx" }); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
+  const source = await readBounded(configPath, 64 * 1024);
+  const current = parseGlobalConfig(source, configPath).skills ?? defaultSkillsSettings;
+  const next: SkillsSettings = {
+    sharedDirectories: patch.sharedDirectories ?? current.sharedDirectories,
+    claudeDirectories: patch.claudeDirectories ?? current.claudeDirectories,
+    trustedProjects: [...new Set(patch.trustedProjects ?? current.trustedProjects)],
+    disabledNames: [...new Set(patch.disabledNames ?? current.disabledNames)],
+  };
+  const doc = parseDocument(source || template, { prettyErrors: false, uniqueKeys: true, stringKeys: true, merge: false });
+  if (doc.errors.length || doc.warnings.length) {
+    throw new ConfigurationError(`${configPath}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`, { code: "INVALID_YAML", params: { file: configPath } });
+  }
+  if (!doc.contents) doc.contents = doc.createNode({});
+  doc.setIn(["skills", "sharedDirectories"], next.sharedDirectories);
+  doc.setIn(["skills", "claudeDirectories"], next.claudeDirectories);
+  doc.setIn(["skills", "trustedProjects"], [...next.trustedProjects]);
+  doc.setIn(["skills", "disabledNames"], [...next.disabledNames]);
+  const updated = doc.toString();
+  // Validate the serialized output before touching config.yaml.
+  const verified = parseGlobalConfig(updated, configPath).skills ?? defaultSkillsSettings;
+  const temporary = `${configPath}.${randomUUID()}.tmp`;
+  await writeFile(temporary, updated, { mode: 0o600 });
+  await rename(temporary, configPath);
+  return verified;
 }

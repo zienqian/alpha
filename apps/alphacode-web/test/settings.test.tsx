@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { chooseSelect } from "./select";
 import { App } from "@/app";
 import { AppProviders } from "@/components/providers";
 import { languageStorageKey } from "@/i18n/provider";
@@ -16,32 +17,47 @@ const renderApp = () => render(<AppProviders><App /></AppProviders>);
 const button = (name: string) => screen.getByRole<HTMLButtonElement>("button", { name });
 
 describe("Workspace settings and navigation", () => {
+  it("applies appearance mode changes immediately and keeps drafts", async () => {
+    renderApp();
+    await screen.findByText("此计算机");
+    replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "切换主题时保留草稿");
+    fireEvent.click(button("设置"));
+    fireEvent.click(await screen.findByRole("radio", { name: "深色" }));
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(localStorage.getItem("alphacode-theme")).toBe("dark");
+    fireEvent.click(button("返回对话"));
+    expect((await screen.findByRole("textbox", { name: "消息草稿" })).textContent).toBe("切换主题时保留草稿");
+  });
+
   it("filters only settings by translated labels and options, and clears empty results", async () => {
     window.history.replaceState(null, "", "/settings");
     renderApp();
     const search = await screen.findByRole<HTMLInputElement>("searchbox", { name: "搜索设置" });
     await waitFor(() => expect(document.activeElement).toBe(search));
     fireEvent.change(search, { target: { value: "  DARK  " } });
-    expect(screen.getByRole("combobox", { name: "主题" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "主题" })).toBeTruthy();
     expect(screen.queryByRole("combobox", { name: "语言" })).toBeNull();
     expect(button("项目说明与约定")).toBeTruthy();
     fireEvent.change(search, { target: { value: "missing-setting" } });
     expect(screen.getByText("未找到匹配的设置")).toBeTruthy();
+    expect(screen.queryByRole("radiogroup")).toBeNull();
     expect(screen.queryByRole("combobox")).toBeNull();
     fireEvent.click(button("清空搜索"));
     expect(search.value).toBe("");
     expect(document.activeElement).toBe(search);
-    expect(screen.getAllByRole("combobox")).toHaveLength(2);
+    expect(screen.getByRole("radiogroup", { name: "主题" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "语言" })).toBeTruthy();
 
     fireEvent.change(search, { target: { value: "语言" } });
     const language = screen.getByRole("combobox", { name: "语言" });
     language.focus();
-    fireEvent.change(language, { target: { value: "en" } });
+    await chooseSelect(language, "English");
     expect(await screen.findByRole("combobox", { name: "Language" })).toBe(language);
-    expect(document.activeElement).toBe(language);
+    await waitFor(() => expect(document.activeElement).toBe(language));
     expect(search.value).toBe("语言");
     fireEvent.keyDown(search, { key: "Escape" });
-    expect(screen.getAllByRole("combobox")).toHaveLength(2);
+    expect(screen.getByRole("radiogroup", { name: "Theme" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Language" })).toBeTruthy();
   });
 
   it("preserves the workspace sidebar and supports opening sessions directly from settings", async () => {
@@ -71,19 +87,19 @@ describe("Workspace settings and navigation", () => {
     expect(button("设置").closest('[data-slot="sidebar-footer"]')).toBeTruthy();
     expect(screen.queryByRole("button", { name: "切换主题" })).toBeNull();
 
-    fireEvent.change(screen.getByRole("combobox", { name: "主题" }), { target: { value: "dark" } });
+    fireEvent.click(screen.getByRole("radio", { name: "深色" }));
     expect(document.documentElement.classList.contains("dark")).toBe(true);
     expect(localStorage.getItem("alphacode-theme")).toBe("dark");
-    fireEvent.change(screen.getByRole("combobox", { name: "语言" }), { target: { value: "en" } });
+    await chooseSelect(screen.getByRole("combobox", { name: "语言" }), "English");
     expect(await screen.findByRole("heading", { name: "General" })).toBeTruthy();
     expect(localStorage.getItem(languageStorageKey)).toBe("en");
     app.unmount();
     renderApp();
-    expect((await screen.findByRole<HTMLSelectElement>("combobox", { name: "Theme" })).value).toBe("dark");
-    expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "Language" }).value).toBe("en");
-    fireEvent.change(screen.getByRole("combobox", { name: "Theme" }), { target: { value: "light" } });
+    expect((await screen.findByRole("radio", { name: "Dark" })).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("combobox", { name: "Language" }).textContent).toBe("English");
+    fireEvent.click(screen.getByRole("radio", { name: "Light" }));
     expect(document.documentElement.classList.contains("light")).toBe(true);
-    fireEvent.change(screen.getByRole("combobox", { name: "Theme" }), { target: { value: "system" } });
+    fireEvent.click(screen.getByRole("radio", { name: "System" }));
     expect(localStorage.getItem("alphacode-theme")).toBe("system");
   });
 
@@ -172,6 +188,6 @@ describe("Workspace settings and navigation", () => {
     fireEvent.click(button("设置"));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(document.querySelector('[data-slot="sidebar"][data-state]')?.getAttribute("data-state")).toBe("expanded");
-    expect(await screen.findByRole("combobox", { name: "主题" })).toBeTruthy();
+    expect(await screen.findByRole("radiogroup", { name: "主题" })).toBeTruthy();
   });
 });

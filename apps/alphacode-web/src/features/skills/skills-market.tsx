@@ -1,223 +1,550 @@
-import { useRef, useState, type FormEvent } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Bug, Check, CircleAlert, Code, FolderOpen, Image, Link, Pencil, Puzzle, RefreshCw, Search, Settings2, Upload, X } from "lucide-react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Check, Folder, Plus, RefreshCw, Search, Settings2, ShieldAlert, ShieldCheck, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/i18n/react";
 import { cn } from "@/lib/utils";
-import { installSkill, listSkills, skillError, type InstalledSkill, type SkillDirectory } from "./api";
+import { projectDisplayName, skillError, type InstalledSkill, type SkillDirectory } from "./api";
+import { InstallSkillDialog } from "./install-skill-dialog";
+import { SkillCard } from "./skill-card";
+import { SkillDetailSheet } from "./skill-detail-sheet";
+import { SkillDirectoriesDialog } from "./skill-directories-dialog";
+import { useSkillsCatalog } from "./use-skills-catalog";
 
-const selectClass = "h-9 min-w-0 rounded-md border border-input bg-background px-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50 md:text-xs";
+type FilterKind = "all" | SkillDirectory["kind"];
 
-function SkillIcon({ name }: { name: string }) {
-  const appearance = /image|photo|design/.test(name) ? { Icon: Image, color: "bg-cyan-50 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-300" }
-    : /review|debug|test/.test(name) ? { Icon: Bug, color: "bg-muted text-muted-foreground" }
-    : /creat|writ|edit/.test(name) ? { Icon: Pencil, color: "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-300" }
-    : /install|plugin/.test(name) ? { Icon: Puzzle, color: "bg-rose-50 text-rose-500 dark:bg-rose-950 dark:text-rose-300" }
-    : /code|develop|build/.test(name) ? { Icon: Code, color: "bg-violet-50 text-violet-500 dark:bg-violet-950 dark:text-violet-300" }
-    : { Icon: BookOpen, color: "bg-orange-50 text-orange-500 dark:bg-orange-950 dark:text-orange-300" };
-  return <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", appearance.color)} aria-hidden="true">
-    <appearance.Icon className="size-6" strokeWidth={1.75} />
-  </span>;
+interface StatusNotice {
+  id: number;
+  message: string;
+  hint?: string;
+  tone?: "success" | "error";
 }
 
-function SkillEntry({ skill }: { skill: InstalledSkill }) {
-  const { t } = useTranslation();
-  return <li className="min-w-0">
-    <details className="group rounded-2xl open:bg-muted/50">
-      <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 rounded-2xl p-2 outline-none transition-colors hover:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
-        <SkillIcon name={skill.name.toLocaleLowerCase()} />
-        <div className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] leading-5 font-medium" title={skill.name}>{skill.name}</span>
-          <p className="mt-0.5 truncate text-xs leading-5 text-muted-foreground">{skill.description}</p>
+function SkillsSkeleton({ label }: { label: string }) {
+  return (
+    <div className="mt-6 grid grid-cols-1 gap-x-5 gap-y-3 @min-[640px]:grid-cols-2" role="status" aria-label={label}>
+      {Array.from({ length: 6 }, (_, index) => (
+        <div key={index} className="flex min-h-[82px] items-center gap-3 rounded-2xl border border-border/60 bg-card p-3">
+          <Skeleton className="size-10 shrink-0 rounded-xl" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3.5 w-4/5" />
+          </div>
+          <Skeleton className="h-4 w-7 rounded-full" />
         </div>
-        <span className="ml-1 flex shrink-0 items-center gap-1.5 pr-1 text-muted-foreground" title={t(`skills:market.status.${skill.status}`)}>
-          {skill.status === "available" ? <><Check className="size-icon opacity-65" aria-hidden="true" /><span className="sr-only">{t("skills:market.status.available")}</span></>
-            : <><CircleAlert className="size-icon" aria-hidden="true" /><span className="max-w-20 text-[11px] leading-4">{t(`skills:market.status.${skill.status}`)}</span></>}
-        </span>
-      </summary>
-      <div className="space-y-2 px-3 pt-1 pb-4 text-xs leading-5 sm:pl-[60px]">
-        <p className="break-words">{skill.description}</p>
-        <p className="text-muted-foreground">{t(`skills:market.scope.${skill.source}`)} · {t(`skills:market.kind.${skill.kind}`)}</p>
-        <p className="break-all text-muted-foreground">{skill.filePath}</p>
-        {skill.status !== "available" && <p className="text-muted-foreground">{t(`skills:market.reason.${skill.status}`)}</p>}
-        {skill.userInvocable && <code className="block break-all">/{skill.name}{skill.argumentHint ? ` ${skill.argumentHint}` : ""}</code>}
-        {(!skill.userInvocable || skill.disableModelInvocation) && <p className="text-muted-foreground">{t(!skill.userInvocable ? "skills:modelOnly" : "skills:manualOnly")}</p>}
-      </div>
-    </details>
-  </li>;
+      ))}
+    </div>
+  );
 }
 
 export function SkillsMarket({ initialProjectId, showHeader = true }: { initialProjectId?: string; showHeader?: boolean }) {
   const { t } = useTranslation();
-  const client = useQueryClient();
   const [projectId, setProjectId] = useState(initialProjectId);
-  const [filter, setFilter] = useState<"all" | SkillDirectory["kind"]>("all");
+  const [filter, setFilter] = useState<FilterKind>("all");
   const [search, setSearch] = useState("");
-  const [adding, setAdding] = useState(false);
+  const deferredSearch = useDeferredValue(search);
+  const [installOpen, setInstallOpen] = useState(false);
+  const [droppedFile, setDroppedFile] = useState<File>();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [mode, setMode] = useState<"zip" | "link">("zip");
-  const [directoryId, setDirectoryId] = useState("user-local");
-  const [file, setFile] = useState<File>();
-  const [url, setUrl] = useState("");
-  const [dragging, setDragging] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
-  const query = useQuery({ queryKey: ["skills", projectId], queryFn: ({ signal }) => listSkills(projectId, signal), retry: false });
-  const catalog = query.data;
-  const installation = useMutation({ mutationFn: installSkill,
-    onSuccess: () => {
-      setFile(undefined); setUrl(""); setAdding(false);
-      if (fileInput.current) fileInput.current.value = "";
-      void client.invalidateQueries({ queryKey: ["skills"] });
-    },
-  });
-  const enabledDirectories = catalog?.directories.filter(item => item.enabled) ?? [];
-  const directory = enabledDirectories.find(item => item.id === directoryId)
-    ?? enabledDirectories.find(item => item.id === "user-local") ?? enabledDirectories[0];
-  const visible = (catalog?.skills ?? []).filter(skill => (filter === "all" || skill.kind === filter)
-    && `${skill.name} ${skill.description} ${skill.filePath}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
-  const directoryLabel = (item: SkillDirectory) => `${t(`skills:market.scope.${item.source}`)} · ${t(`skills:market.kind.${item.kind}`)}`;
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!catalog?.projectId || installation.isPending || !directory?.enabled || (mode === "zip" ? !file : !url.trim())) return;
-    installation.mutate({ projectId: catalog.projectId, directoryId: directory.id, ...(mode === "zip" ? { file } : { url: url.trim() }) });
+  const [selectedSkillKey, setSelectedSkillKey] = useState<string | null>(null);
+  const [notice, setNotice] = useState<StatusNotice | null>(null);
+  const [pageDragging, setPageDragging] = useState(false);
+  const dragDepth = useRef(0);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const { catalogQuery, installMutation, settingsMutation, uninstallMutation } = useSkillsCatalog(projectId);
+  const catalog = catalogQuery.data;
+
+  // Sync project selection when workspace selection updates or active project is removed.
+  useEffect(() => {
+    if (initialProjectId && projectId === undefined) setProjectId(initialProjectId);
+  }, [initialProjectId, projectId]);
+
+  useEffect(() => {
+    if (catalog && projectId && catalog.projects.length > 0 && !catalog.projects.some(item => item.id === projectId)) {
+      setProjectId(catalog.projectId);
+    }
+  }, [catalog, projectId]);
+
+  // Auto-dismiss transient feedback banners.
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(current => (current?.id === notice.id ? null : current)), 5000);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
+  // Press "/" to quickly focus search when not typing in an input.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (installOpen || settingsOpen || selectedSkillKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      event.preventDefault();
+      searchRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [installOpen, settingsOpen, selectedSkillKey]);
+
+  const showNotice = useCallback((message: string, options?: { hint?: string; tone?: "success" | "error" }) => {
+    setNotice({ id: Date.now(), message, hint: options?.hint, tone: options?.tone ?? "success" });
+  }, []);
+
+  const enabledDirectories = useMemo(
+    () => catalog?.directories.filter(item => item.enabled) ?? [],
+    [catalog?.directories],
+  );
+
+  const directoryMap = useMemo(
+    () => new Map((catalog?.directories ?? []).map(item => [item.id, item])),
+    [catalog?.directories],
+  );
+
+  const allSkills = catalog?.skills ?? [];
+  const showClaudeTab = Boolean(
+    catalog?.settings?.claudeDirectories
+    || allSkills.some(skill => skill.kind === "claude"),
+  );
+
+  const kindCounts = useMemo(() => {
+    const counts: Record<FilterKind, number> = { all: allSkills.length, local: 0, shared: 0, claude: 0 };
+    for (const skill of allSkills) counts[skill.kind] += 1;
+    return counts;
+  }, [allSkills]);
+
+  const visible = useMemo(() => {
+    const needle = deferredSearch.trim().toLocaleLowerCase();
+    return allSkills.filter(skill => {
+      if (filter !== "all" && skill.kind !== filter) return false;
+      if (!needle) return true;
+      return `${skill.name} ${skill.description} ${skill.filePath}`.toLocaleLowerCase().includes(needle);
+    });
+  }, [allSkills, filter, deferredSearch]);
+
+  const selectedSkill = useMemo(
+    () => allSkills.find(skill => `${skill.directoryId}::${skill.name}` === selectedSkillKey),
+    [allSkills, selectedSkillKey],
+  );
+
+  const activeProject = catalog?.projects.find(item => item.id === catalog.projectId);
+  const projectUntrusted = Boolean(
+    activeProject
+    && !(activeProject.trusted ?? catalog?.directories.some(d => d.source === "project" && d.trusted))
+    && allSkills.some(skill => skill.source === "project" && skill.status === "untrusted"),
+  );
+  const hasSettingsAttention = Boolean((catalog?.diagnostics.length ?? 0) > 0 || projectUntrusted);
+  const canInstall = enabledDirectories.length > 0;
+
+  async function applySettings(patch: Parameters<typeof settingsMutation.mutateAsync>[0], successHint = true) {
+    try {
+      await settingsMutation.mutateAsync(patch);
+      if (successHint) showNotice(t("skills:market.settingsSaved"), { hint: t("skills:market.newSession") });
+    } catch (error) {
+      showNotice(skillError(t, error), { tone: "error" });
+    }
   }
 
-  return <>
-    {showHeader && <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
-      <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} className="text-muted-foreground" />
-      <span className="flex-1 text-[13px] font-medium">{t("skills:market.title")}</span>
-    </header>}
-    <section id="skills-content" aria-labelledby="skills-title" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto outline-none">
-      <div className="@container mx-auto max-w-[964px] px-5 py-7 sm:px-8 sm:py-9">
-        <div className="flex flex-col justify-between gap-5 @min-[740px]:flex-row @min-[740px]:items-start">
-          <div className="min-w-0">
-            <h1 id="skills-title" className="text-[22px] leading-8 font-medium tracking-tight">{t("skills:market.title")}</h1>
-            <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">{t("skills:market.description")}</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 @min-[740px]:pt-0.5">
-            <div className="relative min-w-0 flex-1 @min-[740px]:w-60 @min-[740px]:flex-none">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-icon -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-              <Input className="h-8 rounded-full border-border/80 bg-transparent pl-8 shadow-none md:text-xs" type="search" aria-label={t("skills:market.search")} placeholder={t("skills:market.search")} value={search} onChange={event => setSearch(event.target.value)} />
+  async function handleInstall(input: Parameters<typeof installMutation.mutateAsync>[0]) {
+    const result = await installMutation.mutateAsync(input);
+    setDroppedFile(undefined);
+    showNotice(t("skills:market.success", { names: result.installed.join(", ") }), { hint: t("skills:market.newSession") });
+    return result;
+  }
+
+  async function handleUninstall(skill: InstalledSkill) {
+    await uninstallMutation.mutateAsync({
+      projectId: catalog?.projectId,
+      directoryId: skill.directoryId,
+      name: skill.name,
+    });
+    showNotice(t("skills:market.uninstalled", { name: skill.name }), { hint: t("skills:market.newSession") });
+  }
+
+  function handlePageDragEnter(event: React.DragEvent) {
+    if (!canInstall || installOpen || !event.dataTransfer.types.includes("Files")) return;
+    event.preventDefault();
+    dragDepth.current += 1;
+    setPageDragging(true);
+  }
+
+  function handlePageDragOver(event: React.DragEvent) {
+    if (!pageDragging) return;
+    event.preventDefault();
+  }
+
+  function handlePageDragLeave(event: React.DragEvent) {
+    if (!pageDragging) return;
+    event.preventDefault();
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setPageDragging(false);
+  }
+
+  function handlePageDrop(event: React.DragEvent) {
+    if (!pageDragging) return;
+    event.preventDefault();
+    dragDepth.current = 0;
+    setPageDragging(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) {
+      setDroppedFile(file);
+      installMutation.reset();
+      setInstallOpen(true);
+    }
+  }
+
+  const filterKinds: FilterKind[] = showClaudeTab
+    ? ["all", "local", "shared", "claude"]
+    : ["all", "local", "shared"];
+
+  return (
+    <>
+      {showHeader && (
+        <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
+          <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} className="text-muted-foreground" />
+          <span className="flex-1 text-[13px] font-medium">{t("skills:market.title")}</span>
+        </header>
+      )}
+
+      <section
+        id="skills-content"
+        aria-labelledby="skills-title"
+        tabIndex={-1}
+        className="relative min-h-0 flex-1 overflow-y-auto outline-none"
+        onDragEnter={handlePageDragEnter}
+        onDragOver={handlePageDragOver}
+        onDragLeave={handlePageDragLeave}
+        onDrop={handlePageDrop}
+      >
+        {pageDragging && (
+          <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-xs">
+            <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-primary bg-popover px-10 py-8 text-center shadow-(--overlay-shadow)">
+              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Upload className="size-6" aria-hidden="true" />
+              </span>
+              <p className="text-sm font-medium text-foreground">{t("skills:market.dropOverlayTitle")}</p>
+              <p className="text-xs text-muted-foreground">{t("skills:market.dropOverlayHint")}</p>
             </div>
-            <Button variant="ghost" size="icon-sm" className="size-8 rounded-full text-muted-foreground" aria-label={t("skills:market.refresh")} title={t("skills:market.refresh")} disabled={query.isFetching} onClick={() => void query.refetch()}>
-              <RefreshCw className={cn(query.isFetching && "animate-spin motion-reduce:animate-none")} aria-hidden="true" />
-            </Button>
-            <Button variant="ghost" size="icon-sm" className={cn("size-8 rounded-full text-muted-foreground", settingsOpen && "bg-muted text-foreground")} aria-label={t("skills:market.settings")} title={t("skills:market.settings")} aria-expanded={settingsOpen} aria-controls="skill-settings" onClick={() => setSettingsOpen(previous => !previous)}>
-              <Settings2 aria-hidden="true" />
-            </Button>
-            <Button size="sm" className="h-8 rounded-full bg-foreground px-3 text-background hover:bg-foreground/90" disabled={!catalog?.projectId || installation.isPending} aria-expanded={adding} aria-controls="skill-install" onClick={() => { installation.reset(); setAdding(previous => !previous); }}>
-              {t("skills:market.add")}
-            </Button>
           </div>
+        )}
+
+        <div className="@container mx-auto max-w-[964px] px-5 py-7 sm:px-8 sm:py-9">
+          <div className="flex flex-col justify-between gap-4 @min-[700px]:flex-row @min-[700px]:items-start">
+            <div className="min-w-0">
+              <h1 id="skills-title" className="text-[22px] leading-8 font-medium tracking-tight">{t("skills:market.title")}</h1>
+              <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">{t("skills:market.description")}</p>
+            </div>
+
+            <div className="flex shrink-0 flex-wrap items-center gap-2 @min-[700px]:pt-0.5">
+              {catalog && catalog.projects.length > 0 && (
+                <Select
+                  value={catalog.projectId}
+                  disabled={installMutation.isPending}
+                  onValueChange={value => {
+                    setProjectId(value);
+                    installMutation.reset();
+                  }}
+                >
+                  <SelectTrigger
+                    id="skills-project"
+                    aria-label={t("skills:market.project")}
+                    className="h-8 max-w-[220px] min-w-[140px] rounded-full border-border/80 bg-background px-3 text-xs shadow-none hover:bg-muted/40"
+                    size="sm"
+                  >
+                    <Folder className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {catalog.projects.map(project => (
+                      <SelectItem key={project.id} value={project.id} title={project.path}>
+                        {projectDisplayName(project)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              <Button
+                size="sm"
+                className="h-8 rounded-full bg-foreground px-3.5 text-background hover:bg-foreground/90"
+                disabled={!canInstall || installMutation.isPending}
+                onClick={() => {
+                  setDroppedFile(undefined);
+                  installMutation.reset();
+                  setInstallOpen(true);
+                }}
+              >
+                <Plus aria-hidden="true" />
+                {t("skills:market.add")}
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-col justify-between gap-3 border-b border-border/60 pb-4 @min-[680px]:flex-row @min-[680px]:items-center">
+            <div role="group" aria-label={t("skills:market.filter")} className="flex flex-wrap items-center gap-1">
+              {filterKinds.map(kind => {
+                const active = filter === kind;
+                return (
+                  <Button
+                    key={kind}
+                    variant={active ? "secondary" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "h-8 rounded-full px-3 text-xs",
+                      active ? "font-medium text-foreground" : "text-muted-foreground",
+                    )}
+                    aria-pressed={active}
+                    onClick={() => setFilter(kind)}
+                  >
+                    <span>{t(`skills:market.kind.${kind}`)}</span>
+                    {catalog && (
+                      <span className={cn("ml-0.5 text-[11px] tabular-nums", active ? "text-foreground/75" : "text-muted-foreground/70")}>
+                        {kindCounts[kind]}
+                      </span>
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <div className="relative min-w-0 flex-1 @min-[680px]:w-56 @min-[680px]:flex-none">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-icon -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <Input
+                  ref={searchRef}
+                  className="h-8 rounded-full border-border/80 bg-muted/40 pr-8 pl-8 shadow-none transition-colors focus-visible:bg-background md:text-xs [&::-webkit-search-cancel-button]:appearance-none"
+                  type="search"
+                  aria-label={t("skills:market.search")}
+                  placeholder={t("skills:market.search")}
+                  value={search}
+                  onChange={event => setSearch(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === "Escape" && search) {
+                      event.preventDefault();
+                      setSearch("");
+                    }
+                  }}
+                />
+                {search && (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="absolute top-1/2 right-1 -translate-y-1/2 rounded-full text-muted-foreground"
+                    aria-label={t("skills:market.clearSearch")}
+                    title={t("skills:market.clearSearch")}
+                    onClick={() => { setSearch(""); searchRef.current?.focus(); }}
+                  >
+                    <X aria-hidden="true" />
+                  </Button>
+                )}
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="size-8 rounded-full text-muted-foreground"
+                aria-label={t("skills:market.refresh")}
+                title={t("skills:market.refresh")}
+                disabled={catalogQuery.isFetching}
+                onClick={() => void catalogQuery.refetch()}
+              >
+                <RefreshCw className={cn(catalogQuery.isFetching && "animate-spin motion-reduce:animate-none")} aria-hidden="true" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="relative size-8 rounded-full text-muted-foreground"
+                aria-label={t("skills:market.settings")}
+                title={t("skills:market.settings")}
+                disabled={!catalog}
+                onClick={() => setSettingsOpen(true)}
+              >
+                <Settings2 aria-hidden="true" />
+                {hasSettingsAttention && (
+                  <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {notice && (
+            <div
+              role={notice.tone === "error" ? "alert" : "status"}
+              className={cn(
+                "mt-4 flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5 text-xs leading-5",
+                notice.tone === "error"
+                  ? "border-destructive/30 bg-destructive/5 text-destructive"
+                  : "border-border/75 bg-muted/50 text-foreground",
+              )}
+            >
+              {notice.tone !== "error" && <Check className="mt-0.5 size-icon shrink-0 text-primary" aria-hidden="true" />}
+              <div className="min-w-0 flex-1">
+                <p className="font-medium break-words">{notice.message}</p>
+                {notice.hint && <p className="mt-0.5 text-muted-foreground">{notice.hint}</p>}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="shrink-0 text-muted-foreground"
+                aria-label={t("skills:market.closeNotice")}
+                onClick={() => setNotice(null)}
+              >
+                <X aria-hidden="true" />
+              </Button>
+            </div>
+          )}
+
+          {projectUntrusted && activeProject && (
+            <div className="mt-4 flex flex-col justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] px-4 py-3 text-xs leading-5 sm:flex-row sm:items-center">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <ShieldAlert className="mt-0.5 size-icon shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">{t("skills:market.untrustedBannerTitle")}</p>
+                  <p className="mt-0.5 text-muted-foreground">{t("skills:market.untrustedBannerDescription")}</p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="shrink-0 self-start sm:self-center"
+                disabled={settingsMutation.isPending}
+                onClick={() => void applySettings({ trustProject: { projectId: activeProject.id, trusted: true } })}
+              >
+                <ShieldCheck aria-hidden="true" />
+                {t("skills:market.trustProject")}
+              </Button>
+            </div>
+          )}
+
+          {catalogQuery.isError && (
+            <div role="alert" className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-xs leading-5">
+              <p className="text-destructive">{skillError(t, catalogQuery.error)}</p>
+              <Button variant="outline" size="sm" disabled={catalogQuery.isFetching} onClick={() => void catalogQuery.refetch()}>
+                {t("skills:market.retry")}
+              </Button>
+            </div>
+          )}
+
+          {catalogQuery.isPending && !catalog && <SkillsSkeleton label={t("skills:market.loading")} />}
+
+          {catalog && (
+            <div className={cn("mt-5 transition-opacity duration-150", catalogQuery.isPlaceholderData && "opacity-65")}>
+              <p role="status" className="sr-only">{t("skills:market.count", { count: visible.length })}</p>
+
+              {visible.length === 0 ? (
+                <div className="mt-3 flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
+                  <h2 className="text-[13px] font-medium">
+                    {t(
+                      catalog.projects.length === 0 && catalog.directories.length === 0
+                        ? "skills:market.noProject"
+                        : search || filter !== "all"
+                          ? "skills:market.noMatches"
+                          : "skills:market.empty",
+                    )}
+                  </h2>
+                  <p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">
+                    {t(
+                      catalog.projects.length === 0 && catalog.directories.length === 0
+                        ? "skills:market.noProjectHint"
+                        : search || filter !== "all"
+                          ? "skills:market.noMatchesHint"
+                          : "skills:market.emptyHint",
+                    )}
+                  </p>
+                  {(search || filter !== "all") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4 rounded-full"
+                      onClick={() => { setSearch(""); setFilter("all"); }}
+                    >
+                      {t("skills:market.clearFilter")}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-7">
+                  {(["local", "shared", "claude"] as const).map(kind => {
+                    const skills = visible.filter(skill => skill.kind === kind);
+                    if (skills.length === 0) return null;
+                    return (
+                      <section key={kind} aria-labelledby={`skills-${kind}-title`}>
+                        <div className="mb-3 flex items-center gap-2 px-0.5">
+                          <h2 id={`skills-${kind}-title`} className="text-xs font-medium text-muted-foreground">
+                            {t(`skills:market.kind.${kind}`)}
+                          </h2>
+                          <span className="text-[11px] tabular-nums text-muted-foreground/70">{skills.length}</span>
+                        </div>
+                        <ul aria-label={t(`skills:market.kind.${kind}`)} className="grid grid-cols-1 gap-x-5 gap-y-3 @min-[640px]:grid-cols-2">
+                          {skills.map(skill => {
+                            const key = `${skill.directoryId}::${skill.name}`;
+                            return (
+                              <SkillCard
+                                key={skill.filePath}
+                                skill={skill}
+                                selected={selectedSkillKey === key}
+                                toggling={settingsMutation.isPending}
+                                onSelect={() => setSelectedSkillKey(key)}
+                                onToggle={enabled => void applySettings({ toggleSkill: { name: skill.name, enabled } }, false)}
+                              />
+                            );
+                          })}
+                        </ul>
+                      </section>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
+      </section>
 
-        {settingsOpen && catalog && <div id="skill-settings" role="region" aria-label={t("skills:market.settings")} className="mt-6 rounded-2xl bg-muted/50 p-4 sm:p-5">
-        {catalog.projects.length > 0 && <div className="flex flex-wrap items-center gap-2">
-          <label htmlFor="skills-project" className="text-xs text-muted-foreground">{t("skills:market.project")}</label>
-          <select id="skills-project" className={cn(selectClass, "max-w-full flex-1 sm:max-w-md sm:flex-none")} value={catalog.projectId} disabled={installation.isPending}
-            onChange={event => { setProjectId(event.target.value); installation.reset(); }}>
-            {catalog.projects.map(project => <option key={project.id} value={project.id}>{project.path}</option>)}
-          </select>
-        </div>}
-        <div role="group" aria-label={t("skills:market.filter")} className="mt-4 flex flex-wrap gap-1">
-          {(["all", "local", "shared", "claude"] as const).filter(kind => kind !== "claude" || catalog.skills.some(skill => skill.kind === "claude")).map(kind =>
-            <Button key={kind} variant={filter === kind ? "secondary" : "ghost"} size="sm" className="rounded-full" aria-pressed={filter === kind} onClick={() => setFilter(kind)}>{t(`skills:market.kind.${kind}`)}</Button>)}
-        </div>
-        {catalog.directories.length > 0 && <details className="mt-4 border-t border-border/60 pt-4">
-          <summary className="cursor-pointer rounded-sm text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/50">{t("skills:market.directories")}</summary>
-          <ul className="mt-3 space-y-4">{catalog.directories.map(item => <li key={item.id} className="flex items-start gap-2 text-xs leading-5">
-            <FolderOpen className="mt-0.5 size-icon shrink-0 text-muted-foreground" aria-hidden="true" />
-            <div className="min-w-0"><p>{directoryLabel(item)} <span className="text-muted-foreground">· {t(!item.enabled ? "skills:market.directoryDisabled" : !item.trusted ? "skills:market.directoryUntrusted" : !item.exists ? "skills:market.directoryMissing" : "skills:market.directoryActive")}</span></p>
-              <p className="break-all text-muted-foreground">{item.path}</p></div>
-          </li>)}</ul>
-        </details>}
-        {catalog.diagnostics.length > 0 && <details className="mt-4 text-xs leading-5"><summary className="cursor-pointer rounded-sm text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50">{t("skills:market.diagnostics", { count: catalog.diagnostics.length })}</summary>
-          <ul className="mt-2 space-y-2">{catalog.diagnostics.map((item, index) => <li key={`${item.path}-${index}`} className="break-all text-muted-foreground"><code>{item.code}</code><p>{item.path}</p></li>)}</ul>
-        </details>}
-        <p className="mt-4 text-xs leading-5 text-muted-foreground">{t("skills:market.newSession")}</p>
-        </div>}
+      <SkillDetailSheet
+        skill={selectedSkill}
+        directory={selectedSkill ? directoryMap.get(selectedSkill.directoryId) : undefined}
+        projectId={catalog?.projectId}
+        open={Boolean(selectedSkill)}
+        toggling={settingsMutation.isPending}
+        uninstalling={uninstallMutation.isPending}
+        onOpenChange={open => { if (!open) setSelectedSkillKey(null); }}
+        onToggleSkill={(name, enabled) => void applySettings({ toggleSkill: { name, enabled } }, false)}
+        onTrustProject={() => {
+          if (activeProject) void applySettings({ trustProject: { projectId: activeProject.id, trusted: true } });
+        }}
+        onEnableDirectoryKind={kind => {
+          void applySettings(kind === "shared" ? { sharedDirectories: true } : { claudeDirectories: true });
+        }}
+        onUninstall={handleUninstall}
+      />
 
-        {installation.isSuccess && <div role="status" className="mt-5 flex items-start gap-2 rounded-md bg-muted p-3 text-xs leading-5">
-          <Check className="mt-0.5 size-icon shrink-0" aria-hidden="true" />
-          <div className="min-w-0"><p className="break-words font-medium">{t("skills:market.success", { names: installation.data.installed.join(", ") })}</p>
-            <p className="mt-1 text-muted-foreground">{t("skills:market.newSession")}</p></div>
-        </div>}
+      <InstallSkillDialog
+        open={installOpen}
+        projectId={catalog?.projectId}
+        directories={catalog?.directories ?? []}
+        initialFile={droppedFile}
+        isPending={installMutation.isPending}
+        error={installMutation.error}
+        onOpenChange={open => {
+          setInstallOpen(open);
+          if (!open) setDroppedFile(undefined);
+        }}
+        onResetError={installMutation.reset}
+        onInstall={handleInstall}
+      />
 
-        {adding && <form id="skill-install" onSubmit={submit} aria-labelledby="skill-install-title" className="mt-5 space-y-4 rounded-lg border p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-2">
-            <h2 id="skill-install-title" className="text-sm font-medium">{t("skills:market.add")}</h2>
-            <Button type="button" variant="ghost" size="icon-xs" disabled={installation.isPending} onClick={() => setAdding(false)} aria-label={t("skills:market.close")}><X aria-hidden="true" /></Button>
-          </div>
-          <div role="group" aria-label={t("skills:market.method")} className="flex flex-wrap gap-2">
-            <Button type="button" variant={mode === "zip" ? "secondary" : "ghost"} size="sm" aria-pressed={mode === "zip"} disabled={installation.isPending} onClick={() => { setMode("zip"); installation.reset(); }}><Upload aria-hidden="true" />{t("skills:market.zip")}</Button>
-            <Button type="button" variant={mode === "link" ? "secondary" : "ghost"} size="sm" aria-pressed={mode === "link"} disabled={installation.isPending} onClick={() => { setMode("link"); installation.reset(); }}><Link aria-hidden="true" />{t("skills:market.link")}</Button>
-          </div>
-          {mode === "zip" ? <div>
-            <label htmlFor="skill-zip" className={cn("flex cursor-pointer flex-col items-center gap-1 rounded-md border border-dashed px-4 py-6 text-center text-xs leading-5 focus-within:ring-2 focus-within:ring-ring/50", dragging ? "border-ring bg-muted" : "hover:bg-muted/50", installation.isPending && "pointer-events-none opacity-50")}
-              onDragOver={event => { event.preventDefault(); if (!installation.isPending) setDragging(true); }} onDragLeave={() => setDragging(false)}
-              onDrop={event => { event.preventDefault(); setDragging(false); if (!installation.isPending) { setFile(event.dataTransfer.files[0]); installation.reset(); } }}>
-              <Upload className="mb-1 size-5 text-muted-foreground" aria-hidden="true" />
-              <span className="max-w-full break-all font-medium">{file ? file.name : t("skills:market.drop")}</span>
-              <span className="text-muted-foreground">{t("skills:market.zipHint")}</span>
-              <input id="skill-zip" ref={fileInput} type="file" accept=".zip,application/zip" className="sr-only" aria-label={t("skills:market.zip")} disabled={installation.isPending}
-                onChange={event => { setFile(event.target.files?.[0]); installation.reset(); }} />
-            </label>
-          </div> : <div className="space-y-2">
-            <label htmlFor="skill-url" className="text-xs font-medium">{t("skills:market.urlLabel")}</label>
-            <Input id="skill-url" type="url" placeholder={t("skills:market.urlPlaceholder")} value={url} required disabled={installation.isPending}
-              aria-describedby="skill-link-hint" onChange={event => { setUrl(event.target.value); if (installation.isError) installation.reset(); }} />
-            <p id="skill-link-hint" className="text-xs leading-5 text-muted-foreground">{t("skills:market.linkHint")}</p>
-          </div>}
-          <div className="space-y-2">
-            <label htmlFor="skill-directory" className="block text-xs font-medium">{t("skills:market.destination")}</label>
-            <select id="skill-directory" className={cn(selectClass, "w-full sm:max-w-xs")} value={directory?.id ?? ""} disabled={installation.isPending} onChange={event => setDirectoryId(event.target.value)}>
-              {enabledDirectories.map(item => <option key={item.id} value={item.id}>{directoryLabel(item)}</option>)}
-            </select>
-            {directory && <p className="break-all text-xs leading-5 text-muted-foreground">{directory.path}</p>}
-            {directory && !directory.trusted && <p className="text-xs leading-5 text-muted-foreground">{t("skills:market.trustHint")}</p>}
-          </div>
-          {installation.isError && <p role="alert" className="text-xs leading-5 text-destructive">{skillError(t, installation.error)}</p>}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-            <p className="max-w-lg text-xs leading-5 text-muted-foreground">{t("skills:market.installHint")}</p>
-            <Button type="submit" size="sm" disabled={installation.isPending || !directory?.enabled || (mode === "zip" ? !file : !url.trim())}>
-              {installation.isPending && <RefreshCw className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
-              {t(installation.isPending ? "skills:market.installing" : "skills:market.install")}
-            </Button>
-          </div>
-        </form>}
-
-        {query.isError && <div role="alert" className="mt-5 space-y-2 text-xs leading-5"><p className="text-destructive">{skillError(t, query.error)}</p>
-          <Button variant="outline" size="sm" disabled={query.isFetching} onClick={() => void query.refetch()}>{t("skills:market.retry")}</Button></div>}
-        {query.isPending && <p role="status" className="py-12 text-center text-xs text-muted-foreground">{t("skills:market.loading")}</p>}
-
-        {catalog && <>
-          <div className="mt-6 flex min-h-9 items-center justify-between gap-3 border-b border-border/50 pb-3">
-            <h2 className="text-sm font-medium">{t("skills:market.installed")}</h2>
-            {filter !== "all" && <Button variant="secondary" size="sm" className="rounded-full" onClick={() => setFilter("all")} aria-label={t("skills:market.clearFilter")}>
-              {t(`skills:market.kind.${filter}`)}<X className="size-icon" aria-hidden="true" />
-            </Button>}
-            <p role="status" className="sr-only">{t("skills:market.count", { count: visible.length })}</p>
-          </div>
-          {visible.length === 0 ? <div className="py-10 text-center">
-            <h2 className="text-sm font-medium">{t(catalog.projects.length === 0 ? "skills:market.noProject" : search || filter !== "all" ? "skills:market.noMatches" : "skills:market.empty")}</h2>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">{t(catalog.projects.length === 0 ? "skills:market.noProjectHint" : search || filter !== "all" ? "skills:market.noMatchesHint" : "skills:market.emptyHint")}</p>
-          </div> : <div className="mt-4 space-y-8">
-            {(["local", "shared", "claude"] as const).map(kind => {
-              const skills = visible.filter(skill => skill.kind === kind);
-              if (skills.length === 0) return null;
-              return <section key={kind} aria-labelledby={`skills-${kind}-title`}>
-                {kind !== "local" && <h3 id={`skills-${kind}-title`} className="mb-5 inline-flex rounded-full bg-muted/70 px-4 py-2 text-xs font-medium">{t(`skills:market.kind.${kind}`)}</h3>}
-                {kind === "local" && <h3 id={`skills-${kind}-title`} className="sr-only">{t("skills:market.kind.local")}</h3>}
-                <ul aria-label={t(`skills:market.kind.${kind}`)} className="grid grid-cols-1 items-start gap-x-6 gap-y-3 @min-[640px]:grid-cols-2">
-                  {skills.map(skill => <SkillEntry key={skill.filePath} skill={skill} />)}
-                </ul>
-              </section>;
-            })}
-          </div>}
-        </>}
-      </div>
-    </section>
-  </>;
+      <SkillDirectoriesDialog
+        open={settingsOpen}
+        catalog={catalog}
+        saving={settingsMutation.isPending}
+        onOpenChange={setSettingsOpen}
+        onToggleShared={enabled => void applySettings({ sharedDirectories: enabled })}
+        onToggleClaude={enabled => void applySettings({ claudeDirectories: enabled })}
+        onToggleTrust={(targetProjectId, trusted) => void applySettings({ trustProject: { projectId: targetProjectId, trusted } })}
+      />
+    </>
+  );
 }

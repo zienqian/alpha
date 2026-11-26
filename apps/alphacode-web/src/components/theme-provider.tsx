@@ -3,34 +3,52 @@ import { syncDesktopAppearance } from "@/components/desktop-titlebar";
 
 // Based on https://ui.shadcn.com/docs/dark-mode/vite, with live system updates
 // and a storage fallback for browsers that disallow localStorage.
-type Theme = "light" | "dark" | "system";
-const storageKey = "alphacode-theme";
-const ThemeContext = createContext<{ theme: Theme; setTheme: (theme: Theme) => void }>({
-  theme: "system", setTheme: () => undefined,
-});
+export type ThemeMode = "light" | "dark" | "system";
+export type ColorMode = "light" | "dark";
 
-function isTheme(value: unknown): value is Theme {
+const storageKey = "alphacode-theme";
+
+export function isThemeMode(value: unknown): value is ThemeMode {
   return value === "light" || value === "dark" || value === "system";
 }
 
+interface ThemeState {
+  theme: ThemeMode;
+  resolvedTheme: ColorMode;
+  setTheme: (theme: ThemeMode) => void;
+  storageError: boolean;
+}
+
+const ThemeContext = createContext<ThemeState>({
+  theme: "system",
+  resolvedTheme: "light",
+  setTheme: () => undefined,
+  storageError: false,
+});
+
+function readSavedTheme(): ThemeMode {
+  try {
+    const saved = localStorage.getItem(storageKey);
+    return isThemeMode(saved) ? saved : "system";
+  } catch {
+    return "system";
+  }
+}
+
 export function ThemeProvider({ children }: PropsWithChildren) {
-  const [theme, updateTheme] = useState<Theme>(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      return isTheme(saved) ? saved : "system";
-    } catch {
-      return "system";
-    }
-  });
+  const [theme, updateTheme] = useState<ThemeMode>(readSavedTheme);
+  const [resolvedTheme, setResolvedTheme] = useState<ColorMode>("light");
+  const [storageError, setStorageError] = useState(false);
 
   useLayoutEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const applyTheme = () => {
-      const resolved = theme === "system" ? (media.matches ? "dark" : "light") : theme;
+      const resolved: ColorMode = theme === "system" ? (media.matches ? "dark" : "light") : theme;
       const root = document.documentElement;
       root.classList.remove("light", "dark");
       root.classList.add(resolved);
       root.style.colorScheme = resolved;
+      setResolvedTheme(resolved);
       syncDesktopAppearance();
     };
     applyTheme();
@@ -41,24 +59,28 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     const sync = (event: StorageEvent) => {
+      if (event.storageArea && event.storageArea !== localStorage) return;
       if (event.key === storageKey || event.key === null) {
-        updateTheme(isTheme(event.newValue) ? event.newValue : "system");
+        updateTheme(isThemeMode(event.newValue) ? event.newValue : "system");
       }
     };
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
   }, []);
 
-  const setTheme = useCallback((next: Theme) => {
+  const setTheme = useCallback((next: ThemeMode) => {
+    if (!isThemeMode(next)) return;
     updateTheme(next);
     try {
       localStorage.setItem(storageKey, next);
+      setStorageError(false);
     } catch {
       // Theme switching still works in memory when storage is unavailable.
+      setStorageError(true);
     }
   }, []);
 
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, storageError }}>{children}</ThemeContext.Provider>;
 }
 
 export const useTheme = () => useContext(ThemeContext);

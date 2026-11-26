@@ -61,8 +61,11 @@ function WorkspaceLayout() {
             <span className="truncate text-muted-foreground">{t("sessions:new")}</span> :
             <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title || t("sessions:new")}</h1>}
         </div>
-        {sessionOpen ? <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} /> : settingsOpen ?
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("settings:backToSession")} title={t("settings:backToSession")} onClick={returnToSession}><X aria-hidden="true" /></Button> : null}
+        {sessionOpen ? <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} /> :
+          <Button variant="ghost" size="icon-sm" className="text-muted-foreground"
+            aria-label={t(settingsOpen ? "settings:backToSession" : "skills:market.back")}
+            title={t(settingsOpen ? "settings:backToSession" : "skills:market.back")}
+            onClick={returnToSession}><X aria-hidden="true" /></Button>}
       </header>}
       <Suspense fallback={<div role="status" aria-label={t("common:loading")} className="space-y-3 p-6"><Skeleton className="h-5 w-24" /><Skeleton className="h-4 max-w-sm" /></div>}>
         <Outlet context={workspace} />

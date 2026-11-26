@@ -1,6 +1,7 @@
 import { replaceDraft } from "./fixtures/draft-editor";
 import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { chooseSelect } from "./select";
 import { App } from "@/app";
 import { AppProviders } from "@/components/providers";
 import { LanguageProvider, languageStorageKey, useLanguage } from "@/i18n/provider";
@@ -66,7 +67,7 @@ describe("internationalization", () => {
     replaceDraft(input, "未发送 <draft>");
     const connections = api.fetch.mock.calls.filter(([url]) => url.endsWith("/events")).length;
     fireEvent.click(screen.getByRole("button", { name: "设置" }));
-    fireEvent.change(await screen.findByRole("combobox", { name: "语言" }), { target: { value: "en" } });
+    await chooseSelect(await screen.findByRole("combobox", { name: "语言" }), "English");
     fireEvent.click(screen.getByRole("button", { name: "Back to conversation" }));
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Message draft" }).textContent).toBe("未发送 <draft>"));
     expect(screen.getByText("echo hello")).toBeTruthy();

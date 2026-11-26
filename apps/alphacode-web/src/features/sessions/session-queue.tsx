@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import { CornerDownRight, GripVertical, ListEnd, LoaderCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -108,7 +109,7 @@ export function SessionQueue({ requests = [], disabled, canSteer, onRemove, onEd
             <ListEnd className="mx-1 size-icon" aria-hidden="true" />
           </div>
           {isEditing ? <div className="min-w-0 flex-1 py-2 pr-1">
-            <textarea autoFocus aria-label={t("sessions:editQueued")} value={editing.input} disabled={disabled}
+            <Textarea autoFocus aria-label={t("sessions:editQueued")} value={editing.input} disabled={disabled}
               onChange={event => setEditing({ ...editing, input: event.target.value })}
               onKeyDown={event => {
                 if (event.key === "Escape") { event.preventDefault(); if (!disabled) finishEditing(); }

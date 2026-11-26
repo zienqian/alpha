@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Popover } from "radix-ui";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { InputGroupButton } from "@/components/ui/input-group";
 import type { ContextUsage } from "./api";
 import { useTranslation } from "@/i18n/react";
@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 
 const categories = [
   { key: "system", color: "bg-muted-foreground/60" },
-  { key: "tools", color: "bg-violet-400 dark:bg-violet-400" },
-  { key: "summary", color: "bg-amber-500" },
+  { key: "tools", color: "bg-chart-2" },
+  { key: "summary", color: "bg-chart-3" },
   { key: "messages", color: "bg-primary" },
 ] as const;
 
@@ -41,8 +41,8 @@ export function ContextUsageIndicator({ usage }: { usage?: ContextUsage }) {
     pinned.current = value;
     setOpen(value);
   };
-  return <Popover.Root open={open} onOpenChange={changeOpen}>
-    <Popover.Trigger asChild>
+  return <Popover open={open} onOpenChange={changeOpen}>
+    <PopoverTrigger asChild>
       <InputGroupButton ref={trigger} size="sm" className={cn("shrink-0 gap-1.5 rounded-full px-2 font-normal text-muted-foreground tabular-nums",
         open && "bg-muted text-foreground", ratio !== undefined && ratio >= .9 && "text-destructive")}
         aria-label={t("sessions:context.open", { percent })} aria-haspopup="dialog" aria-expanded={open}
@@ -55,9 +55,8 @@ export function ContextUsageIndicator({ usage }: { usage?: ContextUsage }) {
         </svg>
         {percent}
       </InputGroupButton>
-    </Popover.Trigger>
-    <Popover.Portal>
-      <Popover.Content side="top" align="start" sideOffset={10} collisionPadding={12}
+    </PopoverTrigger>
+      <PopoverContent side="top" align="start" sideOffset={10} collisionPadding={12}
         aria-labelledby={headingId}
         onPointerEnter={enter} onPointerLeave={leave}
         onOpenAutoFocus={event => event.preventDefault()}
@@ -88,7 +87,6 @@ export function ContextUsageIndicator({ usage }: { usage?: ContextUsage }) {
         {usage?.inputBudget !== undefined && <p className="mt-2 text-xs text-muted-foreground">
           {t('sessions:context.budget', { input: formatTokens(usage.inputBudget), output: formatTokens(usage.maxOutputTokens ?? 0) })}
         </p>}
-      </Popover.Content>
-    </Popover.Portal>
-  </Popover.Root>;
+      </PopoverContent>
+  </Popover>;
 }

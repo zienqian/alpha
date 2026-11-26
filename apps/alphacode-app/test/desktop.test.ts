@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { forwardRequest, parseDescriptor } from "../src/backend";
-import { assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL } from "../src/policy";
+import { applicationContentSecurityPolicy, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL } from "../src/policy";
 
 test('document links map from the trusted desktop origin to a browser route without exposing credentials', () => {
   const path = '/api/sessions/s/files?path=C%3A%2Fdoc.html&mode=open&replyId=reply#section';
@@ -107,4 +107,12 @@ test("SSE arrives before the response ends and cancellation releases the server 
     await reader.cancel();
     await Promise.race([closed.promise, Bun.sleep(2000).then(() => { throw new Error("SSE connection leaked"); })]);
   } finally { server.closeAllConnections(); await new Promise<void>(done => server.close(() => done())); }
+});
+
+
+test("desktop renderer CSP restricts connections, scripts, and fonts to local origins", () => {
+  const directives = applicationContentSecurityPolicy.split("; ");
+  expect(directives.find(value => value.startsWith("connect-src"))).toBe("connect-src 'self'");
+  expect(directives.find(value => value.startsWith("script-src"))).toBe("script-src 'self' 'wasm-unsafe-eval'");
+  expect(directives.find(value => value.startsWith("font-src"))).toBe("font-src 'self' data:");
 });

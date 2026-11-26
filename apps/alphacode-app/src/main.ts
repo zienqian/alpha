@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import { createBackend } from "./backend";
 import { withBundledCommands } from "./cli-command";
 import { installCliCommand } from "./install-cli";
-import { applicationURL, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL } from "./policy";
+import { applicationContentSecurityPolicy, applicationURL, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL } from "./policy";
 
 const applicationName = "AlphaCode";
 const applicationIcon = join(app.getAppPath(), "assets", process.platform === "win32" ? "icon.ico" : "icon.png");
@@ -148,7 +148,6 @@ async function start() {
   const connection = createBackend({ root, bun, database: databaseArgument(process.argv) });
   backend = connection;
   const web = join(root, "apps/alphacode-web/dist");
-  const csp = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src 'none'; frame-ancestors 'none'";
   protocol.handle("alphacode-app", async request => {
     if (!isApplicationURL(request.url)) return new Response("Forbidden", { status: 403 });
     const url = new URL(request.url);
@@ -157,7 +156,7 @@ async function start() {
     try {
       const response = await net.fetch(pathToFileURL(assetPath(web, url.pathname)).toString());
       const headers = new Headers(response.headers);
-      headers.set("Content-Security-Policy", csp);
+      headers.set("Content-Security-Policy", applicationContentSecurityPolicy);
       headers.set("X-Content-Type-Options", "nosniff");
       headers.set("Referrer-Policy", "no-referrer");
       return new Response(response.body, { status: response.status, headers });

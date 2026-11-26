@@ -173,7 +173,7 @@ components:
 
 ### Primary
 
-克制的蓝色用于发送、主要操作、链接和键盘焦点。搜索弹窗、侧栏会话、设置和 Skills 入口的选中态共用 `accent`：浅色为中性灰（#e6e6e6），深色为石墨色（#343d4b），选中文字使用 `foreground`；`sidebar-accent` 和 `search-selected` 引用同一变量。
+AlphaCode 保持单一品牌色系（浅色 `#3269be`、深色 `#8bb7f4`），仅提供浅色、深色与跟随系统三种外观模式，不引入第三方多主题切换。克制的蓝色用于发送、主要操作、链接、选中态和键盘焦点。搜索弹窗、侧栏会话、设置和 Skills 入口的选中态共用 `accent`：浅色为中性灰（#e6e6e6），深色为石墨色（#343d4b），选中文字使用 `foreground`；`sidebar-accent` 和 `search-selected` 引用同一变量。设置的 Select / Switch / RadioGroup、项目与删除弹层、上下文 Popover、侧栏 ScrollArea 统一使用共享 shadcn 组件。
 
 ### Neutral
 

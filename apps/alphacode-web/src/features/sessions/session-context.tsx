@@ -1,6 +1,6 @@
 import { useTranslation } from "@/i18n/react";
 import { FileText, FolderOpen, ListTree, X } from "lucide-react";
-import { Popover } from "radix-ui";
+import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from "@/components/ui/popover";
 import { CopyButton } from "@/components/copy-button";
 import { Button } from "@/components/ui/button";
 import type { Session, SessionFolder } from "@/features/sessions/types";
@@ -11,17 +11,16 @@ export function SessionContext({ folder, session, draft }: {
 }) {
   const { t } = useTranslation();
   return (
-    <Popover.Root defaultOpen={false}>
-      <Popover.Trigger asChild>
+    <Popover defaultOpen={false}>
+      <PopoverTrigger asChild>
         <Button variant="ghost" size="icon-sm" aria-label={t("sessions:summary")} title={t("sessions:summary")} className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground">
           <ListTree className="size-icon" aria-hidden="true" />
         </Button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content align="end" sideOffset={4} collisionPadding={12} aria-label={t("sessions:summary")} className="workspace-popover z-50 max-h-[var(--radix-popover-content-available-height)] w-72 max-w-[calc(100vw-24px)] origin-(--radix-popover-content-transform-origin) overflow-y-auto border text-popover-foreground outline-none duration-160 ease-[cubic-bezier(0.16,1,0.3,1)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-98 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-98 data-[state=closed]:duration-100">
+      </PopoverTrigger>
+          <PopoverContent align="end" sideOffset={4} collisionPadding={12} aria-label={t("sessions:summary")} className="workspace-popover p-0 z-50 max-h-[var(--radix-popover-content-available-height)] w-72 max-w-[calc(100vw-24px)] origin-(--radix-popover-content-transform-origin) overflow-y-auto border text-popover-foreground outline-none duration-160 ease-[cubic-bezier(0.16,1,0.3,1)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-98 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-98 data-[state=closed]:duration-100">
           <div className="flex h-10 items-center justify-between border-b px-3">
             <h2 className="text-xs font-medium">{t("sessions:summary")}</h2>
-            <Popover.Close asChild><Button variant="ghost" size="icon-xs" className="text-muted-foreground" aria-label={t("sessions:closeSummary")}><X aria-hidden="true" /></Button></Popover.Close>
+            <PopoverClose asChild><Button variant="ghost" size="icon-xs" className="text-muted-foreground" aria-label={t("sessions:closeSummary")}><X aria-hidden="true" /></Button></PopoverClose>
           </div>
           <div className="space-y-3 border-b p-3">
             <div className="flex items-center gap-2 text-[13px] font-medium"><FolderOpen className="size-icon text-muted-foreground" aria-hidden="true" /><span className="truncate">{folder?.name ?? t("workspace:unselected")}</span></div>
@@ -40,8 +39,7 @@ export function SessionContext({ folder, session, draft }: {
             ) : <p className="text-xs leading-5 text-muted-foreground">{t("sessions:noAttachments")}</p>}
           </div>
           <p className="border-t bg-muted/30 px-3 py-2.5 text-[11px] leading-4 text-muted-foreground">{t("sessions:persistence")}</p>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        </PopoverContent>
+      </Popover>
   );
 }

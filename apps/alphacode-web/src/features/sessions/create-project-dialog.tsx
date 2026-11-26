@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { Dialog } from "radix-ui";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Folder, FolderOpen, LoaderCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,18 +43,16 @@ export function CreateProjectDialog({ open, onOpenChange, onCreate }: {
           ? "workspace:modelRequired" : "workspace:createFailed"));
     } finally { working.current = false; setPending(false); }
   }
-  return <Dialog.Root open={open} onOpenChange={value => { if (!working.current) { onOpenChange(value); setError(undefined); } }}>
-    <Dialog.Portal>
-      <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30" />
-      <Dialog.Content className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-popover p-5 text-popover-foreground shadow-(--overlay-shadow) sm:p-6"
+  return <Dialog open={open} onOpenChange={value => { if (!working.current) { onOpenChange(value); setError(undefined); } }}>
+      <DialogContent showCloseButton={false} className="block fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-popover p-5 text-popover-foreground shadow-(--overlay-shadow) sm:p-6"
         onOpenAutoFocus={event => { event.preventDefault(); returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; nameInput.current?.focus(); }}
         onCloseAutoFocus={event => { event.preventDefault(); if (returnFocus.current?.isConnected && returnFocus.current !== document.body && !returnFocus.current.closest("[inert]")) returnFocus.current.focus(); else document.querySelector<HTMLButtonElement>('[data-slot="sidebar-trigger"]')?.focus(); }}
         onEscapeKeyDown={event => { if (working.current) event.preventDefault(); }} onInteractOutside={event => { if (working.current) event.preventDefault(); }}>
         <div className="mb-5 flex items-center justify-between gap-3">
-          <Dialog.Title className="text-lg font-semibold">{t("workspace:createProject")}</Dialog.Title>
-          <Dialog.Close asChild><Button variant="ghost" size="icon-sm" disabled={pending || picking} aria-label={t("workspace:closeDialog")}><X aria-hidden="true" /></Button></Dialog.Close>
+          <DialogTitle className="text-lg font-semibold">{t("workspace:createProject")}</DialogTitle>
+          <DialogClose asChild><Button variant="ghost" size="icon-sm" disabled={pending || picking} aria-label={t("workspace:closeDialog")}><X aria-hidden="true" /></Button></DialogClose>
         </div>
-        <Dialog.Description className="sr-only">{t("workspace:projectDescription")}</Dialog.Description>
+        <DialogDescription className="sr-only">{t("workspace:projectDescription")}</DialogDescription>
         <form className="space-y-5" onSubmit={event => { event.preventDefault(); void submit(); }} onKeyDown={event => { if (event.key === "Enter" && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault(); }}>
           <div className="relative">
             <Folder className="pointer-events-none absolute top-1/2 left-3 size-icon -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -72,11 +70,10 @@ export function CreateProjectDialog({ open, onOpenChange, onCreate }: {
           </div>
           {error && <p role="alert" className="text-xs leading-5 text-destructive">{error}</p>}
           <div className="flex justify-end gap-2 pt-1">
-            <Dialog.Close asChild><Button type="button" variant="ghost" disabled={pending || picking}>{t("workspace:cancel")}</Button></Dialog.Close>
+            <DialogClose asChild><Button type="button" variant="ghost" disabled={pending || picking}>{t("workspace:cancel")}</Button></DialogClose>
             <Button type="submit" disabled={pending || picking || !name.trim() || !path.trim()}>{pending && <LoaderCircle className="motion-safe:animate-spin" aria-hidden="true" />}{t(pending ? "workspace:creatingProject" : "workspace:createProject")}</Button>
           </div>
         </form>
-      </Dialog.Content>
-    </Dialog.Portal>
-  </Dialog.Root>;
+      </DialogContent>
+  </Dialog>;
 }

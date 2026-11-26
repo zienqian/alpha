@@ -1,6 +1,6 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
-import { ScrollArea } from "radix-ui";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Folder, Plus, Search, X, Blocks, SquarePen, RefreshCw, Settings } from "lucide-react";
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
@@ -165,9 +165,8 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onD
         </Button>}
         </div>
       </SidebarHeader>
-      <ScrollArea.Root asChild type="auto">
       <SidebarContent className="relative overflow-hidden pt-5">
-        <ScrollArea.Viewport className="min-h-0 w-full flex-1 [&>div]:block!" style={{ scrollbarGutter: "auto" }}>
+        <ScrollArea type="auto" className="min-h-0 flex-1" viewportClassName="[&>div]:block!" scrollbarClassName="w-1.5 border-0">
         <SidebarGroup className="px-(--sidebar-inset) py-0">
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <SidebarGroupLabel className="h-7 px-3 text-muted-foreground">{t("workspace:projects")}</SidebarGroupLabel>
@@ -216,12 +215,8 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onD
             </nav>
           </SidebarGroupContent>
         </SidebarGroup>
-        </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar orientation="vertical" className="flex w-1.5 touch-none select-none p-px">
-          <ScrollArea.Thumb className="relative flex-1 rounded-full bg-sidebar-border" />
-        </ScrollArea.Scrollbar>
+        </ScrollArea>
       </SidebarContent>
-      </ScrollArea.Root>
       <SidebarFooter className="px-(--sidebar-inset) pt-2 pb-3">
         <Button variant="ghost" size="sm" className="h-9 w-full justify-start gap-2 rounded-lg px-3 text-[13px] font-normal text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
           aria-current={settingsActive ? "page" : undefined} onClick={() => { onOpenSettings(); setOpenMobile(false); }}>

@@ -158,8 +158,8 @@ test("HTTP routes list registered projects without sessions and serialize confli
   await using f = await fixture();
   const route = createSkillRoutes(new Map([["test-project", f.config]]));
   const invoke = (path: string, init?: RequestInit) => { const url = new URL(path, "http://localhost"); return route(new Request(url.href, init), url); };
-  const catalog = await (await invoke("/api/skills")).json() as { projects: { id: string; path: string }[] };
-  expect(catalog.projects).toEqual([{ id: "test-project", path: f.config.workspaceRoot }]);
+  const catalog = await (await invoke("/api/skills")).json() as { projects: { id: string; name: string; path: string; trusted: boolean }[] };
+  expect(catalog.projects).toEqual([{ id: "test-project", name: "workspace", path: f.config.workspaceRoot, trusted: false }]);
   const body = zip([{ path: "SKILL.md", bytes: document("route-test") }]);
   const results = await Promise.allSettled([1, 2].map(() => invoke("/api/skills/install?projectId=test-project&directoryId=user-local", { method: "POST", headers: { "Content-Type": "application/zip" }, body })));
   expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
@@ -190,4 +190,56 @@ test("the real server accepts ZIP uploads, protects origins and loads installs o
     const previous = await (await fetch(`${server.origin}/api/sessions/${original.session.id}`, { proxy: false })).json() as SessionView;
     expect(previous.skills).toHaveLength(0);
   } finally { await server.close(); }
+});
+
+test("supports skill content preview, settings persistence, overwrite install, and uninstall", async () => {
+  await using f = await fixture();
+  await mkdir(f.config.configDirectory, { recursive: true });
+  await writeFile(join(f.config.configDirectory, "config.yaml"), "# User comment preserved\nskills:\n  sharedDirectories: false\n  claudeDirectories: false\n  trustedProjects: []\n  disabledNames: []\n");
+  const configs = new Map([["test-project", f.config]]);
+  const route = createSkillRoutes(configs);
+  const invoke = (path: string, init?: RequestInit) => { const url = new URL(path, "http://localhost"); return route(new Request(url.href, init), url); };
+
+  // Install initial skill with supporting file.
+  const v1 = zip([
+    { path: "review/SKILL.md", bytes: document("review") },
+    { path: "review/references/guide.md", bytes: Buffer.from("Guide content") },
+  ]);
+  expect((await invoke("/api/skills/install?projectId=test-project&directoryId=user-local", { method: "POST", headers: { "Content-Type": "application/zip" }, body: v1 })).status).toBe(201);
+
+  // Preview content & supporting files.
+  const details = await (await invoke("/api/skills/content?projectId=test-project&directoryId=user-local&name=review")).json() as { content: string; files: string[] };
+  expect(details.content).toContain("Instructions for review.");
+  expect(details.files).toEqual(["references/guide.md"]);
+
+  // Toggle skill off, enable sharedDirectories, trust project -> persists to config.yaml preserving comments.
+  const patchResponse = await invoke("/api/skills/settings", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sharedDirectories: true,
+      toggleSkill: { name: "review", enabled: false },
+      trustProject: { projectId: "test-project", trusted: true },
+    }),
+  });
+  expect(patchResponse.status).toBe(200);
+  const yamlText = await readFile(join(f.config.configDirectory, "config.yaml"), "utf8");
+  expect(yamlText).toContain("# User comment preserved");
+  const afterDisable = await (await invoke("/api/skills?projectId=test-project")).json() as Awaited<ReturnType<typeof skillCatalog>> & { projects: { trusted: boolean }[] };
+  expect(afterDisable.skills.find(s => s.name === "review")?.status).toBe("disabled");
+  expect(afterDisable.projects[0]?.trusted).toBe(true);
+  expect(afterDisable.settings.sharedDirectories).toBe(true);
+
+  // Overwrite install replaces existing skill cleanly.
+  const v2 = zip([{ path: "review/SKILL.md", bytes: Buffer.from("---\nname: review\ndescription: Updated review\n---\nUpdated body.\n") }]);
+  expect((await invoke("/api/skills/install?projectId=test-project&directoryId=user-local&overwrite=true", { method: "POST", headers: { "Content-Type": "application/zip" }, body: v2 })).status).toBe(201);
+  const updatedDetails = await (await invoke("/api/skills/content?projectId=test-project&directoryId=user-local&name=review")).json() as { content: string; files: string[] };
+  expect(updatedDetails.content).toContain("Updated body.");
+  expect(updatedDetails.files).toEqual([]);
+
+  // Uninstall removes skill directory cleanly.
+  const removed = await invoke("/api/skills?projectId=test-project&directoryId=user-local&name=review", { method: "DELETE" });
+  expect(removed.status).toBe(200);
+  const afterRemove = await (await invoke("/api/skills?projectId=test-project")).json() as Awaited<ReturnType<typeof skillCatalog>>;
+  expect(afterRemove.skills.some(s => s.name === "review")).toBe(false);
 });

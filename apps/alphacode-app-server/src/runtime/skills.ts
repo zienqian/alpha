@@ -8,26 +8,37 @@ import { parseInput, skillInputPrefix } from "../input";
 import { settingsError } from "./session-settings";
 import { displayText } from "./tool-records";
 
+export const RESERVED_SKILL_NAMES = ["skills", "permission", "web", "compact"] as const;
+export const SKILL_NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 export interface RuntimeSkillRoot extends SkillRoot {
   id: string;
   kind: "local" | "shared" | "claude";
   enabled: boolean;
 }
 
-export async function runtimeSkillRoots(config: AppConfig, cwd: string): Promise<RuntimeSkillRoot[]> {
-  const settings = config.skills ?? defaultSkillsSettings;
+export async function isProjectTrusted(settings: { trustedProjects: readonly string[] }, cwd: string): Promise<boolean> {
   const canonical = (path: string) => process.platform === "win32" ? path.toLowerCase() : path;
-  let trusted = false;
+  let target: string;
+  try { target = canonical(await realpath(cwd)); } catch { target = canonical(cwd); }
   for (const project of settings.trustedProjects) {
-    try { if (canonical(await realpath(project)) === canonical(cwd)) trusted = true; }
+    try { if (canonical(await realpath(project)) === target) return true; }
     catch { continue; }
   }
+  return false;
+}
+
+export async function runtimeSkillRoots(config: Pick<AppConfig, "configDirectory" | "skills">, cwd?: string): Promise<RuntimeSkillRoot[]> {
+  const settings = config.skills ?? defaultSkillsSettings;
+  const trusted = cwd ? await isProjectTrusted(settings, cwd) : false;
   const roots: RuntimeSkillRoot[] = [];
   const add = (path: string, source: SkillRoot["source"], kind: RuntimeSkillRoot["kind"], enabled = true) =>
     roots.push({ id: `${source}-${kind}`, path, source, kind, enabled, trusted: source === "user" || trusted });
-  add(join(cwd, ".alphacode", "skills"), "project", "local");
-  add(join(cwd, ".agents", "skills"), "project", "shared", settings.sharedDirectories);
-  add(join(cwd, ".claude", "skills"), "project", "claude", settings.claudeDirectories);
+  if (cwd) {
+    add(join(cwd, ".alphacode", "skills"), "project", "local");
+    add(join(cwd, ".agents", "skills"), "project", "shared", settings.sharedDirectories);
+    add(join(cwd, ".claude", "skills"), "project", "claude", settings.claudeDirectories);
+  }
   add(join(config.configDirectory ?? join(homedir(), ".alphacode"), "skills"), "user", "local");
   add(join(homedir(), ".agents", "skills"), "user", "shared", settings.sharedDirectories);
   add(join(homedir(), ".claude", "skills"), "user", "claude", settings.claudeDirectories);
@@ -36,7 +47,7 @@ export async function runtimeSkillRoots(config: AppConfig, cwd: string): Promise
 
 export async function loadRuntimeSkills(config: AppConfig, cwd: string): Promise<LoadSkillsResult> {
   return loadSkills({ roots: (await runtimeSkillRoots(config, cwd)).filter(root => root.enabled),
-    disabledNames: (config.skills ?? defaultSkillsSettings).disabledNames, reservedNames: ["skills", "permission", "web", "compact"] });
+    disabledNames: (config.skills ?? defaultSkillsSettings).disabledNames, reservedNames: [...RESERVED_SKILL_NAMES] });
 }
 
 export function skillStatus(loaded: LoadSkillsResult): string {

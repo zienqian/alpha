@@ -2,6 +2,8 @@ import { isAbsolute, relative, resolve } from "node:path";
 
 export const applicationURL = "alphacode-app://app/";
 
+export const applicationContentSecurityPolicy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src 'none'; frame-ancestors 'none'";
+
 export function developmentURL(value: string | undefined, packaged: boolean) {
   if (!value || packaged) return undefined;
   try {

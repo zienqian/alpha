@@ -25,18 +25,14 @@
  * SOFTWARE.
  */
 .session-search-command[cmdk-root] {
-  --search-surface: #f4f4f4;
-  --search-text: #666666;
-  --search-secondary: #858585;
   --search-selected: var(--accent);
-  --search-key: #e5e5e5;
   display: flex;
   flex-direction: column;
   width: 100%;
   max-height: 70dvh;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-overlay);
   /* Keep backdrop blur working in the desktop Chromium renderer. */
   corner-shape: round;
   background: var(--search-surface);

@@ -71,6 +71,15 @@ export async function createRegistry(databasePath: string, directory: string) {
       });
       await writing;
     },
+    async updateSkills(skills: NonNullable<AppConfig["skills"]>) {
+      writing = writing.catch(() => undefined).then(async () => {
+        for (const [projectId, config] of configs) {
+          configs.set(projectId, { ...config, skills });
+        }
+        await writeJson(file, Object.fromEntries(configs));
+      });
+      await writing;
+    },
     async list(): Promise<SessionInfo[]> {
       const sessions: SessionInfo[] = [];
       for (const [projectId, config] of configs) {

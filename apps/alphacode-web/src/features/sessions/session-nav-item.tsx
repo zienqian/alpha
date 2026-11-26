@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { AlertDialog } from "radix-ui";
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Check, PanelsTopLeft, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 import { useExperimentalFeatures } from "@/features/settings/experimental-features";
 import { Button } from "@/components/ui/button";
@@ -96,25 +96,22 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
       </>}
     </div>
     {editing && error && <p role="alert" className="px-2 py-1 text-xs leading-5 text-destructive">{error}</p>}
-    <AlertDialog.Root open={confirming} onOpenChange={open => { if (!pending) { setConfirming(open); setError(undefined); } }}>
-      <AlertDialog.Portal>
-        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
-        <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 space-y-4 rounded-xl bg-popover p-5 text-popover-foreground shadow-lg"
+    <AlertDialog open={confirming} onOpenChange={open => { if (!pending) { setConfirming(open); setError(undefined); } }}>
+        <AlertDialogContent size="sm" className="block fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 space-y-4 rounded-xl bg-popover p-5 text-popover-foreground shadow-lg"
           onEscapeKeyDown={event => { if (pending) event.preventDefault(); }}
           onCloseAutoFocus={event => {
             event.preventDefault();
             const target = menu.current ?? document.querySelector<HTMLButtonElement>('.session-nav-item[aria-current="page"]');
             target?.focus();
           }}>
-          <AlertDialog.Title className="text-base font-medium">{t("sessions:deleteTitle")}</AlertDialog.Title>
-          <AlertDialog.Description className="text-sm leading-6 break-words text-muted-foreground">{t("sessions:deleteDescription", { title: session.title })}</AlertDialog.Description>
+          <AlertDialogTitle className="text-base font-medium">{t("sessions:deleteTitle")}</AlertDialogTitle>
+          <AlertDialogDescription className="text-sm leading-6 break-words text-muted-foreground">{t("sessions:deleteDescription", { title: session.title })}</AlertDialogDescription>
           {error && <p role="alert" className="text-xs leading-5 text-destructive">{error}</p>}
           <div className="flex justify-end gap-2">
-            <AlertDialog.Cancel asChild><Button variant="outline" disabled={pending}>{t("sessions:cancelEdit")}</Button></AlertDialog.Cancel>
+            <AlertDialogCancel disabled={pending}>{t("sessions:cancelEdit")}</AlertDialogCancel>
             <Button variant="destructive" disabled={pending} onClick={() => void submit("delete")}>{t(pending ? "sessions:deleting" : "sessions:delete")}</Button>
           </div>
-        </AlertDialog.Content>
-      </AlertDialog.Portal>
-    </AlertDialog.Root>
+        </AlertDialogContent>
+    </AlertDialog>
   </>;
 }
