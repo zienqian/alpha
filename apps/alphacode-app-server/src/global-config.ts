@@ -250,7 +250,7 @@ export async function updateSkillsSettings(directory: string, patch: SkillsSetti
   if (doc.errors.length || doc.warnings.length) {
     throw new ConfigurationError(`${configPath}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`, { code: "INVALID_YAML", params: { file: configPath } });
   }
-  if (!doc.contents) doc.contents = doc.createNode({});
+  if (!doc.contents) doc.contents = parseDocument("{}").contents;
   doc.setIn(["skills", "sharedDirectories"], next.sharedDirectories);
   doc.setIn(["skills", "claudeDirectories"], next.claudeDirectories);
   doc.setIn(["skills", "trustedProjects"], [...next.trustedProjects]);

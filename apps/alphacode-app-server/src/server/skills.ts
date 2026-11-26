@@ -4,7 +4,7 @@ import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { loadSkills, readSkill } from "@alpha/coding-agent";
 import { parseDocument } from "yaml";
 import type { AppConfig } from "../config";
-import { defaultSkillsSettings, globalConfigDirectory, readGlobalDefaults, updateSkillsSettings, type SkillsSettings } from "../global-config";
+import { defaultSkillsSettings, globalConfigDirectory, readGlobalDefaults, updateSkillsSettings, type GlobalDefaults, type SkillsSettings } from "../global-config";
 import { isProjectTrusted, RESERVED_SKILL_NAMES, runtimeSkillRoots, SKILL_NAME_PATTERN } from "../runtime/skills";
 import { safeSkillPath, skillUploadLimit, unpackSkills, type SkillFile } from "./skill-archive";
 import { downloadSkill, skillLink } from "./skill-download";
@@ -257,7 +257,7 @@ export function createSkillRoutes(configs: Map<string, AppConfig>, options: Skil
       return { projectId: firstId, config };
     }
     const configDirectory = globalConfigDirectory();
-    const defaults = await readGlobalDefaults(configDirectory).catch(() => ({}));
+    const defaults: GlobalDefaults = await readGlobalDefaults(configDirectory).catch(() => ({}));
     return { config: { configDirectory, skills: defaults.skills ?? defaultSkillsSettings } };
   }
 
@@ -283,13 +283,13 @@ export function createSkillRoutes(configs: Map<string, AppConfig>, options: Skil
 
     if (request.method === "PATCH" && url.pathname === "/api/skills/settings") {
       const body = await jsonBody(request);
-      if (body.sharedDirectories !== undefined && typeof body.sharedDirectories !== "boolean") fail(400, "INVALID_SETTINGS");
-      if (body.claudeDirectories !== undefined && typeof body.claudeDirectories !== "boolean") fail(400, "INVALID_SETTINGS");
+      if (body.sharedDirectories !== undefined && typeof body.sharedDirectories !== "boolean") return fail(400, "INVALID_SETTINGS");
+      if (body.claudeDirectories !== undefined && typeof body.claudeDirectories !== "boolean") return fail(400, "INVALID_SETTINGS");
       let toggleSkill: { name: string; enabled: boolean } | undefined;
       if (body.toggleSkill !== undefined) {
         const raw = body.toggleSkill as Record<string, unknown>;
         if (!raw || typeof raw !== "object" || typeof raw.name !== "string" || !SKILL_NAME_PATTERN.test(raw.name) || raw.name.length > 64 || typeof raw.enabled !== "boolean") {
-          fail(400, "INVALID_SETTINGS");
+          return fail(400, "INVALID_SETTINGS");
         }
         toggleSkill = { name: raw.name, enabled: raw.enabled };
       }
@@ -297,7 +297,7 @@ export function createSkillRoutes(configs: Map<string, AppConfig>, options: Skil
       if (body.trustProject !== undefined) {
         const raw = body.trustProject as Record<string, unknown>;
         if (!raw || typeof raw !== "object" || typeof raw.projectId !== "string" || !raw.projectId.trim() || typeof raw.trusted !== "boolean") {
-          fail(400, "INVALID_SETTINGS");
+          return fail(400, "INVALID_SETTINGS");
         }
         trustProject = { projectId: raw.projectId, trusted: raw.trusted };
       }
@@ -307,7 +307,7 @@ export function createSkillRoutes(configs: Map<string, AppConfig>, options: Skil
         const firstConfig = targetProject ?? configs.values().next().value;
         const configDirectory = firstConfig?.configDirectory ?? globalConfigDirectory();
         const current = firstConfig?.skills
-          ?? (await readGlobalDefaults(configDirectory).catch(() => ({}))).skills
+          ?? (await readGlobalDefaults(configDirectory).catch((): GlobalDefaults => ({}))).skills
           ?? defaultSkillsSettings;
 
         let disabledNames = [...current.disabledNames];
