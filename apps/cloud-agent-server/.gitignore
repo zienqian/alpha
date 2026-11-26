@@ -1,0 +1,9 @@
+bin/
+data/
+tmp/
+*.exe
+*.db
+*.db-shm
+*.db-wal
+.env
+coverage.out
