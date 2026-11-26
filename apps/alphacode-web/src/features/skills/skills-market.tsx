@@ -1,11 +1,14 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import * as m from "motion/react-m";
 import { Check, Folder, Plus, RefreshCw, Search, Settings2, ShieldAlert, ShieldCheck, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/i18n/react";
+import { indicatorSpring } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { projectDisplayName, skillError, type InstalledSkill, type SkillDirectory } from "./api";
 import { InstallSkillDialog } from "./install-skill-dialog";
@@ -27,11 +30,11 @@ function SkillsSkeleton({ label }: { label: string }) {
   return (
     <div className="mt-6 grid grid-cols-1 gap-x-5 gap-y-3 @min-[640px]:grid-cols-2" role="status" aria-label={label}>
       {Array.from({ length: 6 }, (_, index) => (
-        <div key={index} className="flex min-h-[82px] items-center gap-3 rounded-2xl border border-border/60 bg-card p-3">
-          <Skeleton className="size-10 shrink-0 rounded-xl" />
+        <div key={index} className="flex min-h-[82px] items-center gap-3 rounded-2xl border border-border/80 bg-card p-3">
+          <Skeleton className="size-10 shrink-0 rounded-lg" />
           <div className="min-w-0 flex-1 space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3.5 w-4/5" />
+            <Skeleton className="h-4 w-32 rounded-md" />
+            <Skeleton className="h-3.5 w-4/5 rounded-md" />
           </div>
           <Skeleton className="h-4 w-7 rounded-full" />
         </div>
@@ -69,9 +72,9 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
     }
   }, [catalog, projectId]);
 
-  // Auto-dismiss transient feedback banners.
+  // Auto-dismiss transient success feedback banners; errors persist until dismissed (better-accessibility).
   useEffect(() => {
-    if (!notice) return;
+    if (!notice || notice.tone === "error") return;
     const timer = setTimeout(() => setNotice(current => (current?.id === notice.id ? null : current)), 5000);
     return () => clearTimeout(timer);
   }, [notice]);
@@ -203,9 +206,9 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
   return (
     <>
       {showHeader && (
-        <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
-          <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} className="text-muted-foreground" />
-          <span className="flex-1 text-[13px] font-medium">{t("skills:market.title")}</span>
+        <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3.5 sm:px-5">
+          <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} className="text-muted-foreground hover:text-foreground" />
+          <span className="flex-1 text-[0.8125rem] font-medium tracking-[-0.008em]">{t("skills:market.title")}</span>
         </header>
       )}
 
@@ -213,7 +216,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
         id="skills-content"
         aria-labelledby="skills-title"
         tabIndex={-1}
-        className="relative min-h-0 flex-1 overflow-y-auto outline-none"
+        className="relative min-h-0 flex-1 scroll-pt-6 overflow-y-auto outline-none"
         onDragEnter={handlePageDragEnter}
         onDragOver={handlePageDragOver}
         onDragLeave={handlePageDragLeave}
@@ -221,21 +224,21 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
       >
         {pageDragging && (
           <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-xs">
-            <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-primary bg-popover px-10 py-8 text-center shadow-(--overlay-shadow)">
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-foreground/35 bg-popover px-10 py-8 text-center shadow-(--shadow-overlay)">
+              <span className="flex size-12 items-center justify-center rounded-xl bg-muted text-foreground">
                 <Upload className="size-6" aria-hidden="true" />
               </span>
-              <p className="text-sm font-medium text-foreground">{t("skills:market.dropOverlayTitle")}</p>
+              <p className="text-sm font-semibold text-foreground">{t("skills:market.dropOverlayTitle")}</p>
               <p className="text-xs text-muted-foreground">{t("skills:market.dropOverlayHint")}</p>
             </div>
           </div>
         )}
 
-        <div className="@container mx-auto max-w-[964px] px-5 py-7 sm:px-8 sm:py-9">
+        <div className="@container mx-auto max-w-[964px] px-5 py-7 sm:px-8 sm:py-10">
           <div className="flex flex-col justify-between gap-4 @min-[700px]:flex-row @min-[700px]:items-start">
             <div className="min-w-0">
-              <h1 id="skills-title" className="text-[22px] leading-8 font-medium tracking-tight">{t("skills:market.title")}</h1>
-              <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">{t("skills:market.description")}</p>
+              <h1 id="skills-title" className="text-[1.375rem] leading-[1.28] font-semibold tracking-[-0.022em] text-balance text-foreground">{t("skills:market.title")}</h1>
+              <p className="mt-1 max-w-xl text-xs leading-[1.5] text-muted-foreground">{t("skills:market.description")}</p>
             </div>
 
             <div className="flex shrink-0 flex-wrap items-center gap-2 @min-[700px]:pt-0.5">
@@ -251,7 +254,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
                   <SelectTrigger
                     id="skills-project"
                     aria-label={t("skills:market.project")}
-                    className="h-8 max-w-[220px] min-w-[140px] rounded-full border-border/80 bg-background px-3 text-xs shadow-none hover:bg-muted/40"
+                    className="h-8 max-w-[220px] min-w-[140px] rounded-lg px-2.5 text-xs"
                     size="sm"
                   >
                     <Folder className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -269,7 +272,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
 
               <Button
                 size="sm"
-                className="h-8 rounded-full bg-foreground px-3.5 text-background hover:bg-foreground/90"
+                className="h-8 rounded-lg px-3 text-xs"
                 disabled={!canInstall || installMutation.isPending}
                 onClick={() => {
                   setDroppedFile(undefined);
@@ -283,25 +286,34 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col justify-between gap-3 border-b border-border/60 pb-4 @min-[680px]:flex-row @min-[680px]:items-center">
-            <div role="group" aria-label={t("skills:market.filter")} className="flex flex-wrap items-center gap-1">
+          <div className="mt-6 flex flex-col justify-between gap-3 border-b border-separator pb-4 @min-[680px]:flex-row @min-[680px]:items-center">
+            <div role="group" aria-label={t("skills:market.filter")} className="inline-flex w-fit flex-wrap items-center gap-0.5 rounded-xl bg-muted p-1">
               {filterKinds.map(kind => {
                 const active = filter === kind;
                 return (
                   <Button
                     key={kind}
-                    variant={active ? "secondary" : "ghost"}
+                    variant="ghost"
                     size="sm"
+                    static
                     className={cn(
-                      "h-8 rounded-full px-3 text-xs",
-                      active ? "font-medium text-foreground" : "text-muted-foreground",
+                      "relative h-7 rounded-lg px-2.5 text-xs hover:bg-transparent",
+                      active ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground",
                     )}
                     aria-pressed={active}
                     onClick={() => setFilter(kind)}
                   >
-                    <span>{t(`skills:market.kind.${kind}`)}</span>
+                    {active && (
+                      <m.span
+                        layoutId="skills-filter-indicator"
+                        transition={indicatorSpring}
+                        aria-hidden="true"
+                        className="absolute inset-0 rounded-lg bg-background shadow-xs ring-1 ring-foreground/6 dark:bg-card dark:ring-foreground/10"
+                      />
+                    )}
+                    <span className="relative z-10">{t(`skills:market.kind.${kind}`)}</span>
                     {catalog && (
-                      <span className={cn("ml-0.5 text-[11px] tabular-nums", active ? "text-foreground/75" : "text-muted-foreground/70")}>
+                      <span className={cn("relative z-10 ms-0.5 text-[0.6875rem] tabular-nums", active ? "text-foreground/75" : "text-muted-foreground/75")}>
                         {kindCounts[kind]}
                       </span>
                     )}
@@ -312,10 +324,10 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
 
             <div className="flex items-center gap-1.5">
               <div className="relative min-w-0 flex-1 @min-[680px]:w-56 @min-[680px]:flex-none">
-                <Search className="pointer-events-none absolute top-1/2 left-3 size-icon -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <Search className="pointer-events-none absolute top-1/2 start-2.5 size-icon -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                 <Input
                   ref={searchRef}
-                  className="h-8 rounded-full border-border/80 bg-muted/40 pr-8 pl-8 shadow-none transition-colors focus-visible:bg-background md:text-xs [&::-webkit-search-cancel-button]:appearance-none"
+                  className="h-8 rounded-lg pe-8 ps-8 md:text-xs [&::-webkit-search-cancel-button]:appearance-none"
                   type="search"
                   aria-label={t("skills:market.search")}
                   placeholder={t("skills:market.search")}
@@ -332,7 +344,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    className="absolute top-1/2 right-1 -translate-y-1/2 rounded-full text-muted-foreground"
+                    className="absolute top-1/2 end-1 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     aria-label={t("skills:market.clearSearch")}
                     title={t("skills:market.clearSearch")}
                     onClick={() => { setSearch(""); searchRef.current?.focus(); }}
@@ -345,7 +357,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="size-8 rounded-full text-muted-foreground"
+                className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
                 aria-label={t("skills:market.refresh")}
                 title={t("skills:market.refresh")}
                 disabled={catalogQuery.isFetching}
@@ -357,7 +369,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="relative size-8 rounded-full text-muted-foreground"
+                className="relative size-8 rounded-lg text-muted-foreground hover:text-foreground"
                 aria-label={t("skills:market.settings")}
                 title={t("skills:market.settings")}
                 disabled={!catalog}
@@ -365,23 +377,41 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
               >
                 <Settings2 aria-hidden="true" />
                 {hasSettingsAttention && (
-                  <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                  <>
+                    <span className="absolute top-1.5 end-1.5 size-1.5 rounded-full bg-status-warning ring-2 ring-background" aria-hidden="true" />
+                    <span className="sr-only">{t("skills:market.settingsDescription")}</span>
+                  </>
                 )}
               </Button>
             </div>
           </div>
 
-          {notice && (
+          <div role="status" aria-live="polite" className={notice && notice.tone !== "error" ? "mt-4" : "sr-only"}>
+            {notice && notice.tone !== "error" && (
+              <div className="flex items-start gap-2.5 rounded-xl border border-status-success-border bg-status-success-bg px-3.5 py-2.5 text-xs leading-[1.5] text-foreground">
+                <Check className="mt-0.5 size-icon shrink-0 text-status-success" aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium break-words">{notice.message}</p>
+                  {notice.hint && <p className="mt-0.5 text-muted-foreground">{notice.hint}</p>}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                  aria-label={t("skills:market.closeNotice")}
+                  onClick={() => setNotice(null)}
+                >
+                  <X aria-hidden="true" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {notice && notice.tone === "error" && (
             <div
-              role={notice.tone === "error" ? "alert" : "status"}
-              className={cn(
-                "mt-4 flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5 text-xs leading-5",
-                notice.tone === "error"
-                  ? "border-destructive/30 bg-destructive/5 text-destructive"
-                  : "border-border/75 bg-muted/50 text-foreground",
-              )}
+              role="alert"
+              className="mt-4 flex items-start gap-2.5 rounded-xl border border-status-danger-border bg-status-danger-bg px-3.5 py-2.5 text-xs leading-[1.5] text-status-danger"
             >
-              {notice.tone !== "error" && <Check className="mt-0.5 size-icon shrink-0 text-primary" aria-hidden="true" />}
               <div className="min-w-0 flex-1">
                 <p className="font-medium break-words">{notice.message}</p>
                 {notice.hint && <p className="mt-0.5 text-muted-foreground">{notice.hint}</p>}
@@ -389,7 +419,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
               <Button
                 variant="ghost"
                 size="icon-xs"
-                className="shrink-0 text-muted-foreground"
+                className="shrink-0 text-muted-foreground hover:text-foreground"
                 aria-label={t("skills:market.closeNotice")}
                 onClick={() => setNotice(null)}
               >
@@ -399,9 +429,9 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
           )}
 
           {projectUntrusted && activeProject && (
-            <div className="mt-4 flex flex-col justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] px-4 py-3 text-xs leading-5 sm:flex-row sm:items-center">
+            <div className="mt-4 flex flex-col justify-between gap-3 rounded-2xl border border-status-warning-border bg-status-warning-bg px-4 py-3 text-xs leading-[1.5] sm:flex-row sm:items-center">
               <div className="flex min-w-0 items-start gap-2.5">
-                <ShieldAlert className="mt-0.5 size-icon shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                <ShieldAlert className="mt-0.5 size-icon shrink-0 text-status-warning" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="font-medium text-foreground">{t("skills:market.untrustedBannerTitle")}</p>
                   <p className="mt-0.5 text-muted-foreground">{t("skills:market.untrustedBannerDescription")}</p>
@@ -409,7 +439,8 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
               </div>
               <Button
                 size="sm"
-                className="shrink-0 self-start sm:self-center"
+                variant="outline"
+                className="shrink-0 self-start bg-background sm:self-center dark:bg-card"
                 disabled={settingsMutation.isPending}
                 onClick={() => void applySettings({ trustProject: { projectId: activeProject.id, trusted: true } })}
               >
@@ -420,8 +451,8 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
           )}
 
           {catalogQuery.isError && (
-            <div role="alert" className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-xs leading-5">
-              <p className="text-destructive">{skillError(t, catalogQuery.error)}</p>
+            <div role="alert" className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-status-danger-border bg-status-danger-bg p-4 text-xs leading-[1.5]">
+              <p className="text-status-danger">{skillError(t, catalogQuery.error)}</p>
               <Button variant="outline" size="sm" disabled={catalogQuery.isFetching} onClick={() => void catalogQuery.refetch()}>
                 {t("skills:market.retry")}
               </Button>
@@ -431,40 +462,46 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
           {catalogQuery.isPending && !catalog && <SkillsSkeleton label={t("skills:market.loading")} />}
 
           {catalog && (
-            <div className={cn("mt-5 transition-opacity duration-150", catalogQuery.isPlaceholderData && "opacity-65")}>
+            <div className={cn("mt-6 transition-opacity duration-150", catalogQuery.isPlaceholderData && "opacity-65")}>
               <p role="status" className="sr-only">{t("skills:market.count", { count: visible.length })}</p>
 
               {visible.length === 0 ? (
-                <div className="mt-3 flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
-                  <h2 className="text-[13px] font-medium">
-                    {t(
-                      catalog.projects.length === 0 && catalog.directories.length === 0
-                        ? "skills:market.noProject"
-                        : search || filter !== "all"
-                          ? "skills:market.noMatches"
-                          : "skills:market.empty",
-                    )}
-                  </h2>
-                  <p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">
-                    {t(
-                      catalog.projects.length === 0 && catalog.directories.length === 0
-                        ? "skills:market.noProjectHint"
-                        : search || filter !== "all"
-                          ? "skills:market.noMatchesHint"
-                          : "skills:market.emptyHint",
-                    )}
-                  </p>
+                <Empty className="mt-3 rounded-2xl border border-dashed border-border bg-muted/30 py-12">
+                  <EmptyHeader>
+                    <EmptyTitle>
+                      <h2>
+                        {t(
+                          catalog.projects.length === 0 && catalog.directories.length === 0
+                            ? "skills:market.noProject"
+                            : search || filter !== "all"
+                              ? "skills:market.noMatches"
+                              : "skills:market.empty",
+                        )}
+                      </h2>
+                    </EmptyTitle>
+                    <EmptyDescription>
+                      {t(
+                        catalog.projects.length === 0 && catalog.directories.length === 0
+                          ? "skills:market.noProjectHint"
+                          : search || filter !== "all"
+                            ? "skills:market.noMatchesHint"
+                            : "skills:market.emptyHint",
+                      )}
+                    </EmptyDescription>
+                  </EmptyHeader>
                   {(search || filter !== "all") && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-4 rounded-full"
-                      onClick={() => { setSearch(""); setFilter("all"); }}
-                    >
-                      {t("skills:market.clearFilter")}
-                    </Button>
+                    <EmptyContent>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-lg"
+                        onClick={() => { setSearch(""); setFilter("all"); }}
+                      >
+                        {t("skills:market.clearFilter")}
+                      </Button>
+                    </EmptyContent>
                   )}
-                </div>
+                </Empty>
               ) : (
                 <div className="space-y-7">
                   {(["local", "shared", "claude"] as const).map(kind => {
@@ -473,10 +510,10 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
                     return (
                       <section key={kind} aria-labelledby={`skills-${kind}-title`}>
                         <div className="mb-3 flex items-center gap-2 px-0.5">
-                          <h2 id={`skills-${kind}-title`} className="text-xs font-medium text-muted-foreground">
+                          <h2 id={`skills-${kind}-title`} className="text-[0.6875rem] font-medium tracking-[0.04em] text-muted-foreground uppercase">
                             {t(`skills:market.kind.${kind}`)}
                           </h2>
-                          <span className="text-[11px] tabular-nums text-muted-foreground/70">{skills.length}</span>
+                          <span className="text-[0.6875rem] text-muted-foreground/75 tabular-nums">{skills.length}</span>
                         </div>
                         <ul aria-label={t(`skills:market.kind.${kind}`)} className="grid grid-cols-1 gap-x-5 gap-y-3 @min-[640px]:grid-cols-2">
                           {skills.map(skill => {

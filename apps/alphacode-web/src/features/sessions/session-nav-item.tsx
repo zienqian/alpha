@@ -54,7 +54,7 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
     <div className="group/session-row relative">
       {editing ? <form className="flex min-h-9 items-center gap-1 md:min-h-8" onSubmit={event => { event.preventDefault(); void submit("rename"); }}>
         <Input ref={input} value={title} maxLength={200} disabled={pending} aria-label={t("sessions:titleLabel")}
-          aria-invalid={Boolean(error)} className="h-8 min-w-0 px-2 md:text-[13px]"
+          aria-invalid={Boolean(error)} className="h-8 min-w-0 px-2.5 md:text-[0.8125rem]"
           onChange={event => { setTitle(event.target.value); setError(undefined); }}
           onKeyDown={event => {
             if (event.key === "Enter" && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault();
@@ -68,7 +68,7 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
           onClick={() => { setEditing(false); setError(undefined); requestAnimationFrame(() => menu.current?.focus()); }}><X aria-hidden="true" /></Button>
       </form> : <>
         <SidebarMenuSubButton asChild isActive={active}
-          className="session-nav-item h-9 w-full translate-x-0 rounded-lg px-9 text-[13px] text-sidebar-foreground/80 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8">
+          className="session-nav-item relative h-9 w-full translate-x-0 rounded-lg pe-8 ps-7 text-[0.8125rem] leading-[1.4] text-sidebar-foreground transition-colors duration-100 ease-out data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8">
           <button type="button" title={session.title} aria-label={session.title} aria-current={active ? "page" : undefined} onClick={onSelect}
             data-canvas-draggable={Boolean(onAddToCanvas) && !disabled || undefined}
             onPointerDown={event => {
@@ -81,7 +81,7 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button ref={menu} variant="ghost" size="icon-sm" disabled={disabled}
-              className="absolute top-1/2 right-0.5 -translate-y-1/2 text-muted-foreground md:opacity-0 md:group-hover/session-row:opacity-100 md:group-has-[:focus-visible]/session-row:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+              className="absolute top-1/2 end-0.5 -translate-y-1/2 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover/session-row:opacity-100 md:group-has-[:focus-visible]/session-row:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
               aria-label={t("sessions:sessionMenu", { title: session.title })}><MoreHorizontal aria-hidden="true" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onCloseAutoFocus={event => {
@@ -95,23 +95,23 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
         </DropdownMenu>
       </>}
     </div>
-    {editing && error && <p role="alert" className="px-2 py-1 text-xs leading-5 text-destructive">{error}</p>}
+    {editing && error && <p role="alert" className="px-2 py-1 text-xs leading-[1.45] text-status-danger">{error}</p>}
     <AlertDialog open={confirming} onOpenChange={open => { if (!pending) { setConfirming(open); setError(undefined); } }}>
-        <AlertDialogContent size="sm" className="block fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 space-y-4 rounded-xl bg-popover p-5 text-popover-foreground shadow-lg"
-          onEscapeKeyDown={event => { if (pending) event.preventDefault(); }}
-          onCloseAutoFocus={event => {
-            event.preventDefault();
-            const target = menu.current ?? document.querySelector<HTMLButtonElement>('.session-nav-item[aria-current="page"]');
-            target?.focus();
-          }}>
-          <AlertDialogTitle className="text-base font-medium">{t("sessions:deleteTitle")}</AlertDialogTitle>
-          <AlertDialogDescription className="text-sm leading-6 break-words text-muted-foreground">{t("sessions:deleteDescription", { title: session.title })}</AlertDialogDescription>
-          {error && <p role="alert" className="text-xs leading-5 text-destructive">{error}</p>}
-          <div className="flex justify-end gap-2">
-            <AlertDialogCancel disabled={pending}>{t("sessions:cancelEdit")}</AlertDialogCancel>
-            <Button variant="destructive" disabled={pending} onClick={() => void submit("delete")}>{t(pending ? "sessions:deleting" : "sessions:delete")}</Button>
-          </div>
-        </AlertDialogContent>
+      <AlertDialogContent size="sm" className="block space-y-4 p-5"
+        onEscapeKeyDown={event => { if (pending) event.preventDefault(); }}
+        onCloseAutoFocus={event => {
+          event.preventDefault();
+          const target = menu.current ?? document.querySelector<HTMLButtonElement>('.session-nav-item[aria-current="page"]');
+          target?.focus();
+        }}>
+        <AlertDialogTitle className="text-base leading-[1.35] font-semibold tracking-[-0.015em]">{t("sessions:deleteTitle")}</AlertDialogTitle>
+        <AlertDialogDescription className="text-[0.8125rem] leading-[1.55] break-words text-muted-foreground">{t("sessions:deleteDescription", { title: session.title })}</AlertDialogDescription>
+        {error && <p role="alert" className="text-xs leading-[1.45] text-status-danger">{error}</p>}
+        <div className="flex justify-end gap-2 pt-1">
+          <AlertDialogCancel size="sm" disabled={pending}>{t("sessions:cancelEdit")}</AlertDialogCancel>
+          <Button variant="destructive" size="sm" disabled={pending} onClick={() => void submit("delete")}>{t(pending ? "sessions:deleting" : "sessions:delete")}</Button>
+        </div>
+      </AlertDialogContent>
     </AlertDialog>
   </>;
 }

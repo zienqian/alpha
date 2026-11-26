@@ -26,9 +26,9 @@ export function SkillCard({
   const dimmed = skill.status === "disabled" || skill.status === "untrusted" || skill.status === "reserved";
 
   const statusTone = skill.status === "untrusted"
-    ? "text-amber-600 dark:text-amber-400"
+    ? "text-status-warning"
     : skill.status === "reserved"
-      ? "text-destructive"
+      ? "text-status-danger"
       : "text-muted-foreground";
 
   const StatusIcon = skill.status === "untrusted"
@@ -41,31 +41,31 @@ export function SkillCard({
     <li className="min-w-0">
       <div
         className={cn(
-          "group relative flex min-h-[82px] items-center gap-3 rounded-2xl border bg-card p-3 transition-[background-color,border-color,box-shadow] motion-reduce:transition-none dark:bg-card/70",
+          "group relative flex min-h-[82px] items-center gap-3 rounded-2xl border bg-card p-3 transition-[background-color,border-color] duration-150 ease-out motion-reduce:transition-none",
           selected
-            ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/15 dark:bg-primary/[0.08]"
-            : "border-border/75 shadow-xs hover:border-border hover:bg-muted/35 dark:shadow-none dark:hover:bg-muted/30",
+            ? "border-foreground/45 bg-muted/50"
+            : "border-border/80 hover:border-input hover:bg-muted/35",
         )}
       >
         <button
           type="button"
           onClick={onSelect}
           aria-label={t("skills:market.openDetails", { name: skill.name })}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-[8px] text-start outline-none focus-visible:ring-2 focus-visible:ring-ring/45"
         >
           <SkillIcon name={skill.name} className={cn(dimmed && "opacity-65")} />
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-1.5">
-              <span className={cn("truncate text-[13px] leading-5 font-medium", dimmed && "text-muted-foreground")} title={skill.name}>
+              <span className={cn("truncate text-[0.8125rem] leading-[1.4] font-medium text-foreground", dimmed && "text-muted-foreground")} title={skill.name}>
                 {skill.name}
               </span>
-              <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-3 font-medium text-muted-foreground">
+              <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[0.6875rem] leading-none font-medium text-muted-foreground">
                 {t(`skills:market.scope.${skill.source}`)}
               </span>
             </div>
-            <p className="mt-0.5 truncate text-xs leading-5 text-muted-foreground">{skill.description}</p>
+            <p className="mt-0.5 truncate text-xs leading-[1.45] text-muted-foreground">{skill.description}</p>
             {skill.status !== "available" && (
-              <p className={cn("mt-1 flex items-center gap-1 text-[11px] leading-4", statusTone)}>
+              <p className={cn("mt-1 flex items-center gap-1 text-[0.6875rem] leading-[1.35] font-medium", statusTone)}>
                 <StatusIcon className="size-3 shrink-0" aria-hidden="true" />
                 <span className="truncate">{t(`skills:market.status.${skill.status}`)}</span>
               </p>
@@ -73,7 +73,7 @@ export function SkillCard({
           </div>
         </button>
 
-        <div className="flex shrink-0 items-center gap-1.5 pl-1">
+        <div className="flex shrink-0 items-center gap-1.5 ps-1">
           {canToggle && (
             <Switch
               size="sm"
@@ -84,7 +84,7 @@ export function SkillCard({
             />
           )}
           <ChevronRight
-            className="pointer-events-none size-4 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-muted-foreground motion-reduce:transition-none"
+            className="pointer-events-none size-4 text-muted-foreground/50 transition-[transform,color] duration-150 ease-out group-hover:translate-x-0.5 group-hover:text-muted-foreground rtl:-scale-x-100 motion-reduce:transition-none"
             aria-hidden="true"
           />
         </div>

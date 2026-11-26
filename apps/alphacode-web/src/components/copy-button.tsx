@@ -13,7 +13,8 @@ export function CopyButton({ value, label }: { value: string; label?: string }) 
     const timer = window.setTimeout(() => setStatus("idle"), 2000);
     return () => window.clearTimeout(timer);
   }, [status]);
-  const feedback = status === "copied" ? t("common:copied") : status === "error" ? t("common:copyFailed") : "";
+  const copied = status === "copied";
+  const feedback = copied ? t("common:copied") : status === "error" ? t("common:copyFailed") : "";
   return (
     <>
       <Tooltip>
@@ -28,7 +29,10 @@ export function CopyButton({ value, label }: { value: string; label?: string }) 
                 setStatus("error");
               }
             }}>
-            {status === "copied" ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+            <span className="icon-swap-stack" aria-hidden="true">
+              <span className="icon-swap-layer" data-visible={!copied}><Copy /></span>
+              <span className="icon-swap-layer text-status-success" data-visible={copied}><Check /></span>
+            </span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>{feedback || label}</TooltipContent>

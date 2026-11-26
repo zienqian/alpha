@@ -126,11 +126,10 @@ function CodeBlockCopyButton({
         }}
         {...props}
       >
-        {copied ? (
-          <CheckIcon />
-        ) : (
-          <CopyIcon />
-        )}
+        <span className="icon-swap-stack" aria-hidden="true">
+          <span className="icon-swap-layer" data-visible={!copied}><CopyIcon /></span>
+          <span className="icon-swap-layer text-status-success" data-visible={copied}><CheckIcon /></span>
+        </span>
       </Button>
       <span aria-live="polite" className="sr-only">
         {copied ? "Copied" : ""}

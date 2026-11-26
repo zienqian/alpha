@@ -14,13 +14,15 @@ export const ChatMessage = memo(function ChatMessage({ role, content, streaming 
   const isUser = role === "user";
   return (
     <Message align={isUser ? "end" : "start"} className="group/message">
-      <MessageContent className="gap-1">
+      <MessageContent className="gap-1.5">
         {isUser ? (
-          <Bubble align="end" variant="muted" className="min-w-0 max-w-[90%] rounded-xl sm:max-w-[85%]">
-            <BubbleContent className="px-3.5 py-2.5"><Markdown>{content}</Markdown></BubbleContent>
+          <Bubble align="end" variant="muted" className="min-w-0 max-w-[90%] sm:max-w-[82%]">
+            <BubbleContent className="rounded-2xl px-4 py-2.5 text-foreground">
+              <Markdown className="text-[0.875rem] leading-[1.55]">{content}</Markdown>
+            </BubbleContent>
           </Bubble>
         ) : <Markdown>{content}</Markdown>}
-        {showCopy && !streaming && <MessageFooter className="pointer-events-none px-0 opacity-0 transition-opacity group-hover/message:pointer-events-auto group-hover/message:opacity-100 group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100">
+        {showCopy && !streaming && <MessageFooter className="pointer-events-none gap-0.5 px-0 opacity-0 transition-opacity duration-150 ease-out group-hover/message:pointer-events-auto group-hover/message:opacity-100 group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100 [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100">
           <CopyButton value={content} label={isUser ? t("common:copyUser") : t("common:copyReply")} />
           {actions}
         </MessageFooter>}

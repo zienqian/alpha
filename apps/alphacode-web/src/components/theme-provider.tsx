@@ -1,8 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState, type PropsWithChildren } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type PropsWithChildren } from "react";
 import { syncDesktopAppearance } from "@/components/desktop-titlebar";
 
-// Based on https://ui.shadcn.com/docs/dark-mode/vite, with live system updates
-// and a storage fallback for browsers that disallow localStorage.
+// Based on https://ui.shadcn.com/docs/dark-mode/vite, with live system updates,
+// transition suppression during theme swaps (better-motion), and a storage fallback.
 export type ThemeMode = "light" | "dark" | "system";
 export type ColorMode = "light" | "dark";
 
@@ -10,6 +10,19 @@ const storageKey = "alphacode-theme";
 
 export function isThemeMode(value: unknown): value is ThemeMode {
   return value === "light" || value === "dark" || value === "system";
+}
+
+function suppressTransitionsBriefly() {
+  if (typeof document === "undefined" || !document.head || !document.body) return;
+  const style = document.createElement("style");
+  style.append(document.createTextNode("*,*::before,*::after{transition:none !important}"));
+  document.head.append(style);
+  // Force a synchronous style flush so the new theme paints before restoring transitions.
+  void document.body.offsetHeight;
+  const raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (cb: FrameRequestCallback) => window.setTimeout(cb, 0);
+  raf(() => {
+    raf(() => style.remove());
+  });
 }
 
 interface ThemeState {
@@ -39,22 +52,27 @@ export function ThemeProvider({ children }: PropsWithChildren) {
   const [theme, updateTheme] = useState<ThemeMode>(readSavedTheme);
   const [resolvedTheme, setResolvedTheme] = useState<ColorMode>("light");
   const [storageError, setStorageError] = useState(false);
+  const mounted = useRef(false);
 
   useLayoutEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const applyTheme = () => {
+    const applyTheme = (suppress: boolean) => {
       const resolved: ColorMode = theme === "system" ? (media.matches ? "dark" : "light") : theme;
       const root = document.documentElement;
+      const changed = !root.classList.contains(resolved);
+      if (suppress && changed) suppressTransitionsBriefly();
       root.classList.remove("light", "dark");
       root.classList.add(resolved);
       root.style.colorScheme = resolved;
       setResolvedTheme(resolved);
       syncDesktopAppearance();
     };
-    applyTheme();
+    applyTheme(mounted.current);
+    mounted.current = true;
     if (theme !== "system") return;
-    media.addEventListener("change", applyTheme);
-    return () => media.removeEventListener("change", applyTheme);
+    const onMediaChange = () => applyTheme(true);
+    media.addEventListener("change", onMediaChange);
+    return () => media.removeEventListener("change", onMediaChange);
   }, [theme]);
 
   useEffect(() => {

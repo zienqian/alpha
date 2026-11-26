@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import * as m from "motion/react-m";
 import { Link, LoaderCircle, RefreshCw, ShieldAlert, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTranslation } from "@/i18n/react";
+import { indicatorSpring } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { SkillApiError, skillError, type SkillDirectory, type SkillInstallation } from "./api";
 
-const selectClass = "h-9 w-full rounded-lg border border-input bg-background px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-50 md:text-xs";
+const selectClass = "h-9 w-full rounded-lg text-base md:text-xs";
 
 export function InstallSkillDialog({
   open,
@@ -89,14 +91,14 @@ export function InstallSkillDialog({
     <Dialog open={open} onOpenChange={next => { if (!isPending) { if (!next) onResetError(); onOpenChange(next); } }}>
       <DialogContent
         showCloseButton={false}
-        className="block fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-popover p-5 text-popover-foreground shadow-(--overlay-shadow) sm:p-6"
+        className="block max-h-[calc(100dvh-2rem)] overflow-y-auto p-5 sm:p-6"
         onEscapeKeyDown={event => { if (isPending) event.preventDefault(); }}
         onInteractOutside={event => { if (isPending) event.preventDefault(); }}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
-          <DialogTitle className="text-base font-semibold">{t("skills:market.add")}</DialogTitle>
+          <DialogTitle>{t("skills:market.add")}</DialogTitle>
           <DialogClose asChild>
-            <Button variant="ghost" size="icon-sm" disabled={isPending} aria-label={t("skills:market.close")}>
+            <Button variant="ghost" size="icon-sm" disabled={isPending} className="text-muted-foreground hover:text-foreground" aria-label={t("skills:market.close")}>
               <X aria-hidden="true" />
             </Button>
           </DialogClose>
@@ -104,30 +106,34 @@ export function InstallSkillDialog({
         <DialogDescription className="sr-only">{t("skills:market.installHint")}</DialogDescription>
 
         <form id="skill-install" aria-label={t("skills:market.add")} onSubmit={submit} className="space-y-4">
-          <div role="group" aria-label={t("skills:market.method")} className="inline-flex rounded-xl bg-muted/70 p-1">
+          <div role="group" aria-label={t("skills:market.method")} className="inline-flex rounded-xl bg-muted p-1">
             <Button
               type="button"
-              variant={mode === "zip" ? "secondary" : "ghost"}
+              variant="ghost"
               size="sm"
-              className={cn("rounded-lg", mode === "zip" && "bg-background shadow-xs")}
+              static
+              className={cn("relative rounded-lg hover:bg-transparent", mode === "zip" ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground")}
               aria-pressed={mode === "zip"}
               disabled={isPending}
               onClick={() => { setMode("zip"); onResetError(); }}
             >
-              <Upload aria-hidden="true" />
-              {t("skills:market.zip")}
+              {mode === "zip" && <m.span layoutId="install-skill-mode" transition={indicatorSpring} aria-hidden="true" className="absolute inset-0 rounded-lg bg-background shadow-xs ring-1 ring-foreground/6 dark:bg-card dark:ring-foreground/10" />}
+              <Upload className="relative z-10" aria-hidden="true" />
+              <span className="relative z-10">{t("skills:market.zip")}</span>
             </Button>
             <Button
               type="button"
-              variant={mode === "link" ? "secondary" : "ghost"}
+              variant="ghost"
               size="sm"
-              className={cn("rounded-lg", mode === "link" && "bg-background shadow-xs")}
+              static
+              className={cn("relative rounded-lg hover:bg-transparent", mode === "link" ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground")}
               aria-pressed={mode === "link"}
               disabled={isPending}
               onClick={() => { setMode("link"); onResetError(); }}
             >
-              <Link aria-hidden="true" />
-              {t("skills:market.link")}
+              {mode === "link" && <m.span layoutId="install-skill-mode" transition={indicatorSpring} aria-hidden="true" className="absolute inset-0 rounded-lg bg-background shadow-xs ring-1 ring-foreground/6 dark:bg-card dark:ring-foreground/10" />}
+              <Link className="relative z-10" aria-hidden="true" />
+              <span className="relative z-10">{t("skills:market.link")}</span>
             </Button>
           </div>
 
@@ -136,9 +142,9 @@ export function InstallSkillDialog({
               <label
                 htmlFor="skill-zip"
                 className={cn(
-                  "flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-dashed border-border bg-background px-4 py-7 text-center text-xs leading-5 transition-colors focus-within:ring-2 focus-within:ring-ring/50",
-                  dragging ? "border-primary bg-primary/[0.04]" : "hover:bg-muted/40",
-                  isPending && "pointer-events-none opacity-50",
+                  "flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-dashed border-input bg-muted/35 px-4 py-7 text-center text-xs leading-[1.5] transition-colors duration-150 ease-out focus-within:ring-2 focus-within:ring-ring/45",
+                  dragging ? "border-foreground/45 bg-muted" : "hover:bg-muted/60",
+                  isPending && "pointer-events-none opacity-45",
                 )}
                 onDragOver={event => { event.preventDefault(); if (!isPending) setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
@@ -151,7 +157,7 @@ export function InstallSkillDialog({
                   }
                 }}
               >
-                <span className="flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                   <Upload className="size-5" aria-hidden="true" />
                 </span>
                 <span className="mt-1 max-w-full break-all font-medium text-foreground">
@@ -172,11 +178,10 @@ export function InstallSkillDialog({
             </div>
           ) : (
             <div className="space-y-2">
-              <label htmlFor="skill-url" className="text-xs font-medium">{t("skills:market.urlLabel")}</label>
+              <label htmlFor="skill-url" className="block text-xs font-medium text-foreground">{t("skills:market.urlLabel")}</label>
               <Input
                 id="skill-url"
                 type="url"
-                className="bg-background"
                 placeholder={t("skills:market.urlPlaceholder")}
                 value={url}
                 required
@@ -184,12 +189,12 @@ export function InstallSkillDialog({
                 aria-describedby="skill-link-hint"
                 onChange={event => { setUrl(event.target.value); if (error) onResetError(); }}
               />
-              <p id="skill-link-hint" className="text-xs leading-5 text-muted-foreground">{t("skills:market.linkHint")}</p>
+              <p id="skill-link-hint" className="text-xs leading-[1.5] text-muted-foreground">{t("skills:market.linkHint")}</p>
             </div>
           )}
 
           <div className="space-y-2">
-            <label htmlFor="skill-directory" className="block text-xs font-medium">{t("skills:market.destination")}</label>
+            <label htmlFor="skill-directory" className="block text-xs font-medium text-foreground">{t("skills:market.destination")}</label>
             <Select value={directory?.id ?? ""} disabled={isPending || enabledDirectories.length === 0} onValueChange={setDirectoryId}>
               <SelectTrigger id="skill-directory" className={selectClass}>
                 <SelectValue />
@@ -200,9 +205,9 @@ export function InstallSkillDialog({
                 ))}
               </SelectContent>
             </Select>
-            {directory && <p className="font-mono text-[11px] leading-4 break-all text-muted-foreground">{directory.path}</p>}
+            {directory && <p className="font-mono text-[0.6875rem] leading-[1.4] break-all text-muted-foreground">{directory.path}</p>}
             {directory && !directory.trusted && (
-              <p className="flex items-start gap-1.5 rounded-lg bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-700 dark:text-amber-300">
+              <p className="flex items-start gap-1.5 rounded-lg border border-status-warning-border bg-status-warning-bg px-3 py-2 text-xs leading-[1.5] text-status-warning">
                 <ShieldAlert className="mt-0.5 size-icon shrink-0" aria-hidden="true" />
                 <span>{t("skills:market.trustHint")}</span>
               </p>
@@ -210,8 +215,8 @@ export function InstallSkillDialog({
           </div>
 
           {Boolean(error) && (
-            <div role="alert" className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs leading-5">
-              <p className="text-destructive">{skillError(t, error)}</p>
+            <div role="alert" className="space-y-2 rounded-xl border border-status-danger-border bg-status-danger-bg p-3 text-xs leading-[1.5]">
+              <p className="text-status-danger">{skillError(t, error)}</p>
               {isConflict && (
                 <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={() => void runInstall(true)}>
                   <RefreshCw className={cn(isPending && "animate-spin motion-reduce:animate-none")} aria-hidden="true" />
@@ -221,8 +226,8 @@ export function InstallSkillDialog({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
-            <p className="max-w-[260px] text-[11px] leading-4 text-muted-foreground">{t("skills:market.installHint")}</p>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-separator pt-4">
+            <p className="max-w-[260px] text-[0.6875rem] leading-[1.4] text-muted-foreground">{t("skills:market.installHint")}</p>
             <div className="flex items-center gap-2">
               <DialogClose asChild>
                 <Button type="button" variant="ghost" size="sm" disabled={isPending}>{t("workspace:cancel")}</Button>

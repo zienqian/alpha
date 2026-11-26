@@ -34,16 +34,19 @@ export function SessionPermissions({ mode, onChange, disabled, saving, busy }: {
   return <DropdownMenu onOpenChange={open => { if (!open) setShowHelp(false); }}>
     <DropdownMenuTrigger asChild disabled={disabled}>
       <InputGroupButton size="sm" disabled={disabled} aria-label={title} title={title} aria-busy={saving}
-        className={cn("shrink-0 gap-1.5 rounded-full px-2 text-muted-foreground", mode === "full" && "bg-muted/60 text-orange-700 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300")}>
-        {saving ? <LoaderCircle className="size-icon motion-safe:animate-spin" aria-hidden="true" /> : <Icon className="size-icon" aria-hidden="true" />}
+        className={cn(
+          "h-7.5 min-w-0 max-w-full shrink gap-1.5 rounded-full px-2.5 text-xs text-muted-foreground hover:text-foreground",
+          mode === "full" && "border border-border bg-muted/75 font-medium text-foreground hover:bg-muted",
+        )}>
+        {saving ? <LoaderCircle className="size-icon motion-safe:animate-spin" aria-hidden="true" /> : <Icon className={cn("size-icon", mode === "full" && "text-status-warning")} aria-hidden="true" />}
         <span className="truncate">{saving ? t("settings:permissions.saving") : label}</span>
       </InputGroupButton>
     </DropdownMenuTrigger>
     <DropdownMenuContent side="top" align="start" sideOffset={8} collisionPadding={12}
       className="w-88 max-w-[calc(100vw-24px)] p-1.5" aria-label={t("settings:permissions.label")}>
-      <div className="flex items-center justify-between gap-2 px-1 pb-1">
-        <DropdownMenuLabel className="px-1 font-normal">{t("settings:permissions.title")}</DropdownMenuLabel>
-        <DropdownMenuItem asChild className="shrink-0 px-1 text-xs text-muted-foreground underline underline-offset-4"
+      <div className="flex items-center justify-between gap-2 px-1.5 pb-1">
+        <DropdownMenuLabel className="px-1 font-medium">{t("settings:permissions.title")}</DropdownMenuLabel>
+        <DropdownMenuItem asChild className="min-h-7 shrink-0 px-1.5 text-xs text-muted-foreground underline underline-offset-4"
           onSelect={event => { event.preventDefault(); setShowHelp(value => !value); }}>
           <button type="button" aria-expanded={showHelp} aria-controls={helpId}>
             {t(showHelp ? "settings:permissions.less" : "settings:permissions.more")}
@@ -55,19 +58,21 @@ export function SessionPermissions({ mode, onChange, disabled, saving, busy }: {
       }}>
         {options.map(({ value, Icon: OptionIcon }) => <MenuPrimitive.RadioItem key={value} value={value}
           disabled={disabled} textValue={t(`settings:permissions.${value}.name`)}
-          className={cn("group relative flex cursor-default items-center gap-2.5 rounded-md px-2 py-2 pr-8 outline-none select-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-            value === "full" && "text-orange-700 focus:text-orange-800 dark:text-orange-400 dark:focus:text-orange-300")}>
-          <OptionIcon className="size-icon shrink-0" aria-hidden="true" />
+          className={cn(
+            "group relative flex cursor-default items-start gap-2.5 rounded-md py-2 pe-8 ps-2.5 outline-none transition-colors duration-100 ease-out select-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
+            value === "full" && "text-status-warning focus:bg-status-warning-bg focus:text-status-warning",
+          )}>
+          <OptionIcon className="mt-0.5 size-icon shrink-0" aria-hidden="true" />
           <span className="min-w-0">
-            <span className="block text-[13px] leading-5">{t(`settings:permissions.${value}.name`)}</span>
-            <span className={cn("block text-xs leading-4 text-muted-foreground group-focus:text-accent-foreground", value === "full" && "text-current group-focus:text-current")}>{t(`settings:permissions.${value}.description`)}</span>
+            <span className="block text-[0.8125rem] leading-[1.4] font-medium">{t(`settings:permissions.${value}.name`)}</span>
+            <span className={cn("mt-0.5 block text-xs leading-[1.4] text-muted-foreground group-focus:text-accent-foreground/85", value === "full" && "text-current/85 group-focus:text-current")}>{t(`settings:permissions.${value}.description`)}</span>
           </span>
-          <MenuPrimitive.ItemIndicator className="absolute right-2 flex items-center">
+          <MenuPrimitive.ItemIndicator className="absolute top-2.5 end-2.5 flex items-center">
             <Check className="size-icon" aria-hidden="true" />
           </MenuPrimitive.ItemIndicator>
         </MenuPrimitive.RadioItem>)}
       </DropdownMenuRadioGroup>
-      {showHelp && <p id={helpId} className="px-2 pt-2 pb-1 text-xs leading-5 text-muted-foreground">{t("settings:permissions.help")}</p>}
+      {showHelp && <p id={helpId} className="mt-1 border-t border-separator px-2.5 pt-2.5 pb-1 text-xs leading-[1.5] text-muted-foreground">{t("settings:permissions.help")}</p>}
     </DropdownMenuContent>
   </DropdownMenu>;
 }

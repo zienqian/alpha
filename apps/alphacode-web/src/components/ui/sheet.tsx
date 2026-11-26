@@ -47,7 +47,7 @@ function SheetOverlay({
       asChild forceMount
       data-slot="sheet-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/50",
+        "fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] dark:bg-black/55",
         className
       )}
       {...props}
@@ -78,23 +78,23 @@ function SheetContent({
         asChild forceMount
         data-slot="sheet-content"
         className={cn(
-          "fixed z-50 flex flex-col gap-4 bg-background shadow-lg",
+          "fixed z-50 flex flex-col gap-4 overscroll-contain bg-popover text-popover-foreground shadow-(--shadow-overlay) outline-none",
           side === "right" &&
-            "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
+            "inset-y-0 right-0 h-full w-3/4 border-s border-border/80 sm:max-w-sm",
           side === "left" &&
-            "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
+            "inset-y-0 left-0 h-full w-3/4 border-e border-border/80 sm:max-w-sm",
           side === "top" &&
-            "inset-x-0 top-0 h-auto border-b",
+            "inset-x-0 top-0 h-auto border-b border-border/80",
           side === "bottom" &&
-            "inset-x-0 bottom-0 h-auto border-t",
+            "inset-x-0 bottom-0 h-auto border-t border-border/80",
           className
         )}
         {...props}
       >
-        <m.div initial={offset} animate={{ x: 0, y: 0 }} exit={{ ...offset, transition: { ...exitTransition, duration: 0.18 } }} transition={sidebarTransition}>
+        <m.div initial={offset} animate={{ x: 0, y: 0 }} exit={{ ...offset, transition: { duration: 0.2, ease: "easeOut" } }} transition={sidebarTransition}>
         {children}
         {showCloseButton && (
-          <SheetPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-secondary">
+          <SheetPrimitive.Close className="absolute top-3.5 end-3.5 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none not-disabled:active:scale-[0.96] disabled:pointer-events-none">
             <XIcon className="size-icon" />
             <span className="sr-only">{t("common:close")}</span>
           </SheetPrimitive.Close>

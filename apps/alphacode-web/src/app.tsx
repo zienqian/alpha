@@ -1,4 +1,4 @@
-import { lazy, Suspense, type CSSProperties } from "react";
+import { lazy, Suspense, useEffect, type CSSProperties } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useMatch, useNavigate, useOutletContext } from "react-router";
 import { X } from "lucide-react";
 import { useTranslation } from "@/i18n/react";
@@ -34,6 +34,19 @@ function WorkspaceLayout() {
   const canvasOpen = sessionOpen && experiments.sessionCanvas;
   const contentId = settingsOpen ? "settings-content" : skillsOpen ? "skills-content" : "session-content";
   const { folders, selectedFolder, selectedSession, selectedSessionId, draft } = workspace;
+
+  // Keep document.title synchronized with client-side route & session transitions (better-accessibility).
+  useEffect(() => {
+    const viewTitle = settingsOpen
+      ? t("settings:title")
+      : skillsOpen
+        ? t("skills:market.title")
+        : workspace.isWelcome
+          ? t("workspace:title")
+          : selectedSession?.title?.trim() || t("sessions:new");
+    document.title = `${viewTitle} · AlphaCode`;
+  }, [settingsOpen, skillsOpen, workspace.isWelcome, selectedSession?.title, t]);
+
   const openPage = (pathname: "/settings" | "/skills") => {
     if (location.pathname !== pathname) void navigate(pathname, { state: { sessionId: selectedSessionId, sessionLocal: workspace.isLocal } });
   };
@@ -42,7 +55,7 @@ function WorkspaceLayout() {
   return <SidebarProvider mobileMode="inline" className="workspace-shell h-[calc(100dvh-var(--window-header-height))] min-h-0 overflow-hidden"
     style={{ "--sidebar-width": "var(--workspace-sidebar-width, 16.5rem)", "--sidebar-width-icon": "3.5rem" } as CSSProperties}>
     <a href={`#${contentId}`} onClick={event => { event.preventDefault(); document.getElementById(contentId)?.focus(); }}
-      className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
+      className="sr-only z-50 rounded-lg bg-background px-3 py-2 text-xs font-medium shadow-(--shadow-overlay) focus:not-sr-only focus:fixed focus:top-2 focus:start-2">
       {sessionOpen ? t("sessions:skip") : t("common:skipContent")}</a>
     <SessionSidebar folders={folders} selectedSessionId={selectedSessionId} onSelectSession={id => workspace.selectSession(id)} onNewSession={id => workspace.newSession(id)}
       selectedFolderId={selectedFolder?.id} onCreateProject={() => workspace.setProjectDialogOpen(true)} onDeleteProject={workspace.removeProject}
@@ -54,20 +67,20 @@ function WorkspaceLayout() {
       onRefresh={() => { void workspace.index.refetch(); void workspace.projects.refetch(); }} />
     <CreateProjectDialog open={workspace.projectDialogOpen} onOpenChange={workspace.setProjectDialogOpen} onCreate={workspace.addProject} />
     <SidebarInset className="workspace-canvas min-h-0 min-w-0 overflow-hidden" data-docking={canvasOpen || undefined}>
-      {!canvasOpen && <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 px-3 sm:px-4">
-        <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground" />
-        <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px]">
-          {!sessionOpen ? <span className="truncate font-medium">{settingsOpen ? t("settings:title") : t("skills:market.title")}</span> : workspace.isWelcome ?
+      {!canvasOpen && <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2.5 px-3.5 sm:px-5">
+        <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground hover:text-foreground" />
+        <div className="flex min-w-0 flex-1 items-center gap-2 text-[0.8125rem] leading-[1.4]">
+          {!sessionOpen ? <span className="truncate font-medium tracking-[-0.008em] text-foreground">{settingsOpen ? t("settings:title") : t("skills:market.title")}</span> : workspace.isWelcome ?
             <span className="truncate text-muted-foreground">{t("sessions:new")}</span> :
-            <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium" title={selectedSession?.title}>{selectedSession?.title || t("sessions:new")}</h1>}
+            <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium tracking-[-0.01em] text-foreground" title={selectedSession?.title}>{selectedSession?.title || t("sessions:new")}</h1>}
         </div>
         {sessionOpen ? <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} /> :
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground"
+          <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground"
             aria-label={t(settingsOpen ? "settings:backToSession" : "skills:market.back")}
             title={t(settingsOpen ? "settings:backToSession" : "skills:market.back")}
             onClick={returnToSession}><X aria-hidden="true" /></Button>}
       </header>}
-      <Suspense fallback={<div role="status" aria-label={t("common:loading")} className="space-y-3 p-6"><Skeleton className="h-5 w-24" /><Skeleton className="h-4 max-w-sm" /></div>}>
+      <Suspense fallback={<div role="status" aria-label={t("common:loading")} className="space-y-3 p-6"><Skeleton className="h-5 w-24 rounded-md" /><Skeleton className="h-4 max-w-sm rounded-md" /></div>}>
         <Outlet context={workspace} />
       </Suspense>
     </SidebarInset>

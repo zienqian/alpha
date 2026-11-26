@@ -44,34 +44,34 @@ export function CreateProjectDialog({ open, onOpenChange, onCreate }: {
     } finally { working.current = false; setPending(false); }
   }
   return <Dialog open={open} onOpenChange={value => { if (!working.current) { onOpenChange(value); setError(undefined); } }}>
-      <DialogContent showCloseButton={false} className="block fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-popover p-5 text-popover-foreground shadow-(--overlay-shadow) sm:p-6"
+      <DialogContent showCloseButton={false} className="block max-h-[calc(100dvh-2rem)] overflow-y-auto p-5 sm:p-6"
         onOpenAutoFocus={event => { event.preventDefault(); returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; nameInput.current?.focus(); }}
         onCloseAutoFocus={event => { event.preventDefault(); if (returnFocus.current?.isConnected && returnFocus.current !== document.body && !returnFocus.current.closest("[inert]")) returnFocus.current.focus(); else document.querySelector<HTMLButtonElement>('[data-slot="sidebar-trigger"]')?.focus(); }}
         onEscapeKeyDown={event => { if (working.current) event.preventDefault(); }} onInteractOutside={event => { if (working.current) event.preventDefault(); }}>
         <div className="mb-5 flex items-center justify-between gap-3">
-          <DialogTitle className="text-lg font-semibold">{t("workspace:createProject")}</DialogTitle>
-          <DialogClose asChild><Button variant="ghost" size="icon-sm" disabled={pending || picking} aria-label={t("workspace:closeDialog")}><X aria-hidden="true" /></Button></DialogClose>
+          <DialogTitle>{t("workspace:createProject")}</DialogTitle>
+          <DialogClose asChild><Button variant="ghost" size="icon-sm" disabled={pending || picking} className="text-muted-foreground hover:text-foreground" aria-label={t("workspace:closeDialog")}><X aria-hidden="true" /></Button></DialogClose>
         </div>
         <DialogDescription className="sr-only">{t("workspace:projectDescription")}</DialogDescription>
         <form className="space-y-5" onSubmit={event => { event.preventDefault(); void submit(); }} onKeyDown={event => { if (event.key === "Enter" && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault(); }}>
           <div className="relative">
-            <Folder className="pointer-events-none absolute top-1/2 left-3 size-icon -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <Input ref={nameInput} value={name} onChange={event => { setName(event.target.value); setError(undefined); }} maxLength={100} disabled={pending || picking} className="h-11 pl-10" aria-label={t("workspace:projectName")} placeholder={t("workspace:projectName")} autoComplete="off" />
+            <Folder className="pointer-events-none absolute top-1/2 start-3 size-icon -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <Input ref={nameInput} value={name} onChange={event => { setName(event.target.value); setError(undefined); }} maxLength={100} disabled={pending || picking} className="h-10 ps-9.5" aria-label={t("workspace:projectName")} placeholder={t("workspace:projectName")} autoComplete="off" />
           </div>
           <div className="space-y-2">
-            <label htmlFor={`${id}-path`} className="text-sm font-medium">{t("workspace:sourceFolder")}</label>
-            <div className="space-y-3 rounded-xl border bg-background p-4">
+            <label htmlFor={`${id}-path`} className="block text-[0.8125rem] font-medium text-foreground">{t("workspace:sourceFolder")}</label>
+            <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-4">
               {nativePicker && <Button type="button" variant="outline" size="sm" disabled={pending || picking} onClick={() => void pick()}>
                 {picking ? <LoaderCircle className="motion-safe:animate-spin" aria-hidden="true" /> : <FolderOpen aria-hidden="true" />}{t("workspace:chooseFolder")}
               </Button>}
               <Input id={`${id}-path`} value={path} onChange={event => { setPath(event.target.value); setError(undefined); }} onBlur={() => updatePath(path)} disabled={pending || picking} maxLength={4096} placeholder={t("workspace:pathPlaceholder")} aria-describedby={`${id}-hint`} aria-invalid={Boolean(error)} autoComplete="off" spellCheck={false} />
-              <p id={`${id}-hint`} className="text-xs leading-5 text-muted-foreground">{t(nativePicker ? "workspace:folderHint" : "workspace:browserFolderHint")}</p>
+              <p id={`${id}-hint`} className="text-xs leading-[1.5] text-muted-foreground">{t(nativePicker ? "workspace:folderHint" : "workspace:browserFolderHint")}</p>
             </div>
           </div>
-          {error && <p role="alert" className="text-xs leading-5 text-destructive">{error}</p>}
-          <div className="flex justify-end gap-2 pt-1">
-            <DialogClose asChild><Button type="button" variant="ghost" disabled={pending || picking}>{t("workspace:cancel")}</Button></DialogClose>
-            <Button type="submit" disabled={pending || picking || !name.trim() || !path.trim()}>{pending && <LoaderCircle className="motion-safe:animate-spin" aria-hidden="true" />}{t(pending ? "workspace:creatingProject" : "workspace:createProject")}</Button>
+          {error && <p role="alert" className="rounded-lg border border-status-danger-border bg-status-danger-bg px-3 py-2 text-xs leading-[1.5] text-status-danger">{error}</p>}
+          <div className="flex justify-end gap-2 border-t border-separator pt-4">
+            <DialogClose asChild><Button type="button" variant="ghost" size="sm" disabled={pending || picking}>{t("workspace:cancel")}</Button></DialogClose>
+            <Button type="submit" size="sm" disabled={pending || picking || !name.trim() || !path.trim()}>{pending && <LoaderCircle className="motion-safe:animate-spin" aria-hidden="true" />}{t(pending ? "workspace:creatingProject" : "workspace:createProject")}</Button>
           </div>
         </form>
       </DialogContent>

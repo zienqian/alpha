@@ -1,4 +1,19 @@
 {
+  "src/app.tsx": {
+    "reason": "Product name suffix in document.title.",
+    "messages": [
+      "Hard-coded string \"{0} · AlphaCode\"."
+    ]
+  },
+  "src/components/ui/attachment.tsx": {
+    "reason": "Tailwind class strings in variant definitions.",
+    "messages": [
+      "Hard-coded string \"gap-2 text-sm has-data-[slot=attachment-content]:px-2.5 has-data-[slot=attachment-content]:py-2 has-data-[slot=attachment-media]:p-2\".",
+      "Hard-coded string \"gap-2 text-xs has-data-[slot=attachment-content]:px-2 has-data-[slot=attachment-content]:py-1 has-data-[slot=attachment-media]:p-1\".",
+      "Hard-coded string \"gap-1.5 rounded-lg text-xs has-data-[slot=attachment-content]:px-1.5 has-data-[slot=attachment-content]:py-1 has-data-[slot=attachment-media]:p-1\".",
+      "Hard-coded string \"w-24 flex-col has-data-[slot=attachment-content]:w-30\"."
+    ]
+  },
   "src/components/ui/badge.tsx": {
     "reason": "Tailwind class strings in variant definitions.",
     "messages": [
@@ -21,8 +36,12 @@
   "src/components/ui/button.tsx": {
     "reason": "Tailwind class strings in variant definitions.",
     "messages": [
-      "Hard-coded string \"h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5\".",
-      "Hard-coded string \"h-10 rounded-md px-6 has-[>svg]:px-4\"."
+      "Hard-coded string \"bg-primary text-primary-foreground hover:bg-primary-hover\".",
+      "Hard-coded string \"bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/30\".",
+      "Hard-coded string \"border border-border bg-background text-foreground hover:bg-muted hover:text-foreground dark:bg-transparent dark:hover:bg-input/30\".",
+      "Hard-coded string \"h-6 gap-1 rounded-md px-2 text-xs has-[>svg:first-child]:ps-1.5 has-[>svg:last-child]:pe-1.5\".",
+      "Hard-coded string \"h-7 gap-1.5 px-2.5 text-xs has-[>svg:first-child]:ps-2 has-[>svg:last-child]:pe-2\".",
+      "Hard-coded string \"h-10 rounded-lg px-5 text-sm has-[>svg:first-child]:ps-4 has-[>svg:last-child]:pe-4\"."
     ]
   },
   "src/components/ui/code-block.tsx": {
@@ -44,6 +63,13 @@
       "Hard-coded string \"order-last pr-3 has-[>button]:mr-[-0.45rem] has-[>kbd]:mr-[-0.35rem]\".",
       "Hard-coded string \"order-first w-full justify-start px-3 pt-3 group-has-[>input]/input-group:pt-2.5 [.border-b]:pb-3\".",
       "Hard-coded string \"order-last w-full justify-start px-3 pb-3 group-has-[>input]/input-group:pb-2.5 [.border-t]:pt-3\"."
+    ]
+  },
+  "src/components/ui/item.tsx": {
+    "reason": "Tailwind class strings in variant definitions.",
+    "messages": [
+      "Hard-coded string \"flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground [&_svg:not([class*='size-'])]:size-icon\".",
+      "Hard-coded string \"size-10 overflow-hidden rounded-xl group-data-[size=sm]/item:size-8 group-data-[size=xs]/item:size-6 group-data-[size=xs]/item:rounded-lg [&_img]:size-full [&_img]:object-cover\"."
     ]
   },
   "src/components/ui/sidebar.tsx": {
@@ -68,7 +94,9 @@
       "Hard-coded string \"AlphaCode\".",
       "Hard-coded string \"⌘ K\".",
       "Hard-coded string \"Ctrl K\".",
-      "Hard-coded string \"flex h-11 items-center gap-2 px-(--sidebar-inset)\"."
+      "Hard-coded string \"flex h-11 min-w-0 items-center gap-2 px-(--sidebar-inset) @max-[200px]:gap-1.5 @max-[200px]:px-1.5\".",
+      "Hard-coded string \"rail-action shrink-0 text-muted-foreground hover:text-foreground\".",
+      "Hard-coded string \"ms-auto shrink-0 text-muted-foreground hover:text-foreground\"."
     ]
   },
   "src/i18n/provider.tsx": {

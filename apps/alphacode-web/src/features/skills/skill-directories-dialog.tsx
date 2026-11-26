@@ -51,17 +51,17 @@ export function SkillDirectoriesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="flex fixed top-1/2 left-1/2 z-50 max-h-[min(82dvh,680px)] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-2xl bg-popover p-0 text-popover-foreground shadow-(--overlay-shadow)"
+        className="flex max-h-[min(82dvh,680px)] max-w-xl flex-col gap-0 overflow-hidden p-0 sm:max-w-xl"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-border/60 px-5 py-4">
+        <div className="flex items-start justify-between gap-3 border-b border-separator px-5 py-4">
           <div className="min-w-0">
-            <DialogTitle className="text-base font-semibold">{t("skills:market.settings")}</DialogTitle>
-            <DialogDescription className="mt-0.5 text-xs text-muted-foreground">
+            <DialogTitle>{t("skills:market.settings")}</DialogTitle>
+            <DialogDescription className="mt-0.5 text-xs">
               {t("skills:market.settingsDescription")}
             </DialogDescription>
           </div>
           <DialogClose asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={t("common:close")}>
+            <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" aria-label={t("common:close")}>
               <X aria-hidden="true" />
             </Button>
           </DialogClose>
@@ -70,35 +70,35 @@ export function SkillDirectoriesDialog({
         <ScrollArea className="min-h-0 flex-1">
           <div className="space-y-5 p-5">
             <section className="space-y-2">
-              <h3 className="px-1 text-xs font-medium text-muted-foreground">{t("skills:market.directorySources")}</h3>
-              <div className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/75 bg-background">
+              <h3 className="px-0.5 text-[0.6875rem] font-medium tracking-[0.04em] text-muted-foreground uppercase">{t("skills:market.directorySources")}</h3>
+              <div className="divide-y divide-separator overflow-hidden rounded-xl border border-border bg-card">
                 <div className="flex items-center justify-between gap-4 p-3.5">
                   <div className="min-w-0">
-                    <label htmlFor="skills-shared-toggle" className="block text-[13px] font-medium">
+                    <label htmlFor="skills-shared-toggle" className="block text-[0.8125rem] font-medium text-foreground">
                       {t("skills:market.sharedDirLabel")}
                     </label>
-                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{t("skills:market.sharedDirDescription")}</p>
+                    <p className="mt-0.5 text-xs leading-[1.5] text-muted-foreground">{t("skills:market.sharedDirDescription")}</p>
                   </div>
                   <Switch id="skills-shared-toggle" checked={sharedEnabled} disabled={saving} onCheckedChange={onToggleShared} />
                 </div>
                 <div className="flex items-center justify-between gap-4 p-3.5">
                   <div className="min-w-0">
-                    <label htmlFor="skills-claude-toggle" className="block text-[13px] font-medium">
+                    <label htmlFor="skills-claude-toggle" className="block text-[0.8125rem] font-medium text-foreground">
                       {t("skills:market.claudeDirLabel")}
                     </label>
-                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{t("skills:market.claudeDirDescription")}</p>
+                    <p className="mt-0.5 text-xs leading-[1.5] text-muted-foreground">{t("skills:market.claudeDirDescription")}</p>
                   </div>
                   <Switch id="skills-claude-toggle" checked={claudeEnabled} disabled={saving} onCheckedChange={onToggleClaude} />
                 </div>
                 {activeProject && (
                   <div className="flex items-center justify-between gap-4 p-3.5">
                     <div className="min-w-0">
-                      <label htmlFor="skills-trust-toggle" className="flex items-center gap-1.5 text-[13px] font-medium">
-                        <ShieldCheck className="size-icon text-primary" aria-hidden="true" />
+                      <label htmlFor="skills-trust-toggle" className="flex items-center gap-1.5 text-[0.8125rem] font-medium text-foreground">
+                        <ShieldCheck className="size-icon text-foreground" aria-hidden="true" />
                         <span>{t("skills:market.projectTrustLabel")}</span>
                         <span className="truncate font-normal text-muted-foreground">({projectDisplayName(activeProject)})</span>
                       </label>
-                      <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{t("skills:market.projectTrustDescription")}</p>
+                      <p className="mt-0.5 text-xs leading-[1.5] text-muted-foreground">{t("skills:market.projectTrustDescription")}</p>
                     </div>
                     <Switch
                       id="skills-trust-toggle"
@@ -113,15 +113,15 @@ export function SkillDirectoriesDialog({
 
             {catalog.directories.length > 0 && (
               <section className="space-y-2">
-                <h3 className="px-1 text-xs font-medium text-muted-foreground">{t("skills:market.directories")}</h3>
-                <ul className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/75 bg-background">
+                <h3 className="px-0.5 text-[0.6875rem] font-medium tracking-[0.04em] text-muted-foreground uppercase">{t("skills:market.directories")}</h3>
+                <ul className="divide-y divide-separator overflow-hidden rounded-xl border border-border bg-card">
                   {catalog.directories.map(item => (
-                    <li key={item.id} className="flex items-start gap-2.5 px-3.5 py-3 text-xs leading-5">
+                    <li key={item.id} className="flex items-start gap-2.5 px-3.5 py-3 text-xs leading-[1.5]">
                       <FolderOpen className="mt-0.5 size-icon shrink-0 text-muted-foreground" aria-hidden="true" />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="font-medium text-foreground">{directoryLabel(item)}</span>
-                          <Badge variant="secondary" className="text-[10px] font-normal">
+                          <Badge variant="secondary" className="text-[0.6875rem] font-normal">
                             {t(!item.enabled
                               ? "skills:market.directoryDisabled"
                               : !item.trusted
@@ -131,17 +131,20 @@ export function SkillDirectoriesDialog({
                                   : "skills:market.directoryActive")}
                           </Badge>
                         </div>
-                        <p className="mt-0.5 font-mono text-[11px] leading-4 break-all text-muted-foreground">{item.path}</p>
+                        <p className="mt-0.5 font-mono text-[0.6875rem] leading-[1.4] break-all text-muted-foreground">{item.path}</p>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon-xs"
-                        className="shrink-0 text-muted-foreground"
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
                         aria-label={t("skills:market.copyPath")}
                         title={t("skills:market.copyPath")}
                         onClick={() => void copyPath(item.id, item.path)}
                       >
-                        {copiedId === item.id ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                        <span className="icon-swap-stack" aria-hidden="true">
+                          <span className="icon-swap-layer" data-visible={copiedId !== item.id}><Copy /></span>
+                          <span className="icon-swap-layer text-status-success" data-visible={copiedId === item.id}><Check /></span>
+                        </span>
                       </Button>
                     </li>
                   ))}
@@ -151,15 +154,15 @@ export function SkillDirectoriesDialog({
 
             {catalog.diagnostics.length > 0 && (
               <section className="space-y-2">
-                <h3 className="flex items-center gap-1.5 px-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                <h3 className="flex items-center gap-1.5 px-0.5 text-[0.6875rem] font-medium tracking-[0.04em] text-status-warning uppercase">
                   <CircleAlert className="size-3.5" aria-hidden="true" />
                   <span>{t("skills:market.diagnostics", { count: catalog.diagnostics.length })}</span>
                 </h3>
-                <ul className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/75 bg-background text-xs">
+                <ul className="divide-y divide-separator overflow-hidden rounded-xl border border-border bg-card text-xs">
                   {catalog.diagnostics.map((item, index) => (
                     <li key={`${item.path}-${index}`} className="px-3.5 py-2.5 break-all">
-                      <code className="font-mono text-[11px] font-medium text-foreground">{item.code}</code>
-                      <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">{item.path}</p>
+                      <code className="font-mono text-[0.6875rem] font-medium text-foreground">{item.code}</code>
+                      <p className="mt-0.5 font-mono text-[0.6875rem] text-muted-foreground">{item.path}</p>
                     </li>
                   ))}
                 </ul>
@@ -168,8 +171,8 @@ export function SkillDirectoriesDialog({
           </div>
         </ScrollArea>
 
-        <div className="border-t border-border/60 bg-muted/20 px-5 py-3">
-          <p className="text-[11px] leading-4 text-muted-foreground">{t("skills:market.newSession")}</p>
+        <div className="border-t border-separator bg-surface-sunken/70 px-5 py-3 dark:bg-card/60">
+          <p className="text-[0.6875rem] leading-[1.4] text-muted-foreground">{t("skills:market.newSession")}</p>
         </div>
       </DialogContent>
     </Dialog>

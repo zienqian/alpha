@@ -22,7 +22,7 @@ export function ChainOfThought({ label, description, running = false, status, ic
   const [open, setOpen] = useState<boolean>();
   const line = <TraceLine status={status ?? (running ? "running" : undefined)}>
     {indicator ?? <TraceIcon><Icon /></TraceIcon>}
-    <TraceTitle className="shrink-0">{label}</TraceTitle>
+    <TraceTitle className="shrink-0 font-medium">{label}</TraceTitle>
     {description && <TraceDescription className="min-w-0 shrink truncate" title={description}>{description}</TraceDescription>}
   </TraceLine>;
   return <Trace>
@@ -64,8 +64,8 @@ export function ReplyProgress({ hasContent = false, phase, connected = true, act
   ].filter(Boolean).join(" · ") : undefined;
   return <div className="min-w-0">
     <ChainOfThought label={label} running={connected} indicator={<MorphingSpinner active={connected} />} />
-    {detail && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground" aria-live="off">{detail}</p>}
-    {active && activity && quietSeconds >= 30 && <p className="mt-1 text-xs leading-5 text-muted-foreground">
+    {detail && <p className="mt-1 break-words text-xs leading-[1.45] text-muted-foreground tabular-nums" aria-live="off">{detail}</p>}
+    {active && activity && quietSeconds >= 30 && <p className="mt-1 text-xs leading-[1.45] text-muted-foreground tabular-nums">
       {t("sessions:modelQuiet", { seconds: quietSeconds })}
     </p>}
   </div>;

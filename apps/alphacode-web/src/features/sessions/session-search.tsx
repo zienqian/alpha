@@ -4,7 +4,7 @@ import { Command } from "cmdk";
 import { Dialog } from "radix-ui";
 import { AnimatePresence } from "motion/react";
 import * as m from "motion/react-m";
-import { exitTransition, surfaceMotion, surfaceTransition } from "@/lib/motion";
+import { commandSurfaceMotion, exitTransition, surfaceTransition } from "@/lib/motion";
 import { FolderOpen, MessageCircle, Search, SquarePen, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSessionSearch } from "@/features/sessions/application/use-session-search";
@@ -18,7 +18,7 @@ export function Highlight({ text, query }: { text: string; query: string }) {
   let offset = 0;
   for (const match of text.matchAll(pattern)) {
     parts.push(text.slice(offset, match.index));
-    parts.push(<mark key={match.index} className="rounded-xs bg-foreground/15 px-0.5 font-medium text-foreground">{match[0]}</mark>);
+    parts.push(<mark key={match.index} className="rounded-[3px] bg-foreground/12 px-0.5 font-medium text-foreground">{match[0]}</mark>);
     offset = match.index + match[0].length;
   }
   parts.push(text.slice(offset));
@@ -52,8 +52,8 @@ export function SessionSearch({ open, onOpenChange, folders, onSelectSession, on
     <AnimatePresence>
     {open && <Dialog.Portal forceMount>
       <Dialog.Overlay asChild forceMount>
-        <m.div className="fixed inset-0 z-50 bg-black/20 dark:bg-black/45"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: exitTransition }} transition={surfaceTransition} />
+        <m.div className="fixed inset-0 z-50 bg-black/28 backdrop-blur-[2px] dark:bg-black/55"
+          initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: exitTransition }} transition={surfaceTransition} />
       </Dialog.Overlay>
       <Dialog.Content asChild forceMount aria-describedby="session-search-description"
         onCloseAutoFocus={(event) => {
@@ -64,8 +64,8 @@ export function SessionSearch({ open, onOpenChange, folders, onSelectSession, on
           if (action) action();
           else closeFocusRef.current();
         }}
-        className="fixed top-[max(1rem,10dvh)] left-1/2 z-50 w-[calc(100%-2rem)] max-w-[760px] -translate-x-1/2 outline-none sm:top-[20dvh]">
-        <m.div {...surfaceMotion}>
+        className="fixed top-[max(1rem,10dvh)] left-1/2 z-50 w-[calc(100%-2rem)] max-w-[720px] -translate-x-1/2 outline-none sm:top-[18dvh]">
+        <m.div {...commandSurfaceMotion}>
         <Dialog.Title className="sr-only">{t("sessions:search")}</Dialog.Title>
         <Dialog.Description id="session-search-description" className="sr-only">{t("sessions:searchDescription")}</Dialog.Description>
         <SearchContent folders={folders} onSelect={(id) => { onOpenChange(false); onSelectSession(id); }}

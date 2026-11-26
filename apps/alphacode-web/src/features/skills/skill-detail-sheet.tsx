@@ -102,16 +102,16 @@ export function SkillDetailSheet({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="right"
-          className="w-full max-w-full gap-0 border-l border-border/80 bg-background p-0 sm:max-w-[520px]"
+          className="w-full max-w-full gap-0 bg-background p-0 sm:max-w-[520px]"
         >
           {skill && (
             <div className="flex h-full min-h-0 flex-col">
-              <SheetHeader className="border-b border-border/60 px-5 py-4 pr-12">
+              <SheetHeader className="border-b border-separator px-5 py-4 pe-12">
                 <div className="flex items-start gap-3">
                   <SkillIcon name={skill.name} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <SheetTitle className="truncate text-[15px] leading-6 font-semibold">{skill.name}</SheetTitle>
+                      <SheetTitle className="truncate text-[0.9375rem] leading-[1.35] font-semibold tracking-[-0.015em]">{skill.name}</SheetTitle>
                       {canToggle && (
                         <Switch
                           size="sm"
@@ -122,17 +122,17 @@ export function SkillDetailSheet({
                         />
                       )}
                     </div>
-                    <SheetDescription className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
-                      <Badge variant="secondary" className="text-[11px] font-normal">
+                    <SheetDescription className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+                      <Badge variant="secondary" className="text-[0.6875rem] font-normal">
                         {t(`skills:market.scope.${skill.source}`)} · {t(`skills:market.kind.${skill.kind}`)}
                       </Badge>
                       <Badge
                         variant={skill.status === "available" ? "outline" : "secondary"}
                         className={cn(
-                          "text-[11px] font-normal",
-                          skill.status === "available" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-                          skill.status === "untrusted" && "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-                          skill.status === "reserved" && "bg-destructive/15 text-destructive",
+                          "text-[0.6875rem] font-medium",
+                          skill.status === "available" && "border-status-success-border bg-status-success-bg text-status-success",
+                          skill.status === "untrusted" && "border-status-warning-border bg-status-warning-bg text-status-warning",
+                          skill.status === "reserved" && "border-status-danger-border bg-status-danger-bg text-status-danger",
                         )}
                       >
                         {t(`skills:market.status.${skill.status}`)}
@@ -145,12 +145,12 @@ export function SkillDetailSheet({
               <ScrollArea className="min-h-0 flex-1">
                 <div className="space-y-5 px-5 py-5">
                   {skill.status !== "available" && (
-                    <div className="flex flex-col gap-2.5 rounded-xl border border-border/75 bg-muted/40 p-3.5 text-xs leading-5">
+                    <div className="flex flex-col gap-2.5 rounded-xl border border-status-warning-border bg-status-warning-bg p-3.5 text-xs leading-[1.5]">
                       <div className="flex items-start gap-2">
                         {skill.status === "shadowed"
                           ? <Layers className="mt-0.5 size-icon shrink-0 text-muted-foreground" aria-hidden="true" />
-                          : <CircleAlert className="mt-0.5 size-icon shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />}
-                        <p className="text-muted-foreground">{t(`skills:market.reason.${skill.status}`)}</p>
+                          : <CircleAlert className="mt-0.5 size-icon shrink-0 text-status-warning" aria-hidden="true" />}
+                        <p className="text-foreground/90">{t(`skills:market.reason.${skill.status}`)}</p>
                       </div>
                       {skill.status === "untrusted" && projectId && (
                         <div>
@@ -170,22 +170,25 @@ export function SkillDetailSheet({
                     </div>
                   )}
 
-                  <p className="text-[13px] leading-6 break-words text-foreground">{skill.description}</p>
+                  <p className="text-[0.875rem] leading-[1.55] break-words text-foreground">{skill.description}</p>
 
-                  <div className="divide-y divide-border/60 rounded-xl border border-border/75 bg-card text-xs dark:bg-card/70">
+                  <div className="divide-y divide-separator rounded-xl border border-border bg-card text-xs">
                     {skill.userInvocable && (
                       <div className="flex items-center justify-between gap-2 px-3.5 py-2.5">
                         <div className="min-w-0">
-                          <span className="block text-[11px] text-muted-foreground">{t("skills:market.command")}</span>
+                          <span className="block text-[0.6875rem] text-muted-foreground">{t("skills:market.command")}</span>
                           <code className="mt-0.5 block truncate font-mono text-xs text-foreground">{commandText}</code>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 shrink-0 text-muted-foreground"
+                          className="h-7 shrink-0 text-muted-foreground hover:text-foreground"
                           onClick={() => void copyText("command", commandText)}
                         >
-                          {copiedField === "command" ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                          <span className="icon-swap-stack" aria-hidden="true">
+                            <span className="icon-swap-layer" data-visible={copiedField !== "command"}><Copy /></span>
+                            <span className="icon-swap-layer text-status-success" data-visible={copiedField === "command"}><Check /></span>
+                          </span>
                           {t(copiedField === "command" ? "common:copied" : "skills:market.copyCommand")}
                         </Button>
                       </div>
@@ -193,7 +196,7 @@ export function SkillDetailSheet({
 
                     <div className="flex items-center justify-between gap-2 px-3.5 py-2.5">
                       <div className="min-w-0">
-                        <span className="block text-[11px] text-muted-foreground">{t("skills:market.invocation")}</span>
+                        <span className="block text-[0.6875rem] text-muted-foreground">{t("skills:market.invocation")}</span>
                         <span className="mt-0.5 block text-foreground">
                           {!skill.userInvocable
                             ? t("skills:modelOnly")
@@ -207,39 +210,42 @@ export function SkillDetailSheet({
 
                     <div className="flex items-start justify-between gap-2 px-3.5 py-2.5">
                       <div className="min-w-0">
-                        <span className="block text-[11px] text-muted-foreground">{t("skills:market.location")}</span>
-                        <span className="mt-0.5 block font-mono text-[11px] leading-4 break-all text-muted-foreground">{skill.filePath}</span>
+                        <span className="block text-[0.6875rem] text-muted-foreground">{t("skills:market.location")}</span>
+                        <span className="mt-0.5 block font-mono text-[0.6875rem] leading-[1.4] break-all text-muted-foreground">{skill.filePath}</span>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon-xs"
-                        className="mt-0.5 shrink-0 text-muted-foreground"
+                        className="mt-0.5 shrink-0 text-muted-foreground hover:text-foreground"
                         aria-label={t("skills:market.copyPath")}
                         title={t("skills:market.copyPath")}
                         onClick={() => void copyText("path", skill.filePath)}
                       >
-                        {copiedField === "path" ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                        <span className="icon-swap-stack" aria-hidden="true">
+                          <span className="icon-swap-layer" data-visible={copiedField !== "path"}><Copy /></span>
+                          <span className="icon-swap-layer text-status-success" data-visible={copiedField === "path"}><Check /></span>
+                        </span>
                       </Button>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <div className="flex items-center gap-1.5 text-[0.6875rem] font-medium tracking-[0.04em] text-muted-foreground uppercase">
                       <FileText className="size-3.5" aria-hidden="true" />
                       <span>{t("skills:market.instructions")}</span>
                     </div>
-                    <div className="rounded-xl border border-border/75 bg-muted/25 p-4 text-xs leading-6">
+                    <div className="rounded-xl bg-muted p-4 text-xs leading-[1.6] ring-1 ring-foreground/5 dark:ring-foreground/10">
                       {contentQuery.isPending ? (
                         <div className="space-y-2" role="status" aria-label={t("skills:market.instructionsLoading")}>
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-5/6" />
-                          <Skeleton className="h-4 w-2/3" />
+                          <Skeleton className="h-4 w-3/4 rounded-md" />
+                          <Skeleton className="h-4 w-full rounded-md" />
+                          <Skeleton className="h-4 w-5/6 rounded-md" />
+                          <Skeleton className="h-4 w-2/3 rounded-md" />
                         </div>
                       ) : contentQuery.isError ? (
                         <p className="text-muted-foreground">{t("skills:market.instructionsError")}</p>
                       ) : contentQuery.data?.content.trim() ? (
-                        <div className="prose prose-xs max-w-none break-words text-foreground dark:prose-invert [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[11px] [&_h1]:mt-0 [&_h1]:mb-2 [&_h1]:text-sm [&_h1]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1.5 [&_h2]:text-[13px] [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_h3]:text-xs [&_h3]:font-semibold [&_li]:my-0.5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:my-1.5 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/80 [&_pre]:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-4">
+                        <div className="prose prose-xs max-w-none break-words text-foreground dark:prose-invert [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.6875rem] [&_h1]:mt-0 [&_h1]:mb-2 [&_h1]:text-sm [&_h1]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1.5 [&_h2]:text-[0.8125rem] [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_h3]:text-xs [&_h3]:font-semibold [&_li]:my-0.5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:ps-4 [&_p]:my-1.5 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:ps-4">
                           <Markdown remarkPlugins={[remarkGfm]}>{contentQuery.data.content}</Markdown>
                         </div>
                       ) : (
@@ -250,14 +256,14 @@ export function SkillDetailSheet({
 
                   {contentQuery.data && contentQuery.data.files.length > 0 && (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <div className="flex items-center gap-1.5 text-[0.6875rem] font-medium tracking-[0.04em] text-muted-foreground uppercase">
                         <FolderOpen className="size-3.5" aria-hidden="true" />
                         <span>{t("skills:market.supportingFiles")}</span>
-                        <span className="text-[11px] opacity-75">({contentQuery.data.files.length})</span>
+                        <span className="tabular-nums opacity-75">({contentQuery.data.files.length})</span>
                       </div>
-                      <ul className="divide-y divide-border/50 rounded-xl border border-border/75 bg-card text-xs dark:bg-card/70">
+                      <ul className="divide-y divide-separator rounded-xl border border-border bg-card text-xs">
                         {contentQuery.data.files.map(file => (
-                          <li key={file} className="truncate px-3.5 py-2 font-mono text-[11px] text-muted-foreground" title={file}>
+                          <li key={file} className="truncate px-3.5 py-2 font-mono text-[0.6875rem] text-muted-foreground" title={file}>
                             {file}
                           </li>
                         ))}
@@ -266,17 +272,17 @@ export function SkillDetailSheet({
                   )}
 
                   {uninstallError && (
-                    <p role="alert" className="text-xs leading-5 text-destructive">{uninstallError}</p>
+                    <p role="alert" className="text-xs leading-[1.5] text-status-danger">{uninstallError}</p>
                   )}
                 </div>
               </ScrollArea>
 
-              <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-muted/20 px-5 py-3">
-                <p className="min-w-0 text-[11px] leading-4 text-muted-foreground">{t("skills:market.newSession")}</p>
+              <div className="flex items-center justify-between gap-3 border-t border-separator bg-surface-sunken/70 px-5 py-3 dark:bg-card/60">
+                <p className="min-w-0 text-[0.6875rem] leading-[1.4] text-muted-foreground">{t("skills:market.newSession")}</p>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  className="shrink-0 text-status-danger hover:bg-status-danger-bg hover:text-status-danger"
                   disabled={uninstalling}
                   onClick={() => setConfirmOpen(true)}
                 >
@@ -290,10 +296,10 @@ export function SkillDetailSheet({
       </Sheet>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent size="sm" className="rounded-2xl bg-popover p-5 shadow-(--overlay-shadow)">
+        <AlertDialogContent size="sm" className="p-5">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base">{skill ? t("skills:market.uninstallTitle", { name: skill.name }) : ""}</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs leading-5">
+            <AlertDialogDescription className="text-xs leading-[1.5]">
               {t("skills:market.uninstallDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>

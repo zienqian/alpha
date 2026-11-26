@@ -3,6 +3,8 @@ import type { Translate } from "@/i18n/instance";
 import { presentNote, presentStatus, presentToolDescription, presentToolOutput, presentToolError } from "@/i18n/presentation";
 import { BookOpen, ChevronRight, FilePenLine, FilePlus2, FileText, FolderOpen, Search, Terminal, Wrench } from "lucide-react";
 import { ChainOfThought } from "@/components/ai-elements/chain-of-thought";
+import { Badge } from "@/components/ui/badge";
+import { CodeBlock, CodeBlockContent } from "@/components/ui/code-block";
 import { MorphingSpinner } from "@/components/ui/morphing-spinner";
 import { TraceDescription, TraceIcon, TraceLine, TraceTitle } from "@/components/ui/trace";
 import type { SessionMessage } from "@/features/sessions/types";
@@ -42,13 +44,14 @@ export function ToolActivity({ messages, active = false }: { messages: SessionMe
   return (
     <ChainOfThought label={t("tools:steps", { count: messages.length })} description={activityStatus(t, messages)} running={running}
       status={running ? "running" : failed ? "error" : undefined} indicator={executing ? <MorphingSpinner /> : undefined}>
-      <ul aria-label={t("tools:records")} className="space-y-0.5">
+      <ul aria-label={t("tools:records")} className="space-y-1">
         {messages.map((message) => <li key={message.id}><ToolMessage message={message} active={active} /></li>)}
       </ul>
     </ChainOfThought>
   );
 }
 
+// https://ui.shadcn.com/docs/ai-elements/radix/tool — Trace line + CodeBlock output surfaces.
 export function ToolMessage({ message, active = false }: { message: SessionMessage; active?: boolean }) {
   const tool = message.tool;
   const { t } = useTranslation();
@@ -56,22 +59,40 @@ export function ToolMessage({ message, active = false }: { message: SessionMessa
   const failed = tool?.status === "failed" || tool?.status === "outcome_unknown";
   const Icon = toolIcon(tool?.name);
   const label = (tool ? presentToolDescription(t, tool) : message.content) || t("tools:call");
+  const outputText = tool ? presentToolOutput(t, tool) || message.content : message.content;
+  const errorText = tool?.error ? presentToolError(t, tool) : undefined;
   return (
     <details className="group/tool min-w-0 text-xs">
-      <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-md px-1 py-1 text-muted-foreground outline-none hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 md:min-h-8 [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg py-0.5 text-muted-foreground transition-colors duration-100 ease-out outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/45 [&::-webkit-details-marker]:hidden">
         <TraceLine className="w-full" status={failed ? "error" : running ? "running" : tool?.status === "queued" ? "pending" : undefined}>
-          <TraceIcon className="h-4 w-6">{running ? <MorphingSpinner className="size-full" /> : <Icon />}</TraceIcon>
+          <TraceIcon className="h-4 w-5">{running ? <MorphingSpinner className="size-full" /> : <Icon />}</TraceIcon>
           <TraceTitle className="flex-1" title={label}>{label}</TraceTitle>
           {tool && <TraceDescription>{presentStatus(t, tool.status)}</TraceDescription>}
         </TraceLine>
-        <ChevronRight className="size-icon shrink-0 transition-transform group-open/tool:rotate-90" aria-hidden="true" />
+        <ChevronRight className="size-icon shrink-0 transition-transform duration-150 ease-out group-open/tool:rotate-90 rtl:-scale-x-100" aria-hidden="true" />
       </summary>
-      <div className="my-1 ml-2.5 min-w-0 space-y-2 border-l py-2 pr-1 pl-4">
-        {tool && <p className="text-muted-foreground">{tool.name}{tool.exitCode !== undefined ? ` · ${t("tools:exit", { code: tool.exitCode })}` : ""}</p>}
-        {(tool?.cwd || tool?.path) && <p className="break-all text-muted-foreground">{[tool.cwd, tool.path].filter(Boolean).join(" · ")}</p>}
-        {tool?.command && <pre className="overflow-x-auto rounded bg-muted p-2"><code>{tool.command}</code></pre>}
-        {(tool?.output || message.content) && <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words font-mono leading-5">{tool ? presentToolOutput(t, tool) || message.content : message.content}</pre>}
-        {tool?.error && <p className="whitespace-pre-wrap break-words text-muted-foreground">{presentToolError(t, tool)}</p>}
+      <div className="my-1.5 ms-2.5 min-w-0 space-y-2 border-s border-border py-1.5 pe-1 ps-4">
+        {tool && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="font-mono text-[0.6875rem] font-normal tabular-nums">{tool.name}{tool.exitCode !== undefined ? ` · ${t("tools:exit", { code: tool.exitCode })}` : ""}</Badge>
+            {(tool.cwd || tool.path) && <span className="min-w-0 font-mono text-[0.6875rem] break-all text-muted-foreground">{[tool.cwd, tool.path].filter(Boolean).join(" · ")}</span>}
+          </div>
+        )}
+        {tool?.command && (
+          <CodeBlock size="sm">
+            <CodeBlockContent wrap className="max-h-32">{tool.command}</CodeBlockContent>
+          </CodeBlock>
+        )}
+        {outputText && (
+          <CodeBlock size="sm" variant={failed ? "destructive" : "default"}>
+            <CodeBlockContent wrap className="max-h-64">{outputText}</CodeBlockContent>
+          </CodeBlock>
+        )}
+        {errorText && (
+          <CodeBlock size="sm" variant="destructive">
+            <CodeBlockContent wrap className="max-h-48">{errorText}</CodeBlockContent>
+          </CodeBlock>
+        )}
         {(tool?.truncated || tool?.outputIncomplete || Boolean(tool?.omittedLines)) && <p className="text-muted-foreground">{tool?.omittedLines ? t("tools:omitted", { count: tool.omittedLines }) : t("tools:incomplete")}</p>}
         {message.note && <p className="text-muted-foreground">{presentNote(t, message)}</p>}
       </div>

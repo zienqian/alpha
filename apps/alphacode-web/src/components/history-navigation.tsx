@@ -25,7 +25,7 @@ export function HistoryNavigation() {
   const canGoForward = window.navigation?.canGoForward ?? visited.index < visited.keys.length - 1;
 
   return <nav aria-label={t("common:historyNavigation")} className="flex shrink-0 items-center gap-0.5">
-    <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("common:goBack")} title={t("common:goBack")} disabled={!canGoBack} onClick={() => void navigate(-1)}><ArrowLeft aria-hidden="true" /></Button>
-    <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("common:goForward")} title={t("common:goForward")} disabled={!canGoForward} onClick={() => void navigate(1)}><ArrowRight aria-hidden="true" /></Button>
+    <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" aria-label={t("common:goBack")} title={t("common:goBack")} disabled={!canGoBack} onClick={() => void navigate(-1)}><ArrowLeft className="rtl:-scale-x-100" aria-hidden="true" /></Button>
+    <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" aria-label={t("common:goForward")} title={t("common:goForward")} disabled={!canGoForward} onClick={() => void navigate(1)}><ArrowRight className="rtl:-scale-x-100" aria-hidden="true" /></Button>
   </nav>;
 }
