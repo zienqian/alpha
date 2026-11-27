@@ -1,7 +1,8 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useRef, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Folder, Plus, Search, X, Blocks, SquarePen, RefreshCw, Settings } from "lucide-react";
+import { Folder, Plus, Search, X, Blocks, SquarePen, RefreshCw, Settings, LoaderCircle } from "lucide-react";
+import { useSessionCompletions } from "./use-session-completions";
 import { sessionErrorMessage } from "@/features/sessions/api";
 import { SessionSearch } from "@/features/sessions/session-search";
 import { SessionNavItem } from "@/features/sessions/session-nav-item";
@@ -41,6 +42,7 @@ interface SessionSidebarProps {
 
 export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onDeleteProject, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive, onAddToCanvas }: SessionSidebarProps) {
   const { t } = useTranslation();
+  const { completed, markRead } = useSessionCompletions(folders);
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set());
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
@@ -202,11 +204,18 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onD
                       <CollapsibleContent>
                         <SidebarMenuSub className="mx-0 mt-0.5 translate-x-0 gap-0.5 border-0 p-0">
                           {folder.sessions.map((session) => (
-                            <SidebarMenuSubItem key={session.id}>
+                            <SidebarMenuSubItem key={session.id} className="relative">
                               <SessionNavItem session={session} active={!skillsActive && !settingsActive && selectedSessionId === session.id} disabled={creatingIds[session.id]}
-                                onSelect={() => { onSelectSession(session.id); setOpenMobile(false); }}
-                                onAddToCanvas={onAddToCanvas ? () => { onAddToCanvas(session.id); setOpenMobile(false); } : undefined}
+                                onSelect={() => { markRead(session.id); onSelectSession(session.id); setOpenMobile(false); }}
+                                onAddToCanvas={onAddToCanvas ? () => { markRead(session.id); onAddToCanvas(session.id); setOpenMobile(false); } : undefined}
                                 onRename={onRenameSession} onDelete={onDeleteSession} />
+                              {(session.status === "running" || completed.has(session.id)) && <span role="img"
+                                aria-label={t(session.status === "running" ? "sessions:running" : "sessions:taskCompleted")}
+                                title={t(session.status === "running" ? "sessions:running" : "sessions:taskCompleted")}
+                                className="pointer-events-none absolute start-2 top-1/2 flex size-4 -translate-y-1/2 items-center justify-center">
+                                {session.status === "running" ? <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin text-(--sidebar-muted) motion-reduce:animate-none" />
+                                  : <span aria-hidden="true" className="size-1.5 rounded-full bg-status-success" />}
+                              </span>}
                             </SidebarMenuSubItem>
                           ))}
                           {folder.sessions.length === 0 && <SidebarMenuSubItem className="py-1.5 pe-3 ps-8 text-xs text-(--sidebar-muted)/80">{t("sessions:none")}</SidebarMenuSubItem>}

@@ -43,6 +43,7 @@
   "retrySend": "Retry sending",
   "stopping": "Stopping…",
   "running": "Running…",
+  "taskCompleted": "Task finished. Click to view.",
   "sendHint": "Enter to send · Shift+Enter for a new line",
   "unavailable": "Sending is currently unavailable",
   "skip": "Skip to session",

@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/trace";
 
 // https://ui.shadcn.com/docs/ai-elements/radix/chain-of-thought
-// Follow the live activity until the user explicitly chooses an open state.
 export function ChainOfThought({ label, description, running = false, status, icon: Icon = Workflow, indicator, children }: {
   label: string;
   description?: string;
@@ -19,14 +18,14 @@ export function ChainOfThought({ label, description, running = false, status, ic
   indicator?: ReactNode;
   children?: ReactNode;
 }) {
-  const [open, setOpen] = useState<boolean>();
+  const [open, setOpen] = useState(false);
   const line = <TraceLine status={status ?? (running ? "running" : undefined)}>
     {indicator ?? <TraceIcon><Icon /></TraceIcon>}
     <TraceTitle className="shrink-0 font-medium">{label}</TraceTitle>
     {description && <TraceDescription className="min-w-0 shrink truncate" title={description}>{description}</TraceDescription>}
   </TraceLine>;
   return <Trace>
-    {children ? <TraceCollapsible open={open ?? running} onOpenChange={setOpen}>
+    {children ? <TraceCollapsible open={open} onOpenChange={setOpen}>
       <TraceCollapsibleTrigger>{line}</TraceCollapsibleTrigger>
       <TraceCollapsibleContent><Trace>{children}</Trace></TraceCollapsibleContent>
     </TraceCollapsible> : <div role="status" aria-live="polite" className="flex min-h-8 items-center">{line}</div>}

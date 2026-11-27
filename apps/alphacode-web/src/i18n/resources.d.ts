@@ -205,6 +205,7 @@ export default interface Resources {
     "stoppingShort": "Stopping",
     "submitting": "Submitting…",
     "summary": "Session summary",
+    "taskCompleted": "Task finished. Click to view.",
     "thinking": "Thinking",
     "titleLabel": "Session title",
     "type": "Session type",

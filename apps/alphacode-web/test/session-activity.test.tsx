@@ -150,28 +150,35 @@ describe("reply activity", () => {
     expect(status.closest("article")).toBeNull();
   });
 
-  it("opens live tool steps and collapses them when the reply starts without hiding the output controls", () => {
+  it("defaults live tool steps to collapsed and preserves manual expansion when the reply starts", () => {
     const view = render(<SessionContent session={session(user, tool("running"))} busy phase="running" />, { wrapper: TooltipProvider });
     const trigger = screen.getByRole("button", { name: /执行过程 · 1 步/ });
-    expect(trigger.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByText("构建项目")).toBeTruthy();
-    expect(screen.queryByText("正在思考")).toBeNull();
-
-    view.rerender(<SessionContent session={session(user, tool("succeeded"), { id: "reply", role: "assistant", content: "构建通过", streaming: true })} busy phase="thinking" />);
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.getByRole("status").textContent).toBe("正在回复");
+    expect(screen.queryByText("构建项目")).toBeNull();
+    expect(screen.queryByText("正在思考")).toBeNull();
+    view.rerender(<SessionContent session={session(user, tool("succeeded"))} busy phase="thinking" />);
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    view.rerender(<SessionContent session={session(user, tool("running"))} busy phase="running" />);
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+
     fireEvent.click(trigger);
     fireEvent.click(screen.getByText("构建项目"));
     expect(screen.getByText("bun run build")).toBeTruthy();
     expect(screen.getByText("构建输出").closest("details")?.open).toBe(true);
+    view.rerender(<SessionContent session={session(user, tool("succeeded"), { id: "reply", role: "assistant", content: "构建通过", streaming: true })} busy phase="thinking" />);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText("构建输出").closest("details")?.open).toBe(true);
+    expect(screen.getByRole("status").textContent).toBe("正在回复");
   });
 
   it("respects manual collapse across live snapshots and distinguishes approval from an executing tool", () => {
     const view = render(<SessionContent session={session(user, tool("awaiting_approval"))} busy phase="running" />, { wrapper: TooltipProvider });
     const trigger = screen.getByRole("button", { name: /执行过程 · 1 步/ });
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
     expect(trigger.textContent).toContain("1 项待审批");
-    expect(screen.getByText("等待审批")).toBeTruthy();
     expect(screen.queryByText("正在思考")).toBeNull();
+    fireEvent.click(trigger);
+    expect(screen.getByText("等待审批")).toBeTruthy();
     fireEvent.click(trigger);
     view.rerender(<SessionContent session={session(user, tool("running"))} busy phase="running" />);
     expect(trigger.getAttribute("aria-expanded")).toBe("false");

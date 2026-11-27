@@ -42,7 +42,7 @@ export const SessionContent = memo(function SessionContent({ session, busy = fal
         <MessageScrollerViewport tabIndex={0} aria-label={t("sessions:history")} className="scroll-pt-4">
           <MessageScrollerContent role="list" aria-label={t("sessions:messages")} className="mx-auto w-full max-w-[744px] gap-6 px-5 py-7 sm:px-8">
             {items.map((item) => (
-              <MessageScrollerItem key={item.id} messageId={item.id} scrollAnchor={item.type === "message" && item.message.role === "user"} role="listitem">
+              <MessageScrollerItem key={item.id} messageId={item.id} role="listitem">
                 <article aria-label={item.type === "tools" ? t("tools:activity") : item.message.role === "user" ? t("sessions:userMessage") : t("sessions:assistantMessage")}>
                   {item.type === "tools" ? <ToolActivity messages={item.messages} active={busy && connected && phase !== "stopping" && item === last} /> : <>
                     <LocalFileLinks sessionId={session.id} replyId={item.message.role === "assistant" ? item.message.sourceId ?? item.id : undefined}><ChatMessage role={item.message.role} content={item.message.localResult ? presentLocalResult(t, item.message.localResult) : item.message.content} streaming={busy && item.message.streaming}
