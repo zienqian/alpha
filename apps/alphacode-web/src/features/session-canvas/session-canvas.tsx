@@ -76,7 +76,6 @@ export default function SessionCanvas({ workspace }: { workspace: SessionWorkspa
     return initial;
   });
   const [revision, setRevision] = useState(0);
-  const [saveError, setSaveError] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const cancelDrag = useRef<(() => void) | undefined>(undefined);
   const synchronizing = useRef(false);
@@ -90,7 +89,7 @@ export default function SessionCanvas({ workspace }: { workspace: SessionWorkspa
       // or storage write. A single final action commits the proportions.
       if (action.isAdjusting()) return;
       setRevision(value => value + 1);
-      setSaveError(!saveCanvas(model));
+      saveCanvas(model);
       if (synchronizing.current) return;
       const selected = focusedTab(model);
       const current = latest.current.workspace;
@@ -241,7 +240,6 @@ export default function SessionCanvas({ workspace }: { workspace: SessionWorkspa
   const minimum = minimumSize(model.getMaximizedTabset() ?? model.getRootRow());
 
   return <div id="session-content" tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">
-    {saveError && <p role="status" className="shrink-0 px-4 py-2 text-xs text-muted-foreground">{t("sessions:canvas.saveFailed")}</p>}
     <div ref={container} className="session-canvas relative flex min-h-0 min-w-0 flex-1 flex-col overflow-auto"
       onPointerDownCapture={tabPointerDown} onDragStartCapture={event => {
         if ((event.target as HTMLElement).closest(".flexlayout__tabset_tabbar_outer")) event.preventDefault();

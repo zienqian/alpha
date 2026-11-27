@@ -180,7 +180,6 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onD
             {loading && <p role="status" className="px-2.5 py-5 text-xs text-muted-foreground">{t("sessions:loadingList")}</p>}
             {error && <div role="alert" className="space-y-2.5 rounded-xl border border-status-danger-border bg-status-danger-bg p-3 text-xs leading-[1.45]">
               <p className="text-status-danger">{sessionErrorMessage(t, error, "list")}</p>
-              {folders.length > 0 && <p className="text-muted-foreground">{t("sessions:cachedList")}</p>}
               <Button variant="outline" size="sm" disabled={refreshing} onClick={onRefresh}>{t("sessions:retryList")}</Button>
             </div>}
             <nav aria-label={t("workspace:folders")}>

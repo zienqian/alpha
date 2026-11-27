@@ -9,7 +9,6 @@ function readPreference() {
 }
 function usePreferences() {
   const [sessionCanvas, setCanvas] = useState(readPreference);
-  const [storageError, setStorageError] = useState(false);
   const [addition, setAddition] = useState<{ sessionId: string }>();
   const sessionDragHandler = useRef<((event: PointerEvent<HTMLElement>, id: string) => void) | undefined>(undefined);
   function setSessionCanvas(enabled: boolean) {
@@ -17,10 +16,11 @@ function usePreferences() {
     setAddition(undefined);
     try {
       localStorage.setItem(experimentsStorageKey, JSON.stringify({ version: 1, sessionCanvas: enabled }));
-      setStorageError(false);
-    } catch { setStorageError(true); }
+    } catch {
+      // Keep the experimental toggle active in memory when storage is unavailable.
+    }
   }
-  return { sessionCanvas, setSessionCanvas, storageError, addition, setAddition, sessionDragHandler };
+  return { sessionCanvas, setSessionCanvas, addition, setAddition, sessionDragHandler };
 }
 const Context = createContext<ReturnType<typeof usePreferences> | null>(null);
 export function ExperimentalFeaturesProvider({ children }: PropsWithChildren) {

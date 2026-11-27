@@ -1,9 +1,8 @@
-import { useId, useState } from "react";
 import { Check, Hand, LoaderCircle, ShieldAlert, ShieldCheck } from "lucide-react";
 import { DropdownMenu as MenuPrimitive } from "radix-ui";
 import { InputGroupButton } from "@/components/ui/input-group";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenu, DropdownMenuContent, DropdownMenuLabel,
   DropdownMenuRadioGroup, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { PermissionMode } from "@/features/sessions/api";
@@ -24,14 +23,12 @@ export function SessionPermissions({ mode, onChange, disabled, saving, busy }: {
   busy: boolean;
 }) {
   const { t } = useTranslation();
-  const [showHelp, setShowHelp] = useState(false);
-  const helpId = useId();
   const label = mode ? t(`settings:permissions.${mode}.short`) : t("settings:permissions.label");
   const Icon = options.find(option => option.value === mode)?.Icon ?? ShieldCheck;
   const title = saving ? t("settings:permissions.saving") : busy ? t("settings:permissions.busy")
     : disabled ? t("settings:permissions.unavailable") : t("settings:permissions.change", { mode: label });
 
-  return <DropdownMenu onOpenChange={open => { if (!open) setShowHelp(false); }}>
+  return <DropdownMenu>
     <DropdownMenuTrigger asChild disabled={disabled}>
       <InputGroupButton size="sm" disabled={disabled} aria-label={title} title={title} aria-busy={saving}
         className={cn(
@@ -44,15 +41,7 @@ export function SessionPermissions({ mode, onChange, disabled, saving, busy }: {
     </DropdownMenuTrigger>
     <DropdownMenuContent side="top" align="start" sideOffset={8} collisionPadding={12}
       className="w-88 max-w-[calc(100vw-24px)] p-1.5" aria-label={t("settings:permissions.label")}>
-      <div className="flex items-center justify-between gap-2 px-1.5 pb-1">
-        <DropdownMenuLabel className="px-1 font-medium">{t("settings:permissions.title")}</DropdownMenuLabel>
-        <DropdownMenuItem asChild className="min-h-7 shrink-0 px-1.5 text-xs text-muted-foreground underline underline-offset-4"
-          onSelect={event => { event.preventDefault(); setShowHelp(value => !value); }}>
-          <button type="button" aria-expanded={showHelp} aria-controls={helpId}>
-            {t(showHelp ? "settings:permissions.less" : "settings:permissions.more")}
-          </button>
-        </DropdownMenuItem>
-      </div>
+      <DropdownMenuLabel className="px-2.5 pb-1 font-medium">{t("settings:permissions.title")}</DropdownMenuLabel>
       <DropdownMenuRadioGroup value={mode} onValueChange={value => {
         if (!disabled && (value === "ask" || value === "auto" || value === "full")) onChange(value);
       }}>
@@ -72,7 +61,6 @@ export function SessionPermissions({ mode, onChange, disabled, saving, busy }: {
           </MenuPrimitive.ItemIndicator>
         </MenuPrimitive.RadioItem>)}
       </DropdownMenuRadioGroup>
-      {showHelp && <p id={helpId} className="mt-1 border-t border-separator px-2.5 pt-2.5 pb-1 text-xs leading-[1.5] text-muted-foreground">{t("settings:permissions.help")}</p>}
     </DropdownMenuContent>
   </DropdownMenu>;
 }

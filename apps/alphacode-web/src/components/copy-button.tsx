@@ -7,14 +7,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 export function CopyButton({ value, label }: { value: string; label?: string }) {
   const { t } = useTranslation();
   label ??= t("common:copyMessage");
-  const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
+  const [copied, setCopied] = useState(false);
   useEffect(() => {
-    if (status === "idle") return;
-    const timer = window.setTimeout(() => setStatus("idle"), 2000);
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 2000);
     return () => window.clearTimeout(timer);
-  }, [status]);
-  const copied = status === "copied";
-  const feedback = copied ? t("common:copied") : status === "error" ? t("common:copyFailed") : "";
+  }, [copied]);
+  const feedback = copied ? t("common:copied") : "";
   return (
     <>
       <Tooltip>
@@ -24,9 +23,9 @@ export function CopyButton({ value, label }: { value: string; label?: string }) 
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(value);
-                setStatus("copied");
+                setCopied(true);
               } catch {
-                setStatus("error");
+                /* Ignore clipboard denial without claiming success. */
               }
             }}>
             <span className="icon-swap-stack" aria-hidden="true">

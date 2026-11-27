@@ -127,7 +127,6 @@ function SearchContent({ folders, onSelect, onNewSession, onOpenFolder }: {
       </div>}
       {!waiting && !search.isError && <Command.Empty>
         <p className="text-sm">{normalized ? t("sessions:noMatches") : t("sessions:none")}</p>
-        <p className="mt-2 text-xs text-muted-foreground">{normalized ? t("sessions:searchSuggestion") : t("sessions:searchEmpty")}</p>
       </Command.Empty>}
       {results.length > 0 && <Command.Group heading={normalized ? t("sessions:resultCount", { count: results.length }) : t("sessions:recent")}>
         {results.map((result) => <Command.Item key={result.session.id} value={result.session.id}

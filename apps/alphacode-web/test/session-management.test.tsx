@@ -54,7 +54,7 @@ it("keeps a failed rename editable, rejects blank names, and cancels with Escape
   expect((screen.getByRole("button", { name: "保存" }) as HTMLButtonElement).disabled).toBe(true);
   fireEvent.change(input, { target: { value: "保留编辑" } });
   submitTitle(input);
-  expect((await screen.findByRole("alert")).textContent).toContain("编辑内容已保留");
+  expect((await screen.findByRole("alert")).textContent).toContain("保存失败");
   expect((input as HTMLInputElement).value).toBe("保留编辑");
   expect(screen.getByRole("heading", { name: original })).toBeTruthy();
   fireEvent.keyDown(input, { key: "Escape" });

@@ -79,12 +79,10 @@ export function SessionPane({ workspace, contentId = "session-content" }: { work
         {workspace.history.isError && <HistoryColumn role="alert" className="pt-4">
           <div className="space-y-2.5 rounded-xl border border-status-danger-border bg-status-danger-bg px-4 py-3 text-xs leading-[1.5]">
             <p className="text-status-danger">{sessionErrorMessage(t, workspace.history.error, "history")}</p>
-            {workspace.history.data && <p className="text-muted-foreground">{t("sessions:cachedHistory")}</p>}
             <Button variant="outline" size="sm" disabled={workspace.history.isFetching} onClick={() => void workspace.history.refetch()}>{t("sessions:retryHistory")}</Button>
           </div>
         </HistoryColumn>}
         {workspace.history.data?.state.error && <HistoryColumn role="status" className="py-2 text-xs leading-[1.5] text-status-danger">{presentNotice(t, workspace.history.data.state.notice, workspace.history.data.state.error)}</HistoryColumn>}
-        {!workspace.connected && workspace.history.data && <HistoryColumn role="status" className="py-2 text-xs leading-[1.5] text-muted-foreground">{workspace.history.connection === "error" ? t("errors:subscribe") : t("sessions:connectingPreserved")}</HistoryColumn>}
         {workspace.history.isPending ? <HistoryLoading /> : selectedSession?.historyLoaded && (
           <Suspense fallback={<HistoryLoading />}><SessionContent session={selectedSession} busy={workspace.busy} phase={view?.state.phase} connected={workspace.connected} modelActivity={view?.state.modelActivity} /></Suspense>
         )}

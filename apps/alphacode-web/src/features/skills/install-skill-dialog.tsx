@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import * as m from "motion/react-m";
 import { Link, LoaderCircle, RefreshCw, ShieldAlert, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTranslation } from "@/i18n/react";
@@ -91,6 +91,7 @@ export function InstallSkillDialog({
     <Dialog open={open} onOpenChange={next => { if (!isPending) { if (!next) onResetError(); onOpenChange(next); } }}>
       <DialogContent
         showCloseButton={false}
+        aria-describedby={undefined}
         className="block max-h-[calc(100dvh-2rem)] overflow-y-auto p-5 sm:p-6"
         onEscapeKeyDown={event => { if (isPending) event.preventDefault(); }}
         onInteractOutside={event => { if (isPending) event.preventDefault(); }}
@@ -103,7 +104,6 @@ export function InstallSkillDialog({
             </Button>
           </DialogClose>
         </div>
-        <DialogDescription className="sr-only">{t("skills:market.installHint")}</DialogDescription>
 
         <form id="skill-install" aria-label={t("skills:market.add")} onSubmit={submit} className="space-y-4">
           <div role="group" aria-label={t("skills:market.method")} className="inline-flex rounded-xl bg-muted p-1">
@@ -163,7 +163,6 @@ export function InstallSkillDialog({
                 <span className="mt-1 max-w-full break-all font-medium text-foreground">
                   {file ? file.name : t("skills:market.drop")}
                 </span>
-                <span className="text-muted-foreground">{t("skills:market.zipHint")}</span>
                 <input
                   id="skill-zip"
                   ref={fileInput}
@@ -186,10 +185,8 @@ export function InstallSkillDialog({
                 value={url}
                 required
                 disabled={isPending}
-                aria-describedby="skill-link-hint"
                 onChange={event => { setUrl(event.target.value); if (error) onResetError(); }}
               />
-              <p id="skill-link-hint" className="text-xs leading-[1.5] text-muted-foreground">{t("skills:market.linkHint")}</p>
             </div>
           )}
 
@@ -226,17 +223,14 @@ export function InstallSkillDialog({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-separator pt-4">
-            <p className="max-w-[260px] text-[0.6875rem] leading-[1.4] text-muted-foreground">{t("skills:market.installHint")}</p>
-            <div className="flex items-center gap-2">
-              <DialogClose asChild>
-                <Button type="button" variant="ghost" size="sm" disabled={isPending}>{t("workspace:cancel")}</Button>
-              </DialogClose>
-              <Button type="submit" size="sm" disabled={isPending || !directory?.enabled || (mode === "zip" ? !file : !url.trim())}>
-                {isPending && <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
-                {t(isPending ? "skills:market.installing" : "skills:market.install")}
-              </Button>
-            </div>
+          <div className="flex items-center justify-end gap-2 border-t border-separator pt-4">
+            <DialogClose asChild>
+              <Button type="button" variant="ghost" size="sm" disabled={isPending}>{t("workspace:cancel")}</Button>
+            </DialogClose>
+            <Button type="submit" size="sm" disabled={isPending || !directory?.enabled || (mode === "zip" ? !file : !url.trim())}>
+              {isPending && <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
+              {t(isPending ? "skills:market.installing" : "skills:market.install")}
+            </Button>
           </div>
         </form>
       </DialogContent>

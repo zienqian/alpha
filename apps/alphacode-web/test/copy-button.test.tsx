@@ -13,11 +13,14 @@ describe("CopyButton", () => {
     expect(writeText).toHaveBeenCalledWith("const a = 1;\nconst b = 2;");
   });
 
-  it("reports unavailable clipboard access without claiming success", async () => {
-    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockRejectedValue(new Error("Denied")) } });
+  it("ignores unavailable clipboard access without claiming success", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("Denied"));
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
     render(<CopyButton value="hello" />, { wrapper: TooltipProvider });
     fireEvent.click(screen.getByRole("button", { name: "复制消息" }));
-    expect(await screen.findByRole("button", { name: "复制失败，请选中文本后手动复制。" })).toBeTruthy();
+    await Promise.resolve();
+    expect(writeText).toHaveBeenCalledWith("hello");
+    expect(screen.getByRole("button", { name: "复制消息" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "已复制" })).toBeNull();
   });
 });

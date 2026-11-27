@@ -100,7 +100,6 @@
   "unsaved": "The run finished, but the session has not been saved.",
   "not_captured": "This content was not captured.",
   "missing": "The original message is no longer available.",
-  "copy_failed": "Copy failed. Select the text to copy it.",
   "model_request": "Model request",
   "run_unknown": "Unknown",
   "run_cancelled": "Cancelled",
@@ -116,7 +115,6 @@
   "search_scope": "Search tool inputs and the first 4 KB of output",
   "brand_name": "Multica",
   "license": "License",
-  "copy_truncated": "Copied the available content. Some long results were truncated.",
   "detail_loading": "Loading details…",
   "detail_error": "Could not load step details."
 }

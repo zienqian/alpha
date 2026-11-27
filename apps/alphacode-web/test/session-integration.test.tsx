@@ -155,14 +155,14 @@ describe("server session integration", () => {
     replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "保留我的草稿");
     api.overrides.set("/api/sessions/project-notes", () => Response.json({ code: "NOT_FOUND" }, { status: 404 }));
     await act(async () => { focusManager.setFocused(false); focusManager.setFocused(true); });
-    expect(await screen.findByText("当前显示上次加载的记录。")).toBeTruthy();
+    expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "开发约定" })).toBeTruthy();
     api.overrides.delete("/api/sessions/project-notes");
     api.view("project-notes").state.messages = [{ id: "new", role: "assistant", text: "CLI 新增的回复" }];
     fireEvent.click(screen.getByRole("button", { name: "重试加载历史" }));
     expect(await screen.findByText("CLI 新增的回复")).toBeTruthy();
     expect((screen.getByRole("textbox", { name: "消息草稿" })).textContent).toBe("保留我的草稿");
-    expect(screen.queryByText("当前显示上次加载的记录。")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("refreshes the index without moving local drafts when project order changes", async () => {

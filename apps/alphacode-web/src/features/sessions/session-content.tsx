@@ -3,7 +3,7 @@ import { memo } from "react";
 import { MessageSquare } from "lucide-react";
 import { ChatMessage } from "@/components/ai-elements/message";
 import { ReplyProgress } from "@/components/ai-elements/chain-of-thought";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import {
   MessageScroller, MessageScrollerButton, MessageScrollerContent,
   MessageScrollerItem, MessageScrollerProvider, MessageScrollerViewport,
@@ -32,7 +32,6 @@ export const SessionContent = memo(function SessionContent({ session, busy = fal
         <EmptyHeader>
           <EmptyMedia variant="icon" className="size-10 rounded-xl"><MessageSquare aria-hidden="true" /></EmptyMedia>
           <EmptyTitle><h2>{t("sessions:empty.title")}</h2></EmptyTitle>
-          <EmptyDescription>{t("sessions:empty.description")}</EmptyDescription>
         </EmptyHeader>
       </Empty>
     );

@@ -80,7 +80,6 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
           </div>
         </InputGroupAddon>
       </InputGroup>
-      {draft.attachments.length > 0 && <p className="mt-2 px-1 text-xs leading-[1.45] text-muted-foreground">{t("sessions:removeBeforeSending")}</p>}
     </div>
   );
 }

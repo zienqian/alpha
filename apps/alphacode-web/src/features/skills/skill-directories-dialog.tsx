@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, CircleAlert, Copy, FolderOpen, ShieldCheck, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/i18n/react";
@@ -51,15 +51,11 @@ export function SkillDirectoriesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
+        aria-describedby={undefined}
         className="flex max-h-[min(82dvh,680px)] max-w-xl flex-col gap-0 overflow-hidden p-0 sm:max-w-xl"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-separator px-5 py-4">
-          <div className="min-w-0">
-            <DialogTitle>{t("skills:market.settings")}</DialogTitle>
-            <DialogDescription className="mt-0.5 text-xs">
-              {t("skills:market.settingsDescription")}
-            </DialogDescription>
-          </div>
+        <div className="flex items-center justify-between gap-3 border-b border-separator px-5 py-4">
+          <DialogTitle>{t("skills:market.settings")}</DialogTitle>
           <DialogClose asChild>
             <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" aria-label={t("common:close")}>
               <X aria-hidden="true" />
@@ -73,33 +69,24 @@ export function SkillDirectoriesDialog({
               <h3 className="px-0.5 text-[0.6875rem] font-medium tracking-[0.04em] text-muted-foreground uppercase">{t("skills:market.directorySources")}</h3>
               <div className="divide-y divide-separator overflow-hidden rounded-xl border border-border bg-card">
                 <div className="flex items-center justify-between gap-4 p-3.5">
-                  <div className="min-w-0">
-                    <label htmlFor="skills-shared-toggle" className="block text-[0.8125rem] font-medium text-foreground">
-                      {t("skills:market.sharedDirLabel")}
-                    </label>
-                    <p className="mt-0.5 text-xs leading-[1.5] text-muted-foreground">{t("skills:market.sharedDirDescription")}</p>
-                  </div>
+                  <label htmlFor="skills-shared-toggle" className="min-w-0 text-[0.8125rem] font-medium text-foreground">
+                    {t("skills:market.sharedDirLabel")}
+                  </label>
                   <Switch id="skills-shared-toggle" checked={sharedEnabled} disabled={saving} onCheckedChange={onToggleShared} />
                 </div>
                 <div className="flex items-center justify-between gap-4 p-3.5">
-                  <div className="min-w-0">
-                    <label htmlFor="skills-claude-toggle" className="block text-[0.8125rem] font-medium text-foreground">
-                      {t("skills:market.claudeDirLabel")}
-                    </label>
-                    <p className="mt-0.5 text-xs leading-[1.5] text-muted-foreground">{t("skills:market.claudeDirDescription")}</p>
-                  </div>
+                  <label htmlFor="skills-claude-toggle" className="min-w-0 text-[0.8125rem] font-medium text-foreground">
+                    {t("skills:market.claudeDirLabel")}
+                  </label>
                   <Switch id="skills-claude-toggle" checked={claudeEnabled} disabled={saving} onCheckedChange={onToggleClaude} />
                 </div>
                 {activeProject && (
                   <div className="flex items-center justify-between gap-4 p-3.5">
-                    <div className="min-w-0">
-                      <label htmlFor="skills-trust-toggle" className="flex items-center gap-1.5 text-[0.8125rem] font-medium text-foreground">
-                        <ShieldCheck className="size-icon text-foreground" aria-hidden="true" />
-                        <span>{t("skills:market.projectTrustLabel")}</span>
-                        <span className="truncate font-normal text-muted-foreground">({projectDisplayName(activeProject)})</span>
-                      </label>
-                      <p className="mt-0.5 text-xs leading-[1.5] text-muted-foreground">{t("skills:market.projectTrustDescription")}</p>
-                    </div>
+                    <label htmlFor="skills-trust-toggle" className="flex min-w-0 items-center gap-1.5 text-[0.8125rem] font-medium text-foreground">
+                      <ShieldCheck className="size-icon shrink-0 text-foreground" aria-hidden="true" />
+                      <span>{t("skills:market.projectTrustLabel")}</span>
+                      <span className="truncate font-normal text-muted-foreground">({projectDisplayName(activeProject)})</span>
+                    </label>
                     <Switch
                       id="skills-trust-toggle"
                       checked={projectTrusted}
@@ -170,10 +157,6 @@ export function SkillDirectoriesDialog({
             )}
           </div>
         </ScrollArea>
-
-        <div className="border-t border-separator bg-surface-sunken/70 px-5 py-3 dark:bg-card/60">
-          <p className="text-[0.6875rem] leading-[1.4] text-muted-foreground">{t("skills:market.newSession")}</p>
-        </div>
       </DialogContent>
     </Dialog>
   );

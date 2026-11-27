@@ -84,14 +84,14 @@ export function ContextUsageIndicator({ usage }: { usage?: ContextUsage }) {
             <dd className="font-mono text-xs text-foreground tabular-nums">{tokens ? `~${formatTokens(tokens[key] ?? 0)}` : "—"}</dd>
           </div>)}
         </dl>
-        <p className="mt-3 border-t border-separator pt-2.5 text-xs leading-[1.45] text-muted-foreground" role="status">
-          {usage?.compaction?.status === "start" ? t("sessions:context.compacting")
-            : usage?.compaction?.status === "failed" ? t("sessions:context.failed")
-            : usage?.automatic === false ? t("sessions:context.manual") : t("sessions:context.estimated")}
-        </p>
-        {usage?.inputBudget !== undefined && <p className="mt-1 text-xs leading-[1.45] text-muted-foreground tabular-nums">
-          {t("sessions:context.budget", { input: formatTokens(usage.inputBudget), output: formatTokens(usage.maxOutputTokens ?? 0) })}
-        </p>}
+        {(usage?.compaction?.status === "start" || usage?.inputBudget !== undefined) && (
+          <div className="mt-3 space-y-1 border-t border-separator pt-2.5 text-xs leading-[1.45] text-muted-foreground">
+            {usage?.compaction?.status === "start" && <p role="status">{t("sessions:context.compacting")}</p>}
+            {usage?.inputBudget !== undefined && <p className="tabular-nums">
+              {t("sessions:context.budget", { input: formatTokens(usage.inputBudget), output: formatTokens(usage.maxOutputTokens ?? 0) })}
+            </p>}
+          </div>
+        )}
       </PopoverContent>
   </Popover>;
 }

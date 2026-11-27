@@ -26,8 +26,6 @@ describe("composer approval modes", () => {
     await open();
     fireEvent.keyDown(await screen.findByRole("button", { name: "切换审批模式：请求审批" }), { key: "Enter" });
     expect((await screen.findByRole("menuitemradio", { name: /^请求审批/ })).getAttribute("aria-checked")).toBe("true");
-    fireEvent.click(screen.getByRole("menuitem", { name: "了解更多" }));
-    expect(screen.getByText(/设置仅对当前会话生效/)).toBeTruthy();
     fireEvent.click(screen.getByRole("menuitemradio", { name: /^完全访问/ }));
     await waitFor(() => expect(trigger("完全访问")).toBeTruthy());
     const request = api.fetch.mock.calls.find(([url]) => url === `${path}/permission`);
@@ -52,13 +50,13 @@ describe("composer approval modes", () => {
     fireEvent.keyDown(input(), { key: "Enter" });
     expect(sends()).toHaveLength(0);
     await act(async () => { resolve(Response.json({ code: "SESSION_BUSY" }, { status: 409 })); });
-    expect(await screen.findByText("未能确认权限变更，请检查当前模式后重试。")).toBeTruthy();
+    expect(await screen.findByText("权限保存失败，请重试。")).toBeTruthy();
     expect(trigger()).toBeTruthy();
     expect(input().textContent).toBe("保留草稿");
     api.overrides.delete(`${path}/permission`);
     await choose("自动审批");
     await waitFor(() => expect(trigger("自动审批")).toBeTruthy());
-    expect(screen.queryByText("未能确认权限变更，请检查当前模式后重试。")).toBeNull();
+    expect(screen.queryByText("权限保存失败，请重试。")).toBeNull();
   });
 
   it.each(["busy", "settingsSaving", "closing"] as const)("disables switching while the server is %s", async state => {
@@ -116,7 +114,7 @@ describe("composer approval modes", () => {
     await choose("完全访问");
     replaceDraft(input(), "不要直接执行");
     fireEvent.keyDown(input(), { key: "Enter" });
-    expect(await screen.findByText("未能确认权限变更，请检查当前模式后重试。")).toBeTruthy();
+    expect(await screen.findByText("权限保存失败，请重试。")).toBeTruthy();
     expect(sends()).toHaveLength(0);
     expect(input().textContent).toBe("不要直接执行");
     await waitFor(() => expect(trigger()).toBeTruthy());

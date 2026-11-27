@@ -2,7 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import * as m from "motion/react-m";
 import { Check, Folder, Plus, RefreshCw, Search, Settings2, ShieldAlert, ShieldCheck, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -22,7 +22,6 @@ type FilterKind = "all" | SkillDirectory["kind"];
 interface StatusNotice {
   id: number;
   message: string;
-  hint?: string;
   tone?: "success" | "error";
 }
 
@@ -93,8 +92,8 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [installOpen, settingsOpen, selectedSkillKey]);
 
-  const showNotice = useCallback((message: string, options?: { hint?: string; tone?: "success" | "error" }) => {
-    setNotice({ id: Date.now(), message, hint: options?.hint, tone: options?.tone ?? "success" });
+  const showNotice = useCallback((message: string, options?: { tone?: "success" | "error" }) => {
+    setNotice({ id: Date.now(), message, tone: options?.tone ?? "success" });
   }, []);
 
   const enabledDirectories = useMemo(
@@ -142,10 +141,9 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
   const hasSettingsAttention = Boolean((catalog?.diagnostics.length ?? 0) > 0 || projectUntrusted);
   const canInstall = enabledDirectories.length > 0;
 
-  async function applySettings(patch: Parameters<typeof settingsMutation.mutateAsync>[0], successHint = true) {
+  async function applySettings(patch: Parameters<typeof settingsMutation.mutateAsync>[0]) {
     try {
       await settingsMutation.mutateAsync(patch);
-      if (successHint) showNotice(t("skills:market.settingsSaved"), { hint: t("skills:market.newSession") });
     } catch (error) {
       showNotice(skillError(t, error), { tone: "error" });
     }
@@ -154,7 +152,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
   async function handleInstall(input: Parameters<typeof installMutation.mutateAsync>[0]) {
     const result = await installMutation.mutateAsync(input);
     setDroppedFile(undefined);
-    showNotice(t("skills:market.success", { names: result.installed.join(", ") }), { hint: t("skills:market.newSession") });
+    showNotice(t("skills:market.success", { names: result.installed.join(", ") }));
     return result;
   }
 
@@ -164,7 +162,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
       directoryId: skill.directoryId,
       name: skill.name,
     });
-    showNotice(t("skills:market.uninstalled", { name: skill.name }), { hint: t("skills:market.newSession") });
+    showNotice(t("skills:market.uninstalled", { name: skill.name }));
   }
 
   function handlePageDragEnter(event: React.DragEvent) {
@@ -229,19 +227,17 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
                 <Upload className="size-6" aria-hidden="true" />
               </span>
               <p className="text-sm font-semibold text-foreground">{t("skills:market.dropOverlayTitle")}</p>
-              <p className="text-xs text-muted-foreground">{t("skills:market.dropOverlayHint")}</p>
             </div>
           </div>
         )}
 
         <div className="@container mx-auto max-w-[964px] px-5 py-7 sm:px-8 sm:py-10">
-          <div className="flex flex-col justify-between gap-4 @min-[700px]:flex-row @min-[700px]:items-start">
+          <div className="flex flex-col justify-between gap-4 @min-[700px]:flex-row @min-[700px]:items-center">
             <div className="min-w-0">
               <h1 id="skills-title" className="text-[1.375rem] leading-[1.28] font-semibold tracking-[-0.022em] text-balance text-foreground">{t("skills:market.title")}</h1>
-              <p className="mt-1 max-w-xl text-xs leading-[1.5] text-muted-foreground">{t("skills:market.description")}</p>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2 @min-[700px]:pt-0.5">
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
               {catalog && catalog.projects.length > 0 && (
                 <Select
                   value={catalog.projectId}
@@ -377,10 +373,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
               >
                 <Settings2 aria-hidden="true" />
                 {hasSettingsAttention && (
-                  <>
-                    <span className="absolute top-1.5 end-1.5 size-1.5 rounded-full bg-status-warning ring-2 ring-background" aria-hidden="true" />
-                    <span className="sr-only">{t("skills:market.settingsDescription")}</span>
-                  </>
+                  <span className="absolute top-1.5 end-1.5 size-1.5 rounded-full bg-status-warning ring-2 ring-background" aria-hidden="true" />
                 )}
               </Button>
             </div>
@@ -388,12 +381,9 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
 
           <div role="status" aria-live="polite" className={notice && notice.tone !== "error" ? "mt-4" : "sr-only"}>
             {notice && notice.tone !== "error" && (
-              <div className="flex items-start gap-2.5 rounded-xl border border-status-success-border bg-status-success-bg px-3.5 py-2.5 text-xs leading-[1.5] text-foreground">
-                <Check className="mt-0.5 size-icon shrink-0 text-status-success" aria-hidden="true" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium break-words">{notice.message}</p>
-                  {notice.hint && <p className="mt-0.5 text-muted-foreground">{notice.hint}</p>}
-                </div>
+              <div className="flex items-center gap-2.5 rounded-xl border border-status-success-border bg-status-success-bg px-3.5 py-2.5 text-xs leading-[1.5] text-foreground">
+                <Check className="size-icon shrink-0 text-status-success" aria-hidden="true" />
+                <p className="min-w-0 flex-1 font-medium break-words">{notice.message}</p>
                 <Button
                   variant="ghost"
                   size="icon-xs"
@@ -410,12 +400,9 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
           {notice && notice.tone === "error" && (
             <div
               role="alert"
-              className="mt-4 flex items-start gap-2.5 rounded-xl border border-status-danger-border bg-status-danger-bg px-3.5 py-2.5 text-xs leading-[1.5] text-status-danger"
+              className="mt-4 flex items-center gap-2.5 rounded-xl border border-status-danger-border bg-status-danger-bg px-3.5 py-2.5 text-xs leading-[1.5] text-status-danger"
             >
-              <div className="min-w-0 flex-1">
-                <p className="font-medium break-words">{notice.message}</p>
-                {notice.hint && <p className="mt-0.5 text-muted-foreground">{notice.hint}</p>}
-              </div>
+              <p className="min-w-0 flex-1 font-medium break-words">{notice.message}</p>
               <Button
                 variant="ghost"
                 size="icon-xs"
@@ -430,12 +417,9 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
 
           {projectUntrusted && activeProject && (
             <div className="mt-4 flex flex-col justify-between gap-3 rounded-2xl border border-status-warning-border bg-status-warning-bg px-4 py-3 text-xs leading-[1.5] sm:flex-row sm:items-center">
-              <div className="flex min-w-0 items-start gap-2.5">
-                <ShieldAlert className="mt-0.5 size-icon shrink-0 text-status-warning" aria-hidden="true" />
-                <div className="min-w-0">
-                  <p className="font-medium text-foreground">{t("skills:market.untrustedBannerTitle")}</p>
-                  <p className="mt-0.5 text-muted-foreground">{t("skills:market.untrustedBannerDescription")}</p>
-                </div>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <ShieldAlert className="size-icon shrink-0 text-status-warning" aria-hidden="true" />
+                <p className="min-w-0 font-medium text-foreground">{t("skills:market.untrustedBannerTitle")}</p>
               </div>
               <Button
                 size="sm"
@@ -479,15 +463,6 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
                         )}
                       </h2>
                     </EmptyTitle>
-                    <EmptyDescription>
-                      {t(
-                        catalog.projects.length === 0 && catalog.directories.length === 0
-                          ? "skills:market.noProjectHint"
-                          : search || filter !== "all"
-                            ? "skills:market.noMatchesHint"
-                            : "skills:market.emptyHint",
-                      )}
-                    </EmptyDescription>
                   </EmptyHeader>
                   {(search || filter !== "all") && (
                     <EmptyContent>
@@ -525,7 +500,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
                                 selected={selectedSkillKey === key}
                                 toggling={settingsMutation.isPending}
                                 onSelect={() => setSelectedSkillKey(key)}
-                                onToggle={enabled => void applySettings({ toggleSkill: { name: skill.name, enabled } }, false)}
+                                onToggle={enabled => void applySettings({ toggleSkill: { name: skill.name, enabled } })}
                               />
                             );
                           })}
@@ -548,7 +523,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
         toggling={settingsMutation.isPending}
         uninstalling={uninstallMutation.isPending}
         onOpenChange={open => { if (!open) setSelectedSkillKey(null); }}
-        onToggleSkill={(name, enabled) => void applySettings({ toggleSkill: { name, enabled } }, false)}
+        onToggleSkill={(name, enabled) => void applySettings({ toggleSkill: { name, enabled } })}
         onTrustProject={() => {
           if (activeProject) void applySettings({ trustProject: { projectId: activeProject.id, trusted: true } });
         }}

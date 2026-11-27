@@ -277,8 +277,7 @@ export function SkillDetailSheet({
                 </div>
               </ScrollArea>
 
-              <div className="flex items-center justify-between gap-3 border-t border-separator bg-surface-sunken/70 px-5 py-3 dark:bg-card/60">
-                <p className="min-w-0 text-[0.6875rem] leading-[1.4] text-muted-foreground">{t("skills:market.newSession")}</p>
+              <div className="flex items-center justify-end border-t border-separator bg-surface-sunken/70 px-5 py-3 dark:bg-card/60">
                 <Button
                   variant="ghost"
                   size="sm"

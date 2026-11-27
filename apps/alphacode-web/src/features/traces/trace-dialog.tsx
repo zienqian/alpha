@@ -189,9 +189,7 @@ function Transcript({
     [filters, setFilters] = useState<Set<string>>(() => new Set()),
     [newest, setNewest] = useState(false),
     [selectedId, setSelectedId] = useState<string>(),
-    [copyState, setCopyState] = useState<
-      "copied" | "copy_failed" | "copy_truncated" | null
-    >(null);
+    [copied, setCopied] = useState(false);
   const [atLiveEnd, setAtLiveEnd] = useState(true);
   const searchResult = useTraceSearch(
     sessionId,
@@ -247,9 +245,9 @@ function Transcript({
         (newest ? [...steps].reverse() : steps).map((s) => s.stepId),
       );
       await navigator.clipboard.writeText(value.text);
-      setCopyState(value.truncated ? "copy_truncated" : "copied");
+      setCopied(true);
     } catch {
-      setCopyState("copy_failed");
+      /* Ignore clipboard failures without showing an error banner. */
     }
   }
   return (
@@ -411,9 +409,9 @@ function Transcript({
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
       </div>
-      {copyState && (
+      {copied && (
         <p className="copy-feedback" role="status">
-          {t(`traces:${copyState}`)}
+          {t("traces:copied")}
         </p>
       )}
       {search.trim() && searchResult.isFetching && (

@@ -28,7 +28,7 @@ export function CreateProjectDialog({ open, onOpenChange, onCreate }: {
     if (!nativePicker || working.current) return;
     working.current = true; setPicking(true); setError(undefined);
     try { const selected = await nativePicker(); if (selected) updatePath(selected); }
-    catch { setError(t("workspace:pickFailed")); }
+    catch { /* Ignore picker failures; the path can still be entered directly. */ }
     finally { working.current = false; setPicking(false); }
   }
   async function submit() {
@@ -64,8 +64,7 @@ export function CreateProjectDialog({ open, onOpenChange, onCreate }: {
               {nativePicker && <Button type="button" variant="outline" size="sm" disabled={pending || picking} onClick={() => void pick()}>
                 {picking ? <LoaderCircle className="motion-safe:animate-spin" aria-hidden="true" /> : <FolderOpen aria-hidden="true" />}{t("workspace:chooseFolder")}
               </Button>}
-              <Input id={`${id}-path`} value={path} onChange={event => { setPath(event.target.value); setError(undefined); }} onBlur={() => updatePath(path)} disabled={pending || picking} maxLength={4096} placeholder={t("workspace:pathPlaceholder")} aria-describedby={`${id}-hint`} aria-invalid={Boolean(error)} autoComplete="off" spellCheck={false} />
-              <p id={`${id}-hint`} className="text-xs leading-[1.5] text-muted-foreground">{t(nativePicker ? "workspace:folderHint" : "workspace:browserFolderHint")}</p>
+              <Input id={`${id}-path`} value={path} onChange={event => { setPath(event.target.value); setError(undefined); }} onBlur={() => updatePath(path)} disabled={pending || picking} maxLength={4096} placeholder={t("workspace:pathPlaceholder")} aria-invalid={Boolean(error)} autoComplete="off" spellCheck={false} />
             </div>
           </div>
           {error && <p role="alert" className="rounded-lg border border-status-danger-border bg-status-danger-bg px-3 py-2 text-xs leading-[1.5] text-status-danger">{error}</p>}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Globe, LayoutGrid, Monitor, Moon, Search, Sun, SunMoon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -91,7 +91,7 @@ const themeChoices = [
 
 export function SettingsPage() {
   const { t } = useTranslation();
-  const { theme, setTheme, storageError: themeStorageError } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { preference, setPreference } = useLanguage();
   const experiments = useExperimentalFeatures();
   const [query, setQuery] = useState("");
@@ -102,8 +102,8 @@ export function SettingsPage() {
     // Search both supported languages so switching language keeps the result and focus.
     const text = ["zh-CN", "en"].flatMap(lng => [
       t("settings:general", { lng }), t("settings:preferences", { lng }), t("settings:system", { lng }),
-      ...(field === "theme" ? [t("settings:colorTheme", { lng }), t("settings:appearance", { lng }), t("settings:themeDescription", { lng }), t("settings:light", { lng }), t("settings:dark", { lng })] :
-        [t("settings:language", { lng }), t("settings:languageDescription", { lng }), t("settings:chinese", { lng }), t("settings:english", { lng })]),
+      ...(field === "theme" ? [t("settings:colorTheme", { lng }), t("settings:appearance", { lng }), t("settings:light", { lng }), t("settings:dark", { lng })] :
+        [t("settings:language", { lng }), t("settings:chinese", { lng }), t("settings:english", { lng })]),
     ]).join(" ").toLocaleLowerCase();
     return terms.every(term => text.includes(term));
   };
@@ -120,12 +120,11 @@ export function SettingsPage() {
 
   return <section id="settings-content" tabIndex={-1} aria-labelledby="settings-title" className="min-h-0 flex-1 scroll-pt-6 overflow-y-auto outline-none">
     <div className="mx-auto w-full max-w-[740px] px-5 py-7 sm:px-8 sm:py-10">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="min-w-0">
           <h1 id="settings-title" tabIndex={-1} className="text-[1.375rem] leading-[1.28] font-semibold tracking-[-0.022em] text-balance outline-none">{t("settings:general")}</h1>
-          <p className="mt-1 text-xs leading-[1.5] text-muted-foreground">{t("settings:description")}</p>
         </div>
-        <div role="search" aria-label={t("settings:search")} className="relative w-full shrink-0 sm:w-56 sm:pt-0.5">
+        <div role="search" aria-label={t("settings:search")} className="relative w-full shrink-0 sm:w-56">
           <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 start-2.5 size-icon -translate-y-1/2 text-muted-foreground" />
           <Input ref={searchRef} type="search" aria-label={t("settings:search")} placeholder={t("settings:search")} value={query}
             className="h-9 rounded-lg pe-8 ps-8 sm:h-8 md:text-xs [&::-webkit-search-cancel-button]:appearance-none"
@@ -141,17 +140,14 @@ export function SettingsPage() {
         <h2 id="settings-preferences" className="mb-2.5 px-0.5 text-[0.6875rem] font-medium tracking-[0.04em] text-muted-foreground uppercase">{t("settings:preferences")}</h2>
         <div className="divide-y divide-separator overflow-hidden rounded-2xl border border-border bg-card">
           {showTheme && <div className="p-4 sm:p-5">
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
               <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                 <SunMoon />
               </span>
-              <div className="min-w-0">
-                <span id="settings-theme-label" className="block text-[0.8125rem] leading-[1.4] font-medium text-foreground">{t("settings:colorTheme")}</span>
-                <p id="settings-theme-description" className="mt-0.5 text-xs leading-[1.5] text-muted-foreground">{t("settings:themeDescription")}</p>
-              </div>
+              <span id="settings-theme-label" className="min-w-0 text-[0.8125rem] leading-[1.4] font-medium text-foreground">{t("settings:colorTheme")}</span>
             </div>
             <RadioGroup value={theme} onValueChange={value => { if (isThemeMode(value)) setTheme(value); }}
-              aria-labelledby="settings-theme-label" aria-describedby="settings-theme-description"
+              aria-labelledby="settings-theme-label"
               className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {themeChoices.map(({ value, Icon, labelKey }) => {
                 const selected = theme === value;
@@ -178,21 +174,17 @@ export function SettingsPage() {
                 </label>;
               })}
             </RadioGroup>
-            {themeStorageError && <p role="status" className="mt-3 text-xs leading-[1.45] text-muted-foreground">{t("settings:preferenceSaveFailed")}</p>}
           </div>}
 
           {showLanguage && <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-            <div className="flex min-w-0 items-start gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                 <Globe />
               </span>
-              <div className="min-w-0">
-                <label htmlFor="settings-language" className="block text-[0.8125rem] leading-[1.4] font-medium text-foreground">{t("settings:language")}</label>
-                <p id="settings-language-description" className="mt-0.5 text-xs leading-[1.5] text-muted-foreground">{t("settings:languageDescription")}</p>
-              </div>
+              <label htmlFor="settings-language" className="min-w-0 text-[0.8125rem] leading-[1.4] font-medium text-foreground">{t("settings:language")}</label>
             </div>
             <Select value={preference} onValueChange={value => { if (isLanguagePreference(value)) setPreference(value); }}>
-              <SelectTrigger id="settings-language" aria-describedby="settings-language-description" className={selectClass} size="sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="settings-language" className={selectClass} size="sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="system">{t("settings:system")}</SelectItem>
                 <SelectItem value="zh-CN" lang="zh-CN">{t("settings:chinese")}</SelectItem>
@@ -220,7 +212,6 @@ export function SettingsPage() {
             <Switch id="settings-session-canvas" className="mt-1 sm:mt-0" checked={experiments.sessionCanvas} onCheckedChange={experiments.setSessionCanvas}
               aria-label={t("settings:sessionCanvas")} aria-describedby="settings-session-canvas-description" />
           </div>
-          {experiments.storageError && <p role="status" className="border-t border-separator px-4 py-2.5 text-xs text-muted-foreground sm:px-5">{t("settings:preferenceSaveFailed")}</p>}
         </div>
       </section>}
 
@@ -228,7 +219,6 @@ export function SettingsPage() {
         <EmptyHeader>
           <EmptyMedia variant="icon" className="size-10 rounded-xl"><Search aria-hidden="true" /></EmptyMedia>
           <EmptyTitle>{t("settings:noResults")}</EmptyTitle>
-          <EmptyDescription>{t("settings:noResultsHint")}</EmptyDescription>
         </EmptyHeader>
       </Empty>}
     </div>

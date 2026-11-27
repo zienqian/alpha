@@ -29,14 +29,12 @@ interface ThemeState {
   theme: ThemeMode;
   resolvedTheme: ColorMode;
   setTheme: (theme: ThemeMode) => void;
-  storageError: boolean;
 }
 
 const ThemeContext = createContext<ThemeState>({
   theme: "system",
   resolvedTheme: "light",
   setTheme: () => undefined,
-  storageError: false,
 });
 
 function readSavedTheme(): ThemeMode {
@@ -51,7 +49,6 @@ function readSavedTheme(): ThemeMode {
 export function ThemeProvider({ children }: PropsWithChildren) {
   const [theme, updateTheme] = useState<ThemeMode>(readSavedTheme);
   const [resolvedTheme, setResolvedTheme] = useState<ColorMode>("light");
-  const [storageError, setStorageError] = useState(false);
   const mounted = useRef(false);
 
   useLayoutEffect(() => {
@@ -91,14 +88,12 @@ export function ThemeProvider({ children }: PropsWithChildren) {
     updateTheme(next);
     try {
       localStorage.setItem(storageKey, next);
-      setStorageError(false);
     } catch {
       // Theme switching still works in memory when storage is unavailable.
-      setStorageError(true);
     }
   }, []);
 
-  return <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, storageError }}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export const useTheme = () => useContext(ThemeContext);

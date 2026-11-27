@@ -56,7 +56,6 @@ describe("ThemeProvider", () => {
     const { result } = renderHook(useTheme, { wrapper: ThemeProvider });
     act(() => result.current.setTheme("dark"));
     expect(result.current.theme).toBe("dark");
-    expect(result.current.storageError).toBe(true);
     expect(document.documentElement.style.colorScheme).toBe("dark");
   });
 

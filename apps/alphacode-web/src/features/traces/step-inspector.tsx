@@ -23,9 +23,7 @@ export function StepInspector({
 }) {
   const { t } = useTranslation();
   const query = useTraceDetail(sessionId, traceId, step.stepId, revision);
-  const [copyState, setCopyState] = useState<"copied" | "copy_failed" | null>(
-    null,
-  );
+  const [copied, setCopied] = useState(false);
   const detail = query.data;
   async function copy() {
     if (!detail) return;
@@ -40,9 +38,9 @@ export function StepInspector({
           .filter(Boolean)
           .join("\n\n"),
       );
-      setCopyState("copied");
+      setCopied(true);
     } catch {
-      setCopyState("copy_failed");
+      /* Ignore clipboard failures without showing an error banner. */
     }
   }
   return (
@@ -66,16 +64,16 @@ export function StepInspector({
           )}
         </div>
         <IconButton
-          icon={copyState === "copied" ? "Check" : "Copy"}
+          icon={copied ? "Check" : "Copy"}
           label={t("traces:copy_step")}
           disabled={!detail}
           onClick={() => void copy()}
         />
         <IconButton icon="X" label={t("traces:close_step")} onClick={onClose} />
       </div>
-      {copyState && (
+      {copied && (
         <p role="status" className="copy-feedback">
-          {t(`traces:${copyState}`)}
+          {t("traces:copied")}
         </p>
       )}
       <div className="inspector-content">
