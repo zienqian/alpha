@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type PointerEvent } from "react";
 import { Actions, I18nLabel, Layout, TabNode, TabSetNode, type Action, type ITabSetRenderValues } from "flexlayout-react";
-import { ChevronDown, ChevronLeft, ChevronUp, Maximize2, MessageSquare, Minimize2, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronUp, Maximize2, Minimize2, X } from "lucide-react";
 import { useTranslation } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { SessionPane } from "@/features/sessions/session-pane";
@@ -225,7 +225,7 @@ export default function SessionCanvas({ workspace }: { workspace: SessionWorkspa
         {node.getTabNodes().map(tab => <button key={tab.getId()} type="button" className="canvas-collapsed-title"
           data-selected={tab.isSelected()} title={t("sessions:canvas.expandNamed", { title: tab.getName() })}
           aria-label={t("sessions:canvas.expandNamed", { title: tab.getName() })} onClick={() => focus(tab.getId())}>
-          <MessageSquare aria-hidden="true" /><span>{tab.getName()}</span>
+          <span>{tab.getName()}</span>
         </button>)}
       </div> : null}
     </div>;
@@ -256,7 +256,7 @@ export default function SessionCanvas({ workspace }: { workspace: SessionWorkspa
       <div className="canvas-layout-surface relative w-full flex-1 shrink-0" style={{ minWidth: Math.max(220, minimum.width), minHeight: Math.max(220, minimum.height) }}>
       {panels.length > 0 && <Layout model={model} factory={factory} icons={layoutIcons} realtimeResize
         invalidateTabContentOnParentRender={false} supportsPopout={false} tabDragSpeed={0.12}
-        onRenderTab={(node, values) => { values.leading = <span data-canvas-tab={node.getId()}><MessageSquare className="size-icon shrink-0" aria-hidden="true" /></span>; }}
+        onRenderTab={(node, values) => { values.content = <span data-canvas-tab={node.getId()}>{values.content}</span>; }}
         onRenderTabSet={renderGroup} i18nTranslator={translate}
         onContextMenu={(_node, event) => event.preventDefault()}
         keyMap={{ renameTab: undefined, focusTabToggle: "F6" }} />}
