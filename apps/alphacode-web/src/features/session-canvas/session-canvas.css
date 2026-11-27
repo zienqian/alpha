@@ -1,5 +1,5 @@
 /* Loaded with the experimental workspace. Theme tokens follow the app in both modes. */
-.workspace-canvas[data-docking="true"] { background: transparent; border-radius: 0; box-shadow: none; }
+.workspace-canvas[data-docking="true"] { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
 .workspace-shell .session-nav-item[data-canvas-draggable="true"] { cursor: grab; }
 .workspace-shell .session-nav-item[data-canvas-draggable="true"]:active { cursor: grabbing; }
 .session-canvas {
@@ -21,8 +21,8 @@
   --flexlayout-color-icon: var(--muted-foreground);
   --flexlayout-color-overflow: var(--muted-foreground);
   --flexlayout-color-focus: var(--ring);
-  --flexlayout-color-tabset-background: color-mix(in srgb, var(--muted) 45%, var(--background));
-  --flexlayout-color-tabset-divider-line: var(--border);
+  --flexlayout-color-tabset-background: var(--background);
+  --flexlayout-color-tabset-divider-line: var(--separator);
   --flexlayout-color-tab-content: var(--background);
   --flexlayout-color-tab-selected: var(--foreground);
   --flexlayout-color-tab-selected-background: transparent;
@@ -57,7 +57,7 @@
   border-radius: 0 0 calc(var(--canvas-panel-radius) - 1px) calc(var(--canvas-panel-radius) - 1px);
 }
 /* Flat title tabs follow the supplied LeetCode workspace reference. */
-.session-canvas .flexlayout__tabset_tabbar_outer { min-height: 40px; padding: 0 8px; border: 0; background: color-mix(in srgb, var(--muted) 45%, var(--background)); }
+.session-canvas .flexlayout__tabset_tabbar_outer { min-height: 40px; padding: 0 8px; border: 0; border-bottom: 1px solid var(--separator); background: var(--background); }
 .session-canvas .flexlayout__tabset_tabbar_outer { cursor: grab; touch-action: none; }
 .session-canvas .flexlayout__tabset_tabbar_inner_tab_container { padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--muted-foreground); }
 .session-canvas .flexlayout__tabset_tab_divider { width: 1px; height: 14px; margin: 0 2px; background: var(--border); }
@@ -106,7 +106,7 @@
 .session-canvas .flexlayout__tab_toolbar_button-min,
 .session-canvas .flexlayout__tab_toolbar_button-max { order: -1; }
 /* Keep a small measured strip while its titles fill the collapsed rail. */
-.session-canvas .canvas-tabbar-collapsed { position: static; height: 40px; padding: 0; }
+.session-canvas .canvas-tabbar-collapsed { position: static; height: 40px; padding: 0; border-bottom: 0; }
 .session-canvas .canvas-tabbar-collapsed .flexlayout__mini_scrollbar_container,
 .session-canvas .canvas-tabbar-collapsed .flexlayout__tab_toolbar,
 .session-canvas .flexlayout__tabset:has(> .canvas-tabbar-collapsed) > .flexlayout__tabset_content { display: none; }

@@ -829,16 +829,20 @@
     --workspace-sidebar-width: clamp(10rem, 32vw, 16.5rem);
   }
 
-  .workspace-shell[data-sidebar-mode="inline"] .workspace-canvas {
-    margin: 2px 8px 8px 0;
-    border-radius: var(--radius-xl);
-  }
-
   .workspace-canvas {
     margin: 0;
     border: 0;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  .workspace-shell[data-sidebar-mode="inline"] .workspace-canvas {
+    margin: 2px 8px 8px 0;
+  }
+
+  .workspace-shell[data-sidebar-mode="inline"] .workspace-canvas:not([data-docking="true"]) {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
   }
 
   .workspace-toolbar {
