@@ -70,3 +70,12 @@ export function supportsNativeGlass(platform: string, release: string) {
   const [major = 0, , build = 0] = release.split(".").map(part => Number.parseInt(part, 10) || 0);
   return major > 10 || (major === 10 && build >= 22621);
 }
+
+/** Suppress OS notifications while the user is actively focused in the desktop window. */
+export function shouldShowNotification(
+  window: { isDestroyed(): boolean; isFocused(): boolean; isVisible(): boolean; isMinimized(): boolean },
+  supported: boolean,
+) {
+  if (!supported || window.isDestroyed()) return false;
+  return !(window.isFocused() && window.isVisible() && !window.isMinimized());
+}

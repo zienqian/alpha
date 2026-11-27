@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 import { createBackend } from "./backend";
 import { withBundledCommands } from "./cli-command";
 import { installCliCommand } from "./install-cli";
-import { applicationContentSecurityPolicy, applicationURL, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL, supportsNativeGlass } from "./policy";
+import { applicationContentSecurityPolicy, applicationURL, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL, shouldShowNotification, supportsNativeGlass } from "./policy";
 
 const applicationName = "AlphaCode";
 const applicationIcon = join(app.getAppPath(), "assets", process.platform === "win32" ? "icon.ico" : "icon.png");
@@ -127,7 +127,7 @@ async function createWindow() {
     const { sessionId, title, kind } = value as { sessionId?: unknown; title?: unknown; kind?: unknown };
     if (typeof sessionId !== "string" || !sessionId || sessionId.length > 256 || typeof title !== "string" || title.length > 1000) return;
     if (kind !== "completed" && kind !== "approval" && kind !== "failed") return;
-    if (!Notification.isSupported()) return;
+    if (!shouldShowNotification(created, Notification.isSupported())) return;
     try {
       const notification = new Notification({
         title: kind === "approval" ? label("需要你确认操作", "Your approval is needed")

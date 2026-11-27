@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { forwardRequest, parseDescriptor } from "../src/backend";
-import { applicationContentSecurityPolicy, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL, supportsNativeGlass } from "../src/policy";
+import { applicationContentSecurityPolicy, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL, shouldShowNotification, supportsNativeGlass } from "../src/policy";
 
 test('document links map from the trusted desktop origin to a browser route without exposing credentials', () => {
   const path = '/api/sessions/s/files?path=C%3A%2Fdoc.html&mode=open&replyId=reply#section';
@@ -126,4 +126,19 @@ test("native glass support enables macOS vibrancy and Windows 11 22H2+ Acrylic o
   expect(supportsNativeGlass("win32", "10.0.26200")).toBe(true);
   expect(supportsNativeGlass("win32", "10.0.19045")).toBe(false);
   expect(supportsNativeGlass("linux", "6.8.0")).toBe(false);
+});
+
+test("desktop notifications are suppressed while the user is focused in the window", () => {
+  const win = (overrides: Partial<{ destroyed: boolean; focused: boolean; visible: boolean; minimized: boolean }> = {}) => ({
+    isDestroyed: () => overrides.destroyed ?? false,
+    isFocused: () => overrides.focused ?? false,
+    isVisible: () => overrides.visible ?? true,
+    isMinimized: () => overrides.minimized ?? false,
+  });
+  expect(shouldShowNotification(win({ focused: true, visible: true, minimized: false }), true)).toBe(false);
+  expect(shouldShowNotification(win({ focused: false, visible: true, minimized: false }), true)).toBe(true);
+  expect(shouldShowNotification(win({ focused: false, visible: false, minimized: false }), true)).toBe(true);
+  expect(shouldShowNotification(win({ focused: true, visible: true, minimized: true }), true)).toBe(true);
+  expect(shouldShowNotification(win({ destroyed: true, focused: false }), true)).toBe(false);
+  expect(shouldShowNotification(win({ focused: false }), false)).toBe(false);
 });

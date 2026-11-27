@@ -1,16 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import type { SessionInfo, SessionView } from "./api";
 import { sessionKeys } from "./application/session-cache";
 import { useSessionGateway } from "./application/session-gateway-provider";
 import { getSessionStreams } from "./application/session-streams";
-import { SessionNotifications } from "./application/session-notifications";
+import { isSessionActive, SessionNotifications } from "./application/session-notifications";
+
+function isWindowFocused() {
+  return document.visibilityState === "visible" && document.hasFocus();
+}
 
 export function useSessionNotifications() {
   const client = useQueryClient();
   const gateway = useSessionGateway();
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
   useEffect(() => {
     const desktop = window.alphacodeDesktop;
     if (!desktop?.notify) return;
@@ -18,12 +24,15 @@ export function useSessionNotifications() {
     const streams = getSessionStreams(client, gateway);
     const subscriptions = new Map<string, () => void>();
     const receive = (view: SessionView) => {
+      // Always advance tracker state so completions observed while focused do not fire later.
       const kind = notifications.receive(view);
-      if (kind) desktop.notify?.({ sessionId: view.session.id, title: view.session.title, kind });
+      if (kind && !isWindowFocused()) {
+        desktop.notify?.({ sessionId: view.session.id, title: view.session.title, kind });
+      }
     };
-    // Existing history establishes a baseline; opening the app must not alert for old completions.
+    // Existing history establishes a baseline; opening the app must not alert for old completions or approvals.
     for (const query of client.getQueryCache().findAll({ queryKey: ["session"] })) {
-      if (query.state.data) notifications.receive(query.state.data as SessionView);
+      if (query.state.data) notifications.seed(query.state.data as SessionView);
     }
     let syncing = false;
     const watchRunning = () => {
@@ -34,7 +43,7 @@ export function useSessionNotifications() {
         const running = new Set(sessions.filter(session => session.status === "running").map(session => session.id));
         for (const query of client.getQueryCache().findAll({ queryKey: ["session"] })) {
           const view = query.state.data as SessionView | undefined;
-          if (view?.state.busy) running.add(view.session.id);
+          if (view && isSessionActive(view)) running.add(view.session.id);
         }
         for (const id of running) {
           if (!subscriptions.has(id)) subscriptions.set(id, streams.subscribe(id, () => undefined));
@@ -54,12 +63,12 @@ export function useSessionNotifications() {
     });
     watchRunning();
     const unsubscribeClick = desktop.onNotificationClick?.(id => {
-      void navigate(`/?session=${encodeURIComponent(id)}`);
+      void navigateRef.current(`/?session=${encodeURIComponent(id)}`);
     });
     return () => {
       unsubscribeCache();
       unsubscribeClick?.();
       subscriptions.forEach(unsubscribe => unsubscribe());
     };
-  }, [client, gateway, navigate]);
+  }, [client, gateway]);
 }
