@@ -24,6 +24,11 @@
       "types": "./dist/chat/contracts.d.ts",
       "import": "./dist/chat/contracts.js"
     },
+    "./bots-contracts": {
+      "alpha-source": "./src/bots/contracts.ts",
+      "types": "./dist/bots/contracts.d.ts",
+      "import": "./dist/bots/contracts.js"
+    },
     "./protocol": {
       "alpha-source": "./src/server/protocol.ts",
       "types": "./dist/server/protocol.d.ts",

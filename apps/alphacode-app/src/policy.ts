@@ -48,7 +48,7 @@ export function documentPath(value: string, development?: string) {
 export function assetPath(directory: string, pathname: string) {
   const decoded = decodeURIComponent(pathname);
   if (decoded.includes("\0") || decoded.includes("\\")) throw new Error("INVALID_ASSET_PATH");
-  const appRoute = /^\/(?:settings\/?|skills\/?)?$/.test(decoded);
+  const appRoute = /^\/(?:settings\/?|skills\/?|bots(?:\/[^/]+(?:\/settings)?)?\/?)?$/.test(decoded);
   const file = resolve(directory, appRoute ? "index.html" : `.${decoded}`);
   const within = relative(directory, file);
   if (!within || within.startsWith("..") || isAbsolute(within)) throw new Error("INVALID_ASSET_PATH");

@@ -9,6 +9,40 @@ import { parseDocument } from "yaml";
 import type { PermissionMode } from "./chat/contracts";
 import { ConfigurationError } from "./errors";
 
+export interface BotRoleModelDefaults {
+  modelId?: string;
+  contextWindow?: number;
+  maxOutputTokens?: number;
+  baseURL?: string;
+  apiKeyEnv?: string;
+  noAuth?: boolean;
+}
+
+export interface BotRoleModelPatch {
+  modelId?: string | null;
+  contextWindow?: number | null;
+  maxOutputTokens?: number | null;
+  baseURL?: string | null;
+  apiKeyEnv?: string | null;
+  noAuth?: boolean | null;
+}
+
+export interface BotsGlobalDefaults {
+  maxConcurrentWorkers?: number;
+  perBotMaxWorkers?: number;
+  worktreeRoot?: string;
+  router?: BotRoleModelDefaults;
+  worker?: BotRoleModelDefaults;
+}
+
+export interface BotsGlobalSettingsPatch {
+  maxConcurrentWorkers?: number | null;
+  perBotMaxWorkers?: number | null;
+  worktreeRoot?: string | null;
+  router?: BotRoleModelPatch | null;
+  worker?: BotRoleModelPatch | null;
+}
+
 export interface GlobalDefaults {
   language?: LanguagePreference;
   skills?: SkillsSettings;
@@ -22,6 +56,7 @@ export interface GlobalDefaults {
   permissionMode?: PermissionMode;
   databasePath?: string;
   defaultWorkspace?: string;
+  bots?: BotsGlobalDefaults;
 }
 
 export function expandHome(path: string): string {
@@ -34,6 +69,10 @@ export function globalConfigDirectory(env = process.env, cwd = process.cwd()): s
 
 export function defaultWorkspacePath(directory: string, defaults: GlobalDefaults): string {
   return resolve(directory, expandHome(defaults.defaultWorkspace ?? "workspace"));
+}
+
+export function worktreeRootPath(directory: string, defaults: GlobalDefaults): string {
+  return resolve(directory, expandHome(defaults.bots?.worktreeRoot ?? "worktrees"));
 }
 
 export interface SkillsSettings {
@@ -97,6 +136,58 @@ function string(value: unknown, file: string, field: string): string {
   return value.trim();
 }
 
+function parseModelSection(raw: unknown, file: string, prefix: string): Pick<BotRoleModelDefaults, "modelId" | "contextWindow" | "maxOutputTokens"> {
+  const model = object(raw, file, prefix, ["id", "contextWindow", "maxOutputTokens"]);
+  const result: Pick<BotRoleModelDefaults, "modelId" | "contextWindow" | "maxOutputTokens"> = {};
+  if (model.id !== undefined) result.modelId = string(model.id, file, `${prefix}.id`);
+  if (model.contextWindow !== undefined) {
+    if (typeof model.contextWindow !== "number" || !Number.isSafeInteger(model.contextWindow) || model.contextWindow <= 0) invalid(file, `${prefix}.contextWindow`);
+    result.contextWindow = model.contextWindow;
+  }
+  if (model.maxOutputTokens !== undefined) {
+    if (typeof model.maxOutputTokens !== "number" || !Number.isSafeInteger(model.maxOutputTokens) || model.maxOutputTokens <= 0) invalid(file, `${prefix}.maxOutputTokens`);
+    result.maxOutputTokens = model.maxOutputTokens;
+  }
+  return result;
+}
+
+function parseProviderSection(raw: unknown, file: string, prefix: string): Pick<BotRoleModelDefaults, "baseURL" | "apiKeyEnv" | "noAuth"> {
+  const provider = object(raw, file, prefix, ["adapter", "options"]);
+  const result: Pick<BotRoleModelDefaults, "baseURL" | "apiKeyEnv" | "noAuth"> = {};
+  if (provider.adapter !== undefined && provider.adapter !== "openai-completions") invalid(file, `${prefix}.adapter (supported: openai-completions)`);
+  if (provider.options !== undefined) {
+    const options = object(provider.options, file, `${prefix}.options`, ["baseURL", "apiKey"]);
+    if (options.baseURL !== undefined) {
+      const baseURL = string(options.baseURL, file, `${prefix}.options.baseURL`);
+      try { if (!["https:", "http:"].includes(new URL(baseURL).protocol)) invalid(file, `${prefix}.options.baseURL`); }
+      catch { invalid(file, `${prefix}.options.baseURL`); }
+      result.baseURL = baseURL;
+    }
+    if (options.apiKey !== undefined) {
+      const key = object(options.apiKey, file, `${prefix}.options.apiKey`, ["env", "none"]);
+      if (Object.keys(key).length !== 1) invalid(file, `${prefix}.options.apiKey`);
+      if (key.env !== undefined) {
+        const name = string(key.env, file, `${prefix}.options.apiKey.env`);
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) invalid(file, `${prefix}.options.apiKey.env`);
+        result.apiKeyEnv = name;
+        result.noAuth = false;
+      } else {
+        if (key.none !== true) invalid(file, `${prefix}.options.apiKey.none`);
+        result.noAuth = true;
+      }
+    }
+  }
+  return result;
+}
+
+function parseBotRole(raw: unknown, file: string, prefix: string): BotRoleModelDefaults {
+  const role = object(raw, file, prefix, ["model", "provider"]);
+  const result: BotRoleModelDefaults = {};
+  if (role.model !== undefined) Object.assign(result, parseModelSection(role.model, file, `${prefix}.model`));
+  if (role.provider !== undefined) Object.assign(result, parseProviderSection(role.provider, file, `${prefix}.provider`));
+  return result;
+}
+
 export function parseGlobalConfig(source: string, file: string): GlobalDefaults {
   let value: unknown;
   try {
@@ -108,7 +199,7 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     throw new ConfigurationError(`${file}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`, { code: "INVALID_YAML", params: { file } });
   }
   if (value === null) return {};
-  const root = object(value, file, "root", ["provider", "model", "context", "permissionMode", "databasePath", "defaultWorkspace", "skills", "language"]);
+  const root = object(value, file, "root", ["provider", "model", "context", "permissionMode", "databasePath", "defaultWorkspace", "skills", "language", "bots"]);
   const defaults: GlobalDefaults = {};
   if (root.context !== undefined) {
     const context = object(root.context, file, "context", ["autoCompact"]);
@@ -138,44 +229,8 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     }
     defaults.skills = settings;
   }
-  if (root.model !== undefined) {
-    const model = object(root.model, file, "model", ["id", "contextWindow", "maxOutputTokens"]);
-    if (model.id !== undefined) defaults.modelId = string(model.id, file, "model.id");
-    if (model.contextWindow !== undefined) {
-      if (typeof model.contextWindow !== "number" || !Number.isSafeInteger(model.contextWindow) || model.contextWindow <= 0) invalid(file, "model.contextWindow");
-      defaults.contextWindow = model.contextWindow;
-    }
-    if (model.maxOutputTokens !== undefined) {
-      if (typeof model.maxOutputTokens !== "number" || !Number.isSafeInteger(model.maxOutputTokens) || model.maxOutputTokens <= 0) invalid(file, "model.maxOutputTokens");
-      defaults.maxOutputTokens = model.maxOutputTokens;
-    }
-  }
-  if (root.provider !== undefined) {
-    const provider = object(root.provider, file, "provider", ["adapter", "options"]);
-    if (provider.adapter !== undefined && provider.adapter !== "openai-completions") invalid(file, "provider.adapter (supported: openai-completions)");
-    if (provider.options !== undefined) {
-      const options = object(provider.options, file, "provider.options", ["baseURL", "apiKey"]);
-      if (options.baseURL !== undefined) {
-        const baseURL = string(options.baseURL, file, "provider.options.baseURL");
-        try { if (!["https:", "http:"].includes(new URL(baseURL).protocol)) invalid(file, "provider.options.baseURL"); }
-        catch { invalid(file, "provider.options.baseURL"); }
-        defaults.baseURL = baseURL;
-      }
-      if (options.apiKey !== undefined) {
-        const key = object(options.apiKey, file, "provider.options.apiKey", ["env", "none"]);
-        if (Object.keys(key).length !== 1) invalid(file, "provider.options.apiKey");
-        if (key.env !== undefined) {
-          const name = string(key.env, file, "provider.options.apiKey.env");
-          if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) invalid(file, "provider.options.apiKey.env");
-          defaults.apiKeyEnv = name;
-          defaults.noAuth = false;
-        } else {
-          if (key.none !== true) invalid(file, "provider.options.apiKey.none");
-          defaults.noAuth = true;
-        }
-      }
-    }
-  }
+  if (root.model !== undefined) Object.assign(defaults, parseModelSection(root.model, file, "model"));
+  if (root.provider !== undefined) Object.assign(defaults, parseProviderSection(root.provider, file, "provider"));
   if (root.permissionMode !== undefined) {
     if (root.permissionMode !== "ask" && root.permissionMode !== "auto" && root.permissionMode !== "full") invalid(file, "permissionMode (ask / auto / full)");
     defaults.permissionMode = root.permissionMode;
@@ -184,6 +239,29 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
   if (root.defaultWorkspace !== undefined) {
     defaults.defaultWorkspace = string(root.defaultWorkspace, file, "defaultWorkspace");
     if (defaults.defaultWorkspace.includes("\0") || defaults.defaultWorkspace.length > 4096) invalid(file, "defaultWorkspace");
+  }
+  if (root.bots !== undefined) {
+    const rawBots = object(root.bots, file, "bots", ["maxConcurrentWorkers", "perBotMaxWorkers", "worktreeRoot", "router", "worker"]);
+    const bots: BotsGlobalDefaults = {};
+    if (rawBots.maxConcurrentWorkers !== undefined) {
+      if (typeof rawBots.maxConcurrentWorkers !== "number" || !Number.isSafeInteger(rawBots.maxConcurrentWorkers) || rawBots.maxConcurrentWorkers < 1 || rawBots.maxConcurrentWorkers > 12) {
+        invalid(file, "bots.maxConcurrentWorkers (1..12)");
+      }
+      bots.maxConcurrentWorkers = rawBots.maxConcurrentWorkers;
+    }
+    if (rawBots.perBotMaxWorkers !== undefined) {
+      if (typeof rawBots.perBotMaxWorkers !== "number" || !Number.isSafeInteger(rawBots.perBotMaxWorkers) || rawBots.perBotMaxWorkers < 1 || rawBots.perBotMaxWorkers > 4) {
+        invalid(file, "bots.perBotMaxWorkers (1..4)");
+      }
+      bots.perBotMaxWorkers = rawBots.perBotMaxWorkers;
+    }
+    if (rawBots.worktreeRoot !== undefined) {
+      bots.worktreeRoot = string(rawBots.worktreeRoot, file, "bots.worktreeRoot");
+      if (bots.worktreeRoot.includes("\0") || bots.worktreeRoot.length > 4096) invalid(file, "bots.worktreeRoot");
+    }
+    if (rawBots.router !== undefined) bots.router = parseBotRole(rawBots.router, file, "bots.router");
+    if (rawBots.worker !== undefined) bots.worker = parseBotRole(rawBots.worker, file, "bots.worker");
+    defaults.bots = bots;
   }
   return defaults;
 }
@@ -258,6 +336,89 @@ export async function updateSkillsSettings(directory: string, patch: SkillsSetti
   const updated = doc.toString();
   // Validate the serialized output before touching config.yaml.
   const verified = parseGlobalConfig(updated, configPath).skills ?? defaultSkillsSettings;
+  const temporary = `${configPath}.${randomUUID()}.tmp`;
+  await writeFile(temporary, updated, { mode: 0o600 });
+  await rename(temporary, configPath);
+  return verified;
+}
+
+function applyRolePatch(doc: ReturnType<typeof parseDocument>, role: "router" | "worker", patch: BotRoleModelPatch | null) {
+  if (patch === null) {
+    doc.deleteIn(["bots", role]);
+    return;
+  }
+  if (patch.modelId !== undefined) {
+    if (patch.modelId === null) doc.deleteIn(["bots", role, "model", "id"]);
+    else doc.setIn(["bots", role, "model", "id"], patch.modelId);
+  }
+  if (patch.contextWindow !== undefined) {
+    if (patch.contextWindow === null) doc.deleteIn(["bots", role, "model", "contextWindow"]);
+    else doc.setIn(["bots", role, "model", "contextWindow"], patch.contextWindow);
+  }
+  if (patch.maxOutputTokens !== undefined) {
+    if (patch.maxOutputTokens === null) doc.deleteIn(["bots", role, "model", "maxOutputTokens"]);
+    else doc.setIn(["bots", role, "model", "maxOutputTokens"], patch.maxOutputTokens);
+  }
+  if (patch.baseURL !== undefined) {
+    if (patch.baseURL === null) doc.deleteIn(["bots", role, "provider", "options", "baseURL"]);
+    else doc.setIn(["bots", role, "provider", "options", "baseURL"], patch.baseURL);
+  }
+  if (patch.noAuth === true) {
+    doc.deleteIn(["bots", role, "provider", "options", "apiKey"]);
+    doc.setIn(["bots", role, "provider", "options", "apiKey", "none"], true);
+  } else if (patch.apiKeyEnv !== undefined) {
+    doc.deleteIn(["bots", role, "provider", "options", "apiKey"]);
+    if (patch.apiKeyEnv !== null) doc.setIn(["bots", role, "provider", "options", "apiKey", "env"], patch.apiKeyEnv);
+  } else if (patch.noAuth === false || patch.noAuth === null) {
+    doc.deleteIn(["bots", role, "provider", "options", "apiKey", "none"]);
+  }
+  // Remove empty nested maps so YAML stays clean and passes strict parsing.
+  for (const path of [
+    ["bots", role, "model"],
+    ["bots", role, "provider", "options", "apiKey"],
+    ["bots", role, "provider", "options"],
+    ["bots", role, "provider"],
+    ["bots", role],
+  ]) {
+    const node = doc.getIn(path);
+    if (node && typeof node === "object" && "items" in node && Array.isArray((node as { items: unknown[] }).items) && (node as { items: unknown[] }).items.length === 0) {
+      doc.deleteIn(path);
+    }
+  }
+}
+
+export async function updateBotsGlobalSettings(directory: string, patch: BotsGlobalSettingsPatch): Promise<BotsGlobalDefaults> {
+  const configPath = join(directory, "config.yaml");
+  await mkdir(directory, { recursive: true });
+  try { await writeFile(configPath, template, { flag: "wx" }); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
+  const source = await readBounded(configPath, 64 * 1024);
+  parseGlobalConfig(source, configPath);
+  const doc = parseDocument(source || template, { prettyErrors: false, uniqueKeys: true, stringKeys: true, merge: false });
+  if (doc.errors.length || doc.warnings.length) {
+    throw new ConfigurationError(`${configPath}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`, { code: "INVALID_YAML", params: { file: configPath } });
+  }
+  if (!doc.contents) doc.contents = parseDocument("{}").contents;
+  if (patch.maxConcurrentWorkers !== undefined) {
+    if (patch.maxConcurrentWorkers === null) doc.deleteIn(["bots", "maxConcurrentWorkers"]);
+    else doc.setIn(["bots", "maxConcurrentWorkers"], patch.maxConcurrentWorkers);
+  }
+  if (patch.perBotMaxWorkers !== undefined) {
+    if (patch.perBotMaxWorkers === null) doc.deleteIn(["bots", "perBotMaxWorkers"]);
+    else doc.setIn(["bots", "perBotMaxWorkers"], patch.perBotMaxWorkers);
+  }
+  if (patch.worktreeRoot !== undefined) {
+    if (patch.worktreeRoot === null) doc.deleteIn(["bots", "worktreeRoot"]);
+    else doc.setIn(["bots", "worktreeRoot"], patch.worktreeRoot);
+  }
+  if (patch.router !== undefined) applyRolePatch(doc, "router", patch.router);
+  if (patch.worker !== undefined) applyRolePatch(doc, "worker", patch.worker);
+  const botsNode = doc.getIn(["bots"]);
+  if (botsNode && typeof botsNode === "object" && "items" in botsNode && Array.isArray((botsNode as { items: unknown[] }).items) && (botsNode as { items: unknown[] }).items.length === 0) {
+    doc.deleteIn(["bots"]);
+  }
+  const updated = doc.toString();
+  const verified = parseGlobalConfig(updated, configPath).bots ?? {};
   const temporary = `${configPath}.${randomUUID()}.tmp`;
   await writeFile(temporary, updated, { mode: 0o600 });
   await rename(temporary, configPath);

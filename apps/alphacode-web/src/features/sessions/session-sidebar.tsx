@@ -16,9 +16,17 @@ import {
   SidebarMenuButton, SidebarMenuItem, SidebarMenuSub,
   SidebarMenuSubItem, SidebarTrigger, useSidebar,
 } from "@/components/ui/sidebar";
+import { BotSidebarRail, BotSidebarSection } from "@/features/bots/bot-sidebar-section";
+import type { BotSummaryView } from "@/features/bots/api";
 import type { SessionFolder } from "@/features/sessions/types";
 
 interface SessionSidebarProps {
+  bots?: readonly BotSummaryView[];
+  selectedBotId?: string;
+  botActive?: boolean;
+  onSelectBot?: (botId: string) => void;
+  onCreateBot?: () => void;
+  onOpenBotSettings?: (botId: string) => void;
   folders: SessionFolder[];
   selectedFolderId?: string;
   onCreateProject: () => void;
@@ -40,7 +48,7 @@ interface SessionSidebarProps {
   onAddToCanvas?: (id: string) => void;
 }
 
-export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onDeleteProject, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive, onAddToCanvas }: SessionSidebarProps) {
+export function SessionSidebar({ bots, selectedBotId, botActive = false, onSelectBot, onCreateBot, onOpenBotSettings, folders, selectedFolderId, onCreateProject, onDeleteProject, selectedSessionId, onSelectSession, onNewSession, onRenameSession, onDeleteSession, creatingIds, loading, refreshing, error, onRefresh, onOpenSkills, skillsActive, onOpenSettings, settingsActive, onAddToCanvas }: SessionSidebarProps) {
   const { t } = useTranslation();
   const { completed, markRead } = useSessionCompletions(folders);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -135,12 +143,21 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onD
           </TooltipTrigger><TooltipContent side="right">{t("skills:market.title")}</TooltipContent></Tooltip>}
         </SidebarHeader>
         <SidebarContent className="items-center gap-1.5 px-1.5 py-2.5 group-data-[collapsible=icon]:overflow-y-auto" style={{ scrollbarGutter: "auto", scrollbarWidth: "none" }}>
+          {onSelectBot && onCreateBot && <>
+            <div className="rail-divider" />
+            <BotSidebarRail
+              bots={bots ?? []}
+              selectedBotId={selectedBotId}
+              onSelectBot={id => { onSelectBot(id); setOpenMobile(false); }}
+              onCreateBot={() => { onCreateBot(); setOpenMobile(false); }}
+            />
+          </>}
           <div className="rail-divider" />
           <nav aria-label={t("workspace:folders")} className="flex flex-col gap-1.5">
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="rail-action hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button></TooltipTrigger><TooltipContent side="right">{t("workspace:createProject")}</TooltipContent></Tooltip>
             {folders.map(folder => <Tooltip key={folder.id}><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="rail-action hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("workspace:folder", { name: folder.name })} aria-expanded={false}
-                data-active={!skillsActive && !settingsActive && activeFolderId === folder.id}
+                data-active={!skillsActive && !settingsActive && !botActive && activeFolderId === folder.id}
                 onClick={() => { folderFocusRequest.current = folder.id; setFolderOpen(folder.id, true); setOpen(true); }}><Folder aria-hidden="true" /></Button>
             </TooltipTrigger><TooltipContent side="right">{folder.name}</TooltipContent></Tooltip>)}
             {error && <Tooltip><TooltipTrigger asChild>
@@ -171,8 +188,17 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onD
           </Button>}
         </div>
       </SidebarHeader>
-      <SidebarContent className="relative overflow-hidden pt-4">
+      <SidebarContent className="relative overflow-hidden pt-3">
         <ScrollArea type="auto" className="sidebar-scroll-fade min-h-0 flex-1" viewportClassName="[&>div]:block!" scrollbarClassName="w-1.5 border-0">
+        {onSelectBot && onCreateBot && onOpenBotSettings && (
+          <BotSidebarSection
+            bots={bots ?? []}
+            selectedBotId={selectedBotId}
+            onSelectBot={id => { onSelectBot(id); setOpenMobile(false); }}
+            onCreateBot={() => { onCreateBot(); setOpenMobile(false); }}
+            onOpenBotSettings={id => { onOpenBotSettings(id); setOpenMobile(false); }}
+          />
+        )}
         <SidebarGroup className="px-(--sidebar-inset) py-0 pb-6">
           <div className="mb-1 flex items-center justify-between gap-2">
             <SidebarGroupLabel className="h-7 px-2.5 text-[0.75rem] font-medium text-(--sidebar-muted)">{t("workspace:projects")}</SidebarGroupLabel>
@@ -205,7 +231,7 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onD
                         <SidebarMenuSub className="mx-0 mt-0.5 translate-x-0 gap-0.5 border-0 p-0">
                           {folder.sessions.map((session) => (
                             <SidebarMenuSubItem key={session.id} className="relative">
-                              <SessionNavItem session={session} active={!skillsActive && !settingsActive && selectedSessionId === session.id} disabled={creatingIds[session.id]}
+                              <SessionNavItem session={session} active={!skillsActive && !settingsActive && !botActive && selectedSessionId === session.id} disabled={creatingIds[session.id]}
                                 onSelect={() => { markRead(session.id); onSelectSession(session.id); setOpenMobile(false); }}
                                 onAddToCanvas={onAddToCanvas ? () => { markRead(session.id); onAddToCanvas(session.id); setOpenMobile(false); } : undefined}
                                 onRename={onRenameSession} onDelete={onDeleteSession} />

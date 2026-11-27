@@ -9,7 +9,7 @@ import { createSqliteArtifactStore } from "@alpha/adk-artifact/sqlite";
 import type { RuntimeTrace } from "./trace-bridge";
 import { createSessionManager, createSessionPlugin, type Session, type SessionManager, type SessionStore } from "@alpha/adk-session";
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
-import { createCodingAgent, type CodingContext, type LoadSkillsResult } from "@alpha/coding-agent";
+import { createCodingAgent, listFilesTool, readContextTool, readFileTool, readSkillTool, searchTool, type CodingContext, type LoadSkillsResult } from "@alpha/coding-agent";
 import { createProvider, type CreateProviderOptions } from "@alpha/provider";
 import type { AppConfig } from "../config";
 import type { ChatEvent, ChatMessage, ChatRuntime, RequestApproval } from "../chat/contracts";
@@ -30,6 +30,9 @@ export async function createRuntime(config: AppConfig, options: {
   provider?: CreateProviderOptions;
   draftSessionId?: string;
   trace?: RuntimeTrace;
+  namespace?: string;
+  accessMode?: "readonly" | "write";
+  instructions?: string;
 } = {}): Promise<ChatRuntime> {
   const cwd = await realpath(config.workspaceRoot);
   let store: SessionStore | undefined;
@@ -59,7 +62,7 @@ export async function createRuntime(config: AppConfig, options: {
   try {
     await mkdir(dirname(config.databasePath), { recursive: true });
     store = await createSqliteSessionStore({ filename: config.databasePath });
-    const namespace = sessionNamespace(cwd);
+    const namespace = options.namespace ?? sessionNamespace(cwd);
     artifactStore = createSqliteArtifactStore(`${config.databasePath}.artifacts.db`);
     const artifacts = artifactStore;
     const readContext = createContextReader({ scope: { namespace, sessionId }, artifacts,
@@ -117,6 +120,9 @@ export async function createRuntime(config: AppConfig, options: {
       if (agent) return { agent, session };
       const approve = options.approve;
       const policySession = session;
+      const readonlyTools = options.accessMode === "readonly"
+        ? [readFileTool, listFilesTool, searchTool, readSkillTool, readContextTool]
+        : undefined;
       agent = await createCodingAgent({
         // The first model call happens after the Session plugin has persisted
         // admission. Title generation must not run for rejected/local prompts.
@@ -124,6 +130,7 @@ export async function createRuntime(config: AppConfig, options: {
           startTitle(model);
           return model.stream(input);
         } }, cwd,
+        ...(readonlyTools ? { tools: readonlyTools } : {}),
         skills: loadedSkills.skills,
         artifacts: { store: artifacts, scope: { namespace, sessionId } }, readContext,
         fileAccess: "host", commandTimeoutMs: null,
@@ -152,7 +159,7 @@ export async function createRuntime(config: AppConfig, options: {
             options.trace?.service.recordApproval(scope, ctx.runId, action.call.assistantId, action.call.callId, 'end', allowed);
           }
         } : undefined,
-        instructions: "You are AlphaCode. Respond in the user's language. Use Markdown for explanations and fenced blocks for code. Keep answers concise.",
+        instructions: options.instructions ?? "You are AlphaCode. Respond in the user's language. Use Markdown for explanations and fenced blocks for code. Keep answers concise.",
         plugins: [
           ...(config.globalInstructions ? [globalInstructionsPlugin<CodingContext<undefined>>(config.globalInstructions, config.globalInstructionsPath ?? "~/.alphacode/AGENTS.md")] : []),
           createSessionPlugin({ session }),

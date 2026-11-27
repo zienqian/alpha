@@ -14,6 +14,8 @@ export default defineConfig({
   build: { target: "es2022", sourcemap: false },
   test: {
     environment: "jsdom",
+    maxWorkers: 4,
+    testTimeout: 15_000,
     include: ["test/**/*.test.ts", "test/**/*.test.tsx"],
     setupFiles: ["./test/setup.ts"],
     environmentOptions: { jsdom: { pretendToBeVisual: true } },

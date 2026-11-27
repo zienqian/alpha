@@ -21,7 +21,10 @@ describe("server session integration", () => {
     renderApp();
     await screen.findByRole("button", { name: "搭建前端工作区" });
     // Initial index events may trigger a coalesced refresh before a slow render finishes.
-    expect(new Set(api.fetch.mock.calls.filter(([path]) => !path.endsWith("/events")).map(([path]) => path))).toEqual(new Set(["/api/sessions", "/api/projects"]));
+    const indexPaths = api.fetch.mock.calls
+      .filter(([path]) => !(path.split("?")[0] ?? path).endsWith("/events"))
+      .map(([path]) => path.split("?")[0] ?? path);
+    expect(new Set(indexPaths)).toEqual(new Set(["/api/sessions", "/api/projects", "/api/bots"]));
     expect(api.fetch.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
     expect(api.fetch).toHaveBeenCalledWith("/api/sessions", expect.objectContaining({
       credentials: "omit", redirect: "error", cache: "no-store", signal: expect.any(AbortSignal),
@@ -59,7 +62,9 @@ describe("server session integration", () => {
     expect(screen.getByText(/省略 8 行/)).toBeTruthy();
     expect(messages[2]?.querySelector("script")).toBeNull();
     expect(screen.getByText("Response incomplete")).toBeTruthy();
-    expect([...new Set(api.fetch.mock.calls.filter(([path]) => !path.endsWith("/events")).map(([path]) => path))].sort()).toEqual(["/api/projects", "/api/sessions", "/api/sessions/project-notes"]);
+    expect([...new Set(api.fetch.mock.calls
+      .filter(([path]) => !(path.split("?")[0] ?? path).endsWith("/events"))
+      .map(([path]) => path.split("?")[0] ?? path))].sort()).toEqual(["/api/bots", "/api/projects", "/api/sessions", "/api/sessions/project-notes"]);
   });
 
   it("groups consecutive tools around prose, keeps expansion across refresh and omits speaker names", async () => {

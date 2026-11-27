@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isThemeMode, useTheme, type ThemeMode } from "@/components/theme-provider";
+import { BotsDefaultsSection } from "@/features/bots/bots-defaults-section";
 import { useLanguage } from "@/i18n/provider";
 import { isLanguagePreference } from "@/i18n/locale";
 import { useTranslation } from "@/i18n/react";
@@ -95,18 +96,26 @@ export function SettingsPage() {
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => { searchRef.current?.focus({ preventScroll: true }); }, []);
   const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  const matches = (field: "theme" | "language") => {
+  const matches = (field: "theme" | "language" | "bots") => {
     // Search both supported languages so switching language keeps the result and focus.
     const text = ["zh-CN", "en"].flatMap(lng => [
-      t("settings:general", { lng }), t("settings:preferences", { lng }), t("settings:system", { lng }),
-      ...(field === "theme" ? [t("settings:colorTheme", { lng }), t("settings:appearance", { lng }), t("settings:light", { lng }), t("settings:dark", { lng })] :
-        [t("settings:language", { lng }), t("settings:chinese", { lng }), t("settings:english", { lng })]),
+      t("settings:general", { lng }),
+      ...(field === "bots" ? [
+        t("bots:defaults.sectionTitle", { lng }), t("bots:defaults.cardTitle", { lng }),
+        t("bots:defaults.maxConcurrentWorkers", { lng }), t("bots:defaults.perBotMaxWorkers", { lng }),
+        t("bots:defaults.routerModelId", { lng }), t("bots:defaults.workerModelId", { lng }),
+      ] : [
+        t("settings:preferences", { lng }), t("settings:system", { lng }),
+        ...(field === "theme" ? [t("settings:colorTheme", { lng }), t("settings:appearance", { lng }), t("settings:light", { lng }), t("settings:dark", { lng })] :
+          [t("settings:language", { lng }), t("settings:chinese", { lng }), t("settings:english", { lng })]),
+      ]),
     ]).join(" ").toLocaleLowerCase();
     return terms.every(term => text.includes(term));
   };
   const showTheme = matches("theme");
   const showLanguage = matches("language");
-  const resultCount = Number(showTheme) + Number(showLanguage);
+  const showBots = matches("bots");
+  const resultCount = Number(showTheme) + Number(showLanguage) + Number(showBots);
 
   function clearSearch() {
     setQuery("");
@@ -189,6 +198,8 @@ export function SettingsPage() {
           </div>}
         </div>
       </section>}
+
+      {showBots && <BotsDefaultsSection />}
 
       {resultCount === 0 && <Empty className="mt-8 rounded-2xl border border-dashed border-border bg-background py-12 dark:bg-card/40">
         <EmptyHeader>

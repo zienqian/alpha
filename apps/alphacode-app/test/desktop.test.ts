@@ -44,7 +44,7 @@ test("only the application's scheme and host can reach the desktop bridge", () =
 test("local assets cannot escape the Web build directory", () => {
   const root = resolve("web");
   expect(assetPath(root, "/")).toBe(resolve(root, "index.html"));
-  for (const route of ["/settings", "/settings/", "/skills", "/skills/"]) {
+  for (const route of ["/settings", "/settings/", "/skills", "/skills/", "/bots/new", "/bots/bot_1", "/bots/bot_1/settings"]) {
     expect(assetPath(root, route)).toBe(resolve(root, "index.html"));
     expect(isApplicationURL(`alphacode-app://app${route}`)).toBe(true);
   }

@@ -1,0 +1,1524 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>AlphaCode Bots 技术方案设计（v1.0 · Bots 外壳 × Super-agent 内核）</title>
+<style>
+:root{
+  --shell:#f5f6f8;
+  --paper:#ffffff;
+  --sidebar:#f0f2f5;
+  --ink:#171717;
+  --muted:#62666d;
+  --line:#e4e6eb;
+  --line-strong:#d1d5dc;
+  --primary:#171717;
+  --primary-fg:#fafafa;
+  --accent:#2563eb;
+  --accent-soft:#eff4ff;
+  --accent-ink:#1d4ed8;
+  --ok:#15803d;
+  --ok-soft:#eaf8f0;
+  --warn:#a16207;
+  --warn-soft:#fef6e4;
+  --danger:#b91c1c;
+  --danger-soft:#fef0f0;
+  --purple:#6d28d9;
+  --purple-soft:#f3effe;
+  --code:#f6f7f9;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  color-scheme:light dark;
+  font:15px/1.75 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI Variable","Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  color:var(--ink);
+  background:var(--shell);
+}
+[data-theme="dark"]{
+  --shell:#141416;
+  --paper:#1b1c1f;
+  --sidebar:#18191c;
+  --ink:#f2f3f5;
+  --muted:#a1a5ae;
+  --line:#2c2e33;
+  --line-strong:#3d4047;
+  --primary:#ebebed;
+  --primary-fg:#171717;
+  --accent:#60a5fa;
+  --accent-soft:#1d283a;
+  --accent-ink:#bfdbfe;
+  --ok:#4ade80;
+  --ok-soft:#162c1f;
+  --warn:#fbbf24;
+  --warn-soft:#302614;
+  --danger:#f87171;
+  --danger-soft:#351c1d;
+  --purple:#c084fc;
+  --purple-soft:#2a1f38;
+  --code:#222428;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.28);
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --shell:#141416;
+    --paper:#1b1c1f;
+    --sidebar:#18191c;
+    --ink:#f2f3f5;
+    --muted:#a1a5ae;
+    --line:#2c2e33;
+    --line-strong:#3d4047;
+    --primary:#ebebed;
+    --primary-fg:#171717;
+    --accent:#60a5fa;
+    --accent-soft:#1d283a;
+    --accent-ink:#bfdbfe;
+    --ok:#4ade80;
+    --ok-soft:#162c1f;
+    --warn:#fbbf24;
+    --warn-soft:#302614;
+    --danger:#f87171;
+    --danger-soft:#351c1d;
+    --purple:#c084fc;
+    --purple-soft:#2a1f38;
+    --code:#222428;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.28);
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--shell);color:var(--ink);-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:4px}
+a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.layout{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:26px;padding:24px 28px 72px}
+aside.toc{position:sticky;top:24px;align-self:start;max-height:calc(100vh - 48px);overflow:auto;background:var(--sidebar);border:1px solid var(--line);border-radius:14px;padding:16px 14px;font-size:13px}
+.toc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 12px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.toc-brand{font-weight:600;font-size:14px;letter-spacing:-.015em}
+.toc-sub{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px}
+.toc a{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;color:var(--muted);text-decoration:none;transition:background .15s,color .15s}
+.toc a:hover{background:var(--paper);color:var(--ink)}
+.toc a.active{background:var(--paper);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.toc-num{font-family:"Geist Mono","Cascadia Code",Consolas,monospace;font-size:11px;opacity:.7;min-width:18px;font-variant-numeric:tabular-nums}
+.toc-group{font-size:11px;font-weight:600;color:var(--muted);padding:12px 8px 4px;letter-spacing:.04em}
+
+.theme-btn{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer;line-height:1.4}
+.theme-btn:hover{border-color:var(--ink)}
+
+main{min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:40px 44px;box-shadow:var(--shadow)}
+header.doc-header{padding-bottom:30px;border-bottom:1px solid var(--line)}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent-soft);padding:4px 10px;border-radius:99px}
+h1{font-size:clamp(26px,3.1vw,36px);line-height:1.22;letter-spacing:-.03em;margin:16px 0 12px}
+.lead{font-size:15.5px;color:var(--muted);max-width:880px;margin:0 0 18px}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.meta-row span{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:6px;background:var(--code);border:1px solid var(--line)}
+
+section{padding:34px 0;border-bottom:1px solid var(--line);scroll-margin-top:20px}
+section:last-of-type{border-bottom:0;padding-bottom:8px}
+h2{font-size:22px;line-height:1.35;letter-spacing:-.02em;margin:0 0 16px;display:flex;align-items:center;gap:10px}
+.sec-badge{font-family:"Geist Mono","Cascadia Code",Consolas,monospace;font-size:12px;color:var(--accent-ink);background:var(--accent-soft);padding:2px 8px;border-radius:6px;font-variant-numeric:tabular-nums}
+h3{font-size:16.5px;line-height:1.45;margin:24px 0 10px;letter-spacing:-.01em}
+p{margin:8px 0 14px}
+ul,ol{padding-left:22px;margin:8px 0 16px}
+li{margin:6px 0}
+
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
+.cards-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0}
+.cards-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.card{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--paper)}
+.card-tint{background:var(--shell)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;margin-bottom:8px}
+.tag-blue{background:var(--accent-soft);color:var(--accent-ink)}
+.tag-ok{background:var(--ok-soft);color:var(--ok)}
+.tag-warn{background:var(--warn-soft);color:var(--warn)}
+.tag-purple{background:var(--purple-soft);color:var(--purple)}
+.tag-danger{background:var(--danger-soft);color:var(--danger)}
+.tag-neutral{background:var(--code);color:var(--muted);border:1px solid var(--line)}
+.card strong{display:block;font-size:14.5px;margin-bottom:6px}
+.card p{font-size:13px;color:var(--muted);margin:0;line-height:1.65}
+
+.callout{padding:14px 18px;border-radius:10px;border-left:3px solid var(--accent);background:var(--accent-soft);margin:16px 0;font-size:13.8px}
+.callout.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.callout.ok{border-left-color:var(--ok);background:var(--ok-soft)}
+.callout.purple{border-left-color:var(--purple);background:var(--purple-soft)}
+.callout strong{color:var(--ink)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:16px 0}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px;background:var(--paper)}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+th{background:var(--code);font-weight:600;color:var(--ink);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+
+code,pre{font-family:"Geist Mono","Cascadia Code",Consolas,"SFMono-Regular",monospace}
+code{font-size:.84em;background:var(--code);padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}
+pre{margin:14px 0;padding:16px 18px;border-radius:12px;background:var(--code);border:1px solid var(--line);overflow:auto;font-size:12.3px;line-height:1.68}
+pre code{padding:0;background:none}
+
+.diagram-card{border:1px solid var(--line);border-radius:14px;background:var(--shell);padding:16px 18px 14px;margin:18px 0}
+.diagram-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.diagram-title{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.diagram-caption{font-size:12px;color:var(--muted)}
+.diagram-scroll{overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px}
+.diagram-scroll svg{display:block;width:100%;height:auto;min-width:780px}
+.svg-text{font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;fill:var(--ink)}
+.svg-muted{font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;fill:var(--muted)}
+.svg-mono{font-family:"Geist Mono","Cascadia Code",Consolas,monospace;fill:var(--ink)}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:11.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+/* Interactive Multi-Bot Wireframe */
+.wireframe{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--shell);margin:18px 0;box-shadow:var(--shadow)}
+.wf-titlebar{height:38px;background:var(--sidebar);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:12px;color:var(--muted);gap:10px}
+.wf-dots{display:flex;gap:6px;align-items:center}
+.wf-dots i{display:block;width:10px;height:10px;border-radius:50%;background:var(--line-strong)}
+.wf-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.wf-pill-btn{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:8px;padding:3px 10px;font-size:11.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1.45}
+.wf-pill-btn:hover{border-color:var(--ink)}
+.wf-pill-btn[aria-pressed="true"]{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
+.wf-body{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:460px;transition:grid-template-columns .18s}
+.wf-body.drawer-open{grid-template-columns:236px minmax(0,1fr) 292px}
+.wf-sidebar{background:var(--sidebar);border-right:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:4px;font-size:12.5px}
+.wf-sec-head{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 2px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.wf-icon-btn{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:2px 5px;border-radius:6px;font-size:13px;line-height:1}
+.wf-icon-btn:hover{background:var(--paper);color:var(--ink)}
+.wf-bot-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:9px;cursor:pointer;border:1px solid transparent;transition:background .12s}
+.wf-bot-row:hover{background:var(--paper)}
+.wf-bot-row.active{background:var(--paper);border-color:var(--line-strong);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.wf-avatar{width:22px;height:22px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;position:relative;flex-shrink:0}
+.wf-status-dot{position:absolute;right:-2px;bottom:-2px;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--sidebar)}
+.wf-bot-row.active .wf-status-dot{border-color:var(--paper)}
+.wf-bot-meta{min-width:0;flex:1;display:flex;flex-direction:column}
+.wf-bot-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;line-height:1.3}
+.wf-bot-proj{font-size:10.5px;color:var(--muted);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wf-count{font-size:10.5px;font-family:"Geist Mono",Consolas,monospace;padding:1px 6px;border-radius:99px;font-weight:600}
+.wf-count.warn{background:var(--warn-soft);color:var(--warn)}
+.wf-count.ok{background:var(--ok-soft);color:var(--ok)}
+.wf-count.muted{background:var(--code);color:var(--muted)}
+.wf-divider{height:1px;background:var(--line);margin:6px 2px}
+.wf-nav-item{padding:6px 8px;border-radius:7px;color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:space-between}
+.wf-main{background:var(--paper);display:flex;flex-direction:column;min-width:0}
+.wf-topbar{height:44px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:10px;font-size:12.5px}
+.wf-top-left{display:flex;align-items:center;gap:8px;min-width:0}
+.wf-proj-chip{font-size:11px;color:var(--muted);background:var(--code);border:1px solid var(--line);padding:2px 8px;border-radius:99px;white-space:nowrap}
+.wf-chat{flex:1;padding:16px 20px;display:flex;flex-direction:column;gap:11px;font-size:12.8px;overflow:auto}
+.wf-msg-user{align-self:flex-end;background:var(--code);border:1px solid var(--line);color:var(--ink);padding:8px 13px;border-radius:14px 14px 4px 14px;max-width:80%}
+.wf-msg-agent{align-self:flex-start;background:var(--paper);border:1px solid var(--line);padding:10px 14px;border-radius:12px;max-width:88%;line-height:1.65}
+.wf-approval{border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));background:var(--warn-soft);border-radius:10px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}
+.wf-approval.resolved{border-color:color-mix(in srgb,var(--ok) 45%,var(--line));background:var(--ok-soft)}
+.wf-btn-sm{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer;white-space:nowrap}
+.wf-btn-sm:hover{border-color:var(--ink)}
+.wf-btn-sm.primary{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
+.wf-composer{margin:0 18px 16px;border:1px solid var(--line-strong);border-radius:14px;padding:9px 13px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);background:var(--paper)}
+.wf-drawer{border-left:1px solid var(--line);background:var(--shell);padding:12px;display:none;flex-direction:column;gap:10px;font-size:12px}
+.wf-body.drawer-open .wf-drawer{display:flex}
+.wf-drawer-box{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 11px}
+.wf-settings-view{flex:1;padding:18px 22px;display:none;flex-direction:column;gap:12px;font-size:12.5px;overflow:auto}
+.wf-settings-grid{display:grid;grid-template-columns:130px minmax(0,1fr);gap:10px 14px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--shell)}
+.wf-field-val{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--ink)}
+
+.foot{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+@media(max-width:1080px){
+  .layout{grid-template-columns:1fr;padding:16px}
+  aside.toc{position:static;max-height:none}
+  main{padding:24px 20px}
+  .cards,.cards-3,.cards-4{grid-template-columns:1fr}
+  .wf-body,.wf-body.drawer-open{grid-template-columns:1fr}
+  .wf-sidebar{border-right:0;border-bottom:1px solid var(--line)}
+  .wf-drawer{border-left:0;border-top:1px solid var(--line)}
+}
+@media print{
+  aside.toc,.theme-btn,.wf-controls{display:none!important}
+  .layout{display:block;padding:0}
+  main{border:0;box-shadow:none;padding:0}
+  section{break-inside:auto}
+  .diagram-card,.card,pre,tr{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc" aria-label="文档目录">
+    <div class="toc-head">
+      <div>
+        <div class="toc-brand">AlphaCode Bots</div>
+        <span class="toc-sub">技术方案设计 · v1.0</span>
+      </div>
+      <button type="button" class="theme-btn" id="themeToggle" title="切换浅色/深色主题">主题</button>
+    </div>
+    <div class="toc-group">架构决策与形态</div>
+    <a href="#s1"><span class="toc-num">01</span>转型动机与锁定决策</a>
+    <a href="#s2"><span class="toc-num">02</span>产品形态与交互原型</a>
+    <a href="#s3"><span class="toc-num">03</span>系统总架构全景图</a>
+    <div class="toc-group">Bots 外壳与 Super-agent 内核</div>
+    <a href="#s4"><span class="toc-num">04</span>生命周期与单项目绑定</a>
+    <a href="#s5"><span class="toc-num">05</span>每 Bot 双层引擎与并行调度</a>
+    <a href="#s6"><span class="toc-num">06</span>Worktree 隔离、审批与介入</a>
+    <a href="#s7"><span class="toc-num">07</span>模型继承与链式召回</a>
+    <div class="toc-group">工程落地规格</div>
+    <a href="#s8"><span class="toc-num">08</span>SQLite 数据模型设计</a>
+    <a href="#s9"><span class="toc-num">09</span>重构映射与 HTTP/SSE 契约</a>
+    <a href="#s10"><span class="toc-num">10</span>安全红线与分阶段演进</a>
+  </aside>
+
+  <main>
+    <header class="doc-header">
+      <div class="eyebrow">TECHNICAL DESIGN · BOTS SHELL × SUPER-AGENT KERNEL · V1.0</div>
+      <h1>AlphaCode Bots 技术方案设计</h1>
+      <p class="lead">放弃单一全局 Personal Agent 思路，转向以 <strong>Up.computer Bots</strong> 为产品外壳（多角色常驻 Bot、唯一永久对话、单项目严格绑定、清晰状态聚合与可演进专属记忆）、以 <strong>DeepSeek Super-agent</strong> 为每 Bot 内部执行引擎（Router/Worker 双层隔离、全双工异步派发、Git Worktree 并发写隔离、聚合审批、链式召回与 Watchdog）的统一架构方案。</p>
+      <div class="meta-row">
+        <span>状态：技术方案评审稿 v1.0（待确认后实施）</span>
+        <span>参考实现：krl-gr/upcomputer (Bots) + DeepSeek Super-agent</span>
+        <span>适用范围：alphacode-app-server / alphacode-web / alphacode-app</span>
+        <span>100% 离线可读 HTML + 可交互原型</span>
+      </div>
+    </header>
+
+    <!-- 01 -->
+    <section id="s1">
+      <h2><span class="sec-badge">01</span>转型动机与已锁定核心决策</h2>
+      <p>此前我们尝试的「单一全局 Personal Agent」在产品形态上存在两个天然张力：一方面，把所有项目、所有角色（内核开发、发版运维、文档调研）混在唯一一条主对话流中，长期运行后语义边界会逐渐模糊；另一方面，用户心智中更习惯按职责划分多个常驻伙伴（例如“Alpha 架构师”、“发布助手”、“前端专家”），每个伙伴专注一个工作仓库、拥有独立的永久对话与人格指令。</p>
+      <p>借鉴开源项目 <strong>Up.computer</strong> 的 Bots 设计，同时在每个 Bot 内部坚持使用 <strong>DeepSeek Super-agent</strong> 双层并发架构，恰好实现了“外层按角色与项目切分清晰上下文边界，内层由 Router/Worker 消除单会话阻塞”的黄金组合——这也与 Super-agent 论文 §8.3 所提出的<em>“需要共享上下文的范围共用同一个实例，需要隔离的范围则各自独立配备”</em>完全一致。</p>
+
+      <div class="cards">
+        <div class="card card-tint">
+          <span class="tag tag-blue">决策 1 · 单项目严格绑定</span>
+          <strong>严格对齐 Up.computer：每 Bot 仅绑定 1 个工作项目</strong>
+          <p>每个 Bot 绑定唯一 <code>projectId</code>，其永久对话与所有派发的后台 Worker 均收敛在该项目内；允许在空闲时通过设置页切换项目（历史对话、记忆与历史任务原项目归属均完整保留）。</p>
+        </div>
+        <div class="card card-tint">
+          <span class="tag tag-ok">决策 2 · 极简任务形态</span>
+          <strong>不引入独立 Tasks 看板与手工 Worker 模板</strong>
+          <p>舍弃 Up.computer 中较重的独立 Tasks 看板与自定义 Worker 触发器配置；每个 Bot 内部直接由 Super-agent Router 动态派发隔离 Worker，在对话内通过「顶部活跃任务胶囊 + 右侧 Worker Inspector 抽屉」完成进度查看、审批、Steer 与 Diff 合并。</p>
+        </div>
+        <div class="card card-tint">
+          <span class="tag tag-purple">决策 3 · Phase 1 聚焦闭环</span>
+          <strong>先打通 Bots 产品外壳 + 每 Bot 独立 Super-agent 内核</strong>
+          <p>Phase 1 聚焦：侧栏 Bots 分区与设置页、唯一永久对话、每 Bot 独立 Router/Worker 双层模型配置、Git Worktree 并发写隔离、聚合审批与 Worker 抽屉。长期记忆（<code>bot_memories</code>）、历史搜索、会话转 Bot 与 <code>@Bot</code> 跨会话提及在架构与 Schema 层提前预留，Phase 2 零返工接入。</p>
+        </div>
+        <div class="card card-tint">
+          <span class="tag tag-warn">决策 4 · 代码重构路径</span>
+          <strong>评审确认后，将未提交的 <code>personal</code> 原地重构为 <code>bots</code></strong>
+          <p>工作区当前未提交的 <code>src/personal/*</code> 已实现 Super-agent 核心底座（WorktreeManager / WorkerPool / Router / EventBus / Watchdog），评审定稿后直接泛化重构为多 Bot 引擎并彻底移除 <code>personal</code> 入口，避免双套历史包袱。</p>
+        </div>
+      </div>
+
+      <h3>架构取舍对照：Up.computer Bots vs DeepSeek Super-agent vs AlphaCode Bots</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>能力维度</th><th>Up.computer Bots 做法</th><th>DeepSeek Super-agent 做法</th><th>AlphaCode Bots 融合设计</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>外层产品组织</strong></td>
+              <td>侧栏顶部独立 <code>Bots</code> 分区，多 Bot 各自拥有唯一永久对话、外观头像、指令与单一项目绑定</td>
+              <td>单实例跨信道常驻，§8.3 提出按上下文隔离边界独立配备多实例</td>
+              <td><strong>完整借鉴 Up.computer</strong>：多 Bot 一级分区，每 Bot 严格绑定 1 个项目 + 唯一永久对话（不污染普通项目会话树）</td>
+            </tr>
+            <tr>
+              <td><strong>Bot 内部对话执行</strong></td>
+              <td>普通单会话 Agent，对话本身可直接执行工具，大任务通过外部 Tasks 看板 / <code>bot_assign</code> 异步化</td>
+              <td><strong>Router / Worker 双层隔离</strong>：Router 严禁挂执行工具，只负责意图理解、交互与 <code>dispatch_task</code></td>
+              <td><strong>坚持 Super-agent 内核</strong>：每个 Bot 内部由无执行工具的常驻 Router 承接全双工对话，异步派发隔离 Worker，彻底消除单会话阻塞</td>
+            </tr>
+            <tr>
+              <td><strong>并发写隔离</strong></td>
+              <td>依赖外部 Worker 线程与手工任务队列（默认单 Worker 串行）</td>
+              <td>隔离 Worker Session + 独立工作目录并发推进</td>
+              <td><strong>Phase 1 原生 Git Worktree 隔离</strong>：同一项目内多个并行写任务自动分配独立 Worktree 分支 <code>alphacode/bot/&lt;shortId&gt;</code>，主仓零污染</td>
+            </tr>
+            <tr>
+              <td><strong>任务管理界面</strong></td>
+              <td>独立 Tasks 页面（Me/Workers 双视图）、Planner 日历、可配置 Worker 模板与 Automations</td>
+              <td>去 Session 化，强调在工作流内低打扰交付与按需中途介入</td>
+              <td><strong>有意舍弃独立看板</strong>：对话顶栏「活跃任务胶囊」+ 聊天内聚合审批卡片 + 右侧滑出 Worker Inspector（工具流 / Steer / Diff / 合并）</td>
+            </tr>
+            <tr>
+              <td><strong>长期记忆与安全</strong></td>
+              <td>每 Bot 200 条事实记忆、用户所有权锁、增量 <code>&lt;memory_update&gt;</code>、后台任务禁写记忆</td>
+              <td>Inline &amp; Spill + <code>recall_object</code> 引用图链式召回</td>
+              <td><strong>双轨互补</strong>：Phase 1 落地 <code>Inline &amp; Spill + recall_object</code>；Phase 2 无缝叠加 Up.computer 风格 <code>bot_memories</code>（且天然复用“Worker 禁写、Router 裁决”安全边界）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section id="s2">
+      <h2><span class="sec-badge">02</span>产品形态与交互原型（可交互线框）</h2>
+      <p>界面唯一源码继续保持在 <code>apps/alphacode-web</code>，严格遵守现有 <a href="../apps/alphacode-web/DESIGN.md"><code>DESIGN.md</code></a> 的 shadcn/ui Neutral 纯中性 OKLCH 色阶、毛玻璃侧栏与 AI Elements 组件体系（Bot 头像颜色仅用于身份辨识，不破坏全站中性美学）。Electron 桌面端完全复用。</p>
+      <p><strong>交互提示：</strong>在下方线框中可以直接点击左侧不同 <strong>Bot</strong> 切换对话、点击 <strong>⚙ 设置</strong> 预览 Bot 配置页、点击顶部任务胶囊切换右侧 <strong>Worker Inspector 抽屉</strong>，或点击审批卡中的<strong>「允许执行」</strong>体验实时状态联动：</p>
+
+      <div class="wireframe" role="region" aria-label="AlphaCode Bots 多实例交互原型">
+        <div class="wf-titlebar">
+          <div class="wf-dots"><i></i><i></i><i></i></div>
+          <span id="wfRouteLabel">AlphaCode Desktop / Web · 路由 <code>/bots/bot_alpha_core</code></span>
+          <div class="wf-controls">
+            <button type="button" class="wf-pill-btn" id="wfModeChat" aria-pressed="true">对话视图</button>
+            <button type="button" class="wf-pill-btn" id="wfModeSettings" aria-pressed="false">Bot 设置页</button>
+            <button type="button" class="wf-pill-btn" id="wfDrawerToggle" aria-pressed="true">Worker 抽屉</button>
+          </div>
+        </div>
+        <div class="wf-body drawer-open" id="wfBody">
+          <!-- Sidebar -->
+          <div class="wf-sidebar">
+            <div class="wf-sec-head">
+              <span>Bots</span>
+              <button type="button" class="wf-icon-btn" id="wfNewBotBtn" title="新建 Bot（/bots/new）">＋</button>
+            </div>
+            <div class="wf-bot-row active" data-bot="alpha" tabindex="0" role="button">
+              <span class="wf-avatar" style="background:#2563eb">A<span class="wf-status-dot" id="dot-alpha" style="background:#f59e0b"></span></span>
+              <div class="wf-bot-meta">
+                <span class="wf-bot-name">Alpha 内核助手</span>
+                <span class="wf-bot-proj">alpha · 2 运行中</span>
+              </div>
+              <span class="wf-count warn" id="badge-alpha">1 审批</span>
+            </div>
+            <div class="wf-bot-row" data-bot="release" tabindex="0" role="button">
+              <span class="wf-avatar" style="background:#15803d">R<span class="wf-status-dot" style="background:#22c55e"></span></span>
+              <div class="wf-bot-meta">
+                <span class="wf-bot-name">桌面端发版助手</span>
+                <span class="wf-bot-proj">alpha · 已完成</span>
+              </div>
+              <span class="wf-count ok">Diff</span>
+            </div>
+            <div class="wf-bot-row" data-bot="auth" tabindex="0" role="button">
+              <span class="wf-avatar" style="background:#7c3aed">S<span class="wf-status-dot" style="background:#9ca3af"></span></span>
+              <div class="wf-bot-meta">
+                <span class="wf-bot-name">鉴权审计助手</span>
+                <span class="wf-bot-proj">repo-b · 空闲</span>
+              </div>
+              <span class="wf-count muted">空闲</span>
+            </div>
+            <div class="wf-divider"></div>
+            <div class="wf-nav-item"><span>搜索会话</span><span style="opacity:.6;font-size:10.5px">Ctrl K</span></div>
+            <div class="wf-nav-item"><span>Skills 市场</span></div>
+            <div class="wf-divider"></div>
+            <div class="wf-sec-head"><span>项目 (Projects)</span><span>＋</span></div>
+            <div class="wf-nav-item"><span>▸ alpha</span><span style="opacity:.6">3 会话</span></div>
+            <div class="wf-nav-item"><span>▸ repo-b</span><span style="opacity:.6">1 会话</span></div>
+            <div style="margin-top:auto" class="wf-divider"></div>
+            <div class="wf-nav-item"><span>全局设置（含 Bots 默认）</span></div>
+          </div>
+
+          <!-- Main Area -->
+          <div class="wf-main">
+            <div class="wf-topbar">
+              <div class="wf-top-left">
+                <strong id="wfBotTitle">Alpha 内核助手</strong>
+                <span class="wf-proj-chip" id="wfBotProject">项目: alpha</span>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <button type="button" class="wf-pill-btn" id="wfTaskPill">2 运行中 · 1 待审批</button>
+                <button type="button" class="wf-icon-btn" id="wfSettingsIcon" title="打开此 Bot 设置">⚙</button>
+              </div>
+            </div>
+
+            <!-- Chat View -->
+            <div class="wf-chat" id="wfChatView">
+              <div class="wf-msg-user" id="wfUserMsg">把 app-server 的 skills 路由拆干净并补齐单元测试，同时顺便帮我查一下 session-store 的 SQLite 锁超时配置。</div>
+              <div class="wf-msg-agent" id="wfAgentMsg1">
+                <strong>Alpha 内核助手（Router · gpt-6.1-fast）</strong><br>
+                已在项目 <code>alpha</code> 内并行启动两个后台 Worker，你可以继续提其他要求：<br>
+                • <code>tsk_9f3a</code>（写任务 · Worktree <code>alphacode/bot/9f3a</code>）：重构 skills 路由并补测试<br>
+                • <code>tsk_4c1b</code>（只读调研 · 零拷贝）：排查 SQLite <code>busy_timeout</code> 与 WAL 配置
+              </div>
+              <div class="wf-approval" id="wfApprovalCard">
+                <div>
+                  <strong id="wfApprovalTitle">需要审批 · <code>tsk_9f3a</code> (Worktree <code>alphacode/bot/9f3a</code>)</strong><br>
+                  <span style="opacity:.85" id="wfApprovalCmd">命令：<code>bun test apps/alphacode-app-server/test/skills.test.ts</code></span>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0" id="wfApprovalBtns">
+                  <button type="button" class="wf-btn-sm" id="wfDenyBtn">拒绝</button>
+                  <button type="button" class="wf-btn-sm primary" id="wfAllowBtn">允许执行</button>
+                </div>
+              </div>
+              <div class="wf-msg-agent" id="wfAgentMsg2">
+                <strong>Alpha 内核助手（Router）</strong><br>
+                <code>tsk_4c1b</code> 调研完成：当前 <code>sessions.db</code> 与 <code>bots.db</code> 均设置了 <code>PRAGMA busy_timeout = 10000</code> 与 WAL 模式，无并发锁死风险。
+              </div>
+            </div>
+
+            <!-- Settings View -->
+            <div class="wf-settings-view" id="wfSettingsView">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <strong style="font-size:15px" id="wfSetHeader">Alpha 内核助手 · 设置</strong>
+                  <div style="font-size:11.5px;color:var(--muted)">所有配置自动保存（文本防抖 800ms，下拉选择即时生效），修改模型或项目不丢失永久对话</div>
+                </div>
+                <button type="button" class="wf-btn-sm" id="wfBackToChat">返回对话</button>
+              </div>
+              <div class="wf-settings-grid">
+                <span style="color:var(--muted)">名称与外观</span>
+                <div class="wf-field-val" id="wfSetName">Alpha 内核助手 · 几何徽标（蓝色 · 轨道图形）</div>
+                <span style="color:var(--muted)">工作项目（单选）</span>
+                <div class="wf-field-val" id="wfSetProj">alpha (c:\Users\ziyang\project\alpha) · 仅空闲时可切换</div>
+                <span style="color:var(--muted)">专属指令</span>
+                <div class="wf-field-val" id="wfSetInst">专注 AlphaCode 后端与 ADK 内核开发；改动优先拆分模块并补充离线 bun:test 用例。</div>
+                <span style="color:var(--muted)">Router 模型</span>
+                <div class="wf-field-val">codex/gpt-6.1-sol（可配轻量快模型，或与 Worker 相同）</div>
+                <span style="color:var(--muted)">Worker 模型</span>
+                <div class="wf-field-val">继承全局默认 · codex/gpt-6.1-sol（支持独立 Provider）</div>
+                <span style="color:var(--muted)">执行权限</span>
+                <div class="wf-field-val">ask（命令需审批，审批直接聚合到本 Bot 对话流）</div>
+                <span style="color:var(--muted)">长期记忆</span>
+                <div class="wf-field-val" style="color:var(--muted)">Phase 2 预留：最多 200 条事实记忆，切换项目/模型时完整保留</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-top:4px">
+                <span style="font-size:11.5px;color:var(--muted)">删除或归档前会检查未合并 Worktree，防止代码丢失</span>
+                <div style="display:flex;gap:8px">
+                  <button type="button" class="wf-btn-sm">归档 Bot</button>
+                  <button type="button" class="wf-btn-sm" style="color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))">删除 Bot</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="wf-composer" id="wfComposer">
+              <span>在永久对话中随时追加任务、追问或叫停后台 Worker（永不阻塞）…</span>
+              <span class="wf-btn-sm primary">发送</span>
+            </div>
+          </div>
+
+          <!-- Right Drawer: Worker Inspector -->
+          <div class="wf-drawer">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <strong id="wfDrawerTask">Worker Inspector · <code>tsk_9f3a</code></strong>
+              <span class="tag tag-warn" style="margin:0">Worktree</span>
+            </div>
+            <div class="wf-drawer-box">
+              <div style="font-weight:600;margin-bottom:4px">隔离工作区</div>
+              <div style="color:var(--muted);font-size:11.5px;line-height:1.65" id="wfDrawerInfo">
+                归属项目：<code>alpha</code><br>
+                分支：<code>alphacode/bot/9f3a</code><br>
+                目录：<code>~/.alphacode/worktrees/a1b2c3d4/9f3a</code><br>
+                改动：4 文件（+128 / -34）
+              </div>
+              <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+                <span class="wf-btn-sm">查看 Diff</span>
+                <span class="wf-btn-sm primary">安全合并</span>
+                <span class="wf-btn-sm">丢弃清理</span>
+              </div>
+            </div>
+            <div class="wf-drawer-box" style="flex:1">
+              <div style="font-weight:600;margin-bottom:4px">实时工具轨迹（复用 Trace）</div>
+              <div style="color:var(--muted);font-size:11.5px;line-height:1.75" id="wfDrawerTrace">
+                ✓ read_file src/server/skills.ts<br>
+                ✓ edit_file src/server/skills.ts<br>
+                ✓ create_file test/skills.test.ts<br>
+                ⏳ run_command bun test（等待审批）
+              </div>
+            </div>
+            <div class="wf-drawer-box" style="display:flex;gap:6px;align-items:center">
+              <span style="color:var(--muted);flex:1;font-size:11.5px">向此 Worker 发送 Steer 纠偏…</span>
+              <span class="wf-btn-sm">停止</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Sidebar Bot 状态聚合优先级（借鉴 Up.computer <code>botStatus.ts</code>）</h3>
+      <p>侧栏每一行 Bot（以及折叠为 72px 图标轨时的 Bot 头像）只展示<strong>唯一最高优先级状态</strong>，聚合了该 Bot 自身 Router 对话态与名下全部后台 Worker 的实时状态：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>优先级</th><th>状态枚举</th><th>触发条件</th><th>视觉反馈</th><th>消除时机</th></tr></thead>
+          <tbody>
+            <tr><td>1（最高）</td><td><code>approval</code></td><td>名下任一活跃 Worker 处于 <code>awaiting_approval</code></td><td>琥珀色状态点 + <code>N 审批</code> 徽标</td><td>所有待审批被允许或拒绝（打开页面不消除）</td></tr>
+            <tr><td>2</td><td><code>working</code></td><td>Router 正在思考/输出，或名下有 Worker 正在 <code>running</code></td><td>脉动运行指示 + <code>N 运行中</code> 计数</td><td>全部转为非运行态</td></tr>
+            <tr><td>3</td><td><code>waiting</code></td><td>无运行中 Worker，但存在 <code>queued</code> 排队任务</td><td>中性等待态 + 队列计数</td><td>进入执行或取消</td></tr>
+            <tr><td>4</td><td><code>attention_error</code></td><td>存在 <code>failed</code> / <code>interrupted</code> 且晚于 <code>lastVisitedAt</code>，或绑定项目丢失</td><td>红色状态点 + 悬浮原因提示</td><td>打开该 Bot 对话（项目丢失需重选项目）</td></tr>
+            <tr><td>5</td><td><code>done</code></td><td>最近 Worker <code>completed</code>（含待审 Diff）且晚于 <code>lastVisitedAt</code></td><td>绿色完成点 / <code>Diff</code> 提示</td><td>打开该 Bot 对话并更新 <code>lastVisitedAt</code></td></tr>
+            <tr><td>6</td><td><code>idle</code></td><td>无活跃任务且无未读终态</td><td>静默中性态，零视觉噪音</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section id="s3">
+      <h2><span class="sec-badge">03</span>系统总架构全景图</h2>
+      <p>系统由 <code>BotManager</code> 统一托管多个逻辑隔离的 Bot 实例。<strong>每个 Bot 独占自己的常驻 Router Session、Event Bus、Thread/Trigger/Link 引用图与（Phase 2）专属记忆</strong>；底层的并发执行槽位 <code>WorkerPool</code>、<code>WorktreeManager</code> 与 L1 <code>Watchdog</code> 在进程内共享以统筹算力与磁盘资源，并通过 <code>bot_id</code> 实现严格的数据与事件隔离。</p>
+
+      <div class="diagram-card">
+        <div class="diagram-head">
+          <div class="diagram-title">架构图 1 · AlphaCode Bots（外壳）× Super-agent（内核）分层全景</div>
+          <div class="diagram-caption">多 Bot 上下文强隔离 · 单 Bot 内双层全双工并发 · 共享公平调度 WorkerPool</div>
+        </div>
+        <div class="diagram-scroll">
+          <svg viewBox="0 0 980 570" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AlphaCode Bots 系统总架构图">
+            <defs>
+              <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent)"/>
+              </marker>
+              <marker id="arr-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--ok)"/>
+              </marker>
+              <marker id="arr-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--warn)"/>
+              </marker>
+              <marker id="arr-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--muted)"/>
+              </marker>
+            </defs>
+
+            <!-- Layer 1: Presentation -->
+            <rect x="20" y="16" width="940" height="84" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".35"/>
+            <text x="36" y="38" class="svg-text" font-size="12" font-weight="700">表现层 · apps/alphacode-web + apps/alphacode-app (Electron 共享同一源码)</text>
+            <rect x="36" y="48" width="218" height="40" rx="8" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="145" y="66" text-anchor="middle" class="svg-text" font-size="12" font-weight="600">Sidebar Bots 分区</text>
+            <text x="145" y="81" text-anchor="middle" class="svg-muted" font-size="10">排序 · 状态聚合 · 折叠图标轨</text>
+
+            <rect x="270" y="48" width="248" height="40" rx="8" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="394" y="66" text-anchor="middle" class="svg-text" font-size="12" font-weight="600">Bot 永久对话页 (/bots/:id)</text>
+            <text x="394" y="81" text-anchor="middle" class="svg-muted" font-size="10">全双工输入 · 活跃胶囊 · 聚合审批卡</text>
+
+            <rect x="534" y="48" width="200" height="40" rx="8" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="634" y="66" text-anchor="middle" class="svg-text" font-size="12" font-weight="600">Bot 设置页 (/bots/:id/settings)</text>
+            <text x="634" y="81" text-anchor="middle" class="svg-muted" font-size="10">外观 · 指令 · 单项目 · 双层模型</text>
+
+            <rect x="750" y="48" width="194" height="40" rx="8" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="847" y="66" text-anchor="middle" class="svg-text" font-size="12" font-weight="600">Worker Inspector 抽屉</text>
+            <text x="847" y="81" text-anchor="middle" class="svg-muted" font-size="10">实时流 · Trace · Steer · Diff 合并</text>
+
+            <!-- Layer 2: Multi-Bot Orchestration Control Plane -->
+            <rect x="20" y="126" width="940" height="214" rx="12" fill="var(--shell)" stroke="var(--line)"/>
+            <text x="36" y="148" class="svg-text" font-size="12" font-weight="700">多 Bot 控制与编排面 · apps/alphacode-app-server/src/bots (BotManager)</text>
+
+            <!-- Bot Instance A -->
+            <rect x="36" y="160" width="290" height="104" rx="10" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="50" y="180" class="svg-text" font-size="12" font-weight="700">Bot A 实例 · Alpha 内核助手</text>
+            <text x="50" y="196" class="svg-muted" font-size="10">绑定项目: alpha · 永久对话 + 专属指令</text>
+            <rect x="48" y="206" width="128" height="46" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".4"/>
+            <text x="112" y="226" text-anchor="middle" class="svg-text" font-size="11" font-weight="600">Router Session A</text>
+            <text x="112" y="242" text-anchor="middle" class="svg-muted" font-size="9.5">无执行工具 · Batcher</text>
+            <rect x="186" y="206" width="128" height="46" rx="7" fill="var(--purple-soft)" stroke="var(--purple)" stroke-opacity=".4"/>
+            <text x="250" y="226" text-anchor="middle" class="svg-text" font-size="11" font-weight="600">EventBus &amp; Recall</text>
+            <text x="250" y="242" text-anchor="middle" class="svg-muted" font-size="9.5">订阅直通 · 引用图</text>
+
+            <!-- Bot Instance B -->
+            <rect x="344" y="160" width="290" height="104" rx="10" fill="var(--paper)" stroke="var(--ok)"/>
+            <text x="358" y="180" class="svg-text" font-size="12" font-weight="700">Bot B 实例 · 鉴权审计助手</text>
+            <text x="358" y="196" class="svg-muted" font-size="10">绑定项目: repo-b · 独立模型与上下文边界</text>
+            <rect x="356" y="206" width="128" height="46" rx="7" fill="var(--ok-soft)" stroke="var(--ok)" stroke-opacity=".4"/>
+            <text x="420" y="226" text-anchor="middle" class="svg-text" font-size="11" font-weight="600">Router Session B</text>
+            <text x="420" y="242" text-anchor="middle" class="svg-muted" font-size="9.5">稳定 agentKey 热切</text>
+            <rect x="494" y="206" width="128" height="46" rx="7" fill="var(--purple-soft)" stroke="var(--purple)" stroke-opacity=".4"/>
+            <text x="558" y="226" text-anchor="middle" class="svg-text" font-size="11" font-weight="600">EventBus &amp; Recall</text>
+            <text x="558" y="242" text-anchor="middle" class="svg-muted" font-size="9.5">P2: Memory &amp; @Mention</text>
+
+            <!-- Global Watchdog & Config -->
+            <rect x="652" y="160" width="292" height="104" rx="10" fill="var(--paper)" stroke="var(--warn)"/>
+            <text x="666" y="180" class="svg-text" font-size="12" font-weight="700">全局治理面（共享服务）</text>
+            <text x="666" y="198" class="svg-muted" font-size="10.5">• L1 Watchdog：全 Bot 任务超时 / 审批超时</text>
+            <text x="666" y="216" class="svg-muted" font-size="10.5">• 孤儿 Worktree GC（绝不删未合并/中断）</text>
+            <text x="666" y="234" class="svg-muted" font-size="10.5">• 三级模型配置解析 &amp; 双层 SSE 广播器</text>
+            <text x="666" y="252" class="svg-muted" font-size="10.5">• 项目删除联动检测（project_missing）</text>
+
+            <!-- Shared WorkerPool + WorktreeManager -->
+            <rect x="36" y="280" width="446" height="48" rx="9" fill="var(--paper)" stroke="var(--ok)"/>
+            <text x="259" y="300" text-anchor="middle" class="svg-text" font-size="12" font-weight="700">共享 WorkerPool（按 Bot 轮询公平调度 · 审批桥接 · 重启恢复）</text>
+            <text x="259" y="317" text-anchor="middle" class="svg-muted" font-size="10">全局并发上限 (默认 4) + 单 Bot 配额 (默认 2) · 复用 createRuntime() / Coding Agent</text>
+
+            <rect x="500" y="280" width="444" height="48" rx="9" fill="var(--paper)" stroke="var(--warn)"/>
+            <text x="722" y="300" text-anchor="middle" class="svg-text" font-size="12" font-weight="700">Git Worktree Manager（隔离分配 · Diff 采集 · 安全预检合并）</text>
+            <text x="722" y="317" text-anchor="middle" class="svg-muted" font-size="10">~/.alphacode/worktrees/&lt;proj8&gt;/&lt;shortId&gt; · 分支 alphacode/bot/&lt;shortId&gt;</text>
+
+            <!-- Layer 3: Execution Plane -->
+            <rect x="20" y="364" width="940" height="88" rx="12" fill="var(--ok-soft)" stroke="var(--ok)" stroke-opacity=".35"/>
+            <text x="36" y="385" class="svg-text" font-size="12" font-weight="700">隔离并发执行面 · Worker Instances（按 botId &amp; taskId 双重隔离）</text>
+
+            <rect x="36" y="396" width="286" height="44" rx="8" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="179" y="414" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="600">Worker A1 · Bot A (alpha 写任务)</text>
+            <text x="179" y="430" text-anchor="middle" class="svg-muted" font-size="10">Worktree 分支 alphacode/bot/9f3a</text>
+
+            <rect x="346" y="396" width="286" height="44" rx="8" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="489" y="414" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="600">Worker A2 · Bot A (alpha 只读调研)</text>
+            <text x="489" y="430" text-anchor="middle" class="svg-muted" font-size="10">原目录只读工具集 · 零拷贝启动</text>
+
+            <rect x="656" y="396" width="288" height="44" rx="8" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="800" y="414" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="600">Worker B1 · Bot B (repo-b 写任务)</text>
+            <text x="800" y="430" text-anchor="middle" class="svg-muted" font-size="10">Worktree 分支 alphacode/bot/7d2e</text>
+
+            <!-- Layer 4: Storage -->
+            <rect x="20" y="474" width="940" height="80" rx="12" fill="var(--code)" stroke="var(--line)"/>
+            <text x="36" y="496" class="svg-text" font-size="12" font-weight="700">持久化状态层 · Local SQLite WAL（与现有 Session formatVersion=1 彻底解耦）</text>
+
+            <rect x="36" y="508" width="296" height="34" rx="7" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="184" y="529" text-anchor="middle" class="svg-mono" font-size="11">sessions.db.bots.db (Bot 编排与索引)</text>
+
+            <rect x="350" y="508" width="286" height="34" rx="7" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="493" y="529" text-anchor="middle" class="svg-mono" font-size="11">sessions.db + context.db (复用)</text>
+
+            <rect x="654" y="508" width="290" height="34" rx="7" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="799" y="529" text-anchor="middle" class="svg-mono" font-size="11">artifacts.db (Spill/Diff) + traces.db</text>
+
+            <!-- Connectors -->
+            <line x1="145" y1="100" x2="145" y2="126" stroke="var(--accent)" stroke-width="1.6" marker-start="url(#arr)" marker-end="url(#arr)"/>
+            <line x1="394" y1="100" x2="394" y2="160" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#arr)"/>
+            <line x1="180" y1="264" x2="180" y2="280" stroke="var(--ok)" stroke-width="1.8" marker-end="url(#arr-ok)"/>
+            <line x1="420" y1="264" x2="420" y2="280" stroke="var(--ok)" stroke-width="1.8" marker-end="url(#arr-ok)"/>
+            <line x1="482" y1="304" x2="500" y2="304" stroke="var(--warn)" stroke-width="1.8" marker-start="url(#arr-warn)" marker-end="url(#arr-warn)"/>
+            <line x1="179" y1="328" x2="179" y2="396" stroke="var(--ok)" stroke-width="1.8" marker-end="url(#arr-ok)"/>
+            <line x1="420" y1="328" x2="489" y2="396" stroke="var(--ok)" stroke-width="1.8" marker-end="url(#arr-ok)"/>
+            <line x1="722" y1="328" x2="800" y2="396" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#arr-warn)"/>
+            <line x1="489" y1="452" x2="489" y2="474" stroke="var(--muted)" stroke-width="1.6" marker-start="url(#arr-muted)" marker-end="url(#arr-muted)"/>
+          </svg>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>双层 SSE 与 Bot 控制流</span>
+          <span><i style="background:var(--ok)"></i>并发执行与公平调度</span>
+          <span><i style="background:var(--warn)"></i>Worktree 隔离与 Watchdog 巡检</span>
+          <span><i style="background:var(--purple)"></i>事件总线、链式召回与 P2 记忆扩展</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section id="s4">
+      <h2><span class="sec-badge">04</span>Bot 生命周期、单项目绑定与边界处理</h2>
+      <p>与 Up.computer 一致，每个 Bot 严格绑定一个工作项目（<code>projectId</code>），拥有一条唯一永久对话。但由于 AlphaCode Bot 内部运行的是<strong>无执行工具的 Super-agent Router Session</strong>，在项目切换、项目删除与 Bot 销毁三个边界上需要更严谨的工程保障。</p>
+
+      <div class="diagram-card">
+        <div class="diagram-head">
+          <div class="diagram-title">流程图 2 · Bot 创建、单项目绑定、安全切换与归档/删除生命周期</div>
+          <div class="diagram-caption">严格保护未合并 Worktree 与 Session agentKey 契约一致性</div>
+        </div>
+        <div class="diagram-scroll">
+          <svg viewBox="0 0 980 390" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bot 生命周期与单项目绑定流程图">
+            <defs>
+              <marker id="l-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent)"/>
+              </marker>
+              <marker id="l-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--ok)"/>
+              </marker>
+              <marker id="l-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--warn)"/>
+              </marker>
+              <marker id="l-danger" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--danger)"/>
+              </marker>
+            </defs>
+
+            <!-- Create -->
+            <rect x="24" y="34" width="206" height="86" rx="10" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="127" y="56" text-anchor="middle" class="svg-text" font-size="12" font-weight="700">1. 创建 Bot</text>
+            <text x="127" y="74" text-anchor="middle" class="svg-muted" font-size="10.5">• 侧栏 Bots [+] 新建页</text>
+            <text x="127" y="90" text-anchor="middle" class="svg-muted" font-size="10.5">• 必选：名称、指令、单项目</text>
+            <text x="127" y="106" text-anchor="middle" class="svg-muted" font-size="10">• P2：Turn into bot / 工具创建</text>
+
+            <!-- Active -->
+            <rect x="274" y="24" width="268" height="106" rx="10" fill="var(--ok-soft)" stroke="var(--ok)"/>
+            <text x="408" y="46" text-anchor="middle" class="svg-text" font-size="12.5" font-weight="700">2. 常驻运行态（Active）</text>
+            <text x="408" y="65" text-anchor="middle" class="svg-mono" font-size="10">ns: bot:router:&lt;botId&gt; / sid: main</text>
+            <text x="408" y="83" text-anchor="middle" class="svg-muted" font-size="10.5">• Router 仅向绑定 projectId 派发任务</text>
+            <text x="408" y="100" text-anchor="middle" class="svg-muted" font-size="10.5">• 名称/指令/外观/权限随时自动保存</text>
+            <text x="408" y="117" text-anchor="middle" class="svg-muted" font-size="10">• 切换 Router 模型：当前 Batch 落盘后热切</text>
+
+            <!-- Project Switch -->
+            <rect x="596" y="24" width="360" height="106" rx="10" fill="var(--warn-soft)" stroke="var(--warn)"/>
+            <text x="776" y="46" text-anchor="middle" class="svg-text" font-size="12" font-weight="700">3. 切换工作项目（Rebind Project）</text>
+            <text x="776" y="65" text-anchor="middle" class="svg-muted" font-size="10.5">前置校验：Router 空闲 且 无 running/queued/approval Worker</text>
+            <text x="776" y="82" text-anchor="middle" class="svg-muted" font-size="10.5">忙碌时返回 409 BOT_BUSY，拒绝中途切换</text>
+            <text x="776" y="99" text-anchor="middle" class="svg-muted" font-size="10.5">切换成功后：永久对话与 P2 记忆完整保留</text>
+            <text x="776" y="116" text-anchor="middle" class="svg-text" font-size="10" font-weight="600">历史任务保留原 project_id，旧 Worktree 仍安全合回原仓</text>
+
+            <!-- Project Missing -->
+            <rect x="274" y="182" width="268" height="82" rx="10" fill="var(--danger-soft)" stroke="var(--danger)"/>
+            <text x="408" y="204" text-anchor="middle" class="svg-text" font-size="12" font-weight="700" fill="var(--danger)">保护态：project_missing</text>
+            <text x="408" y="222" text-anchor="middle" class="svg-muted" font-size="10.5">绑定项目被用户从工作区移除时触发</text>
+            <text x="408" y="239" text-anchor="middle" class="svg-muted" font-size="10.5">拒绝新发消息 (409 BOT_PROJECT_UNAVAILABLE)</text>
+            <text x="408" y="255" text-anchor="middle" class="svg-muted" font-size="10">保留历史与记忆，顶部引导重选项目恢复</text>
+
+            <!-- Archive -->
+            <rect x="596" y="182" width="170" height="82" rx="10" fill="var(--shell)" stroke="var(--line-strong)"/>
+            <text x="681" y="204" text-anchor="middle" class="svg-text" font-size="12" font-weight="700">归档（Archived）</text>
+            <text x="681" y="222" text-anchor="middle" class="svg-muted" font-size="10">从侧栏默认折叠隐藏</text>
+            <text x="681" y="238" text-anchor="middle" class="svg-muted" font-size="10">历史对话与记忆只读保留</text>
+            <text x="681" y="254" text-anchor="middle" class="svg-muted" font-size="10">随时可一键恢复激活</text>
+
+            <!-- Delete -->
+            <rect x="786" y="182" width="170" height="82" rx="10" fill="var(--danger-soft)" stroke="var(--danger)"/>
+            <text x="871" y="204" text-anchor="middle" class="svg-text" font-size="12" font-weight="700" fill="var(--danger)">删除（Delete）</text>
+            <text x="871" y="222" text-anchor="middle" class="svg-muted" font-size="10">先取消或等待活跃 Worker</text>
+            <text x="871" y="238" text-anchor="middle" class="svg-muted" font-size="10">未合并 Worktree 显式确认</text>
+            <text x="871" y="254" text-anchor="middle" class="svg-muted" font-size="10">清理 bot 记录与 Router 会话</text>
+
+            <!-- Architectural Note -->
+            <rect x="24" y="294" width="932" height="76" rx="10" fill="var(--code)" stroke="var(--line)"/>
+            <text x="40" y="317" class="svg-text" font-size="12" font-weight="700">关键架构差异说明：为何删除 Bot 不直接把 Router 对话退回普通项目 Threads？</text>
+            <text x="40" y="337" class="svg-muted" font-size="10.8">Up.computer 的 Bot 对话本身是普通 Coding Session，删除 Bot 只需释放侧栏占用。而 AlphaCode Bot 的永久对话是严格无 Coding 工具的 Super-agent Router Session</text>
+            <text x="40" y="355" class="svg-muted" font-size="10.8">（agentKey = alphacode-bot-router-v1），若退回普通项目会话会导致工具契约不兼容。因此提供「归档（无损保留）」与「删除（清理 Bot 实体）」两级生命周期，确保 formatVersion=1 零污染。</text>
+
+            <!-- Edges -->
+            <line x1="230" y1="77" x2="270" y2="77" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#l-arr)"/>
+            <line x1="542" y1="77" x2="592" y2="77" stroke="var(--warn)" stroke-width="1.8" marker-end="url(#l-warn)"/>
+            <path d="M 776 130 L 776 150 L 408 150 L 408 134" fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#l-ok)"/>
+            <line x1="408" y1="130" x2="408" y2="178" stroke="var(--danger)" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#l-danger)"/>
+            <path d="M 542 223 L 570 223 L 570 112 L 592 112" fill="none" stroke="var(--ok)" stroke-width="1.5" marker-end="url(#l-ok)"/>
+            <path d="M 500 130 L 500 162 L 681 162 L 681 178" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#l-arr)"/>
+            <path d="M 520 130 L 520 156 L 871 156 L 871 178" fill="none" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#l-danger)"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>单项目绑定下的跨仓提示：</strong>严格对齐 Up.computer 策略——每个 Bot 的 <code>dispatch_task</code> 自动锁定到该 Bot 当前绑定的 <code>projectId</code>（Router 工具入参中不再暴露任意 <code>projectId</code>，从工具签名层杜绝跨仓误操作）。若用户有多个项目，建议按项目职责创建各自专属 Bot（如“Alpha 后端 Bot”、“Web 前端 Bot”）。
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section id="s5">
+      <h2><span class="sec-badge">05</span>每 Bot 内部 Super-agent 引擎与全双工并行调度</h2>
+      <p>每个 Bot 内部完整落位 DeepSeek Super-agent 的双层核心：<strong>常驻 Router Session（只沟通、只编排、绝不亲自改代码）</strong> + <strong>隔离并发 Worker（复用 Coding Agent 完整执行工具，在独立上下文与 Git Worktree 中干活）</strong>。</p>
+
+      <div class="diagram-card">
+        <div class="diagram-head">
+          <div class="diagram-title">流程图 3 · 单 Bot 内部全双工派发、Trigger Batching 与异步回流时序</div>
+          <div class="diagram-caption">零阻塞对话流 · 订阅直通 Fast Path · 跨 Bot 轮询公平调度</div>
+        </div>
+        <div class="diagram-scroll">
+          <svg viewBox="0 0 980 510" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bot 内部 Super-agent 全双工并行时序图">
+            <defs>
+              <marker id="s-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent)"/>
+              </marker>
+              <marker id="s-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--ok)"/>
+              </marker>
+              <marker id="s-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--warn)"/>
+              </marker>
+            </defs>
+
+            <rect x="24" y="16" width="146" height="36" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="97" y="39" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Bot 永久对话 UI</text>
+
+            <rect x="204" y="16" width="164" height="36" rx="8" fill="var(--shell)" stroke="var(--line-strong)"/>
+            <text x="286" y="39" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Bot EventBus / Batcher</text>
+
+            <rect x="402" y="16" width="160" height="36" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="482" y="39" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Bot Router Session</text>
+
+            <rect x="596" y="16" width="168" height="36" rx="8" fill="var(--ok-soft)" stroke="var(--ok)"/>
+            <text x="680" y="39" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Worker 1 (Worktree)</text>
+
+            <rect x="796" y="16" width="160" height="36" rx="8" fill="var(--ok-soft)" stroke="var(--ok)"/>
+            <text x="876" y="39" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Worker 2 (只读)</text>
+
+            <line x1="97" y1="52" x2="97" y2="492" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="5 5"/>
+            <line x1="286" y1="52" x2="286" y2="492" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="5 5"/>
+            <line x1="482" y1="52" x2="482" y2="492" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="5 5"/>
+            <line x1="680" y1="52" x2="680" y2="492" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="5 5"/>
+            <line x1="876" y1="52" x2="876" y2="492" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+            <line x1="97" y1="84" x2="280" y2="84" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#s-arr)"/>
+            <text x="188" y="77" text-anchor="middle" class="svg-text" font-size="11">1. POST /api/bots/:id/messages（任务 A）</text>
+
+            <line x1="286" y1="110" x2="476" y2="110" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#s-arr)"/>
+            <text x="382" y="103" text-anchor="middle" class="svg-text" font-size="11">2. 落盘 bot_triggers 并唤醒本 Bot Router</text>
+
+            <line x1="482" y1="140" x2="674" y2="140" stroke="var(--ok)" stroke-width="1.8" marker-end="url(#s-ok)"/>
+            <text x="578" y="133" text-anchor="middle" class="svg-text" font-size="11">3. dispatch_task(write) → 分配 Worktree</text>
+
+            <line x1="680" y1="166" x2="488" y2="166" stroke="var(--ok)" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#s-ok)"/>
+            <text x="582" y="160" text-anchor="middle" class="svg-muted" font-size="10.5">4. 毫秒级返回 {status:"started", tsk_9f3a}</text>
+
+            <rect x="674" y="166" width="12" height="262" rx="4" fill="var(--ok)" opacity=".28" stroke="var(--ok)"/>
+
+            <line x1="482" y1="194" x2="103" y2="194" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#s-arr)"/>
+            <text x="290" y="187" text-anchor="middle" class="svg-text" font-size="11">5. SSE 推送确认回复 · 输入框立即恢复 idle</text>
+
+            <rect x="38" y="210" width="538" height="24" rx="6" fill="var(--accent-soft)"/>
+            <text x="307" y="226" text-anchor="middle" class="svg-text" font-size="11" font-weight="600">全双工非阻塞：Worker 1 在 Worktree 内持续编码，用户立刻发送第二条需求</text>
+
+            <line x1="97" y1="260" x2="280" y2="260" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#s-arr)"/>
+            <text x="188" y="253" text-anchor="middle" class="svg-text" font-size="11">6. 连发任务 B（只读排查 SQLite 锁）</text>
+
+            <line x1="286" y1="286" x2="476" y2="286" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#s-arr)"/>
+            <text x="382" y="279" text-anchor="middle" class="svg-text" font-size="11">7. 若 Router 忙则 Batch 合并注入</text>
+
+            <line x1="482" y1="312" x2="870" y2="312" stroke="var(--ok)" stroke-width="1.8" marker-end="url(#s-ok)"/>
+            <text x="678" y="305" text-anchor="middle" class="svg-text" font-size="11">8. dispatch_task(readonly) 并行启动 Worker 2</text>
+
+            <rect x="870" y="312" width="12" height="72" rx="4" fill="var(--ok)" opacity=".28" stroke="var(--ok)"/>
+
+            <line x1="870" y1="382" x2="292" y2="382" stroke="var(--warn)" stroke-width="1.8" marker-end="url(#s-warn)"/>
+            <text x="580" y="375" text-anchor="middle" class="svg-text" font-size="11">9. Worker 2 完成 → 回流 worker_event（摘要 Inline + 详情 Spill）</text>
+
+            <line x1="482" y1="406" x2="103" y2="406" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#s-arr)"/>
+            <text x="290" y="399" text-anchor="middle" class="svg-text" font-size="11">10. Router 汇总调研结论写入本 Bot 永久对话</text>
+
+            <line x1="674" y1="436" x2="292" y2="436" stroke="var(--warn)" stroke-width="1.8" marker-end="url(#s-warn)"/>
+            <text x="482" y="429" text-anchor="middle" class="svg-text" font-size="11">11. Worker 1 完成 → 采集 Worktree Diff 入库并唤醒 Router</text>
+
+            <line x1="482" y1="466" x2="103" y2="466" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#s-arr)"/>
+            <text x="290" y="459" text-anchor="middle" class="svg-text" font-size="11">12. Router 交付变更总结（附 Diff 预览与一键安全合并入口）</text>
+          </svg>
+        </div>
+      </div>
+
+      <h3>Router 控制面工具集（严格隔离底层 Coding 工具）</h3>
+      <p>依据 Super-agent 论文 §7.1 消融实验结论：Router <strong>严禁挂载</strong> <code>read_file</code>、<code>edit_file</code>、<code>create_file</code>、<code>run_command</code>、<code>search</code> 等工具，防止模型自行干活导致对话阻塞。所有工具由宿主自动注入当前 <code>botId</code> 与绑定 <code>projectId</code>：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>工具名</th><th>阶段</th><th>行为与返回语义</th><th>阻塞特性</th></tr></thead>
+          <tbody>
+            <tr><td><code>dispatch_task</code></td><td><span class="tag tag-blue" style="margin:0">Phase 1</span></td><td>在本 Bot 绑定的 <code>projectId</code> 内派发隔离 Worker（参数：<code>goal</code>、<code>title?</code>、<code>accessMode: "readonly"|"write"</code>、<code>threadId?</code>），返回 <code>{ status: "started", taskId, shortId, isolationMode, worktreeBranch? }</code></td><td>异步立即返回</td></tr>
+            <tr><td><code>steer_task</code></td><td><span class="tag tag-blue" style="margin:0">Phase 1</span></td><td>向本 Bot 名下运行中的指定 Worker 发送纠偏或补充要求（校验 <code>task.botId === currentBotId</code>）</td><td>异步立即返回</td></tr>
+            <tr><td><code>cancel_task</code></td><td><span class="tag tag-blue" style="margin:0">Phase 1</span></td><td>中止本 Bot 名下指定排队/运行中的 Worker（可选清理空 Worktree）</td><td>立即返回</td></tr>
+            <tr><td><code>list_state</code></td><td><span class="tag tag-blue" style="margin:0">Phase 1</span></td><td>返回本 Bot 绑定项目信息、活跃/近期任务摘要与待审批清单</td><td>只读快返</td></tr>
+            <tr><td><code>recall_object</code></td><td><span class="tag tag-blue" style="margin:0">Phase 1</span></td><td>按对象 ID（<code>tsk_</code> / <code>trg_</code> / <code>thr_</code> / <code>art_</code>）在本 Bot 作用域内执行 Chain of Recall 链式召回</td><td>只读快返</td></tr>
+            <tr><td><code>subscribe_thread</code> / <code>unsubscribe_thread</code></td><td><span class="tag tag-blue" style="margin:0">Phase 1</span></td><td>维护本 Bot 内 Thread 与 Worker 的多对多订阅，使已订阅事件走 Fast Path 直通 Worker</td><td>立即返回</td></tr>
+            <tr><td><code>bot_remember</code> / <code>bot_forget</code> / <code>bot_memory</code></td><td><span class="tag tag-purple" style="margin:0">Phase 2</span></td><td>读写本 Bot 专属事实记忆（<code>owner="user"</code> 锁定保护；Worker 严禁挂载写记忆工具）</td><td>只读/轻写快返</td></tr>
+            <tr><td><code>bot_history_search</code></td><td><span class="tag tag-purple" style="margin:0">Phase 2</span></td><td>全文搜索本 Bot 永久对话中已被上下文压缩折叠的早期历史记录</td><td>只读快返</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout ok">
+        <strong>多 Bot 公平调度（Fair Scheduling）：</strong>全局并发池默认 <code>maxConcurrentWorkers = 4</code>（可配 <code>1..12</code>），单个 Bot 默认并发配额 <code>perBotMaxWorkers = 2</code>（可在 Bot 设置覆盖 <code>1..4</code>）。调度器采用<strong>按 Bot 轮询（Round-Robin）</strong>出队，保证 Bot A 即使一次性排入 5 个任务，也不会饿死 Bot B 的新请求。
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section id="s6">
+      <h2><span class="sec-badge">06</span>Git Worktree 并发写隔离、聚合审批与中途介入</h2>
+      <p>完全继承此前已验证的高可靠 <code>WorktreeManager</code> 与聚合审批桥接能力，并将分支命名、审批归属与抽屉查看按 <code>botId</code> 清晰分区，做到“审批跟着 Bot 走，侧栏实时亮灯，抽屉按需展开”。</p>
+
+      <div class="diagram-card">
+        <div class="diagram-head">
+          <div class="diagram-title">流程图 4 · Worktree 隔离交付闭环 &amp; 跨 Worker 审批/Steer 通道</div>
+          <div class="diagram-caption">分支 alphacode/bot/&lt;shortId&gt; · 预检冲突零改写 · 一次性 approvalId 防并发竞争</div>
+        </div>
+        <div class="diagram-scroll">
+          <svg viewBox="0 0 980 390" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Worktree 隔离与聚合审批流程图">
+            <defs>
+              <marker id="w-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent)"/>
+              </marker>
+              <marker id="w-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--ok)"/>
+              </marker>
+              <marker id="w-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--warn)"/>
+              </marker>
+              <marker id="w-danger" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--danger)"/>
+              </marker>
+            </defs>
+
+            <!-- Top Track: Worktree Lifecycle -->
+            <rect x="20" y="16" width="940" height="170" rx="12" fill="var(--shell)" stroke="var(--line)"/>
+            <text x="36" y="38" class="svg-text" font-size="12" font-weight="700">A. Git Worktree 并发写隔离与安全合并链路（主仓零静默覆写）</text>
+
+            <rect x="36" y="54" width="166" height="68" rx="9" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="119" y="75" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="600">工作区分配</text>
+            <text x="119" y="92" text-anchor="middle" class="svg-muted" font-size="10">Git write → Worktree</text>
+            <text x="119" y="107" text-anchor="middle" class="svg-muted" font-size="10">readonly → 原目录只读</text>
+
+            <rect x="234" y="54" width="194" height="68" rx="9" fill="var(--ok-soft)" stroke="var(--ok)"/>
+            <text x="331" y="75" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="600">隔离目录独立执行</text>
+            <text x="331" y="92" text-anchor="middle" class="svg-mono" font-size="9.5">alphacode/bot/&lt;shortId&gt;</text>
+            <text x="331" y="107" text-anchor="middle" class="svg-muted" font-size="10">标记 mainRepoDirtyAtStart</text>
+
+            <rect x="460" y="54" width="194" height="68" rx="9" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="557" y="75" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="600">Diff 采集与 Spill</text>
+            <text x="557" y="92" text-anchor="middle" class="svg-muted" font-size="10">无改动 → 自动清理空目录</text>
+            <text x="557" y="107" text-anchor="middle" class="svg-muted" font-size="10">有改动 → ready_for_review</text>
+
+            <rect x="686" y="54" width="258" height="68" rx="9" fill="var(--warn-soft)" stroke="var(--warn)"/>
+            <text x="815" y="75" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">用户显式操作 + 预检护栏</text>
+            <text x="815" y="92" text-anchor="middle" class="svg-muted" font-size="10">merge-tree / git apply --check</text>
+            <text x="815" y="107" text-anchor="middle" class="svg-muted" font-size="10">通过→写回原仓；冲突→拒写保留分支</text>
+
+            <rect x="36" y="138" width="908" height="34" rx="7" fill="var(--code)" stroke="var(--line)"/>
+            <text x="490" y="159" text-anchor="middle" class="svg-muted" font-size="10.8">降级与容错：空仓库或非 Git 目录的写任务自动降级为按 workspaceRoot 串行写锁；重启中断任务置为 interrupted 且绝不自动清理其 Worktree。</text>
+
+            <line x1="202" y1="88" x2="230" y2="88" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#w-arr)"/>
+            <line x1="428" y1="88" x2="456" y2="88" stroke="var(--ok)" stroke-width="1.8" marker-end="url(#w-ok)"/>
+            <line x1="654" y1="88" x2="682" y2="88" stroke="var(--warn)" stroke-width="1.8" marker-end="url(#w-warn)"/>
+
+            <!-- Bottom Track: Approval + Steer -->
+            <rect x="20" y="206" width="940" height="168" rx="12" fill="var(--warn-soft)" stroke="var(--warn)" stroke-opacity=".35"/>
+            <text x="36" y="228" class="svg-text" font-size="12" font-weight="700">B. 审批聚合与中途介入（Steer）双通路</text>
+
+            <rect x="36" y="244" width="206" height="114" rx="9" fill="var(--paper)" stroke="var(--warn)"/>
+            <text x="139" y="266" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Worker 触发审批</text>
+            <text x="139" y="285" text-anchor="middle" class="svg-muted" font-size="10">遵循 Bot 权限模式 (ask/auto/full)</text>
+            <text x="139" y="302" text-anchor="middle" class="svg-muted" font-size="10">签发一次性 approvalId</text>
+            <text x="139" y="319" text-anchor="middle" class="svg-muted" font-size="10">同时推送全局索引 SSE（侧栏亮灯）</text>
+            <text x="139" y="336" text-anchor="middle" class="svg-muted" font-size="10">与单 Bot SSE（聊天区弹出卡片）</text>
+
+            <rect x="276" y="244" width="218" height="114" rx="9" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="385" y="266" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Bot 对话内一键审批</text>
+            <text x="385" y="285" text-anchor="middle" class="svg-mono" font-size="9.5">POST /bots/:id/approvals/:aid</text>
+            <text x="385" y="303" text-anchor="middle" class="svg-muted" font-size="10">校验 botId + taskId + approvalId</text>
+            <text x="385" y="320" text-anchor="middle" class="svg-muted" font-size="10">重复或过期返回 409 STALE_APPROVAL</text>
+            <text x="385" y="337" text-anchor="middle" class="svg-muted" font-size="10">恢复 Worker 执行并记录 Trace</text>
+
+            <rect x="528" y="244" width="416" height="114" rx="9" fill="var(--paper)" stroke="var(--purple)"/>
+            <text x="736" y="266" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">中途介入（Steer）双入口 → 复用 ADK 原生 steer()</text>
+            <text x="736" y="286" text-anchor="middle" class="svg-muted" font-size="10.2">入口 1：在 Bot 对话框直接说“让刚才那个重构任务别改旧接口” → Router 调 steer_task</text>
+            <text x="736" y="304" text-anchor="middle" class="svg-muted" font-size="10.2">入口 2：点击顶部任务胶囊打开右侧抽屉，在指定 Worker 底部直接发 Steer / 停止</text>
+            <text x="736" y="322" text-anchor="middle" class="svg-muted" font-size="10.2">底层保留已完成工具结果，未执行的同批工具标记 not_executed 跳过并按新指令续跑</text>
+            <text x="736" y="340" text-anchor="middle" class="svg-mono" font-size="9.5">POST /api/bots/:botId/tasks/:taskId/steer</text>
+
+            <line x1="242" y1="301" x2="272" y2="301" stroke="var(--warn)" stroke-width="1.8" marker-end="url(#w-warn)"/>
+            <line x1="494" y1="301" x2="524" y2="301" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section id="s7">
+      <h2><span class="sec-badge">07</span>三级模型配置继承与链式召回（Chain of Recall）</h2>
+      <p>每个 Bot 既可以<strong>零配置开箱即用</strong>（Router 与 Worker 自动共用全局默认模型），也可以按角色单独配置（例如 Router 用响应极快的轻量模型，Worker 用高智商编码模型），也可以显式配置为相同模型。同时通过稳定逻辑 <code>agentKey</code> 与引用图 <code>bot_links</code> 保障长周期永久对话不断裂、不超窗。</p>
+
+      <div class="diagram-card">
+        <div class="diagram-head">
+          <div class="diagram-title">架构图 5 · 三级模型解析继承链 &amp; Per-Bot Chain of Recall</div>
+          <div class="diagram-caption">Bot 级覆盖 → 全局 Bots 默认 → 全局模型 · 换模型保留永久对话</div>
+        </div>
+        <div class="diagram-scroll">
+          <svg viewBox="0 0 980 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="三级模型继承与链式召回架构图">
+            <defs>
+              <marker id="m-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent)"/>
+              </marker>
+              <marker id="m-purp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--purple)"/>
+              </marker>
+            </defs>
+
+            <!-- Left: 3-tier Model Inheritance -->
+            <rect x="20" y="16" width="460" height="298" rx="12" fill="var(--shell)" stroke="var(--line)"/>
+            <text x="36" y="40" class="svg-text" font-size="12.5" font-weight="700">A. 模型解析三级继承（Router / Worker 各自独立解析）</text>
+
+            <rect x="38" y="56" width="424" height="58" rx="9" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="250" y="77" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">L1 · Bot 实例配置（bots.db · Bot 设置页）</text>
+            <text x="250" y="96" text-anchor="middle" class="svg-mono" font-size="10">bot.routerModel / bot.workerModel (可相同、可不同、可留空继承)</text>
+
+            <rect x="38" y="136" width="424" height="58" rx="9" fill="var(--paper)" stroke="var(--line-strong)"/>
+            <text x="250" y="157" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">L2 · 全局 Bots 默认（~/.alphacode/config.yaml）</text>
+            <text x="250" y="176" text-anchor="middle" class="svg-mono" font-size="10">bots.router / bots.worker / bots.maxConcurrentWorkers / bots.worktreeRoot</text>
+
+            <rect x="38" y="216" width="424" height="80" rx="9" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="250" y="237" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">L3 · 全局模型与环境变量兜底</text>
+            <text x="250" y="256" text-anchor="middle" class="svg-mono" font-size="10">ADK_MODEL → config.yaml model/provider → 绑定项目配置</text>
+            <text x="250" y="278" text-anchor="middle" class="svg-muted" font-size="10">Router 热切：稳定 agentKey="alphacode-bot-router-v1"，切换不丢历史</text>
+
+            <line x1="250" y1="114" x2="250" y2="132" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#m-arr)"/>
+            <line x1="250" y1="194" x2="250" y2="212" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#m-arr)"/>
+
+            <!-- Right: Inline & Spill + Chain of Recall + P2 Memory -->
+            <rect x="500" y="16" width="460" height="298" rx="12" fill="var(--purple-soft)" stroke="var(--purple)" stroke-opacity=".35"/>
+            <text x="516" y="40" class="svg-text" font-size="12.5" font-weight="700">B. 上下文管理：Inline/Spill + 链式召回 + P2 长期记忆</text>
+
+            <rect x="518" y="56" width="424" height="54" rx="9" fill="var(--paper)" stroke="var(--purple)"/>
+            <text x="730" y="76" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="600">窗口预算保护（复用 @alpha/adk-context 自动检查点）</text>
+            <text x="730" y="95" text-anchor="middle" class="svg-muted" font-size="10">每条 Trigger 仅 Inline ≤ 280 字摘要 + 对象 ID，长报告/Diff 全量 Spill</text>
+
+            <rect x="518" y="130" width="126" height="68" rx="8" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="581" y="151" text-anchor="middle" class="svg-mono" font-size="10.5" font-weight="700">trg_8a12</text>
+            <text x="581" y="169" text-anchor="middle" class="svg-muted" font-size="10">事件摘要</text>
+            <text x="581" y="185" text-anchor="middle" class="svg-muted" font-size="9.5">bot_links → tsk</text>
+
+            <rect x="667" y="130" width="126" height="68" rx="8" fill="var(--paper)" stroke="var(--purple)"/>
+            <text x="730" y="151" text-anchor="middle" class="svg-mono" font-size="10.5" font-weight="700">tsk_9f3a</text>
+            <text x="730" y="169" text-anchor="middle" class="svg-muted" font-size="10">Worker 任务</text>
+            <text x="730" y="185" text-anchor="middle" class="svg-muted" font-size="9.5">分支与结论摘要</text>
+
+            <rect x="816" y="130" width="126" height="68" rx="8" fill="var(--paper)" stroke="var(--ok)"/>
+            <text x="879" y="151" text-anchor="middle" class="svg-mono" font-size="10.5" font-weight="700">art_diff_9f3a</text>
+            <text x="879" y="169" text-anchor="middle" class="svg-muted" font-size="10">Spill 产物</text>
+            <text x="879" y="185" text-anchor="middle" class="svg-muted" font-size="9.5">按需截断回读</text>
+
+            <line x1="644" y1="164" x2="663" y2="164" stroke="var(--purple)" stroke-width="1.7" marker-end="url(#m-purp)"/>
+            <line x1="793" y1="164" x2="812" y2="164" stroke="var(--purple)" stroke-width="1.7" marker-end="url(#m-purp)"/>
+
+            <rect x="518" y="218" width="424" height="78" rx="9" fill="var(--paper)" stroke="var(--line-strong)" stroke-dasharray="4 3"/>
+            <text x="730" y="240" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Phase 2 记忆层无缝拼装（对齐 Up.computer 增量注入）</text>
+            <text x="730" y="259" text-anchor="middle" class="svg-muted" font-size="10">• 最多 200 条 fact，12,000 字符有界快照（user 条目优先，其次最新）</text>
+            <text x="730" y="277" text-anchor="middle" class="svg-muted" font-size="10">• 后续轮次经 MemoryMarker 仅注入 &lt;memory_update&gt; 增量；Worker 只读禁写</text>
+          </svg>
+        </div>
+      </div>
+
+      <h3>全局配置结构（<code>~/.alphacode/config.yaml</code>）</h3>
+<pre><code># 现有全局默认配置（保持 100% 向后兼容）
+model:
+  id: codex/gpt-6.1-sol
+  contextWindow: 500000
+provider:
+  adapter: openai-completions
+  options:
+    baseURL: http://127.0.0.1:3425/v1
+    apiKey:
+      env: OPENAI_API_KEY
+
+# 替换原未提交的 personalAgent 节 → 全局 Bots 引擎默认配置（可选）
+bots:
+  maxConcurrentWorkers: 4        # 全系统并发上限 (1..12)
+  perBotMaxWorkers: 2            # 单 Bot 默认并发配额 (1..4)
+  worktreeRoot: worktrees        # 相对 ALPHACODE_HOME，默认 ~/.alphacode/worktrees
+  router:                        # 所有 Bot 的默认 Router 模型（单个 Bot 可在设置页覆盖）
+    model:
+      id: codex/gpt-6.1-sol
+      maxOutputTokens: 4096
+  worker:                        # 所有 Bot 的默认 Worker 模型（可与 router 相同）
+    model:
+      id: codex/gpt-6.1-sol
+      maxOutputTokens: 16384</code></pre>
+    </section>
+
+    <!-- 08 -->
+    <section id="s8">
+      <h2><span class="sec-badge">08</span>SQLite 数据模型设计（<code>sessions.db.bots.db</code>）</h2>
+      <p>独立存储于 <code>${databasePath}.bots.db</code>（SQLite WAL 模式），与 <code>sessions.db</code>、<code>.context.db</code>、<code>.artifacts.db</code> 物理分离，<strong>绝不改动现有 Session <code>formatVersion=1</code> 归档格式</strong>。以下表结构完整覆盖 Phase 1，并在文末给出 Phase 2 预留表定义，确保演进零破坏性迁移：</p>
+<pre><code>-- ============================================================================
+-- Phase 1 核心表（bots.db）
+-- ============================================================================
+
+-- 1. Bot 实体与身份配置（每 Bot 严格绑定 1 个 project_id）
+CREATE TABLE bots (
+  id TEXT PRIMARY KEY,                      -- 例如 bot_9f3a21bc
+  name TEXT NOT NULL,
+  instructions TEXT NOT NULL DEFAULT '',
+  project_id TEXT NOT NULL,                 -- 严格绑定单个已登记项目 ID
+  appearance_json TEXT NOT NULL,            -- { shape, color, icon/badge }
+  permission_mode TEXT,                     -- NULL=继承项目/全局 | 'ask' | 'auto' | 'full'
+  max_concurrent_workers INTEGER,           -- NULL=继承全局 perBotMaxWorkers (1..4)
+  router_model_json TEXT,                   -- NULL=继承 | { modelId, baseURL?, apiKeyEnv?, noAuth?, contextWindow?, maxOutputTokens? }
+  worker_model_json TEXT,                   -- NULL=继承 | 同上（可与 router 相同）
+  router_session_id TEXT NOT NULL DEFAULT 'main',
+  sort_order INTEGER NOT NULL DEFAULT 0,    -- 侧栏手动拖拽排序权重
+  memory_mode TEXT NOT NULL DEFAULT 'alphacode', -- Phase 2 预留: 'alphacode' | 'off'
+  last_visited_at TEXT,                     -- 用于计算未读完成/失败状态点
+  archived_at TEXT,                         -- NULL=活跃，非 NULL=已归档
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX idx_bots_active_order ON bots(archived_at, sort_order, created_at);
+
+-- 2. 每 Bot 事件线索（Thread）
+CREATE TABLE bot_threads (
+  id TEXT PRIMARY KEY,                      -- 每 Bot 默认主线索 thr_main:&lt;botId&gt;
+  bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL DEFAULT 'desktop-app',
+  external_key TEXT,
+  title TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'active',
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX idx_bot_threads_bot ON bot_threads(bot_id, updated_at);
+
+-- 3. Spill 负载存储（长输入 / Diff / 报告）
+CREATE TABLE bot_payloads (
+  id TEXT PRIMARY KEY,
+  bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+-- 4. 事件日志（Trigger，按 bot_id 隔离排队与 Batch 聚合）
+CREATE TABLE bot_triggers (
+  id TEXT PRIMARY KEY,
+  bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+  thread_id TEXT NOT NULL REFERENCES bot_threads(id) ON DELETE CASCADE,
+  source TEXT NOT NULL,                     -- 'user_chat' | 'worker_event' | 'watchdog' | (P2: 'bot_mention' | P3: 'schedule' | 'external_channel')
+  kind TEXT NOT NULL,
+  priority TEXT NOT NULL DEFAULT 'normal',  -- 'urgent' | 'normal' | 'low'
+  idempotency_key TEXT UNIQUE,
+  actor TEXT NOT NULL,
+  summary TEXT NOT NULL,                    -- Inline 摘要 (&lt;= 280 chars)
+  payload_ref TEXT,                         -- Spill 句柄
+  status TEXT NOT NULL DEFAULT 'pending',   -- pending | routed_fast | batched | processed | dropped
+  created_at TEXT NOT NULL,
+  processed_at TEXT
+);
+CREATE INDEX idx_bot_triggers_bot_status ON bot_triggers(bot_id, status, created_at);
+
+-- 5. 后台 Worker 任务与 Worktree 元数据（记录任务创建时的真实 project_id 与 workspace_root）
+CREATE TABLE bot_tasks (
+  id TEXT PRIMARY KEY,
+  bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+  short_id TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  goal TEXT NOT NULL,
+  project_id TEXT NOT NULL,                 -- 固化任务执行时的项目，Bot 日后切换项目不影响历史任务合并回原仓
+  workspace_root TEXT NOT NULL,
+  access_mode TEXT NOT NULL,                -- 'readonly' | 'write'
+  isolation_mode TEXT NOT NULL,             -- 'shared_readonly' | 'git_worktree' | 'serial_lock'
+  worktree_path TEXT,
+  worktree_branch TEXT,                     -- alphacode/bot/&lt;shortId&gt;
+  base_commit TEXT,
+  main_repo_dirty_at_start INTEGER NOT NULL DEFAULT 0,
+  worktree_state TEXT NOT NULL DEFAULT 'none', -- none | active | ready_for_review | merged | cleaned
+  diff_artifact_ref TEXT,
+  worker_session_id TEXT NOT NULL,
+  worker_model_id TEXT NOT NULL,
+  status TEXT NOT NULL,                     -- queued | running | awaiting_approval | completed | failed | cancelled | interrupted
+  result_summary TEXT,
+  origin_trigger_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  finished_at TEXT
+);
+CREATE INDEX idx_bot_tasks_bot_updated ON bot_tasks(bot_id, updated_at DESC);
+CREATE INDEX idx_bot_tasks_status ON bot_tasks(status, updated_at);
+
+-- 6. Thread &lt;-&gt; Task 多对多订阅表（Fast Path 直通路由）
+CREATE TABLE bot_subscriptions (
+  thread_id TEXT NOT NULL REFERENCES bot_threads(id) ON DELETE CASCADE,
+  task_id TEXT NOT NULL REFERENCES bot_tasks(id) ON DELETE CASCADE,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (thread_id, task_id)
+);
+
+-- 7. Per-Bot 链式召回对象引用图（Chain of Recall）
+CREATE TABLE bot_links (
+  bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+  from_id TEXT NOT NULL,
+  to_id TEXT NOT NULL,
+  relation TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (bot_id, from_id, to_id, relation)
+);
+CREATE INDEX idx_bot_links_from ON bot_links(bot_id, from_id);
+CREATE INDEX idx_bot_links_to ON bot_links(bot_id, to_id);
+
+-- ============================================================================
+-- Phase 2 预留表（对齐 Up.computer 记忆与跨会话 @Bot 提及，Phase 1 不启用逻辑）
+-- ============================================================================
+
+-- P2-1. Bot 专属长期事实记忆（每 Bot 上限 200 条，不随切换项目/模型丢失）
+-- CREATE TABLE bot_memories (
+--   bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+--   id TEXT NOT NULL,
+--   text TEXT NOT NULL,
+--   source TEXT NOT NULL,
+--   owner TEXT NOT NULL DEFAULT 'bot',      -- 'user' (锁定禁改) | 'bot'
+--   status TEXT NOT NULL DEFAULT 'active',  -- 'active' | 'proposed' | 'accepted' | 'rejected'
+--   target_id TEXT,                         -- Worker 提议覆盖的记忆 ID
+--   created_at TEXT NOT NULL,
+--   updated_at TEXT NOT NULL,
+--   deleted_at TEXT,
+--   PRIMARY KEY (bot_id, id)
+-- );
+
+-- P2-2. 跨会话 @Bot 提及中继表
+-- CREATE TABLE bot_mentions (
+--   message_id TEXT PRIMARY KEY,
+--   bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+--   origin_kind TEXT NOT NULL,              -- 'project_session' | 'bot'
+--   origin_id TEXT NOT NULL,
+--   trigger_id TEXT,
+--   status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'done'
+--   context_json TEXT NOT NULL,             -- 最近 8 条消息摘录（标记为 untrusted context）
+--   created_at TEXT NOT NULL
+-- );</code></pre>
+    </section>
+
+    <!-- 09 -->
+    <section id="s9">
+      <h2><span class="sec-badge">09</span>现有代码重构映射与 HTTP/SSE 协议契约</h2>
+      <p>工作区当前未提交的 <code>apps/alphacode-app-server/src/personal/*</code> 已具备约 80% 可直接泛化复用的 Super-agent 底层逻辑。评审确认后，我们将按以下映射一次性替换为 <code>bots</code>，确保零残留死代码并严格遵守 Nx / ESLint 跨包边界：</p>
+
+      <h3>后端重构迁移映射表（<code>src/personal</code> → <code>src/bots</code>）</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>原未提交文件</th><th>重构目标路径</th><th>改造要点</th></tr></thead>
+          <tbody>
+            <tr><td><code>src/personal/contracts.ts</code></td><td><code>src/bots/contracts.ts</code></td><td>引入 <code>BotRecord</code>、<code>BotSummaryView</code>、<code>BotDetailStateView</code>、<code>BotAppearance</code>、<code>BotStatusKind</code>；任务/审批/Trigger 全面补充 <code>botId</code></td></tr>
+            <tr><td><code>src/personal/store.ts</code></td><td><code>src/bots/store.ts</code></td><td>切换至 <code>sessions.db.bots.db</code>；新增 <code>bots</code> CRUD、排序、<code>lastVisitedAt</code> 与 <code>bot_id</code> 索引隔离查询</td></tr>
+            <tr><td><code>src/personal/worktree-manager.ts</code></td><td><code>src/bots/worktree-manager.ts</code></td><td><strong>95% 直接复用</strong>；分支前缀改为 <code>alphacode/bot/&lt;shortId&gt;</code>，保持全部安全预检与 Windows 兼容测试</td></tr>
+            <tr><td><code>src/personal/config-resolver.ts</code></td><td><code>src/bots/config-resolver.ts</code></td><td>升级为三级模型继承解析器（Bot 级覆盖 → <code>config.yaml</code> <code>bots</code> 默认 → 全局默认模型）</td></tr>
+            <tr><td><code>src/personal/event-bus.ts</code></td><td><code>src/bots/event-bus.ts</code></td><td>按 <code>botId</code> 实例化（<code>thr_main:${botId}</code>），隔离事件流与 Thread 订阅直通</td></tr>
+            <tr><td><code>src/personal/router.ts</code></td><td><code>src/bots/router.ts</code></td><td>按 <code>botId</code> 实例化（<code>ns = bot:router:${botId}</code>，动态注入 Bot 名称/指令/绑定项目；移除 <code>dispatch_task</code> 的 <code>projectId</code> 参数强锁定绑定项目）</td></tr>
+            <tr><td><code>src/personal/worker-pool.ts</code></td><td><code>src/bots/worker-pool.ts</code></td><td>全局共享池升级为<strong>跨 Bot 轮询公平调度</strong>（全局上限 + 单 Bot 配额）；Worker 命名空间改为 <code>bot:worker:${botId}</code>；审批视图携带 <code>botId</code></td></tr>
+            <tr><td><code>src/personal/watchdog.ts</code></td><td><code>src/bots/watchdog.ts</code></td><td>全局巡检全 Bot 活跃 Worker 超时/审批挂起，按任务 <code>botId</code> 精准回投告警 Trigger，统一执行孤儿 Worktree GC</td></tr>
+            <tr><td><code>src/personal/service.ts</code></td><td><code>src/bots/manager.ts</code></td><td>从单实例 Service 升级为 <code>BotManager</code>：Bot 增删改查/归档/排序、单项目切换忙碌校验、懒加载每 Bot Router/EventBus、聚合状态计算与双层订阅广播</td></tr>
+            <tr><td><code>src/server/personal.ts</code></td><td><code>src/server/bots.ts</code></td><td>替换为 <code>/api/bots/*</code> REST + 双层 SSE 路由；同步清理 <code>server.ts</code> / <code>global-config.ts</code> / <code>package.json</code> 中的 <code>personal</code> 符号</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>前端落位规划（<code>apps/alphacode-web/src/features/bots/*</code>）</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>前端模块</th><th>职责与边界</th></tr></thead>
+          <tbody>
+            <tr><td><code>features/bots/api.ts</code> &amp; <code>use-bots.ts</code></td><td>封装 <code>/api/bots/*</code> 请求与双层 SSE 订阅（全局 Bots 索引流 + 当前选中 Bot 详情流）</td></tr>
+            <tr><td><code>features/bots/bot-sidebar-section.tsx</code></td><td>嵌入 <a href="../apps/alphacode-web/src/features/sessions/session-sidebar.tsx"><code>session-sidebar.tsx</code></a> 顶部（项目之上）：可折叠、拖拽排序、折叠 72px 图标轨态、Bot 头像/状态点/审批计数、右键菜单与双击改名</td></tr>
+            <tr><td><code>features/bots/bot-avatar.tsx</code></td><td>克制中性系可配置 Bot 几何徽标（图形 + 12 色 + 状态微指示，遵守 <code>prefers-reduced-motion</code>）</td></tr>
+            <tr><td><code>features/bots/bot-chat-page.tsx</code></td><td>路由 <code>/bots/:botId</code>：复用 AI Elements 消息流与输入栏、顶部活跃任务胶囊、内联聚合审批卡片、项目缺失修复横幅</td></tr>
+            <tr><td><code>features/bots/worker-inspector-drawer.tsx</code></td><td>按需滑出右侧抽屉：实时工具轨迹（复用 <code>traces</code> 视图）、Worktree 分支与 Diff 预览、一键安全合并/丢弃、直接发送 <code>steer</code> / 停止</td></tr>
+            <tr><td><code>features/bots/bot-settings-page.tsx</code></td><td>路由 <code>/bots/new</code> 与 <code>/bots/:botId/settings</code>：自动保存表单（外观、名称、指令、单项目选择、Router/Worker 双层模型配置、权限模式、单 Bot 并发数、归档与删除确认）</td></tr>
+            <tr><td><code>i18n/locales/{en,zh-CN}/bots.json</code></td><td>补齐完整中英文双语翻译并通过 <code>scripts/check-i18n.ts</code> 检查</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>HTTP / SSE 接口清单（双层 SSE 避免全量聊天流广播膨胀）</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Path</th><th>语义与状态码</th></tr></thead>
+          <tbody>
+            <tr><td><code>GET</code></td><td><code>/api/bots</code></td><td>获取所有活跃（及可选归档）Bot 的摘要列表与聚合状态（<code>BotSummaryView[]</code>）</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/bots/events</code></td><td><strong>全局索引 SSE</strong>：仅推送 Bot 摘要列表、聚合状态与全局待审批计数（轻量 &lt; 5 KB，驱动侧栏实时更新）</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/bots</code></td><td>创建新 Bot（校验 <code>name</code>、<code>projectId</code> 存在且有效），返回 <code>201</code> + <code>BotSummaryView</code></td></tr>
+            <tr><td><code>PATCH</code></td><td><code>/api/bots/order</code></td><td>批量保存侧栏 Bot 拖拽顺序 <code>{ botIds: string[] }</code></td></tr>
+            <tr><td><code>GET / PATCH</code></td><td><code>/api/bots/defaults</code></td><td>读取与修改 <code>config.yaml</code> 中全局 <code>bots</code> 默认配置（并发数、默认 Router/Worker 模型；脱敏不返密钥）</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/bots/:botId/state</code></td><td>获取单个 Bot 的全量运行快照（Router 对话流、任务列表、Worktree 状态、待审批项、生效模型与上下文用量）</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/bots/:botId/events</code></td><td><strong>单 Bot 详情 SSE</strong>：按需连接，仅推送该 Bot 的实时流式输出与任务状态变更</td></tr>
+            <tr><td><code>PATCH</code></td><td><code>/api/bots/:botId</code></td><td>更新 Bot 设置（名称、指令、外观、权限、双层模型、工作项目）；切换项目时若忙碌返回 <code>409 BOT_BUSY</code></td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/bots/:botId/visit</code></td><td>记录 <code>lastVisitedAt</code>，消除该 Bot 侧栏未读完成/失败提示点</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/bots/:botId/archive</code></td><td>归档或取消归档 Bot <code>{ archived: boolean }</code></td></tr>
+            <tr><td><code>DELETE</code></td><td><code>/api/bots/:botId</code></td><td>删除 Bot；若存在未合并 Worktree 且未传 <code>forceCleanupWorktrees: true</code> 则返回 <code>409 UNMERGED_WORKTREES</code></td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/bots/:botId/messages</code></td><td><code>{ requestId, input }</code>；幂等入队 <code>user_chat</code> Trigger 返回 <code>202</code>；绑定项目丢失返回 <code>409 BOT_PROJECT_UNAVAILABLE</code></td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/bots/:botId/cancel</code></td><td>取消该 Bot 当前 Router 生成（不影响已派发 Worker）</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/bots/:botId/approvals/:approvalId</code></td><td><code>{ taskId, allow }</code>；审批该 Bot 下 Worker 的待确认命令</td></tr>
+            <tr><td><code>GET / POST</code></td><td><code>/api/bots/:botId/tasks/:taskId/{session,diff,steer,cancel,apply,discard}</code></td><td>查看单 Worker 实时会话、Diff、发送 Steer 纠偏、停止、安全预检合并回原仓或清理 Worktree</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section id="s10">
+      <h2><span class="sec-badge">10</span>安全底线、Phase 1 实施批次与演进路线</h2>
+
+      <div class="callout warn">
+        <strong>不可妥协的安全与稳定性底线：</strong>
+        <ol style="margin:6px 0 0;padding-left:20px">
+          <li><strong>严格工具与作用域隔离</strong>：Router 无底层文件/Shell 工具；Worker 强绑定目标 <code>projectId</code> 并受宿主 <code>permission-policy.ts</code> 裁决；所有 <code>/api/bots/:botId/*</code> 接口强校验资源归属关系（防止跨 Bot 越权操作任务或审批）。</li>
+          <li><strong>零命令注入与零静默覆写</strong>：所有 <code>git</code> 调用走 <code>argv</code> 数组；Worktree 改动必须用户显式触发 <code>apply</code> 且预检无冲突才写回主仓，冲突保持原仓一字节不改。</li>
+          <li><strong>进程重启与删除零数据丢失</strong>：重启时未完成任务统一转 <code>interrupted</code> 并保留 Worktree；删除 Bot 前若存在未合并 Worktree 强制二次确认；所有配置接口绝不暴露明文 API Key。</li>
+          <li><strong>Phase 2 记忆安全前置红线</strong>：后台 Worker 面对不可信仓库与网页内容，架构上严禁挂载 <code>bot_remember</code> / <code>bot_forget</code>，所有持久记忆必须经 Router 审核或用户显式确认。</li>
+        </ol>
+      </div>
+
+      <div class="cards-3">
+        <div class="card">
+          <span class="tag tag-blue">Phase 1 · 批次 1A（后端底座）</span>
+          <strong>重构 <code>src/personal</code> → <code>src/bots</code></strong>
+          <p>清理未提交的 <code>personal</code> 入口；落地 <code>bots.db</code>、三级配置解析器、<code>BotManager</code>、跨 Bot 公平调度 <code>WorkerPool</code>、<code>WorktreeManager</code>、L1 Watchdog 与 <code>/api/bots/*</code> 双层 SSE，补齐离线端到端测试（多 Bot 并发、项目切换校验、Worktree 合并、审批与重启恢复）。</p>
+        </div>
+        <div class="card">
+          <span class="tag tag-ok">Phase 1 · 批次 1B（前端闭环）</span>
+          <strong>Bots 侧栏、永久对话、设置页与抽屉</strong>
+          <p>在 <code>alphacode-web</code> 落地侧栏 <code>Bots</code> 分区（排序/状态/折叠图标轨）、<code>/bots/:id</code> 永久对话页（活跃任务胶囊 + 聚合审批卡）、<code>/bots/new</code> 与设置页（单项目绑定 + 双层模型配置）、右侧 Worker Inspector &amp; Diff 抽屉，以及双语 i18n 与前端组件测试。</p>
+        </div>
+        <div class="card">
+          <span class="tag tag-purple">Phase 2 &amp; 3（演进扩展）</span>
+          <strong>记忆 · 转化 · 协同 · 主动性</strong>
+          <p><strong>Phase 2：</strong>对齐 Up.computer 落地 <code>bot_memories</code>（200 条、<code>Remember:</code>、用户锁、增量注入）、<code>bot_history_search</code>、普通会话一键 <em>Turn into bot</em>、跨会话 <code>@Bot</code> 提及回传。<br><strong>Phase 3：</strong>Cron 定时 Trigger、投机执行、桌面托盘保活、语义 Watchdog、外部信道与 BYOM。</p>
+        </div>
+      </div>
+
+      <h3>Phase 1 验收门槛</h3>
+      <ul>
+        <li>侧栏项目列表之上呈现独立 <code>Bots</code> 分区（支持展开/折叠、拖拽排序、72px 图标轨展示与状态聚合），新建 2 个分别绑定不同项目的 Bot 后，各自拥有独立永久对话且不污染普通项目会话列表。</li>
+        <li>在任意 Bot 对话中连发 2 个写任务，底层自动在绑定项目的 Git 仓库中创建 2 个独立 Worktree（<code>alphacode/bot/&lt;shortId&gt;</code>）并行执行，主输入框全程无阻塞；完成后可在右侧抽屉查看实时轨迹、发送 <code>steer</code> 纠偏、预览 Diff 并安全合并或清理。</li>
+        <li>为单个 Bot 分别配置独立 Router/Worker 模型（或配成相同模型、或继承全局默认），切换 Router 模型不丢失永久对话历史；在空闲时切换 Bot 绑定项目后对话保留，且旧项目的未合并 Worktree 仍正确合回原项目；忙碌时切换项目返回明确拒绝提示。</li>
+        <li>后台 Worker 触发命令审批时，侧栏对应 Bot 立即亮起审批徽标，进入该 Bot 对话即可一键允许/拒绝；原有普通项目会话与多会话画布功能零回归。</li>
+        <li>全仓 <code>bun run build</code>、<code>bun run typecheck</code>、<code>bun run lint</code>、<code>bun run test</code> 与桌面离线集成测试全部通过。</li>
+      </ul>
+
+      <footer class="foot">
+        <span>AlphaCode Engineering Design · Bots v1.0（Bots 外壳 × Super-agent 内核）</span>
+        <span>文档路径：docs/bots-technical-design.html</span>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  const root = document.documentElement;
+  const themeBtn = document.getElementById("themeToggle");
+  const saved = localStorage.getItem("alphacode-doc-theme");
+  if (saved === "light" || saved === "dark") root.dataset.theme = saved;
+  themeBtn.addEventListener("click", () => {
+    const isDark = root.dataset.theme === "dark" || (!root.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+    const next = isDark ? "light" : "dark";
+    root.dataset.theme = next;
+    localStorage.setItem("alphacode-doc-theme", next);
+  });
+
+  // Interactive Multi-Bot Wireframe State
+  const BOTS = {
+    alpha: {
+      id: "bot_alpha_core",
+      title: "Alpha 内核助手",
+      project: "项目: alpha",
+      projectFull: "alpha (c:\\Users\\ziyang\\project\\alpha) · 仅空闲时可切换",
+      appearance: "Alpha 内核助手 · 几何徽标（蓝色 · 轨道图形）",
+      instructions: "专注 AlphaCode 后端与 ADK 内核开发；改动优先拆分模块并补充离线 bun:test 用例。",
+      pill: "2 运行中 · 1 待审批",
+      userMsg: "把 app-server 的 skills 路由拆干净并补齐单元测试，同时顺便帮我查一下 session-store 的 SQLite 锁超时配置。",
+      agentMsg1: "<strong>Alpha 内核助手（Router · gpt-6.1-fast）</strong><br>已在项目 <code>alpha</code> 内并行启动两个后台 Worker，你可以继续提其他要求：<br>• <code>tsk_9f3a</code>（写任务 · Worktree <code>alphacode/bot/9f3a</code>）：重构 skills 路由并补测试<br>• <code>tsk_4c1b</code>（只读调研 · 零拷贝）：排查 SQLite <code>busy_timeout</code> 与 WAL 配置",
+      hasApproval: true,
+      agentMsg2: "<strong>Alpha 内核助手（Router）</strong><br><code>tsk_4c1b</code> 调研完成：当前 <code>sessions.db</code> 与 <code>bots.db</code> 均设置了 <code>PRAGMA busy_timeout = 10000</code> 与 WAL 模式，无并发锁死风险。",
+      drawerTask: "Worker Inspector · <code>tsk_9f3a</code>",
+      drawerInfo: "归属项目：<code>alpha</code><br>分支：<code>alphacode/bot/9f3a</code><br>目录：<code>~/.alphacode/worktrees/a1b2c3d4/9f3a</code><br>改动：4 文件（+128 / -34）",
+      drawerTrace: "✓ read_file src/server/skills.ts<br>✓ edit_file src/server/skills.ts<br>✓ create_file test/skills.test.ts<br>⏳ run_command bun test（等待审批）"
+    },
+    release: {
+      id: "bot_release_ops",
+      title: "桌面端发版助手",
+      project: "项目: alpha",
+      projectFull: "alpha (c:\\Users\\ziyang\\project\\alpha) · 空闲可切换",
+      appearance: "桌面端发版助手 · 几何徽标（翠绿 · 六边形）",
+      instructions: "负责 Electron 桌面端构建脚本检查、release.ts 版本核对与 Windows 路径兼容性回归。",
+      pill: "1 待合并 Diff",
+      userMsg: "核对一下 scripts/release.ts 在 Windows 路径下的压缩包校验逻辑，顺便修复任何路径分隔符隐患。",
+      agentMsg1: "<strong>桌面端发版助手（Router）</strong><br>已在独立 Worktree <code>alphacode/bot/c21e</code> 启动排查与修复任务 <code>tsk_c21e</code>。",
+      hasApproval: false,
+      agentMsg2: "<strong>桌面端发版助手（Router）</strong><br><code>tsk_c21e</code> 已完成并通过 <code>scripts/release.test.ts</code>：统一了 SHA256SUMS 中的 POSIX 路径规范化（改动 2 文件，+19 / -6）。点击顶部胶囊可预览 Diff 并一键合并回 <code>alpha</code>。",
+      drawerTask: "Worker Inspector · <code>tsk_c21e</code>",
+      drawerInfo: "归属项目：<code>alpha</code><br>分支：<code>alphacode/bot/c21e</code><br>状态：<code>ready_for_review</code><br>改动：2 文件（+19 / -6）",
+      drawerTrace: "✓ read_file scripts/release.ts<br>✓ edit_file scripts/release.ts<br>✓ run_command bun test scripts/release.test.ts<br>✓ 全部 14 项测试通过，Diff 已采集"
+    },
+    auth: {
+      id: "bot_auth_audit",
+      title: "鉴权审计助手",
+      project: "项目: repo-b",
+      projectFull: "repo-b (c:\\Users\\ziyang\\project\\repo-b) · 空闲可切换",
+      appearance: "鉴权审计助手 · 几何徽标（星云紫 · 菱形）",
+      instructions: "专注 repo-b 的认证、签名校验与权限边界只读审计，未经确认不修改生产代码。",
+      pill: "无活跃任务",
+      userMsg: "帮我通读一下 repo-b 最新的 JWT 刷新链路，列出潜在的重放风险。",
+      agentMsg1: "<strong>鉴权审计助手（Router）</strong><br>已派发只读调研 Worker <code>tsk_7d2e</code>，直接读取 <code>repo-b</code> 当前工作区（零磁盘拷贝）。",
+      hasApproval: false,
+      agentMsg2: "<strong>鉴权审计助手（Router）</strong><br><code>tsk_7d2e</code> 审计完毕：发现 2 处值得加固的点（Refresh Token 轮换缺少 <code>jti</code> 一次性消费记录；时钟偏差窗口偏大）。如需我派发写任务补齐单测，请直接回复。",
+      drawerTask: "Worker Inspector · <code>tsk_7d2e</code>",
+      drawerInfo: "归属项目：<code>repo-b</code><br>模式：<code>shared_readonly</code><br>状态：<code>completed</code><br>改动：无文件变更（只读）",
+      drawerTrace: "✓ search \"refreshToken\" src/auth/<br>✓ read_file src/auth/jwt.ts<br>✓ read_file src/auth/middleware.ts<br>✓ 只读报告已写入 artifacts.db"
+    }
+  };
+
+  let currentKey = "alpha";
+  let currentMode = "chat";
+  let approvalResolved = false;
+
+  const wfBody = document.getElementById("wfBody");
+  const wfChatView = document.getElementById("wfChatView");
+  const wfSettingsView = document.getElementById("wfSettingsView");
+  const wfComposer = document.getElementById("wfComposer");
+  const wfModeChat = document.getElementById("wfModeChat");
+  const wfModeSettings = document.getElementById("wfModeSettings");
+  const wfDrawerToggle = document.getElementById("wfDrawerToggle");
+  const wfRouteLabel = document.getElementById("wfRouteLabel");
+
+  function renderWireframe() {
+    const bot = BOTS[currentKey];
+    document.querySelectorAll(".wf-bot-row").forEach(row => {
+      row.classList.toggle("active", row.dataset.bot === currentKey);
+    });
+    document.getElementById("wfBotTitle").textContent = bot.title;
+    document.getElementById("wfBotProject").textContent = bot.project;
+    const pill = document.getElementById("wfTaskPill");
+    pill.textContent = (currentKey === "alpha" && approvalResolved) ? "2 运行中 · 0 待审批" : bot.pill;
+    document.getElementById("wfUserMsg").textContent = bot.userMsg;
+    document.getElementById("wfAgentMsg1").innerHTML = bot.agentMsg1;
+    document.getElementById("wfAgentMsg2").innerHTML = bot.agentMsg2;
+    document.getElementById("wfSetHeader").textContent = bot.title + " · 设置";
+    document.getElementById("wfSetName").textContent = bot.appearance;
+    document.getElementById("wfSetProj").textContent = bot.projectFull;
+    document.getElementById("wfSetInst").textContent = bot.instructions;
+    document.getElementById("wfDrawerTask").innerHTML = bot.drawerTask;
+    document.getElementById("wfDrawerInfo").innerHTML = bot.drawerInfo;
+    document.getElementById("wfDrawerTrace").innerHTML = (currentKey === "alpha" && approvalResolved)
+      ? "✓ read_file src/server/skills.ts<br>✓ edit_file src/server/skills.ts<br>✓ create_file test/skills.test.ts<br>✓ run_command bun test（已批准，运行中…）"
+      : bot.drawerTrace;
+
+    const approvalCard = document.getElementById("wfApprovalCard");
+    approvalCard.style.display = bot.hasApproval ? "flex" : "none";
+    if (bot.hasApproval) {
+      approvalCard.classList.toggle("resolved", approvalResolved);
+      document.getElementById("wfApprovalTitle").innerHTML = approvalResolved
+        ? "已批准执行 · <code>tsk_9f3a</code> (Worktree <code>alphacode/bot/9f3a</code>)"
+        : "需要审批 · <code>tsk_9f3a</code> (Worktree <code>alphacode/bot/9f3a</code>)";
+      document.getElementById("wfApprovalBtns").style.display = approvalResolved ? "none" : "flex";
+    }
+
+    const isSettings = currentMode === "settings";
+    wfChatView.style.display = isSettings ? "none" : "flex";
+    wfComposer.style.display = isSettings ? "none" : "flex";
+    wfSettingsView.style.display = isSettings ? "flex" : "none";
+    wfModeChat.setAttribute("aria-pressed", String(!isSettings));
+    wfModeSettings.setAttribute("aria-pressed", String(isSettings));
+    wfRouteLabel.innerHTML = isSettings
+      ? "AlphaCode Desktop / Web · 路由 <code>/bots/" + bot.id + "/settings</code>"
+      : "AlphaCode Desktop / Web · 路由 <code>/bots/" + bot.id + "</code>";
+  }
+
+  document.querySelectorAll(".wf-bot-row").forEach(row => {
+    const activate = () => {
+      currentKey = row.dataset.bot;
+      renderWireframe();
+    };
+    row.addEventListener("click", activate);
+    row.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
+    });
+  });
+
+  wfModeChat.addEventListener("click", () => { currentMode = "chat"; renderWireframe(); });
+  wfModeSettings.addEventListener("click", () => { currentMode = "settings"; renderWireframe(); });
+  document.getElementById("wfSettingsIcon").addEventListener("click", () => {
+    currentMode = currentMode === "settings" ? "chat" : "settings";
+    renderWireframe();
+  });
+  document.getElementById("wfBackToChat").addEventListener("click", () => { currentMode = "chat"; renderWireframe(); });
+  document.getElementById("wfNewBotBtn").addEventListener("click", () => { currentMode = "settings"; renderWireframe(); });
+
+  const toggleDrawer = () => {
+    const open = wfBody.classList.toggle("drawer-open");
+    wfDrawerToggle.setAttribute("aria-pressed", String(open));
+  };
+  wfDrawerToggle.addEventListener("click", toggleDrawer);
+  document.getElementById("wfTaskPill").addEventListener("click", toggleDrawer);
+
+  document.getElementById("wfAllowBtn").addEventListener("click", () => {
+    approvalResolved = true;
+    const badge = document.getElementById("badge-alpha");
+    badge.className = "wf-count ok";
+    badge.textContent = "2 运行";
+    document.getElementById("dot-alpha").style.background = "#22c55e";
+    renderWireframe();
+  });
+  document.getElementById("wfDenyBtn").addEventListener("click", () => {
+    approvalResolved = true;
+    const badge = document.getElementById("badge-alpha");
+    badge.className = "wf-count muted";
+    badge.textContent = "已拒绝";
+    document.getElementById("dot-alpha").style.background = "#9ca3af";
+    renderWireframe();
+  });
+
+  renderWireframe();
+
+  // Active TOC Highlight
+  const links = Array.from(document.querySelectorAll("aside.toc a[href^='#']"));
+  const sections = links.map(a => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      links.forEach(l => l.classList.toggle("active", l.getAttribute("href") === "#" + entry.target.id));
+    }
+  }, { rootMargin: "-15% 0px -70% 0px" });
+  sections.forEach(sec => observer.observe(sec));
+})();
+</script>
+</body>
+</html>

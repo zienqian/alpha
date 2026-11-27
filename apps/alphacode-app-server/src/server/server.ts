@@ -21,6 +21,9 @@ import { createSqliteContextStore } from "@alpha/adk-context/sqlite";
 import { createSqliteArtifactStore } from "@alpha/adk-artifact/sqlite";
 import { createRuntimeTrace } from "../runtime/trace-bridge";
 import { createTraceRoutes } from "./traces";
+import { createBotsRoutes } from "./bots";
+import { createBotManager } from "../bots/manager";
+import type { CreateProviderOptions } from "@alpha/provider";
 import { displayText } from "../runtime/tool-records";
 import type { ServerHandoff, SessionHandoff, UpdateStatus } from "./handoff";
 
@@ -59,6 +62,9 @@ export interface ServerOptions {
   onIdle?: () => void;
   /** Injectable for hosts/tests; otherwise this daemon owns an independent SQLite Worker. */
   traces?: TraceService;
+  /** Optional overrides for Bots offline testing. */
+  botsConfigDirectory?: string;
+  botsProvider?: (role: "router" | "worker", config: AppConfig, botId: string) => CreateProviderOptions | undefined;
 }
 
 export async function startServer(options: ServerOptions) {
@@ -86,17 +92,41 @@ export async function startServer(options: ServerOptions) {
   let webDirectory: Promise<string> | undefined;
   let updating = options.paused ?? false;
   const changed = () => { sequence++; lastActivity = Date.now(); for (const listener of listeners) listener(); };
+  const onProjectsChanged = () => { changed(); bots.notifyProjectsChanged(); };
   const skillRoutes = createSkillRoutes(registry.configs, {
     onChanged: changed,
     onSkillsSettingsChanged: registry.updateSkills,
   });
-  const projectRoutes = createProjectRoutes(registry, options.databasePath, changed);
+  const projectRoutes = createProjectRoutes(registry, options.databasePath, onProjectsChanged);
   const security = createSecurity(token, () => origin);
   const factory = options.createChat ?? ((config, credential, restore) => createApplication(config, {
     restore, trace: config.traceEnabled === false ? undefined : trace,
     provider: { getEnv: name => name === config.apiKeyEnv && credential !== undefined ? credential : process.env[name] },
   }));
   const detachTrace = traces.subscribe(() => changed());
+  const bots = createBotManager({
+    instanceId,
+    databasePath: options.databasePath,
+    configDirectory: options.botsConfigDirectory,
+    registry,
+    trace,
+    providerForRole: options.botsProvider,
+    onChanged: changed,
+  });
+  const botsRoutes = createBotsRoutes({
+    manager: bots,
+    instanceId,
+    registerStream(finish) {
+      connections++;
+      streams.add(finish);
+      return () => {
+        if (streams.delete(finish)) {
+          connections--;
+          lastActivity = Date.now();
+        }
+      };
+    },
+  });
   const traceRoutes = createTraceRoutes({ service: traces,
     async session(id) {
       const entry = entries.get(id), saved = entry ? undefined : await registry.find(id);
@@ -399,6 +429,10 @@ export async function startServer(options: ServerOptions) {
         return await traceRoutes(request, url) ?? fail(404, 'NOT_FOUND');
       }
       if (path === "/api/skills" || path.startsWith("/api/skills/")) return skillRoutes(request, url);
+      if (path === "/api/bots" || path.startsWith("/api/bots/")) {
+        if (path === "/api/bots/events" || /^\/api\/bots\/[^/]+\/events$/.test(path)) server.timeout(request, 0);
+        return botsRoutes(request, url);
+      }
       if (path === "/api/info" && request.method === "GET") return Response.json({ protocolVersion, instanceId, databasePath: options.databasePath,
         revision: options.revision, managed: Boolean(options.updateStatus), updateStatus: options.updateStatus?.() });
       if (path === "/api/server/update" && request.method === "POST" && options.onUpdateRequest) {
@@ -501,7 +535,7 @@ export async function startServer(options: ServerOptions) {
     if (request.method !== "GET" || !webDirectory) return fail(404, "WEB_NOT_STARTED");
     const directory = resolve(await webDirectory);
     const decodedPath = decodeURIComponent(path);
-    const appRoute = /^\/(?:settings\/?|skills\/?)?$/.test(decodedPath);
+    const appRoute = /^\/(?:settings\/?|skills\/?|bots(?:\/[^/]+(?:\/settings)?)?\/?)?$/.test(decodedPath);
     const filePath = resolve(directory, appRoute ? "index.html" : `.${decodedPath}`);
     if (!filePath.startsWith(`${directory}${sep}`)) fail(404, "NOT_FOUND");
     let file = Bun.file(filePath);
@@ -543,6 +577,7 @@ export async function startServer(options: ServerOptions) {
       }
       // Unregister only: local files, saved conversations and traces remain recoverable.
       await registry.unregister(projectId);
+      bots.notifyProjectsChanged();
       changed();
       return Response.json({ ok: true });
     } finally { removingProjects.delete(projectId); }
@@ -636,7 +671,7 @@ export async function startServer(options: ServerOptions) {
   });
   const origin = `http://127.0.0.1:${server.port}`;
   const idleMs = options.idleMs ?? 60000;
-  const settled = () => !operations && !opening.size && !running.size && [...entries.values()].every(entry => {
+  const settled = () => !operations && !opening.size && !running.size && !bots.busy && [...entries.values()].every(entry => {
     const state = entry.chat.state;
     return !entry.admission && !entry.queue.length && !entry.requestId && !state.busy && !state.closing && !state.settingsSaving && !state.approval && state.titleStatus !== "pending" && state.canSend;
   });
@@ -655,6 +690,7 @@ export async function startServer(options: ServerOptions) {
         await entry.chat.close();
       }
       await Promise.all([...running]);
+      await bots.close();
       for (const entry of entries.values()) entry.unsubscribe();
       detachTrace();
       if (!options.traces) await traces.close();
