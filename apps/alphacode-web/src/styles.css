@@ -181,30 +181,30 @@
   --corner-shape: round;
 
   /* ========================================================================
-   * Tier 2: Semantic Tokens — Light Appearance (shadcn/ui Neutral)
-   * Verified: body WCAG 19.8:1 / APCA 105.8; muted WCAG 6.0:1 / APCA 80.0;
-   * primary-fg/primary WCAG 17.2:1 / APCA 103.5.
+   * Tier 2: Semantic Tokens — Light Appearance (Pure White Canvas + Frosted Glass Sidebar)
+   * Verified: body WCAG 19.8:1 / APCA 105.8; muted WCAG 5.9:1;
+   * sidebar-fg on glass > 9:1; primary-fg/primary WCAG 17.2:1.
    * ======================================================================== */
-  --shell: var(--neutral-50);
+  --shell: var(--neutral-0);
   --background: var(--neutral-0);
   --foreground: var(--neutral-950);
   --card: var(--neutral-0);
   --card-foreground: var(--neutral-950);
   --popover: var(--neutral-0);
   --popover-foreground: var(--neutral-950);
-  --surface-sunken: var(--neutral-100);
+  --surface-sunken: var(--neutral-25);
   --surface-raised: var(--neutral-0);
 
   --primary: var(--neutral-850);
   --primary-foreground: var(--neutral-25);
   --primary-hover: oklch(0.29 0 0);
-  --primary-subtle: var(--neutral-100);
+  --primary-subtle: var(--neutral-25);
 
-  --secondary: var(--neutral-100);
+  --secondary: oklch(0.98 0 0);
   --secondary-foreground: var(--neutral-850);
-  --muted: var(--neutral-100);
+  --muted: oklch(0.974 0 0);
   --muted-foreground: var(--neutral-500);
-  --accent: var(--neutral-150);
+  --accent: oklch(0.96 0 0);
   --accent-foreground: var(--neutral-950);
 
   --destructive: var(--danger-600);
@@ -220,9 +220,9 @@
   --status-success-bg: var(--success-50);
   --status-success-border: var(--success-200);
 
-  --border: var(--neutral-200);
-  --separator: oklch(0.925 0 0);
-  --input: var(--neutral-300);
+  --border: oklch(0.928 0 0);
+  --separator: oklch(0.946 0 0);
+  --input: oklch(0.89 0 0);
   --ring: oklch(0.68 0 0);
 
   /* Restrained context & data breakdown palette */
@@ -232,57 +232,68 @@
   --chart-4: var(--neutral-500);
   --chart-5: var(--danger-600);
 
-  --sidebar: var(--neutral-50);
-  --sidebar-foreground: var(--neutral-600);
+  /* Frosted glass sidebar tokens — native OS Acrylic/Vibrancy does the heavy blur,
+   * so the desktop overlay stays light and airy while browser fallback provides a soft glass wash. */
+  --sidebar: oklch(0.984 0.004 70 / 0.88);
+  --sidebar-glass: linear-gradient(180deg, oklch(1 0 0 / 0.22) 0%, oklch(1 0 0 / 0.14) 100%);
+  --sidebar-glass-fallback:
+    radial-gradient(130% 55% at 15% 0%, oklch(0.994 0.008 75 / 0.96), transparent 65%),
+    radial-gradient(120% 60% at 85% 100%, oklch(0.976 0.011 58 / 0.92), transparent 72%),
+    linear-gradient(180deg, oklch(0.987 0.003 70 / 0.96) 0%, oklch(0.978 0.006 60 / 0.94) 100%);
+  --sidebar-glass-highlight: inset 0 1px 0 oklch(1 0 0 / 0.35);
+  --sidebar-foreground: oklch(0.2 0 0);
+  --sidebar-muted: oklch(0.43 0 0);
+  --sidebar-hover: oklch(0 0 0 / 0.045);
   --sidebar-primary: var(--neutral-850);
   --sidebar-primary-foreground: var(--neutral-25);
-  --sidebar-accent: var(--neutral-150);
+  --sidebar-accent: oklch(0 0 0 / 0.068);
   --sidebar-accent-foreground: var(--neutral-950);
-  --sidebar-border: var(--neutral-200);
+  --sidebar-border: oklch(0 0 0 / 0.06);
+  --canvas-divider: oklch(0.935 0 0);
   --sidebar-ring: oklch(0.68 0 0);
 
   /* Whisper-quiet AI Elements elevation (hairline rings, minimal spread) */
   --shadow-border:
-    0px 0px 0px 1px oklch(0 0 0 / 0.07),
-    0px 1px 2px 0px oklch(0 0 0 / 0.04);
-  --shadow-border-hover:
-    0px 0px 0px 1px oklch(0 0 0 / 0.12),
-    0px 1px 3px 0px oklch(0 0 0 / 0.06);
-  --shadow-canvas:
     0px 0px 0px 1px oklch(0 0 0 / 0.06),
-    0px 1px 2px 0px oklch(0 0 0 / 0.025);
+    0px 1px 2px 0px oklch(0 0 0 / 0.03);
+  --shadow-border-hover:
+    0px 0px 0px 1px oklch(0 0 0 / 0.11),
+    0px 1px 3px 0px oklch(0 0 0 / 0.05);
+  --shadow-canvas:
+    0px 0px 0px 1px oklch(0 0 0 / 0.055),
+    0px 1px 2px 0px oklch(0 0 0 / 0.02);
   --shadow-composer:
-    0px 1px 2px 0px oklch(0 0 0 / 0.04),
-    0px 4px 16px -6px oklch(0 0 0 / 0.06);
+    0px 1px 2px 0px oklch(0 0 0 / 0.03),
+    0px 6px 20px -8px oklch(0 0 0 / 0.07);
   --shadow-composer-focus:
-    0px 0px 0px 3px oklch(0 0 0 / 0.06),
-    0px 4px 16px -6px oklch(0 0 0 / 0.07);
+    0px 0px 0px 3px oklch(0 0 0 / 0.05),
+    0px 6px 20px -8px oklch(0 0 0 / 0.08);
   --shadow-overlay:
-    0px 0px 0px 1px oklch(0 0 0 / 0.08),
-    0px 8px 24px -4px oklch(0 0 0 / 0.1),
-    0px 16px 40px -12px oklch(0 0 0 / 0.12);
+    0px 0px 0px 1px oklch(0 0 0 / 0.07),
+    0px 8px 24px -4px oklch(0 0 0 / 0.09),
+    0px 16px 40px -12px oklch(0 0 0 / 0.11);
 
   /* Compatibility aliases consumed by trace / canvas subsystems */
   --surface-shadow: var(--shadow-canvas);
   --composer-shadow: var(--shadow-composer);
   --overlay-shadow: var(--shadow-overlay);
-  --glass-surface: var(--popover);
-  --glass-edge: var(--border);
+  --glass-surface: oklch(1 0 0 / 0.84);
+  --glass-edge: var(--sidebar-border);
 
   /* Pure neutral image outline (never palette-tinted) */
   --image-outline: oklch(0 0 0 / 0.1);
 }
 
 /* ==========================================================================
- * Tier 2: Semantic Tokens — Dark Appearance (shadcn/ui Neutral)
+ * Tier 2: Semantic Tokens — Dark Appearance (shadcn/ui Neutral + Frosted Glass Sidebar)
  * Verified: body WCAG 17.1:1 / APCA 99.7; muted WCAG 8.9:1 / APCA 61.5;
  * primary-fg/primary WCAG 15.1:1 / APCA 90.1.
  * ========================================================================== */
 .dark {
   --shell: var(--neutral-950);
-  --background: var(--neutral-900);
+  --background: oklch(0.165 0 0);
   --foreground: oklch(0.965 0 0);
-  --card: var(--neutral-850);
+  --card: oklch(0.195 0 0);
   --card-foreground: oklch(0.965 0 0);
   --popover: oklch(0.215 0 0);
   --popover-foreground: oklch(0.965 0 0);
@@ -325,13 +336,21 @@
   --chart-4: oklch(0.64 0 0);
   --chart-5: var(--danger-400);
 
-  --sidebar: var(--neutral-950);
-  --sidebar-foreground: oklch(0.79 0 0);
+  --sidebar: oklch(0.145 0 0 / 0.88);
+  --sidebar-glass: linear-gradient(180deg, oklch(0.14 0 0 / 0.26) 0%, oklch(0.1 0 0 / 0.3) 100%);
+  --sidebar-glass-fallback:
+    radial-gradient(130% 55% at 15% 0%, oklch(0.215 0.005 70 / 0.94), transparent 65%),
+    linear-gradient(180deg, oklch(0.152 0 0 / 0.97) 0%, oklch(0.132 0 0 / 0.97) 100%);
+  --sidebar-glass-highlight: inset 0 1px 0 oklch(1 0 0 / 0.06);
+  --sidebar-foreground: oklch(0.86 0 0);
+  --sidebar-muted: oklch(0.68 0 0);
+  --sidebar-hover: oklch(1 0 0 / 0.065);
   --sidebar-primary: oklch(0.922 0 0);
   --sidebar-primary-foreground: var(--neutral-900);
-  --sidebar-accent: var(--neutral-800);
-  --sidebar-accent-foreground: oklch(0.965 0 0);
+  --sidebar-accent: oklch(1 0 0 / 0.11);
+  --sidebar-accent-foreground: oklch(0.975 0 0);
   --sidebar-border: oklch(1 0 0 / 9%);
+  --canvas-divider: oklch(0.24 0 0);
   --sidebar-ring: oklch(0.58 0 0);
 
   --shadow-border: 0px 0px 0px 1px oklch(1 0 0 / 0.09);
@@ -349,8 +368,8 @@
   --surface-shadow: var(--shadow-canvas);
   --composer-shadow: var(--shadow-composer);
   --overlay-shadow: var(--shadow-overlay);
-  --glass-surface: var(--popover);
-  --glass-edge: var(--border);
+  --glass-surface: oklch(0.165 0 0 / 0.84);
+  --glass-edge: var(--sidebar-border);
 
   --image-outline: oklch(1 0 0 / 0.1);
 }
@@ -359,7 +378,10 @@
 @media (prefers-contrast: more) {
   :root {
     --muted-foreground: oklch(0.34 0 0);
-    --sidebar-foreground: oklch(0.28 0 0);
+    --sidebar-foreground: oklch(0.2 0 0);
+    --sidebar-muted: oklch(0.32 0 0);
+    --sidebar-glass: linear-gradient(180deg, oklch(1 0 0 / 0.84) 0%, oklch(0.985 0 0 / 0.82) 100%);
+    --sidebar-border: oklch(0 0 0 / 0.22);
     --primary: oklch(0.12 0 0);
     --border: oklch(0.72 0 0);
     --input: oklch(0.56 0 0);
@@ -369,7 +391,10 @@
 
   .dark {
     --muted-foreground: oklch(0.88 0 0);
-    --sidebar-foreground: oklch(0.92 0 0);
+    --sidebar-foreground: oklch(0.94 0 0);
+    --sidebar-muted: oklch(0.82 0 0);
+    --sidebar-glass: linear-gradient(180deg, oklch(0.14 0 0 / 0.84) 0%, oklch(0.11 0 0 / 0.86) 100%);
+    --sidebar-border: oklch(1 0 0 / 26%);
     --primary: oklch(0.98 0 0);
     --border: oklch(1 0 0 / 26%);
     --input: oklch(1 0 0 / 34%);
@@ -440,7 +465,7 @@
 
 @layer components {
   :root {
-    --window-header-height: 36px;
+    --window-header-height: 44px;
     --sidebar-inset: 10px;
   }
 
@@ -512,40 +537,6 @@
   .stage-delay-1 { animation-delay: 80ms; }
   .stage-delay-2 { animation-delay: 160ms; }
 
-  .window-header {
-    display: flex;
-    height: var(--window-header-height);
-    align-items: center;
-    padding-inline: 12px;
-    background: var(--shell);
-    user-select: none;
-    -webkit-app-region: drag;
-  }
-
-  .window-header nav {
-    -webkit-app-region: no-drag;
-  }
-
-  :root[data-desktop="darwin"] .window-header {
-    padding-left: 88px;
-  }
-
-  :root[data-desktop="win32"] .window-header,
-  :root[data-desktop="linux"] .window-header {
-    padding-right: 150px;
-  }
-
-  @media (max-width: 767px) {
-    :root:not([data-desktop]) {
-      --window-header-height: 44px;
-    }
-
-    :root:not([data-desktop]) .window-header [data-slot="button"] {
-      width: 36px;
-      height: 36px;
-    }
-  }
-
   .workspace-shell {
     background: var(--shell);
   }
@@ -554,33 +545,59 @@
     transition: width 220ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Recessed shadcn Sidebar integrated directly into the neutral shell */
-  .workspace-sidebar [data-slot="sidebar-inner"] {
-    container-type: inline-size;
-    min-width: 0;
-    overflow: hidden;
+  .sidebar-drag-header {
+    user-select: none;
+    -webkit-app-region: drag;
+  }
+
+  .sidebar-drag-header button,
+  .sidebar-drag-header a,
+  .sidebar-drag-header input {
+    -webkit-app-region: no-drag;
+  }
+
+  .sidebar-scroll-fade [data-slot="scroll-area-viewport"] {
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 22px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 22px), transparent 100%);
+  }
+
+  /* Main workspace container stays transparent so the unified glass sheet spans both
+   * the left sidebar and the entire top titlebar without any vertical break. */
+  .workspace-canvas {
+    margin: 0;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
   }
 
-  /* Crisp SidebarInset reading & conversation canvas framed by the recessed shell */
-  .workspace-canvas {
-    margin: 2px 8px 8px 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    background: var(--background);
+  .workspace-toolbar {
+    border-bottom: 0;
+    background: transparent;
+    user-select: none;
+    -webkit-app-region: drag;
   }
 
-  .workspace-toolbar {
-    border-bottom: 1px solid var(--separator);
+  /* Pure white opaque content surface nestled cleanly inside the L-shaped frosted glass frame:
+   * rounded only at the top-left inner corner, flush edge-to-edge on right and bottom. */
+  .workspace-surface {
     background: var(--background);
+    border-top: 1px solid var(--canvas-divider);
+    border-inline-start: 1px solid var(--canvas-divider);
+    border-start-start-radius: var(--radius-xl);
+  }
+
+  .workspace-toolbar button,
+  .workspace-toolbar a,
+  .workspace-toolbar nav,
+  .workspace-toolbar input,
+  .workspace-toolbar [role="button"] {
+    -webkit-app-region: no-drag;
   }
 
   .rail-action {
     border-radius: var(--radius-md);
-    color: var(--muted-foreground);
+    color: var(--sidebar-muted);
   }
 
   .rail-divider {
@@ -592,7 +609,7 @@
 
   @media (hover: hover) {
     .session-nav-item[data-active="false"]:hover {
-      background: color-mix(in oklch, var(--sidebar-accent) 65%, transparent);
+      background: var(--sidebar-hover);
       color: var(--sidebar-accent-foreground);
     }
   }
@@ -608,8 +625,10 @@
   }
 
   [data-slot="sidebar"][data-mobile="true"] {
-    background: var(--popover);
-    border-inline-end: 1px solid var(--border);
+    background: var(--glass-surface);
+    backdrop-filter: blur(28px) saturate(165%);
+    -webkit-backdrop-filter: blur(28px) saturate(165%);
+    border-inline-end: 1px solid var(--sidebar-border);
     border-start-end-radius: var(--radius-xl);
     border-end-end-radius: var(--radius-xl);
     box-shadow: var(--shadow-overlay);
@@ -815,6 +834,61 @@
   }
 }
 
+/* Unlayered glass & desktop translucency rules sit above Tailwind v4 @layer utilities
+ * so bg-sidebar / bg-background utilities never mask native Acrylic/Vibrancy glass.
+ * A single unified glass layer on .workspace-shell covers both the left sidebar and top bar. */
+:root[data-translucent="true"],
+:root[data-translucent="true"] body,
+:root[data-translucent="true"] #root {
+  background: transparent;
+}
+
+.workspace-shell {
+  background: var(--sidebar-glass-fallback);
+}
+
+:root[data-translucent="true"] .workspace-shell {
+  background: var(--sidebar-glass);
+  box-shadow: var(--sidebar-glass-highlight);
+}
+
+.workspace-sidebar [data-slot="sidebar-inner"],
+.workspace-canvas {
+  background: transparent;
+}
+
+.workspace-sidebar [data-slot="sidebar-inner"] {
+  container-type: inline-size;
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Native desktop window-control insets sit unlayered above Tailwind padding utilities
+ * so px-* utilities never push toolbar icons under Windows/Linux WCO or macOS traffic lights. */
+:root[data-desktop="darwin"] .workspace-sidebar .sidebar-brand-row {
+  padding-inline-start: 82px;
+}
+
+:root[data-desktop="darwin"] [data-slot="sidebar"][data-state="collapsed"] .sidebar-drag-header {
+  padding-top: 36px;
+}
+
+:root[data-desktop="darwin"] [data-slot="sidebar"][data-state="collapsed"] .sidebar-brand-row {
+  padding-inline-start: 6px;
+}
+
+:root[data-desktop="darwin"] [data-slot="sidebar"][data-state="collapsed"] ~ .workspace-canvas .workspace-toolbar {
+  padding-inline-start: 34px;
+}
+
+:root[data-desktop="win32"] .workspace-toolbar,
+:root[data-desktop="linux"] .workspace-toolbar {
+  padding-inline-end: 152px;
+}
+
 /* Active sidebar & rail navigation states sit above Tailwind ghost hover utilities. */
 .rail-action[data-active="true"],
 .rail-action[aria-current="page"],
@@ -824,25 +898,13 @@
   font-weight: 500;
 }
 
+.sidebar-nav-link[aria-current="page"] svg {
+  color: currentColor;
+}
+
 @media (max-width: 767px) {
   .workspace-shell[data-sidebar-mode="inline"] {
     --workspace-sidebar-width: clamp(10rem, 32vw, 16.5rem);
-  }
-
-  .workspace-canvas {
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .workspace-shell[data-sidebar-mode="inline"] .workspace-canvas {
-    margin: 2px 8px 8px 0;
-  }
-
-  .workspace-shell[data-sidebar-mode="inline"] .workspace-canvas:not([data-docking="true"]) {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
   }
 
   .workspace-toolbar {

@@ -33,12 +33,12 @@ export function ProjectActions({ folder, onNewSession, onDelete }: {
   }
 
   return <>
-    <div className="absolute top-1/2 end-1 flex -translate-y-1/2 items-center gap-0.5 text-muted-foreground md:opacity-0 md:group-hover/folder-header:opacity-100 md:group-has-[:focus-visible]/folder-header:opacity-100 has-[[data-state=open]]:opacity-100 [@media(hover:none)]:opacity-100">
-      <Button variant="ghost" size="icon-xs" className="size-7 hover:text-foreground md:size-6" disabled={pending}
+    <div className="absolute top-1/2 end-1 flex -translate-y-1/2 items-center gap-0.5 text-(--sidebar-muted) md:opacity-0 md:group-hover/folder-header:opacity-100 md:group-has-[:focus-visible]/folder-header:opacity-100 has-[[data-state=open]]:opacity-100 [@media(hover:none)]:opacity-100">
+      <Button variant="ghost" size="icon-xs" className="size-7 hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground md:size-6" disabled={pending}
         aria-label={t("workspace:createIn", { name: folder.name })} onClick={onNewSession}><Plus aria-hidden="true" /></Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button ref={trigger} variant="ghost" size="icon-xs" className="size-7 hover:text-foreground md:size-6" disabled={pending}
+          <Button ref={trigger} variant="ghost" size="icon-xs" className="size-7 hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground md:size-6" disabled={pending}
             aria-label={t("workspace:projectMenu", { name: folder.name })}><MoreHorizontal aria-hidden="true" /></Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onCloseAutoFocus={event => { if (confirming) event.preventDefault(); }}>

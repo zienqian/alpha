@@ -106,7 +106,7 @@ export function InstallSkillDialog({
         </div>
 
         <form id="skill-install" aria-label={t("skills:market.add")} onSubmit={submit} className="space-y-4">
-          <div role="group" aria-label={t("skills:market.method")} className="inline-flex rounded-xl bg-muted p-1">
+          <div role="group" aria-label={t("skills:market.method")} className="inline-flex rounded-xl border border-border/80 bg-surface-sunken p-1 dark:bg-muted">
             <Button
               type="button"
               variant="ghost"
@@ -142,8 +142,8 @@ export function InstallSkillDialog({
               <label
                 htmlFor="skill-zip"
                 className={cn(
-                  "flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-dashed border-input bg-muted/35 px-4 py-7 text-center text-xs leading-[1.5] transition-colors duration-150 ease-out focus-within:ring-2 focus-within:ring-ring/45",
-                  dragging ? "border-foreground/45 bg-muted" : "hover:bg-muted/60",
+                  "flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-dashed border-input bg-background px-4 py-7 text-center text-xs leading-[1.5] transition-colors duration-150 ease-out focus-within:ring-2 focus-within:ring-ring/45 dark:bg-card/40",
+                  dragging ? "border-foreground/45 bg-surface-sunken dark:bg-muted" : "hover:bg-surface-sunken dark:hover:bg-muted/60",
                   isPending && "pointer-events-none opacity-45",
                 )}
                 onDragOver={event => { event.preventDefault(); if (!isPending) setDragging(true); }}
@@ -157,7 +157,7 @@ export function InstallSkillDialog({
                   }
                 }}
               >
-                <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <span className="flex size-10 items-center justify-center rounded-lg border border-border/80 bg-background text-muted-foreground shadow-[0_1px_2px_oklch(0_0_0/0.03)] dark:bg-card">
                   <Upload className="size-5" aria-hidden="true" />
                 </span>
                 <span className="mt-1 max-w-full break-all font-medium text-foreground">

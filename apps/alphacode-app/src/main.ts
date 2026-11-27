@@ -1,13 +1,13 @@
 import { app, BrowserWindow, dialog, Menu, nativeTheme, net, protocol, screen, session, shell, type MenuItemConstructorOptions } from "electron";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { homedir } from "node:os";
+import { homedir, release } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createBackend } from "./backend";
 import { withBundledCommands } from "./cli-command";
 import { installCliCommand } from "./install-cli";
-import { applicationContentSecurityPolicy, applicationURL, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL } from "./policy";
+import { applicationContentSecurityPolicy, applicationURL, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL, supportsNativeGlass } from "./policy";
 
 const applicationName = "AlphaCode";
 const applicationIcon = join(app.getAppPath(), "assets", process.platform === "win32" ? "icon.ico" : "icon.png");
@@ -79,16 +79,28 @@ async function createWindow() {
   const position = typeof x === "number" && typeof y === "number" && Number.isFinite(x) && Number.isFinite(y) && screen.getAllDisplays().some(({ workArea }) =>
     x + width > workArea.x + 100 && x < workArea.x + workArea.width - 100
     && y >= workArea.y && y < workArea.y + workArea.height - 100) ? { x, y } : {};
-  const backgroundColor = nativeTheme.shouldUseDarkColors ? "#171b22" : "#f1f4f9";
+  const translucent = supportsNativeGlass(process.platform, release());
+  const backgroundColor = translucent ? "#00000000" : nativeTheme.shouldUseDarkColors ? "#141414" : "#ffffff";
   const created = new BrowserWindow({ ...position, width, height, minWidth: 680, minHeight: 520,
     title: applicationName, icon: applicationIcon, show: false, autoHideMenuBar: true,
     backgroundColor, titleBarStyle: "hidden",
-    titleBarOverlay: process.platform === "darwin" ? true : {
-      // Let the renderer's titlebar and modal backdrops show through the controls.
-      color: "#00000000", symbolColor: nativeTheme.shouldUseDarkColors ? "#e7ebf1" : "#252a34", height: 36,
+    ...(process.platform === "darwin" ? {
+      vibrancy: "sidebar" as const,
+      visualEffectState: "followWindow" as const,
+      trafficLightPosition: { x: 14, y: 15 },
+      titleBarOverlay: true,
+    } : {
+      ...(translucent ? { backgroundMaterial: "acrylic" as const } : {}),
+      titleBarOverlay: {
+        // Let the renderer's titlebar and modal backdrops show through the controls.
+        color: "#00000000", symbolColor: nativeTheme.shouldUseDarkColors ? "#f5f5f5" : "#171717", height: 44,
+      },
+    }),
+    webPreferences: {
+      preload: join(__dirname, "preload.cjs"),
+      additionalArguments: translucent ? ["--alphacode-translucent"] : [],
+      nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: true,
     },
-    ...(process.platform === "darwin" ? { trafficLightPosition: { x: 14, y: 11 } } : {}),
-    webPreferences: { preload: join(__dirname, "preload.cjs"), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: true },
   });
   window = created;
   created.webContents.ipc.handle("project:select-directory", async event => {
@@ -101,10 +113,11 @@ async function createWindow() {
   created.webContents.ipc.on("window:appearance", (event, appearance: unknown) => {
     if (event.senderFrame !== created.webContents.mainFrame || !trustedRenderer(event.senderFrame.url)) return;
     if (!appearance || typeof appearance !== "object" || !("color" in appearance) || !("symbolColor" in appearance)) return;
-    const { color, symbolColor } = appearance;
+    const { color, symbolColor, theme } = appearance as { color: unknown; symbolColor: unknown; theme?: unknown };
     if (typeof color !== "string" || typeof symbolColor !== "string" || !/^#[\da-f]{6}$/i.test(color) || !/^#[\da-f]{6}$/i.test(symbolColor)) return;
-    created.setBackgroundColor(color);
-    if (process.platform !== "darwin") created.setTitleBarOverlay({ symbolColor });
+    if (theme === "light" || theme === "dark" || theme === "system") nativeTheme.themeSource = theme;
+    if (!translucent) created.setBackgroundColor(color);
+    if (process.platform !== "darwin") created.setTitleBarOverlay({ color: "#00000000", symbolColor });
   });
   created.once("ready-to-show", () => { if (saved.maximized) created.maximize(); created.show(); });
   created.on("page-title-updated", event => { event.preventDefault(); created.setTitle(applicationName); });

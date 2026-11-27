@@ -22,14 +22,17 @@ const layoutIcons = {
   more: <ChevronDown aria-hidden="true" />,
 };
 
-const CanvasSession = memo(function CanvasSession({ sessionId, panelId, close, focus }: {
-  sessionId: string; panelId: string; close: (id: string) => void; focus: (id: string) => void;
+const CanvasSession = memo(function CanvasSession({ sessionId, panelId, closeMissing, focus }: {
+  sessionId: string; panelId: string; closeMissing: (id: string, sessionId: string) => void; focus: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const workspace = useSessionWorkspace(sessionId);
   const title = workspace.selectedSession?.title || t("sessions:new");
   const error = workspace.history.error;
-  useEffect(() => { if (error instanceof SessionApiError && error.status === 404) close(panelId); }, [error, panelId, close]);
+  const hasHistory = Boolean(workspace.history.data);
+  useEffect(() => {
+    if (!hasHistory && error instanceof SessionApiError && error.status === 404) closeMissing(panelId, sessionId);
+  }, [error, hasHistory, panelId, sessionId, closeMissing]);
   return <section className="session-canvas-panel canvas-panel-body" aria-label={title}
     onPointerDownCapture={() => focus(panelId)} onFocusCapture={() => focus(panelId)}>
     <SessionPane workspace={workspace} contentId={panelId + "-content"} />
@@ -38,8 +41,8 @@ const CanvasSession = memo(function CanvasSession({ sessionId, panelId, close, f
 
 // Hidden tabs keep their lightweight layout node, but release the conversation
 // view and its transport subscription. Drafts and commands live above the layout.
-const DockedSession = memo(function DockedSession({ node, close, focus }: {
-  node: TabNode; close: (id: string) => void; focus: (id: string) => void;
+const DockedSession = memo(function DockedSession({ node, closeMissing, focus }: {
+  node: TabNode; closeMissing: (id: string, sessionId: string) => void; focus: (id: string) => void;
 }) {
   // FlexLayout caches factory output. Observe only the session binding so a
   // sidebar selection updates content without rebuilding it during resizing.
@@ -57,7 +60,7 @@ const DockedSession = memo(function DockedSession({ node, close, focus }: {
     setVisible(node.isVisible());
     return () => node.removeEventListener("visibility");
   }, [node]);
-  return visible && sessionId ? <CanvasSession sessionId={sessionId} panelId={node.getId()} close={close} focus={focus} /> : null;
+  return visible && sessionId ? <CanvasSession sessionId={sessionId} panelId={node.getId()} closeMissing={closeMissing} focus={focus} /> : null;
 });
 
 function CollapseButton({ node }: { node: TabSetNode }) {
@@ -194,7 +197,13 @@ export default function SessionCanvas({ workspace }: { workspace: SessionWorkspa
     const node = model.getNodeById(id);
     if (node instanceof TabNode && sessionIdOf(node) !== workspace.selectedSessionId) workspace.selectSession(sessionIdOf(node), undefined, true, true);
   }, []);
-  const close = useCallback((id: string) => removePanel(latest.current.model, id), []);
+  const closeMissing = useCallback((id: string, sessionId: string) => {
+    const { model, workspace } = latest.current;
+    // Keep the active or sole panel visible so deep links and transient refresh
+    // errors can render their error state and retry button without falling back.
+    if (getPanels(model).length <= 1 || sessionId === workspace.selectedSessionId) return;
+    removePanel(model, id);
+  }, []);
   const add = useCallback((id: string) => {
     const { model, workspace, t } = latest.current;
     const session = workspace.folders.flatMap(folder => folder.sessions).find(session => session.id === id);
@@ -208,7 +217,7 @@ export default function SessionCanvas({ workspace }: { workspace: SessionWorkspa
     preferences.setAddition(undefined);
   }, [preferences, add]);
 
-  const factory = useCallback((node: TabNode) => <DockedSession node={node} close={close} focus={focus} />, [close, focus]);
+  const factory = useCallback((node: TabNode) => <DockedSession node={node} closeMissing={closeMissing} focus={focus} />, [closeMissing, focus]);
   const renderGroup = useCallback((node: unknown, values: ITabSetRenderValues) => {
     if (!(node instanceof TabSetNode)) return;
     values.leading = <div data-canvas-group={node.getId()}>

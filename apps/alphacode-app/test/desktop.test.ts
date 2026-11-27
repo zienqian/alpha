@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { forwardRequest, parseDescriptor } from "../src/backend";
-import { applicationContentSecurityPolicy, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL } from "../src/policy";
+import { applicationContentSecurityPolicy, assetPath, databaseArgument, developmentURL, documentPath, externalURL, isApplicationURL, isRendererURL, supportsNativeGlass } from "../src/policy";
 
 test('document links map from the trusted desktop origin to a browser route without exposing credentials', () => {
   const path = '/api/sessions/s/files?path=C%3A%2Fdoc.html&mode=open&replyId=reply#section';
@@ -115,4 +115,12 @@ test("desktop renderer CSP restricts connections, scripts, and fonts to local or
   expect(directives.find(value => value.startsWith("connect-src"))).toBe("connect-src 'self'");
   expect(directives.find(value => value.startsWith("script-src"))).toBe("script-src 'self' 'wasm-unsafe-eval'");
   expect(directives.find(value => value.startsWith("font-src"))).toBe("font-src 'self' data:");
+});
+
+test("native glass support enables macOS vibrancy and Windows 11 22H2+ Acrylic only", () => {
+  expect(supportsNativeGlass("darwin", "24.0.0")).toBe(true);
+  expect(supportsNativeGlass("win32", "10.0.22621")).toBe(true);
+  expect(supportsNativeGlass("win32", "10.0.26200")).toBe(true);
+  expect(supportsNativeGlass("win32", "10.0.19045")).toBe(false);
+  expect(supportsNativeGlass("linux", "6.8.0")).toBe(false);
 });

@@ -62,3 +62,11 @@ export function databaseArgument(args: string[]) {
   if (!path || path.startsWith("--")) throw new Error("DATABASE_REQUIRED");
   return resolve(path);
 }
+
+/** Native sidebar translucency requires macOS vibrancy or Windows 11 22H2+ Acrylic. */
+export function supportsNativeGlass(platform: string, release: string) {
+  if (platform === "darwin") return true;
+  if (platform !== "win32") return false;
+  const [major = 0, , build = 0] = release.split(".").map(part => Number.parseInt(part, 10) || 0);
+  return major > 10 || (major === 10 && build >= 22621);
+}

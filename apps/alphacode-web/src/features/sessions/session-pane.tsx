@@ -63,7 +63,7 @@ export function SessionPane({ workspace, contentId = "session-content" }: { work
     <section id={contentId} tabIndex={-1} aria-labelledby={`${contentId}-welcome`} className="welcome-stage min-h-0 flex-1 overflow-y-auto px-5 outline-none sm:px-8">
       <div className="task-entry mx-auto w-full max-w-[680px]">
         <div className="stage-enter mb-6 flex flex-col items-start gap-3.5">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-muted ring-1 ring-foreground/6" aria-hidden="true">
+          <span className="flex size-10 items-center justify-center rounded-xl border border-border/80 bg-background shadow-[0_1px_2px_oklch(0_0_0/0.03)] dark:bg-card" aria-hidden="true">
             <img src="/icons/alphacode-64.png" srcSet="/icons/alphacode-32.png 1x, /icons/alphacode-64.png 2x, /icons/alphacode-128.png 4x" width={26} height={26} className="size-6.5 shrink-0" alt="" aria-hidden="true" draggable={false} />
           </span>
           <h1 id={`${contentId}-welcome`} className="text-[1.625rem] leading-[1.2] font-semibold tracking-[-0.025em] text-balance text-foreground">{t("workspace:welcome")}</h1>

@@ -31,7 +31,7 @@ export function PromptInput({ draft, onChange, focusRequest = 0, onSend, canSend
   return (
     <div className="relative z-10 w-full">
       {(folder || projectPicker) && <div className="composer-context mb-2.5 flex min-w-0 flex-wrap items-center gap-2 px-0.5 text-xs text-muted-foreground">
-        {projectPicker ?? (folder && <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-foreground" title={folder.path}>
+        {projectPicker ?? (folder && <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-foreground dark:bg-card" title={folder.path}>
           <Folder className="size-icon shrink-0 text-muted-foreground" aria-hidden="true" /><span className="truncate font-medium">{folder.name}</span>
         </span>)}
         <span className="inline-flex shrink-0 items-center gap-1.5 px-1 text-muted-foreground"><LaptopMinimal className="size-icon" aria-hidden="true" />{t("workspace:computer")}</span>

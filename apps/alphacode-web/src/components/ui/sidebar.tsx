@@ -195,7 +195,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-(--glass-surface) p-0 text-sidebar-foreground [&>button]:hidden"
+          className="w-(--sidebar-width) p-0 text-sidebar-foreground [&>button]:hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -248,13 +248,13 @@ function Sidebar({
         inert={offcanvas}
         aria-hidden={offcanvas || undefined}
         className={cn(
-          "sidebar-width-transition fixed top-[var(--window-header-height)] bottom-0 z-10 flex h-[calc(100svh-var(--window-header-height))] w-(--sidebar-width)",
+          "sidebar-width-transition fixed inset-y-0 z-10 flex h-dvh w-(--sidebar-width)",
           side === "left"
             ? "left-0"
             : "right-0",
           variant === "floating" || variant === "inset"
             ? "p-2"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
+            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
           className
         )}
       >

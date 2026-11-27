@@ -48,6 +48,7 @@ function useWorkspaceState() {
   const [openedProjects, setOpenedProjects] = useState<Pick<SessionInfo, "projectId" | "workspaceRoot" | "defaultContext">[]>([]);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [replacements, setReplacements] = useState<Record<string, string>>({});
+  const [focusTarget, setFocusTarget] = useState<{ sessionId?: string; count: number }>({ count: 0 });
   const commands = useMemo(() => new SessionCommands(gateway, {
     get: id => client.getQueryData<SessionView>(sessionKeys.detail(id)),
     write: view => cacheSession(client, view),
@@ -56,7 +57,8 @@ function useWorkspaceState() {
     ? { ...previous, [id]: { ...previous[id], text: "" } } : previous)), [client, gateway, draftStore]);
   return { localSessions, setLocalSessions, selectedSessionId, setSelectedSessionId, selection, creating,
     creatingIds, setCreatingIds, creationErrors, setCreationErrors, deletedIds, setDeletedIds, removedProjects, setRemovedProjects,
-    openedProjects, setOpenedProjects, projectDialogOpen, setProjectDialogOpen, replacements, setReplacements, draftStore, commands };
+    openedProjects, setOpenedProjects, projectDialogOpen, setProjectDialogOpen, replacements, setReplacements,
+    focusTarget, setFocusTarget, draftStore, commands };
 }
 
 const WorkspaceStateContext = createContext<ReturnType<typeof useWorkspaceState> | null>(null);

@@ -62,7 +62,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
       root.classList.add(resolved);
       root.style.colorScheme = resolved;
       setResolvedTheme(resolved);
-      syncDesktopAppearance();
+      syncDesktopAppearance(theme);
     };
     applyTheme(mounted.current);
     mounted.current = true;

@@ -1,69 +1,67 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Globe, LayoutGrid, Monitor, Moon, Search, Sun, SunMoon, X } from "lucide-react";
+import { Check, Globe, Monitor, Moon, Search, Sun, SunMoon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { isThemeMode, useTheme, type ThemeMode } from "@/components/theme-provider";
 import { useLanguage } from "@/i18n/provider";
 import { isLanguagePreference } from "@/i18n/locale";
 import { useTranslation } from "@/i18n/react";
 import { cn } from "@/lib/utils";
-import { useExperimentalFeatures } from "./experimental-features";
 
 const selectClass = "h-8 w-full shrink-0 rounded-lg text-base font-medium text-foreground sm:w-40 md:text-xs";
 
-// Mirrors the calibrated shadcn/ui Neutral AI Elements light and dark workbench palettes.
+// Mirrors the frosted glass sidebar + crisp white canvas workbench palettes.
 const previewPalette = {
   light: {
-    shell: "#f8f8f8",
+    sidebar: "linear-gradient(160deg, #f8f5f0 0%, #f3efe9 55%, #f6f4f0 100%)",
     canvas: "#ffffff",
-    border: "#e5e5e5",
+    border: "#ececec",
     primary: "#171717",
-    bubble: "#f2f2f2",
+    bubble: "#f6f6f6",
     lineStrong: "#a3a3a3",
     lineMuted: "#e5e5e5",
-    navActive: "#ebebeb",
+    navActive: "rgba(0, 0, 0, 0.065)",
   },
   dark: {
-    shell: "#0a0a0a",
-    canvas: "#101010",
+    sidebar: "linear-gradient(160deg, #1d1c1b 0%, #141414 100%)",
+    canvas: "#171717",
     border: "#262626",
     primary: "#e5e5e5",
-    bubble: "#1f1f1f",
+    bubble: "#222222",
     lineStrong: "#525252",
     lineMuted: "#262626",
-    navActive: "#222222",
+    navActive: "rgba(255, 255, 255, 0.11)",
   },
 } as const;
 
 function WorkbenchPreview({ variant }: { variant: "light" | "dark" }) {
   const palette = previewPalette[variant];
-  return <div aria-hidden="true" className="flex h-full w-full gap-1.5 p-1.5" style={{ backgroundColor: palette.shell }}>
-    <div className="flex w-[30%] shrink-0 flex-col gap-1.5 p-1">
-      <div className="flex items-center gap-1">
-        <span className="size-1.5 rounded-full" style={{ backgroundColor: palette.primary }} />
-        <span className="h-1 flex-1 rounded-full" style={{ backgroundColor: palette.lineStrong }} />
-      </div>
-      <div className="mt-0.5 space-y-1">
+  return <div aria-hidden="true" className="flex h-full w-full flex-col" style={{ background: palette.sidebar }}>
+    <div className="flex h-2.5 shrink-0 items-center gap-1 px-2">
+      <span className="size-1 rounded-full" style={{ backgroundColor: palette.primary }} />
+      <span className="h-0.5 w-6 rounded-full" style={{ backgroundColor: palette.lineStrong }} />
+    </div>
+    <div className="flex min-h-0 flex-1">
+      <div className="flex w-[32%] shrink-0 flex-col gap-1 px-2 pb-1.5">
         <div className="h-2 rounded-[3px]" style={{ backgroundColor: palette.navActive }} />
         <div className="h-1.5 w-4/5 rounded-[3px]" style={{ backgroundColor: palette.lineMuted }} />
         <div className="h-1.5 w-3/5 rounded-[3px]" style={{ backgroundColor: palette.lineMuted }} />
       </div>
-    </div>
-    <div className="flex min-w-0 flex-1 flex-col justify-between rounded-[4px] border p-1.5" style={{ backgroundColor: palette.canvas, borderColor: palette.border }}>
-      <div className="space-y-1.5">
-        <div className="ms-auto h-2 w-3/5 rounded-[3px]" style={{ backgroundColor: palette.bubble }} />
-        <div className="space-y-1">
-          <div className="h-1.5 w-4/5 rounded-full" style={{ backgroundColor: palette.lineStrong }} />
-          <div className="h-1.5 w-3/5 rounded-full" style={{ backgroundColor: palette.lineMuted }} />
+      <div className="flex min-w-0 flex-1 flex-col justify-between rounded-tl-[5px] border-s border-t p-1.5" style={{ backgroundColor: palette.canvas, borderColor: palette.border }}>
+        <div className="space-y-1.5">
+          <div className="ms-auto h-2 w-3/5 rounded-[3px]" style={{ backgroundColor: palette.bubble }} />
+          <div className="space-y-1">
+            <div className="h-1.5 w-4/5 rounded-full" style={{ backgroundColor: palette.lineStrong }} />
+            <div className="h-1.5 w-3/5 rounded-full" style={{ backgroundColor: palette.lineMuted }} />
+          </div>
         </div>
-      </div>
-      <div className="flex items-center justify-between gap-1.5 rounded-[4px] border px-1.5 py-1" style={{ borderColor: palette.border }}>
-        <span className="h-1 w-1/2 rounded-full" style={{ backgroundColor: palette.lineMuted }} />
-        <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: palette.primary }} />
+        <div className="flex items-center justify-between gap-1.5 rounded-[4px] border px-1.5 py-1" style={{ borderColor: palette.border }}>
+          <span className="h-1 w-1/2 rounded-full" style={{ backgroundColor: palette.lineMuted }} />
+          <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: palette.primary }} />
+        </div>
       </div>
     </div>
   </div>;
@@ -93,7 +91,6 @@ export function SettingsPage() {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { preference, setPreference } = useLanguage();
-  const experiments = useExperimentalFeatures();
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => { searchRef.current?.focus({ preventScroll: true }); }, []);
@@ -109,9 +106,7 @@ export function SettingsPage() {
   };
   const showTheme = matches("theme");
   const showLanguage = matches("language");
-  const canvasTerms = ["zh-CN", "en"].flatMap(lng => [t("settings:experiments", { lng }), t("settings:sessionCanvas", { lng }), t("settings:sessionCanvasDescription", { lng })]).join(" ").toLocaleLowerCase();
-  const showCanvas = terms.every(term => canvasTerms.includes(term));
-  const resultCount = Number(showTheme) + Number(showLanguage) + Number(showCanvas);
+  const resultCount = Number(showTheme) + Number(showLanguage);
 
   function clearSearch() {
     setQuery("");
@@ -141,7 +136,7 @@ export function SettingsPage() {
         <div className="divide-y divide-separator overflow-hidden rounded-2xl border border-border bg-card">
           {showTheme && <div className="p-4 sm:p-5">
             <div className="flex items-center gap-3">
-              <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-background text-muted-foreground shadow-[0_1px_2px_oklch(0_0_0/0.03)] dark:bg-card">
                 <SunMoon />
               </span>
               <span id="settings-theme-label" className="min-w-0 text-[0.8125rem] leading-[1.4] font-medium text-foreground">{t("settings:colorTheme")}</span>
@@ -156,8 +151,8 @@ export function SettingsPage() {
                   className={cn(
                     "group relative flex cursor-pointer flex-col rounded-[14px] border p-2 transition-[background-color,border-color,box-shadow] duration-150 ease-out has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring motion-reduce:transition-none",
                     selected
-                      ? "border-foreground bg-muted/50 ring-1 ring-foreground/12"
-                      : "border-border bg-card hover:border-input hover:bg-muted/40",
+                      ? "border-foreground bg-background ring-1 ring-foreground/10 shadow-xs dark:bg-card"
+                      : "border-border bg-background hover:border-input hover:bg-surface-sunken dark:bg-card dark:hover:bg-muted/40",
                   )}>
                   <RadioGroupItem id={`settings-theme-${value}`} value={value} aria-label={label} className="sr-only" />
                   <AppearancePreview mode={value} />
@@ -178,7 +173,7 @@ export function SettingsPage() {
 
           {showLanguage && <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div className="flex min-w-0 items-center gap-3">
-              <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-background text-muted-foreground shadow-[0_1px_2px_oklch(0_0_0/0.03)] dark:bg-card">
                 <Globe />
               </span>
               <label htmlFor="settings-language" className="min-w-0 text-[0.8125rem] leading-[1.4] font-medium text-foreground">{t("settings:language")}</label>
@@ -195,27 +190,7 @@ export function SettingsPage() {
         </div>
       </section>}
 
-      {showCanvas && <section aria-labelledby="settings-experiments" className="mt-8">
-        <h2 id="settings-experiments" className="mb-2.5 px-0.5 text-[0.6875rem] font-medium tracking-[0.04em] text-muted-foreground uppercase">{t("settings:experiments")}</h2>
-        <div className="overflow-hidden rounded-2xl border border-border bg-card">
-          <div className="flex items-start justify-between gap-4 p-4 sm:items-center sm:p-5">
-            <div className="flex min-w-0 items-start gap-3">
-              <span aria-hidden="true" className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 ease-out",
-                experiments.sessionCanvas ? "bg-foreground text-background" : "bg-muted text-muted-foreground")}>
-                <LayoutGrid />
-              </span>
-              <div className="min-w-0">
-                <label htmlFor="settings-session-canvas" className="block text-[0.8125rem] leading-[1.4] font-medium text-foreground">{t("settings:sessionCanvas")}</label>
-                <p id="settings-session-canvas-description" className="mt-0.5 max-w-lg text-xs leading-[1.5] text-muted-foreground">{t("settings:sessionCanvasDescription")}</p>
-              </div>
-            </div>
-            <Switch id="settings-session-canvas" className="mt-1 sm:mt-0" checked={experiments.sessionCanvas} onCheckedChange={experiments.setSessionCanvas}
-              aria-label={t("settings:sessionCanvas")} aria-describedby="settings-session-canvas-description" />
-          </div>
-        </div>
-      </section>}
-
-      {resultCount === 0 && <Empty className="mt-8 rounded-2xl border border-dashed border-border bg-muted/30 py-12">
+      {resultCount === 0 && <Empty className="mt-8 rounded-2xl border border-dashed border-border bg-background py-12 dark:bg-card/40">
         <EmptyHeader>
           <EmptyMedia variant="icon" className="size-10 rounded-xl"><Search aria-hidden="true" /></EmptyMedia>
           <EmptyTitle>{t("settings:noResults")}</EmptyTitle>

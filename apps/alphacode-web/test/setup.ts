@@ -5,8 +5,11 @@ import { afterEach, beforeEach, vi } from "vitest";
 // one-second DOM query deadline can expire before that cold import on Windows.
 configure({ asyncUtilTimeout: 5000 });
 
+const originalClientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientWidth");
+const originalClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientHeight");
+const originalGetBoundingClientRect = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "getBoundingClientRect");
+
 beforeEach(() => {
-  localStorage.removeItem("alphacode-experiments-v1");
   localStorage.removeItem("alphacode-session-canvas-v1");
   localStorage.removeItem("alphacode-session-canvas-v2");
   localStorage.removeItem("alphacode-language-v1");
@@ -14,7 +17,16 @@ beforeEach(() => {
   HTMLElement.prototype.setPointerCapture = vi.fn();
   HTMLElement.prototype.releasePointerCapture = vi.fn();
   Object.defineProperty(navigator, "languages", { configurable: true, value: ["zh-CN"] });
-  // Layout/scroll APIs used by cmdk are not implemented by jsdom.
+  // Layout/scroll APIs used by cmdk and FlexLayout are not implemented by jsdom.
+  // Define plain descriptors (not vi.spyOn) so per-element vi.spyOn(el, "getBoundingClientRect")
+  // creates an own spy instead of mutating a shared prototype mock.
+  Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1120 });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, get: () => 700 });
+  Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", {
+    configurable: true,
+    writable: true,
+    value: () => new DOMRect(0, 0, 1120, 700),
+  });
   vi.stubGlobal("ResizeObserver", class {
     observe = vi.fn();
     unobserve = vi.fn();
@@ -38,5 +50,11 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  if (originalClientWidth) Object.defineProperty(HTMLElement.prototype, "clientWidth", originalClientWidth);
+  else delete (HTMLElement.prototype as { clientWidth?: unknown }).clientWidth;
+  if (originalClientHeight) Object.defineProperty(HTMLElement.prototype, "clientHeight", originalClientHeight);
+  else delete (HTMLElement.prototype as { clientHeight?: unknown }).clientHeight;
+  if (originalGetBoundingClientRect) Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", originalGetBoundingClientRect);
+  else delete (HTMLElement.prototype as { getBoundingClientRect?: unknown }).getBoundingClientRect;
   vi.unstubAllGlobals();
 });

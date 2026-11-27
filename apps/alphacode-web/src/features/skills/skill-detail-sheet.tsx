@@ -234,7 +234,7 @@ export function SkillDetailSheet({
                       <FileText className="size-3.5" aria-hidden="true" />
                       <span>{t("skills:market.instructions")}</span>
                     </div>
-                    <div className="rounded-xl bg-muted p-4 text-xs leading-[1.6] ring-1 ring-foreground/5 dark:ring-foreground/10">
+                    <div className="rounded-xl border border-border bg-background p-4 text-xs leading-[1.6] dark:bg-card">
                       {contentQuery.isPending ? (
                         <div className="space-y-2" role="status" aria-label={t("skills:market.instructionsLoading")}>
                           <Skeleton className="h-4 w-3/4 rounded-md" />
@@ -277,7 +277,7 @@ export function SkillDetailSheet({
                 </div>
               </ScrollArea>
 
-              <div className="flex items-center justify-end border-t border-separator bg-surface-sunken/70 px-5 py-3 dark:bg-card/60">
+              <div className="flex items-center justify-end border-t border-separator bg-background px-5 py-3 dark:bg-card/60">
                 <Button
                   variant="ghost"
                   size="sm"

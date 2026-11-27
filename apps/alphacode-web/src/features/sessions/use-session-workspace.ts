@@ -1,5 +1,5 @@
 import { useTranslation } from "@/i18n/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createProject, createSession, deleteProject, SessionApiError, type PermissionMode, type ProjectInfo, type SessionInfo, type SessionView } from "@/features/sessions/api";
 import { useSessionActions } from "@/features/sessions/use-session-actions";
@@ -41,7 +41,7 @@ export function useSessionWorkspace(paneId?: string) {
   const shared = useSharedWorkspace();
   const { localSessions, setLocalSessions, setSelectedSessionId, selection, creating, creatingIds, setCreatingIds,
     creationErrors, setCreationErrors, deletedIds, setDeletedIds, removedProjects, setRemovedProjects, openedProjects, setOpenedProjects,
-    projectDialogOpen, setProjectDialogOpen, replacements, setReplacements } = shared;
+    projectDialogOpen, setProjectDialogOpen, replacements, setReplacements, focusTarget, setFocusTarget } = shared;
   const selectedSessionId = paneId ?? shared.selectedSessionId;
   const isLocal = localSessions.some((session) => session.id === selectedSessionId);
   const history = useSessionQuery(isLocal || deletedIds.has(selectedSessionId) ? undefined : selectedSessionId);
@@ -69,7 +69,11 @@ export function useSessionWorkspace(paneId?: string) {
     ...views.map(view => view.session),
   ], [...openedProjects, ...(projects.data ?? [])]).filter(folder => !removedProjects[folder.id]);
   const actions = useSessionActions(history.data, selectedSessionId);
-  const [focusRequest, setFocusRequest] = useState(0);
+  const focusRequest = focusTarget.sessionId === selectedSessionId ? focusTarget.count : 0;
+  function requestFocus(id: string | undefined) {
+    if (!id) return;
+    setFocusTarget(previous => ({ sessionId: id, count: previous.count + 1 }));
+  }
   const defaultFolderId = sourceFolders.find(folder => folder.isDefaultWorkspace)?.id ?? defaultDraftFolderId;
   // Keep unsent default-workspace drafts reachable without registering a project.
   const draftFolders = defaultFolderId === defaultDraftFolderId && localSessions.some(session => !session.folderId && (hasDraft(session.id) || session.title))
@@ -156,7 +160,7 @@ export function useSessionWorkspace(paneId?: string) {
       setLocalSessions((previous) => [session, ...previous]);
       selectSession(session.id, true);
     }
-    setFocusRequest((previous) => previous + 1);
+    requestFocus(id);
     return id;
   }
 
@@ -168,8 +172,8 @@ export function useSessionWorkspace(paneId?: string) {
       setLocalSessions(previous => previous.map(session => session.id === selectedSessionId ? { ...session, folderId } : session));
       setCreationErrors(previous => ({ ...previous, [selectedSessionId]: undefined }));
       selectSession(selectedSessionId, true);
+      requestFocus(selectedSessionId);
     } else newSession(folderId);
-    setFocusRequest(previous => previous + 1);
   }
 
   function restoreProject(id: string) {
@@ -203,7 +207,7 @@ export function useSessionWorkspace(paneId?: string) {
       const next = createLocalSession(`local-${crypto.randomUUID()}`);
       setLocalSessions(previous => [next, ...previous]);
       selectSession(next.id, true, true, true);
-      setFocusRequest(previous => previous + 1);
+      requestFocus(next.id);
     }
     client.setQueryData<ProjectInfo[]>(["projects"], previous => previous?.filter(project => project.projectId !== id));
     client.setQueryData<SessionInfo[]>(sessionKeys.list, previous => previous?.filter(session => session.projectId !== id));
@@ -221,12 +225,13 @@ export function useSessionWorkspace(paneId?: string) {
     if (isLocal && !creating.current.has(selectedSessionId)) {
       setLocalSessions(previous => previous.map(session => session.id === selectedSessionId ? { ...session, folderId: project.projectId } : session));
       selectSession(selectedSessionId, true);
+      requestFocus(selectedSessionId);
     } else {
       const session = createLocalSession(`local-${crypto.randomUUID()}`, project.projectId);
       setLocalSessions(previous => [session, ...previous]);
       selectSession(session.id, true);
+      requestFocus(session.id);
     }
-    setFocusRequest(previous => previous + 1);
     void client.invalidateQueries({ queryKey: ["projects"] });
     void client.invalidateQueries({ queryKey: sessionKeys.list });
   }
@@ -263,7 +268,7 @@ export function useSessionWorkspace(paneId?: string) {
       const next = createLocalSession(`local-${crypto.randomUUID()}`, folder?.id === defaultDraftFolderId ? undefined : folder?.id);
       setLocalSessions(previous => [next, ...previous]);
       selectSession(next.id, true);
-      setFocusRequest(previous => previous + 1);
+      requestFocus(next.id);
     }
     client.setQueryData<SessionInfo[]>(sessionKeys.list, previous => previous?.filter(info => info.id !== id));
     client.removeQueries({ queryKey: sessionKeys.detail(id) });

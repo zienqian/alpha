@@ -1,12 +1,13 @@
 import { useEffect } from "react";
-import { HistoryNavigation } from "@/components/history-navigation";
+import type { ThemeMode } from "@/components/theme-provider";
 
 declare global {
   interface Window {
     alphacodeDesktop?: {
       platform: string;
+      translucent?: boolean;
       selectDirectory?: () => Promise<string | null>;
-      setAppearance: (appearance: { color: string; symbolColor: string }) => void;
+      setAppearance: (appearance: { color: string; symbolColor: string; theme?: ThemeMode }) => void;
     };
   }
 }
@@ -25,15 +26,20 @@ export function desktopColor(value: string): string | undefined {
   return `#${Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3).map(channel => channel.toString(16).padStart(2, "0")).join("")}`;
 }
 
-export function syncDesktopAppearance() {
+export function syncDesktopAppearance(theme?: ThemeMode) {
   const desktop = window.alphacodeDesktop;
   if (!desktop) return;
   const root = document.documentElement;
   root.dataset.desktop = desktop.platform;
+  if (desktop.translucent) root.dataset.translucent = "true";
+  else delete root.dataset.translucent;
   const styles = getComputedStyle(root);
-  const color = desktopColor(styles.getPropertyValue("--shell").trim());
+  const rawSurface = styles.getPropertyValue("--shell").trim() || styles.getPropertyValue("--background").trim();
+  const color = desktopColor(rawSurface);
   const symbolColor = desktopColor(styles.getPropertyValue("--foreground").trim());
-  if (color && symbolColor) desktop.setAppearance({ color, symbolColor });
+  if (color && symbolColor) {
+    desktop.setAppearance(theme ? { color, symbolColor, theme } : { color, symbolColor });
+  }
 }
 
 export function DesktopTitlebar() {
@@ -41,14 +47,13 @@ export function DesktopTitlebar() {
     if (!window.alphacodeDesktop) return;
     syncDesktopAppearance();
     // CSS hot updates do not rerun the theme provider. Refresh native window
-    // controls after Vite applies styles so their background stays with --shell.
+    // controls after Vite applies styles so their foreground stays synchronized.
     const hot = import.meta.hot;
     if (!hot) return;
-    hot.on("vite:afterUpdate", syncDesktopAppearance);
-    return () => hot.off("vite:afterUpdate", syncDesktopAppearance);
+    const refresh = () => syncDesktopAppearance();
+    hot.on("vite:afterUpdate", refresh);
+    return () => hot.off("vite:afterUpdate", refresh);
   }, []);
 
-  return <header className="window-header">
-    <HistoryNavigation />
-  </header>;
+  return null;
 }

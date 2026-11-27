@@ -14,7 +14,7 @@ export function SessionContext({ folder, session, draft }: {
     <Popover defaultOpen={false}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon-sm" aria-label={t("sessions:summary")} title={t("sessions:summary")}
-          className="text-muted-foreground hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground">
+          className="text-(--sidebar-muted) hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
           <ListTree className="size-icon" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
@@ -26,7 +26,7 @@ export function SessionContext({ folder, session, draft }: {
         </div>
         <div className="space-y-3 p-3.5">
           <div className="flex items-center gap-2 text-[0.8125rem] font-medium text-foreground"><FolderOpen className="size-icon text-muted-foreground" aria-hidden="true" /><span className="truncate">{folder?.name ?? t("workspace:unselected")}</span></div>
-          {folder && <div className="flex items-center gap-1 rounded-lg bg-muted py-1 pe-1 ps-2.5 ring-1 ring-foreground/5 dark:ring-foreground/10"><code className="min-w-0 flex-1 truncate font-mono text-[0.6875rem] text-muted-foreground" title={folder.path}>{folder.path}</code><CopyButton value={folder.path} label={t("workspace:copyPath")} /></div>}
+          {folder && <div className="flex items-center gap-1 rounded-lg border border-border/80 bg-surface-sunken py-1 pe-1 ps-2.5 dark:bg-muted/60"><code className="min-w-0 flex-1 truncate font-mono text-[0.6875rem] text-muted-foreground" title={folder.path}>{folder.path}</code><CopyButton value={folder.path} label={t("workspace:copyPath")} /></div>}
           <dl className="grid grid-cols-2 gap-y-2 text-xs">
             <dt className="text-muted-foreground">{t("sessions:messageHistory")}</dt><dd className="text-end font-medium text-foreground tabular-nums">{session && !session.local && !session.historyLoaded ? t("sessions:notLoaded") : t("sessions:messageCount", { count: session?.messages.length ?? 0 })}</dd>
             <dt className="text-muted-foreground">{t("sessions:type")}</dt><dd className="text-end text-foreground">{session && !session.local ? t("sessions:saved") : t("sessions:localDraft")}</dd>

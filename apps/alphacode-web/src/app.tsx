@@ -6,7 +6,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DesktopTitlebar } from "@/components/desktop-titlebar";
-import { SessionContext } from "@/features/sessions/session-context";
+import { HistoryNavigation } from "@/components/history-navigation";
 import { SessionSidebar } from "@/features/sessions/session-sidebar";
 import { SessionPage } from "@/features/sessions/session-page";
 import { CreateProjectDialog } from "@/features/sessions/create-project-dialog";
@@ -31,9 +31,9 @@ function WorkspaceLayout() {
   const settingsOpen = Boolean(useMatch("/settings"));
   const skillsOpen = Boolean(useMatch("/skills"));
   const sessionOpen = !settingsOpen && !skillsOpen;
-  const canvasOpen = sessionOpen && experiments.sessionCanvas;
+  const canvasOpen = sessionOpen;
   const contentId = settingsOpen ? "settings-content" : skillsOpen ? "skills-content" : "session-content";
-  const { folders, selectedFolder, selectedSession, selectedSessionId, draft } = workspace;
+  const { folders, selectedFolder, selectedSession, selectedSessionId } = workspace;
 
   // Keep document.title synchronized with client-side route & session transitions (better-accessibility).
   useEffect(() => {
@@ -52,7 +52,7 @@ function WorkspaceLayout() {
   };
   const returnToSession = () => workspace.selectSession(selectedSessionId);
 
-  return <SidebarProvider mobileMode="inline" className="workspace-shell h-[calc(100dvh-var(--window-header-height))] min-h-0 overflow-hidden"
+  return <SidebarProvider mobileMode="inline" className="workspace-shell h-dvh min-h-0 overflow-hidden"
     style={{ "--sidebar-width": "var(--workspace-sidebar-width, 16.5rem)", "--sidebar-width-icon": "3.5rem" } as CSSProperties}>
     <a href={`#${contentId}`} onClick={event => { event.preventDefault(); document.getElementById(contentId)?.focus(); }}
       className="sr-only z-50 rounded-lg bg-background px-3 py-2 text-xs font-medium shadow-(--shadow-overlay) focus:not-sr-only focus:fixed focus:top-2 focus:start-2">
@@ -62,27 +62,34 @@ function WorkspaceLayout() {
       onRenameSession={workspace.renameSession} onDeleteSession={workspace.deleteSession} creatingIds={workspace.creatingIds}
       onOpenSkills={() => openPage("/skills")} skillsActive={skillsOpen}
       onOpenSettings={() => openPage("/settings")} settingsActive={settingsOpen}
-      onAddToCanvas={experiments.sessionCanvas ? id => { experiments.setAddition({ sessionId: id }); workspace.selectSession(selectedSessionId); } : undefined}
+      onAddToCanvas={id => { experiments.setAddition({ sessionId: id }); workspace.selectSession(selectedSessionId); }}
       loading={workspace.index.isPending && workspace.projects.isPending} error={workspace.index.error ?? workspace.projects.error} refreshing={workspace.index.isFetching || workspace.projects.isFetching}
       onRefresh={() => { void workspace.index.refetch(); void workspace.projects.refetch(); }} />
     <CreateProjectDialog open={workspace.projectDialogOpen} onOpenChange={workspace.setProjectDialogOpen} onCreate={workspace.addProject} />
     <SidebarInset className="workspace-canvas min-h-0 min-w-0 overflow-hidden" data-docking={canvasOpen || undefined}>
-      {!canvasOpen && <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2.5 px-3.5 sm:px-5">
-        <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-muted-foreground hover:text-foreground" />
-        <div className="flex min-w-0 flex-1 items-center gap-2 text-[0.8125rem] leading-[1.4]">
-          {!sessionOpen ? <span className="truncate font-medium tracking-[-0.008em] text-foreground">{settingsOpen ? t("settings:title") : t("skills:market.title")}</span> : workspace.isWelcome ?
-            <span className="truncate text-muted-foreground">{t("sessions:new")}</span> :
-            <h1 id="session-title" className="min-w-0 flex-1 truncate font-medium tracking-[-0.01em] text-foreground" title={selectedSession?.title}>{selectedSession?.title || t("sessions:new")}</h1>}
-        </div>
-        {sessionOpen ? <SessionContext folder={selectedFolder} session={selectedSession} draft={draft} /> :
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground"
+      <header className="workspace-toolbar flex h-11 shrink-0 items-center gap-2 overflow-hidden px-3.5 sm:px-4">
+        <SidebarTrigger mobileOnly aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className="text-(--sidebar-muted) hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" />
+        <HistoryNavigation />
+        {!sessionOpen ? <>
+          <span aria-hidden="true" className="select-none text-xs text-(--sidebar-muted)/50">/</span>
+          <div className="flex min-w-0 flex-1 items-center gap-2 text-[0.8125rem] leading-[1.4]">
+            <span className="truncate font-medium tracking-[-0.008em] text-foreground">{settingsOpen ? t("settings:title") : t("skills:market.title")}</span>
+          </div>
+          <Button variant="ghost" size="icon-sm" className="shrink-0 text-(--sidebar-muted) hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground"
             aria-label={t(settingsOpen ? "settings:backToSession" : "skills:market.back")}
             title={t(settingsOpen ? "settings:backToSession" : "skills:market.back")}
-            onClick={returnToSession}><X aria-hidden="true" /></Button>}
-      </header>}
-      <Suspense fallback={<div role="status" aria-label={t("common:loading")} className="space-y-3 p-6"><Skeleton className="h-5 w-24 rounded-md" /><Skeleton className="h-4 max-w-sm rounded-md" /></div>}>
-        <Outlet context={workspace} />
-      </Suspense>
+            onClick={returnToSession}><X aria-hidden="true" /></Button>
+        </> : !workspace.isWelcome ? (
+          <div className="sr-only">
+            <h1 id="session-title">{selectedSession?.title || t("sessions:new")}</h1>
+          </div>
+        ) : null}
+      </header>
+      <div className="workspace-surface flex min-h-0 flex-1 flex-col overflow-hidden" data-docking={canvasOpen || undefined}>
+        <Suspense fallback={<div role="status" aria-label={t("common:loading")} className="space-y-3 p-6"><Skeleton className="h-5 w-24 rounded-md" /><Skeleton className="h-4 max-w-sm rounded-md" /></div>}>
+          <Outlet context={workspace} />
+        </Suspense>
+      </div>
     </SidebarInset>
   </SidebarProvider>;
 }

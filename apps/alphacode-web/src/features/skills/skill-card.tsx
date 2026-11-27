@@ -41,10 +41,10 @@ export function SkillCard({
     <li className="min-w-0">
       <div
         className={cn(
-          "group relative flex min-h-[82px] items-center gap-3 rounded-2xl border bg-card p-3 transition-[background-color,border-color] duration-150 ease-out motion-reduce:transition-none",
+          "group relative flex min-h-[82px] items-center gap-3 rounded-2xl border bg-card p-3 transition-[background-color,border-color,box-shadow] duration-150 ease-out motion-reduce:transition-none",
           selected
-            ? "border-foreground/45 bg-muted/50"
-            : "border-border/80 hover:border-input hover:bg-muted/35",
+            ? "border-foreground/45 bg-background shadow-xs dark:bg-card"
+            : "border-border/85 hover:border-input hover:bg-surface-sunken/80 dark:hover:bg-muted/35",
         )}
       >
         <button
@@ -59,7 +59,7 @@ export function SkillCard({
               <span className={cn("truncate text-[0.8125rem] leading-[1.4] font-medium text-foreground", dimmed && "text-muted-foreground")} title={skill.name}>
                 {skill.name}
               </span>
-              <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[0.6875rem] leading-none font-medium text-muted-foreground">
+              <span className="shrink-0 rounded-full border border-border/80 bg-background px-1.5 py-0.5 text-[0.6875rem] leading-none font-medium text-muted-foreground dark:bg-muted">
                 {t(`skills:market.scope.${skill.source}`)}
               </span>
             </div>

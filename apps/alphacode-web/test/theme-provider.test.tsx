@@ -9,25 +9,27 @@ afterEach(() => {
   document.documentElement.style.removeProperty("--shell");
   document.documentElement.style.removeProperty("--foreground");
   delete document.documentElement.dataset.desktop;
+  delete document.documentElement.dataset.translucent;
   vi.restoreAllMocks();
 });
 
 describe("ThemeProvider", () => {
   it("syncs the desktop window on mount and theme changes", () => {
     const setAppearance = vi.fn();
-    vi.stubGlobal("alphacodeDesktop", { platform: "win32", setAppearance });
+    vi.stubGlobal("alphacodeDesktop", { platform: "win32", translucent: true, setAppearance });
     const root = document.documentElement;
-    root.style.setProperty("--shell", "#e6ebf2");
-    root.style.setProperty("--foreground", "#252a34");
+    root.style.setProperty("--shell", "#ffffff");
+    root.style.setProperty("--foreground", "#171717");
     const { result } = renderHook(useTheme, { wrapper: ThemeProvider });
     expect(root.dataset.desktop).toBe("win32");
-    expect(setAppearance).toHaveBeenLastCalledWith({ color: "#e6ebf2", symbolColor: "#252a34" });
+    expect(root.dataset.translucent).toBe("true");
+    expect(setAppearance).toHaveBeenLastCalledWith({ color: "#ffffff", symbolColor: "#171717", theme: "system" });
     act(() => {
-      root.style.setProperty("--shell", "#171b22");
-      root.style.setProperty("--foreground", "#e7ebf1");
+      root.style.setProperty("--shell", "#141414");
+      root.style.setProperty("--foreground", "#f5f5f5");
       result.current.setTheme("dark");
     });
-    expect(setAppearance).toHaveBeenLastCalledWith({ color: "#171b22", symbolColor: "#e7ebf1" });
+    expect(setAppearance).toHaveBeenLastCalledWith({ color: "#141414", symbolColor: "#f5f5f5", theme: "dark" });
   });
 
   it("persists an explicit choice and restores it on remount", () => {

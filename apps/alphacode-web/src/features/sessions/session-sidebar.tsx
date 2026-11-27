@@ -107,83 +107,83 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onD
 
   return (
     <>
-    <Sidebar aria-label={t("workspace:sidebar")} variant="floating" collapsible="icon" className="workspace-sidebar">
-      <SidebarHeader className="gap-0 p-0">
-        <div className={compact ? "flex h-11 items-center justify-center px-1.5" : "flex h-11 min-w-0 items-center gap-2 px-(--sidebar-inset) @max-[200px]:gap-1.5 @max-[200px]:px-1.5"}>
+    <Sidebar aria-label={t("workspace:sidebar")} variant="sidebar" collapsible="icon" className="workspace-sidebar">
+      <SidebarHeader className="sidebar-drag-header gap-0 p-0">
+        <div className={compact ? "sidebar-brand-row flex h-11 items-center justify-center px-1.5" : "sidebar-brand-row flex h-11 min-w-0 items-center gap-2 px-(--sidebar-inset) @max-[200px]:gap-1.5 @max-[200px]:px-1.5"}>
           {!compact && <>
             <img src="/icons/alphacode-32.png" srcSet="/icons/alphacode-32.png 1x, /icons/alphacode-64.png 2x, /icons/alphacode-128.png 4x" width={20} height={20} className="size-5 shrink-0" alt="" aria-hidden="true" draggable={false} />
             {/* i18next-instrument-ignore-next-line — Product name. */}
             <span className="min-w-0 truncate text-[0.875rem] leading-[1.3] font-semibold tracking-[-0.018em] text-foreground">AlphaCode</span>
           </>}
-          {isMobile ? <Button variant="ghost" size="icon-sm" className="ms-auto shrink-0 text-muted-foreground hover:text-foreground" aria-label={t("workspace:closeSidebar")} onClick={() => setOpenMobile(false)}>
+          {isMobile ? <Button variant="ghost" size="icon-sm" className="ms-auto shrink-0 text-(--sidebar-muted) hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("workspace:closeSidebar")} onClick={() => setOpenMobile(false)}>
             <X aria-hidden="true" />
-          </Button> : <SidebarTrigger aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className={compact ? "rail-action shrink-0 text-muted-foreground hover:text-foreground" : "ms-auto shrink-0 text-muted-foreground hover:text-foreground"} />}
+          </Button> : <SidebarTrigger aria-label={t("workspace:toggleSidebar")} title={t("workspace:toggleSidebarHint")} className={compact ? "rail-action shrink-0 text-(--sidebar-muted) hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" : "ms-auto shrink-0 text-(--sidebar-muted) hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground"} />}
         </div>
       </SidebarHeader>
       {compact ? <>
         <SidebarHeader className="items-center gap-1.5 px-1.5 pt-2 pb-2">
           <Tooltip><TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="rail-action hover:text-foreground" aria-label={t("sessions:new")} onClick={() => startSession()}><SquarePen aria-hidden="true" /></Button>
+            <Button variant="ghost" size="icon" className="rail-action hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("sessions:new")} onClick={() => startSession()}><SquarePen aria-hidden="true" /></Button>
           </TooltipTrigger><TooltipContent side="right">{t("sessions:new")}</TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild>
-            <Button ref={searchTriggerRef} variant="ghost" size="icon" className="rail-action hover:text-foreground" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen} onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></Button>
+            <Button ref={searchTriggerRef} variant="ghost" size="icon" className="rail-action hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen} onClick={() => setSearchOpen(true)}><Search aria-hidden="true" /></Button>
           </TooltipTrigger><TooltipContent side="right">{t("sessions:search")}</TooltipContent></Tooltip>
           {onOpenSkills && <Tooltip><TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="rail-action hover:text-foreground" aria-label={t("skills:market.title")} aria-current={skillsActive ? "page" : undefined} onClick={onOpenSkills}><Blocks aria-hidden="true" /></Button>
+            <Button variant="ghost" size="icon" className="rail-action hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("skills:market.title")} aria-current={skillsActive ? "page" : undefined} onClick={onOpenSkills}><Blocks aria-hidden="true" /></Button>
           </TooltipTrigger><TooltipContent side="right">{t("skills:market.title")}</TooltipContent></Tooltip>}
         </SidebarHeader>
         <SidebarContent className="items-center gap-1.5 px-1.5 py-2.5 group-data-[collapsible=icon]:overflow-y-auto" style={{ scrollbarGutter: "auto", scrollbarWidth: "none" }}>
           <div className="rail-divider" />
           <nav aria-label={t("workspace:folders")} className="flex flex-col gap-1.5">
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="rail-action hover:text-foreground" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button></TooltipTrigger><TooltipContent side="right">{t("workspace:createProject")}</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="rail-action hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button></TooltipTrigger><TooltipContent side="right">{t("workspace:createProject")}</TooltipContent></Tooltip>
             {folders.map(folder => <Tooltip key={folder.id}><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="rail-action hover:text-foreground" aria-label={t("workspace:folder", { name: folder.name })} aria-expanded={false}
+              <Button variant="ghost" size="icon" className="rail-action hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("workspace:folder", { name: folder.name })} aria-expanded={false}
                 data-active={!skillsActive && !settingsActive && activeFolderId === folder.id}
                 onClick={() => { folderFocusRequest.current = folder.id; setFolderOpen(folder.id, true); setOpen(true); }}><Folder aria-hidden="true" /></Button>
             </TooltipTrigger><TooltipContent side="right">{folder.name}</TooltipContent></Tooltip>)}
             {error && <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="rail-action hover:text-foreground" aria-label={t("sessions:retryList")} disabled={refreshing} onClick={onRefresh}><RefreshCw aria-hidden="true" /></Button>
+              <Button variant="ghost" size="icon" className="rail-action hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("sessions:retryList")} disabled={refreshing} onClick={onRefresh}><RefreshCw aria-hidden="true" /></Button>
             </TooltipTrigger><TooltipContent side="right">{t("sessions:retryList")}</TooltipContent></Tooltip>}
           </nav>
         </SidebarContent>
         <SidebarFooter className="items-center px-1.5 py-2.5">
           <Tooltip><TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="rail-action hover:text-foreground" aria-label={t("settings:title")} aria-current={settingsActive ? "page" : undefined} onClick={onOpenSettings}><Settings aria-hidden="true" /></Button>
+            <Button variant="ghost" size="icon" className="rail-action hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("settings:title")} aria-current={settingsActive ? "page" : undefined} onClick={onOpenSettings}><Settings aria-hidden="true" /></Button>
           </TooltipTrigger><TooltipContent side="right">{t("settings:title")}</TooltipContent></Tooltip>
         </SidebarFooter>
       </> : <>
       <SidebarHeader className="gap-0 p-0">
-        <div className="space-y-1.5 px-(--sidebar-inset) pt-2">
+        <div className="space-y-0.5 px-(--sidebar-inset) pt-1.5">
           <Button ref={searchTriggerRef} variant="ghost" size="sm" static
-            className="h-8.5 w-full justify-start gap-2 rounded-lg border border-border/80 bg-background/75 px-2.5 text-[0.8125rem] font-normal text-muted-foreground hover:bg-background hover:text-foreground dark:bg-muted/40 dark:hover:bg-muted/70"
+            className="sidebar-nav-link h-8.5 w-full justify-start gap-2.5 rounded-lg px-2.5 text-[0.8125rem] font-normal text-sidebar-foreground hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground"
             aria-label={t("sessions:search")} aria-haspopup="dialog" aria-expanded={searchOpen}
             onClick={() => setSearchOpen(true)}>
-            <Search className="size-icon" aria-hidden="true" />
+            <Search className="size-icon text-(--sidebar-muted)" aria-hidden="true" />
             <span className="truncate">{t("sessions:search")}</span>
-            <kbd className="ms-auto rounded-[5px] border border-border/80 bg-muted/70 px-1.5 py-0.5 font-sans text-[0.6875rem] leading-none font-medium text-muted-foreground @max-[200px]:hidden">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}</kbd>
+            <kbd className="ms-auto rounded-[5px] border border-sidebar-border/70 bg-black/[0.03] px-1.5 py-0.5 font-sans text-[0.6875rem] leading-none font-medium text-(--sidebar-muted) dark:bg-white/[0.06] @max-[200px]:hidden">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}</kbd>
           </Button>
           {onOpenSkills && <Button variant="ghost" size="sm"
-            className="sidebar-nav-link h-8.5 w-full justify-start gap-2 rounded-lg px-2.5 text-[0.8125rem] font-normal text-sidebar-foreground hover:text-foreground"
+            className="sidebar-nav-link h-8.5 w-full justify-start gap-2.5 rounded-lg px-2.5 text-[0.8125rem] font-normal text-sidebar-foreground hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground"
             aria-current={skillsActive ? "page" : undefined} onClick={() => { onOpenSkills(); setOpenMobile(false); }}>
-            <Blocks className="size-icon" aria-hidden="true" /><span>{t("skills:market.title")}</span>
+            <Blocks className="size-icon text-(--sidebar-muted)" aria-hidden="true" /><span>{t("skills:market.title")}</span>
           </Button>}
         </div>
       </SidebarHeader>
-      <SidebarContent className="relative overflow-hidden pt-5">
-        <ScrollArea type="auto" className="min-h-0 flex-1" viewportClassName="[&>div]:block!" scrollbarClassName="w-1.5 border-0">
-        <SidebarGroup className="px-(--sidebar-inset) py-0 pb-4">
-          <div className="mb-1.5 flex items-center justify-between gap-2">
-            <SidebarGroupLabel className="h-7 px-2.5 text-[0.6875rem] font-medium tracking-[0.04em] text-muted-foreground uppercase">{t("workspace:projects")}</SidebarGroupLabel>
-            <Button data-create-project variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button>
+      <SidebarContent className="relative overflow-hidden pt-4">
+        <ScrollArea type="auto" className="sidebar-scroll-fade min-h-0 flex-1" viewportClassName="[&>div]:block!" scrollbarClassName="w-1.5 border-0">
+        <SidebarGroup className="px-(--sidebar-inset) py-0 pb-6">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <SidebarGroupLabel className="h-7 px-2.5 text-[0.75rem] font-medium text-(--sidebar-muted)">{t("workspace:projects")}</SidebarGroupLabel>
+            <Button data-create-project variant="ghost" size="icon-sm" className="text-(--sidebar-muted) hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground" aria-label={t("workspace:createProject")} onClick={openProjectDialog}><Plus aria-hidden="true" /></Button>
           </div>
           <SidebarGroupContent>
-            {loading && <p role="status" className="px-2.5 py-5 text-xs text-muted-foreground">{t("sessions:loadingList")}</p>}
+            {loading && <p role="status" className="px-2.5 py-5 text-xs text-(--sidebar-muted)">{t("sessions:loadingList")}</p>}
             {error && <div role="alert" className="space-y-2.5 rounded-xl border border-status-danger-border bg-status-danger-bg p-3 text-xs leading-[1.45]">
               <p className="text-status-danger">{sessionErrorMessage(t, error, "list")}</p>
               <Button variant="outline" size="sm" disabled={refreshing} onClick={onRefresh}>{t("sessions:retryList")}</Button>
             </div>}
             <nav aria-label={t("workspace:folders")}>
-              <SidebarMenu className="gap-3.5">
+              <SidebarMenu className="gap-3">
                 {folders.map((folder) => (
                   <Collapsible key={folder.id} asChild open={!collapsedFolders.has(folder.id)}
                     onOpenChange={(open) => setFolderOpen(folder.id, open)}>
@@ -192,15 +192,15 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onD
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton ref={element => { if (element) folderTriggers.current.set(folder.id, element); else folderTriggers.current.delete(folder.id); }}
                             title={folder.path} aria-label={t("workspace:folder", { name: folder.name })}
-                            className="h-8 w-full gap-2 rounded-lg pe-14 ps-2.5 text-[0.75rem] text-muted-foreground transition-colors duration-100 ease-out group-hover/folder-header:bg-sidebar-accent/70 group-hover/folder-header:text-foreground md:h-7.5">
-                            <Folder className="size-icon text-muted-foreground/85" aria-hidden="true" />
+                            className="h-8 w-full gap-2 rounded-lg pe-14 ps-2.5 text-[0.75rem] text-(--sidebar-muted) transition-colors duration-100 ease-out hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground group-hover/folder-header:bg-(--sidebar-hover) group-hover/folder-header:text-sidebar-accent-foreground md:h-7.5">
+                            <Folder className="size-icon text-(--sidebar-muted)" aria-hidden="true" />
                             <span className="font-medium">{folder.name}</span>
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
                         <ProjectActions folder={folder} onNewSession={() => startSession(folder.id)} onDelete={onDeleteProject} />
                       </div>
                       <CollapsibleContent>
-                        <SidebarMenuSub className="mx-0 mt-1 translate-x-0 gap-0.5 border-0 p-0">
+                        <SidebarMenuSub className="mx-0 mt-0.5 translate-x-0 gap-0.5 border-0 p-0">
                           {folder.sessions.map((session) => (
                             <SidebarMenuSubItem key={session.id}>
                               <SessionNavItem session={session} active={!skillsActive && !settingsActive && selectedSessionId === session.id} disabled={creatingIds[session.id]}
@@ -209,24 +209,24 @@ export function SessionSidebar({ folders, selectedFolderId, onCreateProject, onD
                                 onRename={onRenameSession} onDelete={onDeleteSession} />
                             </SidebarMenuSubItem>
                           ))}
-                          {folder.sessions.length === 0 && <SidebarMenuSubItem className="py-1.5 pe-3 ps-8 text-xs text-muted-foreground/80">{t("sessions:none")}</SidebarMenuSubItem>}
+                          {folder.sessions.length === 0 && <SidebarMenuSubItem className="py-1.5 pe-3 ps-8 text-xs text-(--sidebar-muted)/80">{t("sessions:none")}</SidebarMenuSubItem>}
                         </SidebarMenuSub>
                       </CollapsibleContent>
                     </SidebarMenuItem>
                   </Collapsible>
                 ))}
               </SidebarMenu>
-              {!loading && !error && folders.length === 0 && <p role="status" className="px-2.5 py-5 text-xs leading-[1.5] text-muted-foreground">{t("workspace:emptyProjects")}</p>}
+              {!loading && !error && folders.length === 0 && <p role="status" className="px-2.5 py-5 text-xs leading-[1.5] text-(--sidebar-muted)">{t("workspace:emptyProjects")}</p>}
             </nav>
           </SidebarGroupContent>
         </SidebarGroup>
         </ScrollArea>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border/70 px-(--sidebar-inset) py-2.5">
+      <SidebarFooter className="px-(--sidebar-inset) py-2">
         <Button variant="ghost" size="sm"
-          className="sidebar-nav-link h-8.5 w-full justify-start gap-2 rounded-lg px-2.5 text-[0.8125rem] font-normal text-sidebar-foreground hover:text-foreground"
+          className="sidebar-nav-link h-8.5 w-full justify-start gap-2.5 rounded-lg px-2.5 text-[0.8125rem] font-normal text-sidebar-foreground hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground"
           aria-current={settingsActive ? "page" : undefined} onClick={() => { onOpenSettings(); setOpenMobile(false); }}>
-          <Settings className="size-icon" aria-hidden="true" /><span>{t("settings:title")}</span>
+          <Settings className="size-icon text-(--sidebar-muted)" aria-hidden="true" /><span>{t("settings:title")}</span>
         </Button>
       </SidebarFooter>
       </>}

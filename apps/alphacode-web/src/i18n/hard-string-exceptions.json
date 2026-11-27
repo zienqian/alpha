@@ -53,7 +53,7 @@
   "src/components/ui/empty.tsx": {
     "reason": "Tailwind class strings in variant definitions.",
     "messages": [
-      "Hard-coded string \"flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground [&_svg:not([class*='size-'])]:size-icon\"."
+      "Hard-coded string \"flex size-8 shrink-0 items-center justify-center rounded-md border border-border/80 bg-background text-muted-foreground shadow-[0_1px_2px_oklch(0_0_0/0.03)] dark:bg-card [&_svg:not([class*='size-'])]:size-icon\"."
     ]
   },
   "src/components/ui/input-group.tsx": {
@@ -68,7 +68,7 @@
   "src/components/ui/item.tsx": {
     "reason": "Tailwind class strings in variant definitions.",
     "messages": [
-      "Hard-coded string \"flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground [&_svg:not([class*='size-'])]:size-icon\".",
+      "Hard-coded string \"flex size-8 items-center justify-center rounded-lg border border-border/80 bg-background text-muted-foreground shadow-[0_1px_2px_oklch(0_0_0/0.03)] dark:bg-card [&_svg:not([class*='size-'])]:size-icon\".",
       "Hard-coded string \"size-10 overflow-hidden rounded-xl group-data-[size=sm]/item:size-8 group-data-[size=xs]/item:size-6 group-data-[size=xs]/item:rounded-lg [&_img]:size-full [&_img]:object-cover\"."
     ]
   },
@@ -76,7 +76,6 @@
     "reason": "Tailwind variant classes and the developer-only provider invariant.",
     "messages": [
       "Hard-coded string \"useSidebar must be used within a SidebarProvider.\".",
-      "Hard-coded string \"group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l\".",
       "Hard-coded string \"bg-background shadow-[0_0_0_1px_var(--sidebar-border)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_var(--sidebar-accent)]\".",
       "Hard-coded string \"h-12 text-sm group-data-[collapsible=icon]:p-0!\".",
       "Hard-coded string \"group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground data-[state=open]:opacity-100 md:opacity-0\"."
@@ -94,9 +93,9 @@
       "Hard-coded string \"AlphaCode\".",
       "Hard-coded string \"⌘ K\".",
       "Hard-coded string \"Ctrl K\".",
-      "Hard-coded string \"flex h-11 min-w-0 items-center gap-2 px-(--sidebar-inset) @max-[200px]:gap-1.5 @max-[200px]:px-1.5\".",
-      "Hard-coded string \"rail-action shrink-0 text-muted-foreground hover:text-foreground\".",
-      "Hard-coded string \"ms-auto shrink-0 text-muted-foreground hover:text-foreground\"."
+      "Hard-coded string \"sidebar-brand-row flex h-11 min-w-0 items-center gap-2 px-(--sidebar-inset) @max-[200px]:gap-1.5 @max-[200px]:px-1.5\".",
+      "Hard-coded string \"rail-action shrink-0 text-(--sidebar-muted) hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground\".",
+      "Hard-coded string \"ms-auto shrink-0 text-(--sidebar-muted) hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground\"."
     ]
   },
   "src/i18n/provider.tsx": {

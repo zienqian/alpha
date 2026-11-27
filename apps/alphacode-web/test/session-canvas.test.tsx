@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "@/app";
 import { AppProviders } from "@/components/providers";
 import { canvasStorageKey, legacyCanvasStorageKey, readCanvas, saveCanvas, addPanel, collapseGroup, collapseAxis, emptyCanvas, focusPanel, getPanels, getTabsets, focusedTab, isCollapsed, minimumSize, sessionIdOf } from "@/features/session-canvas/layout";
-import { experimentsStorageKey } from "@/features/settings/experimental-features";
 import { mockSessionApi } from "./fixtures/session-api";
 import { replaceDraft } from "./fixtures/draft-editor";
 import { Actions, DockLocation, Model } from "flexlayout-react";
@@ -19,7 +18,6 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 function renderCanvas() {
-  localStorage.setItem(experimentsStorageKey, JSON.stringify({ version: 1, sessionCanvas: true }));
   return render(<AppProviders><App /></AppProviders>);
 }
 const panel = (title: string) => screen.getByRole("region", { name: title });
@@ -157,10 +155,13 @@ describe("experimental session canvas", () => {
   it("returns to a new conversation after the last tab closes, without a canvas placeholder", async () => {
     renderCanvas();
     await screen.findByRole("region", { name: "项目说明与约定" });
-    expect(document.getElementById("session-title")).toBeNull();
+    expect(document.getElementById("session-title")?.textContent).toBe("项目说明与约定");
+    expect(document.getElementById("session-title")?.closest(".sr-only")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "会话摘要" })).toBeNull();
     expect(screen.queryByText("多会话画布")).toBeNull();
     fireEvent.click(within(screen.getByRole("tab", { name: /项目说明与约定/ })).getByTitle("关闭面板"));
     await screen.findByRole("region", { name: "新会话" });
+    expect(document.getElementById("session-title")).toBeNull();
     expect(editor("新会话").textContent?.trim()).toBe("");
     expect(screen.queryByText("把会话放在一起")).toBeNull();
     expect(screen.queryByRole("button", { name: "添加当前会话" })).toBeNull();
@@ -188,23 +189,18 @@ describe("experimental session canvas", () => {
     expect(api.fetch.mock.calls.filter(([url, init]) => url === "/api/sessions" && init.method === "POST")).toHaveLength(0);
   });
 
-  it("is opt in, searchable in settings, and persists the switch", async () => {
+  it("is enabled by default without a settings toggle", async () => {
     render(<AppProviders><App /></AppProviders>);
-    await screen.findByRole("heading", { name: "项目说明与约定" });
-    expect(document.querySelector(".session-canvas")).toBeNull();
-    expect(screen.queryByRole("button", { name: "添加到画布" })).toBeNull();
+    await screen.findByRole("region", { name: "项目说明与约定" });
+    expect(document.querySelectorAll(".session-canvas-panel")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "设置" }));
-    const toggle = await screen.findByRole("switch", { name: "多会话画布" });
-    expect(toggle.getAttribute("aria-checked")).toBe("false");
-    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "canvas" } });
-    expect(screen.queryByRole("combobox")).toBeNull();
-    fireEvent.click(toggle);
-    expect(JSON.parse(localStorage.getItem(experimentsStorageKey) ?? "{}").sessionCanvas).toBe(true);
+    await screen.findByRole("searchbox", { name: "搜索设置" });
+    expect(screen.queryByRole("switch", { name: "多会话画布" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "返回对话" }));
     await waitFor(() => expect(document.querySelectorAll(".session-canvas-panel")).toHaveLength(1));
   });
 
-  it("isolates drafts and sends, shares streams, and releases panels when disabled", async () => {
+  it("isolates drafts and sends, shares streams, and releases panels while away in settings", async () => {
     renderCanvas();
     await screen.findByRole("region", { name: "项目说明与约定" });
     await addSecond();
@@ -220,12 +216,11 @@ describe("experimental session canvas", () => {
     expect(api.fetch.mock.calls.filter(([url]) => url === "/api/sessions/project-notes/events")).toHaveLength(1);
     fireEvent.focus(editor("搭建前端工作区"));
     fireEvent.click(screen.getByRole("button", { name: "设置" }));
-    const toggle = await screen.findByRole("switch", { name: "多会话画布" });
-    fireEvent.click(toggle);
+    await screen.findByRole("searchbox", { name: "搜索设置" });
     await waitFor(() => expect(api.streams.get("/api/sessions/project-notes/events")?.size).toBe(0));
     fireEvent.click(screen.getByRole("button", { name: "返回对话" }));
-    await waitFor(() => expect(screen.getByRole("textbox", { name: "消息草稿" }).textContent).toContain("保留第二条草稿"));
-    expect(document.querySelector(".session-canvas")).toBeNull();
+    await waitFor(() => expect(editor("搭建前端工作区").textContent).toContain("保留第二条草稿"));
+    expect(document.querySelectorAll(".session-canvas-panel")).toHaveLength(2);
     expect(api.view("project-notes").state.busy).toBe(true);
     expect(api.fetch.mock.calls.some(([url, init]) => url.endsWith("/cancel") || init.method === "DELETE")).toBe(false);
   });
@@ -303,7 +298,7 @@ describe("experimental session canvas", () => {
     expect(readCanvas().getRootRow()?.getChildren().map(node => node.getAttributeOwn("weight"))).toEqual([65, 35]);
   });
 
-  it("preserves uncertain request identity after switching back to a single conversation", async () => {
+  it("preserves uncertain request identity after navigating away and back", async () => {
     renderCanvas();
     await screen.findByRole("region", { name: "项目说明与约定" });
     await waitFor(() => expect(api.streams.get("/api/sessions/project-notes/events")?.size).toBe(1));
@@ -314,7 +309,7 @@ describe("experimental session canvas", () => {
     const request = api.fetch.mock.calls.find(([url]) => url.endsWith("/requests"));
     const requestId = JSON.parse(String(request?.[1].body)).requestId;
     fireEvent.click(screen.getByRole("button", { name: "设置" }));
-    fireEvent.click(await screen.findByRole("switch", { name: "多会话画布" }));
+    await screen.findByRole("searchbox", { name: "搜索设置" });
     fireEvent.click(screen.getByRole("button", { name: "返回对话" }));
     const retry = await screen.findByRole("button", { name: "重试发送" });
     api.overrides.delete("/api/sessions/project-notes/requests");

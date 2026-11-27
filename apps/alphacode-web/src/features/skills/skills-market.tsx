@@ -223,7 +223,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
         {pageDragging && (
           <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-xs">
             <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-foreground/35 bg-popover px-10 py-8 text-center shadow-(--shadow-overlay)">
-              <span className="flex size-12 items-center justify-center rounded-xl bg-muted text-foreground">
+              <span className="flex size-12 items-center justify-center rounded-xl border border-border/80 bg-background text-foreground shadow-xs dark:bg-card">
                 <Upload className="size-6" aria-hidden="true" />
               </span>
               <p className="text-sm font-semibold text-foreground">{t("skills:market.dropOverlayTitle")}</p>
@@ -283,7 +283,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
           </div>
 
           <div className="mt-6 flex flex-col justify-between gap-3 border-b border-separator pb-4 @min-[680px]:flex-row @min-[680px]:items-center">
-            <div role="group" aria-label={t("skills:market.filter")} className="inline-flex w-fit flex-wrap items-center gap-0.5 rounded-xl bg-muted p-1">
+            <div role="group" aria-label={t("skills:market.filter")} className="inline-flex w-fit flex-wrap items-center gap-0.5 rounded-xl border border-border/80 bg-surface-sunken p-1 dark:bg-muted">
               {filterKinds.map(kind => {
                 const active = filter === kind;
                 return (
@@ -450,7 +450,7 @@ export function SkillsMarket({ initialProjectId, showHeader = true }: { initialP
               <p role="status" className="sr-only">{t("skills:market.count", { count: visible.length })}</p>
 
               {visible.length === 0 ? (
-                <Empty className="mt-3 rounded-2xl border border-dashed border-border bg-muted/30 py-12">
+                <Empty className="mt-3 rounded-2xl border border-dashed border-border bg-background py-12 dark:bg-card/40">
                   <EmptyHeader>
                     <EmptyTitle>
                       <h2>

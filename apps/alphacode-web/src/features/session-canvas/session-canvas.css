@@ -1,5 +1,6 @@
 /* Loaded with the experimental workspace. Theme tokens follow the app in both modes. */
 .workspace-canvas[data-docking="true"] { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+.workspace-canvas[data-docking="true"] .session-canvas { padding: 0; }
 .workspace-shell .session-nav-item[data-canvas-draggable="true"] { cursor: grab; }
 .workspace-shell .session-nav-item[data-canvas-draggable="true"]:active { cursor: grabbing; }
 .session-canvas {
@@ -28,9 +29,9 @@
   --flexlayout-color-tab-selected-background: transparent;
   --flexlayout-color-tab-unselected: var(--muted-foreground);
   --flexlayout-color-tab-unselected-background: transparent;
-  --flexlayout-color-splitter: transparent;
-  --flexlayout-color-splitter-hover: transparent;
-  --flexlayout-color-splitter-drag: transparent;
+  --flexlayout-color-splitter: var(--background);
+  --flexlayout-color-splitter-hover: var(--background);
+  --flexlayout-color-splitter-drag: var(--background);
   --flexlayout-color-drag1: var(--ring);
   --flexlayout-color-drag1-background: color-mix(in srgb, var(--primary) 12%, transparent);
   --flexlayout-color-drag-rect-border: var(--border);
@@ -48,13 +49,14 @@
 .session-canvas .flexlayout__tabset {
   container-type: inline-size;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--canvas-panel-radius);
+  background: var(--background);
+  border: 0;
+  border-radius: 0;
 }
-/* Content is portalled beside the tabset, so its bottom corners must clip too. */
+/* Outer clipping is owned by .workspace-surface (top-left rounded only, right/bottom flush). */
 .session-canvas .flexlayout__tab {
   overflow: hidden;
-  border-radius: 0 0 calc(var(--canvas-panel-radius) - 1px) calc(var(--canvas-panel-radius) - 1px);
+  border-radius: 0;
 }
 /* Flat title tabs follow the supplied LeetCode workspace reference. */
 .session-canvas .flexlayout__tabset_tabbar_outer { min-height: 40px; padding: 0 8px; border: 0; border-bottom: 1px solid var(--separator); background: var(--background); }
@@ -124,7 +126,44 @@
 .canvas-tabbar-vertical .canvas-collapsed-title { flex-direction: column; margin: 3px 4px; padding: 8px 4px; }
 .canvas-tabbar-vertical .canvas-collapsed-title + .canvas-collapsed-title::before { top: -4px; left: 50%; width: 16px; height: 1px; transform: translateX(-50%); }
 .canvas-tabbar-vertical .canvas-collapsed-title > span { writing-mode: vertical-rl; max-width: none; max-height: 220px; }
-.session-canvas .flexlayout__splitter { position: relative; touch-action: none; }
+.session-canvas .flexlayout__splitter { position: relative; touch-action: none; background-color: var(--background); }
+.session-canvas .flexlayout__splitter:hover,
+.session-canvas .flexlayout__splitter_drag { border-radius: 0; }
+/* Centered 1px hairline with a 6px breathing gap around the drag capsule. */
+.session-canvas .flexlayout__splitter_horz {
+  --splitter-cutout: 18px;
+  background-image: linear-gradient(
+    to bottom,
+    var(--border) 0,
+    var(--border) max(0px, calc(50% - var(--splitter-cutout))),
+    transparent max(0px, calc(50% - var(--splitter-cutout))),
+    transparent min(100%, calc(50% + var(--splitter-cutout))),
+    var(--border) min(100%, calc(50% + var(--splitter-cutout))),
+    var(--border) 100%
+  );
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 1px 100%;
+}
+.session-canvas .flexlayout__splitter_vert {
+  --splitter-cutout: 18px;
+  background-image: linear-gradient(
+    to right,
+    var(--border) 0,
+    var(--border) max(0px, calc(50% - var(--splitter-cutout))),
+    transparent max(0px, calc(50% - var(--splitter-cutout))),
+    transparent min(100%, calc(50% + var(--splitter-cutout))),
+    var(--border) min(100%, calc(50% + var(--splitter-cutout))),
+    var(--border) 100%
+  );
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+}
+.session-canvas .flexlayout__splitter_horz:hover,
+.session-canvas .flexlayout__splitter_vert:hover { --splitter-cutout: 30px; }
+.session-canvas .flexlayout__splitter_drag,
+.session-canvas .canvas-resize-active { background-image: none; }
 .session-canvas .flexlayout__splitter::after {
   position: absolute; content: ""; top: 50%; left: 50%;
   width: 3px; height: 24px; border-radius: 2px; background: color-mix(in srgb, var(--muted-foreground) 26%, transparent); transform: translate(-50%, -50%);

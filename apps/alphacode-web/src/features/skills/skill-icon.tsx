@@ -12,7 +12,7 @@ export function SkillIcon({ name, size = "md", className }: { name: string; size
   return (
     <span
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-lg bg-muted text-foreground/80 ring-1 ring-foreground/6 dark:ring-foreground/10",
+        "flex shrink-0 items-center justify-center rounded-lg border border-border/80 bg-background text-foreground/80 shadow-[0_1px_2px_oklch(0_0_0/0.03)] dark:bg-card",
         size === "sm" ? "size-9" : "size-10",
         className,
       )}

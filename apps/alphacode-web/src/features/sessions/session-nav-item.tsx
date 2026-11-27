@@ -68,7 +68,7 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
           onClick={() => { setEditing(false); setError(undefined); requestAnimationFrame(() => menu.current?.focus()); }}><X aria-hidden="true" /></Button>
       </form> : <>
         <SidebarMenuSubButton asChild isActive={active}
-          className="session-nav-item relative h-9 w-full translate-x-0 rounded-lg pe-8 ps-7 text-[0.8125rem] leading-[1.4] text-sidebar-foreground transition-colors duration-100 ease-out data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8">
+          className="session-nav-item relative h-9 w-full translate-x-0 rounded-lg pe-8 ps-7 text-[0.8125rem] leading-[1.4] text-sidebar-foreground transition-colors duration-100 ease-out hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8">
           <button type="button" title={session.title} aria-label={session.title} aria-current={active ? "page" : undefined} onClick={onSelect}
             data-canvas-draggable={Boolean(onAddToCanvas) && !disabled || undefined}
             onPointerDown={event => {
@@ -81,7 +81,7 @@ export function SessionNavItem({ session, active, disabled, onSelect, onRename, 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button ref={menu} variant="ghost" size="icon-sm" disabled={disabled}
-              className="absolute top-1/2 end-0.5 -translate-y-1/2 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover/session-row:opacity-100 md:group-has-[:focus-visible]/session-row:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+              className="absolute top-1/2 end-0.5 -translate-y-1/2 text-(--sidebar-muted) hover:bg-(--sidebar-hover) hover:text-sidebar-accent-foreground md:opacity-0 md:group-hover/session-row:opacity-100 md:group-has-[:focus-visible]/session-row:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
               aria-label={t("sessions:sessionMenu", { title: session.title })}><MoreHorizontal aria-hidden="true" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onCloseAutoFocus={event => {

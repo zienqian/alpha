@@ -85,7 +85,7 @@ export function SessionQueue({ requests = [], disabled, canSteer, onRemove, onEd
 
   if (!visible.length) return null;
   return <section aria-label={t("sessions:queueLabel")}
-    className="relative mx-3 -mb-4 rounded-t-2xl border border-b-0 border-border bg-muted/50 pt-1 pb-4">
+    className="relative mx-3 -mb-4 rounded-t-2xl border border-b-0 border-border bg-background pt-1 pb-4 dark:bg-card">
     <p role="status" className="sr-only">{t("sessions:queueCount", { count: requests.length })}</p>
     <ol className="max-h-60 overflow-y-auto px-1.5 py-0.5 sm:px-2">
       {visible.map((request, index) => {
