@@ -72,6 +72,13 @@ it("follows growing replies at the bottom, pauses while reading history and resu
   await resize();
   expect(viewport.scrollTop).toBe(150);
   expect(scrollTo).not.toHaveBeenCalled();
+  const bottomButton = screen.getByRole("button", { name: "滚动到底部" });
+  expect(bottomButton.getAttribute("data-active")).toBe("true");
+  expect(bottomButton.getAttribute("data-generating")).toBe("true");
+  for (const props of [{ busy: false }, { busy: true, phase: "stopping" }, { busy: true, phase: "saving" }, { busy: true, connected: false }]) {
+    view.rerender(<SessionContent session={session} {...props} />);
+    expect(bottomButton.hasAttribute("data-generating")).toBe(false);
+  }
 
   // A new user message must also leave the reader's position alone.
   view.rerender(<SessionContent session={{ ...session, messages: [...session.messages, { id: "next-user", role: "user", content: "继续" }] }} busy phase="thinking" />);

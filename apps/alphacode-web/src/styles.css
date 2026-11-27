@@ -918,6 +918,31 @@
   }
 }
 
+[data-slot="message-scroller-button"][data-generating="true"][data-active="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  corner-shape: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  background: conic-gradient(from 0deg, var(--border) 0deg, var(--muted-foreground) 220deg, var(--foreground) 285deg, transparent 315deg);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="message-scroller-button"][data-generating="true"][data-active="true"]::after {
+    animation: scroll-button-marquee 2s linear infinite;
+  }
+}
+
+@keyframes scroll-button-marquee {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes stage-fade {
   from {
     opacity: 0;

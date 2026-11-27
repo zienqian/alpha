@@ -513,6 +513,7 @@ export function BotChatPage() {
                 </MessageScrollerContent>
               </MessageScrollerViewport>
               <MessageScrollerButton
+                generating={router.busy && detail.connection !== "error" && router.phase !== "stopping" && router.phase !== "saving"}
                 aria-label={t("sessions:scrollBottom")}
                 className="size-8 rounded-full border border-border bg-background text-foreground shadow-sm hover:bg-muted dark:bg-card"
               />

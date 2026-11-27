@@ -87,14 +87,18 @@ function MessageScrollerButton({
   render,
   variant = "secondary",
   size = "icon-sm",
+  generating = false,
   ...props
 }: React.ComponentProps<typeof MessageScrollerPrimitive.Button> &
-  Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
+  Pick<React.ComponentProps<typeof Button>, "variant" | "size"> & {
+    generating?: boolean;
+  }) {
   const { t } = useTranslation();
   return (
     <MessageScrollerPrimitive.Button
       data-slot="message-scroller-button"
       data-direction={direction}
+      data-generating={generating && direction === "end" ? "true" : undefined}
       data-variant={variant}
       data-size={size}
       direction={direction}

@@ -59,7 +59,7 @@ export const SessionContent = memo(function SessionContent({ session, busy = fal
             </MessageScrollerItem>}
           </MessageScrollerContent>
         </MessageScrollerViewport>
-        <MessageScrollerButton aria-label={t("sessions:scrollBottom")} className="size-8 rounded-full border border-border bg-background text-foreground shadow-sm hover:bg-muted dark:bg-card" />
+        <MessageScrollerButton generating={busy && connected && phase !== "stopping" && phase !== "saving"} aria-label={t("sessions:scrollBottom")} className="size-8 rounded-full border border-border bg-background text-foreground shadow-sm hover:bg-muted dark:bg-card" />
       </MessageScroller>
     </MessageScrollerProvider>
   );
