@@ -1,5 +1,6 @@
-import { app, BrowserWindow, dialog, Menu, nativeTheme, net, protocol, screen, session, shell, type MenuItemConstructorOptions } from "electron";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { app, BrowserWindow, dialog, Menu, nativeTheme, net, Notification, protocol, screen, session, shell, type MenuItemConstructorOptions } from "electron";
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { registerNotificationIdentity } from "./notification-identity";
 import { readFile } from "node:fs/promises";
 import { homedir, release } from "node:os";
 import { join, resolve } from "node:path";
@@ -119,6 +120,34 @@ async function createWindow() {
     if (!translucent) created.setBackgroundColor(color);
     if (process.platform !== "darwin") created.setTitleBarOverlay({ color: "#00000000", symbolColor });
   });
+  const notifications = new Set<Notification>();
+  created.webContents.ipc.on("session:notify", (event, value: unknown) => {
+    if (event.senderFrame !== created.webContents.mainFrame || !trustedRenderer(event.senderFrame.url)) return;
+    if (!value || typeof value !== "object") return;
+    const { sessionId, title, kind } = value as { sessionId?: unknown; title?: unknown; kind?: unknown };
+    if (typeof sessionId !== "string" || !sessionId || sessionId.length > 256 || typeof title !== "string" || title.length > 1000) return;
+    if (kind !== "completed" && kind !== "approval" && kind !== "failed") return;
+    if (!Notification.isSupported()) return;
+    try {
+      const notification = new Notification({
+        title: kind === "approval" ? label("需要你确认操作", "Your approval is needed")
+          : kind === "failed" ? label("对话需要你处理", "Your conversation needs attention")
+          : label("对话已完成", "Conversation completed"),
+        body: title.trim().slice(0, 200) || applicationName,
+        icon: applicationIcon,
+      });
+      notifications.add(notification);
+      notification.on("click", () => {
+        if (created.isDestroyed()) return;
+        focus();
+        created.webContents.send("session:notification-click", sessionId);
+      });
+      notification.on("close", () => notifications.delete(notification));
+      notification.on("failed", () => notifications.delete(notification));
+      notification.show();
+    } catch { /* Notification availability must not interrupt a conversation. */ }
+  });
+  created.once("closed", () => { notifications.forEach(notification => notification.close()); notifications.clear(); });
   created.once("ready-to-show", () => { if (saved.maximized) created.maximize(); created.show(); });
   created.on("page-title-updated", event => { event.preventDefault(); created.setTitle(applicationName); });
   created.on("close", () => {
@@ -154,6 +183,14 @@ async function createWindow() {
 }
 
 async function start() {
+  if (process.platform === "win32") {
+    try {
+      // The Windows shell cannot read icons inside app.asar.
+      const icon = join(userData, "notification.ico");
+      copyFileSync(applicationIcon, icon);
+      registerNotificationIdentity({ id: "com.alpha.alphacodeapp", name: applicationName, icon });
+    } catch (error) { console.warn("Could not register the Windows notification identity", error); }
+  }
   const root = app.isPackaged ? join(process.resourcesPath, "runtime") : resolve(process.env.ALPHACODE_APP_REPOSITORY || join(app.getAppPath(), "../.."));
   const binary = process.platform === "win32" ? "bun.exe" : "bun";
   const bun = app.isPackaged ? join(root, "bin", binary) : process.env.ALPHACODE_APP_BUN || (existsSync(join(homedir(), ".bun/bin", binary)) ? join(homedir(), ".bun/bin", binary) : binary);

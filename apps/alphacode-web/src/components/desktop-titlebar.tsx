@@ -7,6 +7,8 @@ declare global {
       platform: string;
       translucent?: boolean;
       selectDirectory?: () => Promise<string | null>;
+      notify?: (notification: { sessionId: string; title: string; kind: "completed" | "approval" | "failed" }) => void;
+      onNotificationClick?: (listener: (sessionId: string) => void) => () => void;
       setAppearance: (appearance: { color: string; symbolColor: string; theme?: ThemeMode }) => void;
     };
   }

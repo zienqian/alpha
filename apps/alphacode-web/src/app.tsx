@@ -12,6 +12,7 @@ import { SessionPage } from "@/features/sessions/session-page";
 import { CreateProjectDialog } from "@/features/sessions/create-project-dialog";
 import { useSessionWorkspace, type SessionWorkspace } from "@/features/sessions/use-session-workspace";
 import { SessionWorkspaceProvider } from "@/features/sessions/workspace-state";
+import { useSessionNotifications } from "@/features/sessions/use-session-notifications";
 import { useBotsIndex } from "@/features/bots/use-bots";
 import type { BotSummaryView } from "@/features/bots/api";
 import { useExperimentalFeatures } from "@/features/settings/experimental-features";
@@ -31,6 +32,7 @@ function SkillsPage() {
 function WorkspaceLayout() {
   const { t } = useTranslation();
   const workspace = useSessionWorkspace();
+  useSessionNotifications();
   const botsIndex = useBotsIndex({ includeArchived: true });
   const location = useLocation();
   const experiments = useExperimentalFeatures();
