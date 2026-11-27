@@ -113,18 +113,25 @@ it("deleting a background session preserves the active selection and message dra
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: original })));
 });
 
-it("applies a renamed local draft when it becomes a saved session and removes its old row", async () => {
-  const api = await setup();
-  const folderName = api.info(id).workspaceRoot.split(/[\\/]/).at(-1);
-  fireEvent.click(screen.getByRole("button", { name: `在 ${folderName} 中新建会话` }));
-  replaceDraft(screen.getByRole("textbox", { name: "消息草稿" }), "第一条消息");
-  fireEvent.click(within(await menu("新会话")).getByRole("menuitem", { name: "重命名" }));
-  const input = screen.getByRole("textbox", { name: "会话标题" });
-  fireEvent.change(input, { target: { value: "草稿自定义标题" } });
-  submitTitle(input);
-  await screen.findByRole("button", { name: "草稿自定义标题" });
+it.each(["default", "project"])("only adds a %s session to the sidebar after sending", async (workspace) => {
+  const api = mockSessionApi();
+  window.history.replaceState(null, "", "/");
+  render(<AppProviders><App /></AppProviders>);
+  await screen.findByRole("button", { name: original });
+  const navigation = screen.getByRole("navigation", { name: "文件夹与会话" });
+  const initialRows = within(navigation).getAllByRole("button").length;
+  if (workspace === "project") {
+    const folderName = api.info(id).workspaceRoot.split(/[\\/]/).at(-1);
+    fireEvent.click(screen.getByRole("button", { name: `在 ${folderName} 中新建会话` }));
+  }
+  const draft = screen.getByRole("textbox", { name: "消息草稿" });
+  replaceDraft(draft, "第一条消息");
+  expect(within(navigation).queryByRole("button", { name: "新会话" })).toBeNull();
+  expect(within(navigation).getAllByRole("button")).toHaveLength(initialRows);
+  expect(api.fetch.mock.calls.some(([path, init]) => path === "/api/sessions" && init.method === "POST")).toBe(false);
   fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
   await waitFor(() => expect(api.fetch.mock.calls.some(([path]) => path.endsWith("/requests"))).toBe(true));
-  expect(api.infos.filter(info => info.title === "草稿自定义标题")).toHaveLength(1);
-  expect(screen.getAllByRole("button", { name: "草稿自定义标题" })).toHaveLength(1);
+  const createdId = new URL(window.location.href).searchParams.get("session");
+  if (!createdId) throw new Error("Missing created session");
+  await waitFor(() => expect(within(navigation).getByRole("button", { name: api.info(createdId).title || "新会话" }).getAttribute("aria-current")).toBe("page"));
 });

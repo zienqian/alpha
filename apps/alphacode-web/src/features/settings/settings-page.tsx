@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Globe, Monitor, Moon, Search, Sun, SunMoon, X } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Brain, Check, Globe, Monitor, Moon, Search, Sun, SunMoon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { isThemeMode, useTheme, type ThemeMode } from "@/components/theme-provider";
 import { BotsDefaultsSection } from "@/features/bots/bots-defaults-section";
 import { useLanguage } from "@/i18n/provider";
 import { isLanguagePreference } from "@/i18n/locale";
 import { useTranslation } from "@/i18n/react";
 import { cn } from "@/lib/utils";
+import { getMemorySettings, memorySettingsQueryKey, updateMemorySettings } from "./memory-api";
 
 const selectClass = "h-8 w-full shrink-0 rounded-lg text-base font-medium text-foreground sm:w-40 md:text-xs";
 
@@ -90,13 +93,21 @@ const themeChoices = [
 
 export function SettingsPage() {
   const { t } = useTranslation();
+  const client = useQueryClient();
   const { theme, setTheme } = useTheme();
   const { preference, setPreference } = useLanguage();
   const [query, setQuery] = useState("");
+  const [memorySaving, setMemorySaving] = useState(false);
+  const [memoryError, setMemoryError] = useState(false);
+  const memoryQuery = useQuery({
+    queryKey: memorySettingsQueryKey,
+    queryFn: ({ signal }) => getMemorySettings(signal),
+    retry: false,
+  });
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => { searchRef.current?.focus({ preventScroll: true }); }, []);
   const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  const matches = (field: "theme" | "language" | "bots") => {
+  const matches = (field: "theme" | "language" | "memory" | "bots") => {
     // Search both supported languages so switching language keeps the result and focus.
     const text = ["zh-CN", "en"].flatMap(lng => [
       t("settings:general", { lng }),
@@ -104,6 +115,8 @@ export function SettingsPage() {
         t("bots:defaults.sectionTitle", { lng }), t("bots:defaults.cardTitle", { lng }),
         t("bots:defaults.maxConcurrentWorkers", { lng }), t("bots:defaults.perBotMaxWorkers", { lng }),
         t("bots:defaults.routerModelId", { lng }), t("bots:defaults.workerModelId", { lng }),
+      ] : field === "memory" ? [
+        t("settings:preferences", { lng }), t("settings:memory.label", { lng }), t("settings:memory.description", { lng }),
       ] : [
         t("settings:preferences", { lng }), t("settings:system", { lng }),
         ...(field === "theme" ? [t("settings:colorTheme", { lng }), t("settings:appearance", { lng }), t("settings:light", { lng }), t("settings:dark", { lng })] :
@@ -114,8 +127,23 @@ export function SettingsPage() {
   };
   const showTheme = matches("theme");
   const showLanguage = matches("language");
+  const showMemory = matches("memory");
   const showBots = matches("bots");
-  const resultCount = Number(showTheme) + Number(showLanguage) + Number(showBots);
+  const resultCount = Number(showTheme) + Number(showLanguage) + Number(showMemory) + Number(showBots);
+
+  async function handleMemoryToggle(enabled: boolean) {
+    if (memorySaving) return;
+    setMemorySaving(true);
+    setMemoryError(false);
+    try {
+      const updated = await updateMemorySettings({ enabled });
+      client.setQueryData(memorySettingsQueryKey, updated);
+    } catch {
+      setMemoryError(true);
+    } finally {
+      setMemorySaving(false);
+    }
+  }
 
   function clearSearch() {
     setQuery("");
@@ -140,7 +168,7 @@ export function SettingsPage() {
 
       <p role="status" className="sr-only">{terms.length > 0 ? t("settings:searchResults", { count: resultCount }) : ""}</p>
 
-      {(showTheme || showLanguage) && <section aria-labelledby="settings-preferences" className="mt-8">
+      {(showTheme || showLanguage || showMemory) && <section aria-labelledby="settings-preferences" className="mt-8">
         <h2 id="settings-preferences" className="mb-2.5 px-0.5 text-[0.6875rem] font-medium tracking-[0.04em] text-muted-foreground uppercase">{t("settings:preferences")}</h2>
         <div className="divide-y divide-separator overflow-hidden rounded-2xl border border-border bg-card">
           {showTheme && <div className="p-4 sm:p-5">
@@ -195,6 +223,31 @@ export function SettingsPage() {
                 <SelectItem value="en" lang="en">{t("settings:english")}</SelectItem>
               </SelectContent>
             </Select>
+          </div>}
+
+          {showMemory && <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="flex min-w-0 items-start gap-3">
+              <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-background text-muted-foreground shadow-[0_1px_2px_oklch(0_0_0/0.03)] dark:bg-card">
+                <Brain className="size-4" />
+              </span>
+              <div className="min-w-0 space-y-0.5">
+                <label htmlFor="settings-memory-enabled" className="block text-[0.8125rem] leading-[1.4] font-medium text-foreground">
+                  {t("settings:memory.label")}
+                </label>
+                <p className="text-xs leading-[1.5] text-muted-foreground">
+                  {t("settings:memory.description")}
+                </p>
+                {memoryError && (
+                  <p role="alert" className="text-xs text-status-danger">{t("settings:memory.saveFailed")}</p>
+                )}
+              </div>
+            </div>
+            <Switch
+              id="settings-memory-enabled"
+              checked={Boolean(memoryQuery.data?.enabled)}
+              disabled={memoryQuery.isPending || memorySaving}
+              onCheckedChange={checked => { void handleMemoryToggle(checked); }}
+            />
           </div>}
         </div>
       </section>}

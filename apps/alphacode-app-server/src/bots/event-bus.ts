@@ -70,7 +70,7 @@ export function createBotEventBus(options: {
       const trimmed = input.text.trim();
       const summary = summarizeInline(trimmed);
       let payloadRef = input.payloadRef;
-      if (!payloadRef && trimmed.length > inlineSummaryLimit) {
+      if (!payloadRef && (trimmed.length > inlineSummaryLimit || trimmed.includes("\n"))) {
         const payloadId = `art_trg_${triggerId.slice(4)}`;
         options.store.savePayload(options.botId, payloadId, trimmed);
         payloadRef = payloadId;

@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 import { demoFolders } from "./demo-data";
-import type { ProjectInfo, SessionInfo, SessionView } from "@/features/sessions/api";
+import type { ChatAttachment, ProjectInfo, SessionInfo, SessionView } from "@/features/sessions/api";
 import type {
   BotDetailStateView,
   BotsGlobalConfigView,
@@ -13,10 +13,17 @@ import type {
 export function mockSessionApi() {
   const projects: ProjectInfo[] = [];
   const removedProjects = new Set<string>();
+  const uploadedFiles = new Map<string, Map<string, ChatAttachment>>();
   const botDetails = new Map<string, BotDetailStateView>();
   const botDiffs = new Map<string, BotTaskDiffView>();
   const botTaskSessions = new Map<string, BotWorkerSessionSnapshot>();
   let botSequence = 1;
+  const memorySettings = {
+    enabled: false,
+    autoExtract: true,
+    autoDream: true,
+    memoryDir: "/tmp/alphacode-memory",
+  };
   const botsDefaults: BotsGlobalConfigView = {
     maxConcurrentWorkers: 4,
     perBotMaxWorkers: 2,
@@ -99,6 +106,18 @@ export function mockSessionApi() {
     if (override) return override(init);
     const parsedUrl = new URL(path, "http://localhost");
     const pathname = parsedUrl.pathname;
+    if (pathname === "/api/settings/memory") {
+      if ((init.method ?? "GET") === "GET") {
+        return Response.json({ ...memorySettings });
+      }
+      if (init.method === "PATCH") {
+        const body = JSON.parse(String(init.body)) as Partial<typeof memorySettings>;
+        if (typeof body.enabled === "boolean") memorySettings.enabled = body.enabled;
+        if (typeof body.autoExtract === "boolean") memorySettings.autoExtract = body.autoExtract;
+        if (typeof body.autoDream === "boolean") memorySettings.autoDream = body.autoDream;
+        return Response.json({ ...memorySettings });
+      }
+    }
     if (pathname === "/api/bots" || pathname.startsWith("/api/bots/")) {
       if (pathname === "/api/bots" && (init.method ?? "GET") === "GET") {
         const includeArchived = parsedUrl.searchParams.get("includeArchived") === "1";
@@ -124,7 +143,7 @@ export function mockSessionApi() {
           routerModel: body.routerModel ?? undefined,
           workerModel: body.workerModel ?? undefined,
           sortOrder: botDetails.size + 1,
-          memoryMode: "alphacode",
+          memoryMode: body.memoryMode === "off" ? "off" : "alphacode",
           lastVisitedAt: now,
           createdAt: now,
           updatedAt: now,
@@ -194,6 +213,7 @@ export function mockSessionApi() {
             ...(patch.maxConcurrentWorkers !== undefined ? { maxConcurrentWorkers: patch.maxConcurrentWorkers ?? undefined } : {}),
             ...(patch.routerModel !== undefined ? { routerModel: patch.routerModel ?? undefined } : {}),
             ...(patch.workerModel !== undefined ? { workerModel: patch.workerModel ?? undefined } : {}),
+            ...(patch.memoryMode !== undefined ? { memoryMode: patch.memoryMode } : {}),
             updatedAt: new Date().toISOString(),
           };
           publishBots(botId);
@@ -211,6 +231,30 @@ export function mockSessionApi() {
         }
         return Response.json(detail);
       }
+      const botUpload = /^\/api\/bots\/([^/]+)\/uploads$/.exec(pathname);
+      if (botUpload?.[1] && init.method === "POST") {
+        const botId = decodeURIComponent(botUpload[1]);
+        if (!botDetails.has(botId)) return Response.json({ code: "BOT_NOT_FOUND" }, { status: 404 });
+        const form = init.body as FormData;
+        const bucket = uploadedFiles.get(`bot:${botId}`) ?? new Map<string, ChatAttachment>();
+        uploadedFiles.set(`bot:${botId}`, bucket);
+        const created: ChatAttachment[] = [];
+        for (const [, entry] of form.entries()) {
+          if (entry instanceof File) {
+            const uploadId = crypto.randomUUID();
+            const item: ChatAttachment = {
+              id: uploadId,
+              name: entry.name || "file",
+              mediaType: entry.type || "application/octet-stream",
+              size: entry.size,
+              url: `/api/bots/${encodeURIComponent(botId)}/uploads/${encodeURIComponent(uploadId)}`,
+            };
+            bucket.set(uploadId, item);
+            created.push(item);
+          }
+        }
+        return Response.json({ attachments: created }, { status: 201 });
+      }
       const botAction = /^\/api\/bots\/([^/]+)\/(state|events|messages|cancel|visit|archive)$/.exec(pathname);
       if (botAction?.[1] && botAction[2]) {
         const botId = decodeURIComponent(botAction[1]);
@@ -220,9 +264,18 @@ export function mockSessionApi() {
         if (botAction[2] === "events") return openSse(path, detail, init.signal);
         if (botAction[2] === "messages") {
           const body = JSON.parse(String(init.body));
+          const bucket = uploadedFiles.get(`bot:${botId}`);
+          const attachments = Array.isArray(body.attachmentIds)
+            ? (body.attachmentIds as string[]).map(itemId => bucket?.get(itemId)).filter((item): item is ChatAttachment => Boolean(item))
+            : [];
           detail.router = {
             ...detail.router,
-            messages: [...detail.router.messages, { id: body.requestId, role: "user", text: body.input }],
+            messages: [...detail.router.messages, {
+              id: body.requestId,
+              role: "user",
+              text: body.input ?? "",
+              ...(attachments.length ? { attachments } : {}),
+            }],
           };
           publishBots(botId);
           return Response.json({ requestId: body.requestId, triggerId: `trg_${body.requestId}`, status: "accepted" }, { status: 202 });
@@ -334,6 +387,30 @@ export function mockSessionApi() {
       });
       return Response.json(created, { status: 201 });
     }
+    const sessionUpload = /^\/api\/sessions\/([^/]+)\/uploads$/.exec(pathname);
+    if (sessionUpload?.[1] && init.method === "POST") {
+      const sessionId = decodeURIComponent(sessionUpload[1]);
+      if (!views.has(sessionId)) return Response.json({ code: "SESSION_NOT_FOUND" }, { status: 404 });
+      const form = init.body as FormData;
+      const bucket = uploadedFiles.get(`session:${sessionId}`) ?? new Map<string, ChatAttachment>();
+      uploadedFiles.set(`session:${sessionId}`, bucket);
+      const created: ChatAttachment[] = [];
+      for (const [, entry] of form.entries()) {
+        if (entry instanceof File) {
+          const uploadId = crypto.randomUUID();
+          const item: ChatAttachment = {
+            id: uploadId,
+            name: entry.name || "file",
+            mediaType: entry.type || "application/octet-stream",
+            size: entry.size,
+            url: `/api/sessions/${encodeURIComponent(sessionId)}/uploads/${encodeURIComponent(uploadId)}`,
+          };
+          bucket.set(uploadId, item);
+          created.push(item);
+        }
+      }
+      return Response.json({ attachments: created }, { status: 201 });
+    }
     const action = /^\/api\/sessions\/([^/]+)\/(requests|cancel|approval|permission|queue)$/.exec(path);
     if (action?.[1]) {
       const current = view(action[1]);
@@ -360,14 +437,24 @@ export function mockSessionApi() {
         return Response.json(current);
       }
       if (action[2] === "requests") {
+        const bucket = uploadedFiles.get(`session:${current.session.id}`);
+        const attachments = Array.isArray(body.attachmentIds)
+          ? (body.attachmentIds as string[]).map(itemId => bucket?.get(itemId)).filter((item): item is ChatAttachment => Boolean(item))
+          : [];
         if (current.state.busy) {
-          current.state = { ...current.state, queuedRequests: [...(current.state.queuedRequests ?? []), { requestId: body.requestId, input: body.input }] };
+          current.state = { ...current.state, queuedRequests: [...(current.state.queuedRequests ?? []), {
+            requestId: body.requestId, input: body.input ?? "",
+            ...(attachments.length ? { attachments } : {}),
+          }] };
           publish(current.session.id);
           return Response.json({ requestId: body.requestId, status: "accepted" }, { status: 202 });
         }
         current.requestId = body.requestId;
         current.state = { ...current.state, busy: true, canSend: false, canQueue: true, canSteer: true, phase: "thinking",
-          messages: [...current.state.messages, { id: body.requestId, role: "user", text: body.input }] };
+          messages: [...current.state.messages, {
+            id: body.requestId, role: "user", text: body.input ?? "",
+            ...(attachments.length ? { attachments } : {}),
+          }] };
         publish(current.session.id);
         return Response.json({ requestId: body.requestId, status: "accepted" }, { status: 202 });
       }

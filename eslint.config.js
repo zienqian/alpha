@@ -19,10 +19,11 @@ export default [
           { sourceTag: 'layer:trace', onlyDependOnLibsWithTags: ['layer:trace', 'layer:adk'] },
           { sourceTag: 'layer:artifact', onlyDependOnLibsWithTags: ['layer:artifact'] },
           { sourceTag: 'layer:context', onlyDependOnLibsWithTags: ['layer:context', 'layer:adk', 'layer:artifact'] },
+          { sourceTag: 'layer:memory', onlyDependOnLibsWithTags: ['layer:memory', 'layer:adk'] },
           { sourceTag: 'layer:coding', onlyDependOnLibsWithTags: ['layer:coding', 'layer:adk', 'layer:provider', 'layer:session', 'layer:artifact'] },
           { sourceTag: 'layer:app', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider', 'layer:session', 'layer:coding', 'layer:trace'] },
           { sourceTag: 'layer:alphacode-cli', onlyDependOnLibsWithTags: ['layer:app-server', 'layer:provider', 'layer:session'] },
-          { sourceTag: 'layer:app-server', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider', 'layer:session', 'layer:coding', 'layer:trace', 'layer:context', 'layer:artifact'] },
+          { sourceTag: 'layer:app-server', onlyDependOnLibsWithTags: ['layer:adk', 'layer:provider', 'layer:session', 'layer:coding', 'layer:trace', 'layer:context', 'layer:artifact', 'layer:memory'] },
           { sourceTag: 'layer:web', onlyDependOnLibsWithTags: ['layer:trace'] }
         ]
       }]
@@ -55,6 +56,15 @@ export default [
     files: ['packages/adk-trace/src/**/*.ts'],
     ignores: ['packages/adk-trace/src/sqlite/**'],
     rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/adk' }, { name: '@alpha/adk/core', allowTypeImports: true }], patterns: [{ group: ['@alpha/adk/*', '!@alpha/adk/core', '@alpha/adk/src/**', '@alpha/adk-session', '@alpha/adk-session/**', '@alpha/provider', '@alpha/provider/**', 'bun:*', 'node:*', './sqlite/**', '../sqlite/**'] }] }] }
+  },
+  {
+    files: ['packages/adk-memory/src/**/*.ts'],
+    rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/adk' }, { name: '@alpha/adk/core', allowTypeImports: true }], patterns: [{ group: ['@alpha/adk/*', '!@alpha/adk/core', '@alpha/adk/src/**', '@alpha/adk-session', '@alpha/adk-session/**', '@alpha/provider', '@alpha/provider/**'] }] }] }
+  },
+  {
+    files: ['packages/adk-memory/src/**/*.ts'],
+    ignores: ['packages/adk-memory/src/sqlite/**', 'packages/adk-memory/src/fs/**'],
+    rules: { 'no-restricted-imports': ['error', { paths: [{ name: '@alpha/adk' }, { name: '@alpha/adk/core', allowTypeImports: true }], patterns: [{ group: ['@alpha/adk/*', '!@alpha/adk/core', '@alpha/adk/src/**', '@alpha/adk-session', '@alpha/adk-session/**', '@alpha/provider', '@alpha/provider/**', 'bun:*', 'node:*', './sqlite/**', '../sqlite/**', './fs/**', '../fs/**'] }] }] }
   },
   {
     files: ['apps/alphacode-app-server/src/chat/**/*.ts'],

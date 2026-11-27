@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { errorCode } from "../errors";
+import { publicAttachments } from "../input";
 import type { Approvals } from "./approval";
 import type { Chat, ChatMessage, ChatRunStatus, ChatRuntime, ChatState } from "./contracts";
 import { applyApproval, applyChatEvent, settlePendingTools, statusLabels } from "./messages";
@@ -28,15 +29,16 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals, restored?
   return {
     get state() { return state; },
     get canSteer() { return state.busy && !state.closing && Boolean(runtime.canSteer); },
-    steer(input) { return runtime.steer?.(input) ?? Promise.resolve(false); },
+    steer(input, attachments) { return runtime.steer?.(input, attachments) ?? Promise.resolve(false); },
     modelId: runtime.modelId,
     workspaceRoot: runtime.workspaceRoot,
     sessionId: runtime.sessionId,
     skills: runtime.skills,
     subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    async send(input, requestId) {
+    async send(input, requestId, attachments) {
       const text = input.trimStart().startsWith("/") ? input : input.trim();
-      if (!text.trim() || state.busy || !state.canSend || state.closing) return;
+      const visibleAttachments = publicAttachments(attachments);
+      if ((!text.trim() && !visibleAttachments?.length) || state.busy || !state.canSend || state.closing) return;
       const started = performance.now();
       let outcome: ChatRunStatus = "failed";
       let completion: ChatMessage["completion"];
@@ -46,10 +48,10 @@ export function createChat(runtime: ChatRuntime, approvals: Approvals, restored?
         // Tool results belong to the conversation, including earlier turns.
         // Clearing them here also removes them from every CLI/Web snapshot.
         messages: [...state.messages.map(message => message.completion ? { ...message, completion: undefined } : message),
-          { id: randomUUID(), role: "user", text }],
+          { id: randomUUID(), role: "user", text, ...(visibleAttachments?.length ? { attachments: visibleAttachments } : {}) }],
       });
       try {
-        const result = await runtime.send(text, requestId);
+        const result = await runtime.send(text, requestId, attachments);
         outcome = result.status;
         completion = result.completion;
         if (result.localText !== undefined) {

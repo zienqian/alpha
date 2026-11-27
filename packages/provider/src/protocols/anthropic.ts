@@ -15,7 +15,11 @@ function messagesForAnthropic(messages: Message[]): AnthropicMessageRequest['mes
         ? message.continuation.content as unknown as AnthropicMessageBlock[]
       : message.role === 'assistant'
         ? [...(message.content ? [{ type: 'text' as const, text: message.content }] : []), ...(message.toolCalls ?? []).map((call) => ({ type: 'tool_use' as const, id: call.id, name: call.name, input: call.arguments }))]
-        : [{ type: 'text', text: message.content }];
+        : typeof message.content === 'string'
+          ? [{ type: 'text', text: message.content }]
+          : message.content.map((part): AnthropicMessageBlock => part.type === 'text'
+            ? { type: 'text', text: part.text }
+            : { type: 'image', source: { type: 'base64', media_type: part.mediaType, data: part.data } });
     const previous = result.at(-1);
     if (previous?.role === role) previous.content.push(...blocks);
     else result.push({ role, content: blocks });

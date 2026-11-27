@@ -49,7 +49,7 @@ export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
     case "context.usage":
       return { ...state, contextUsage: event.usage };
     case "user.message":
-      return { ...state, messages: [...state.messages, { id: event.id, role: "user", text: event.text }] };
+      return { ...state, messages: [...state.messages, { id: event.id, role: "user", text: event.text, ...(event.attachments?.length ? { attachments: event.attachments } : {}) }] };
     case "session.title":
       return { ...state, sessionTitle: event.title, titleStatus: event.status };
     case "assistant.start":

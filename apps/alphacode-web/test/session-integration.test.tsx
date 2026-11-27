@@ -180,7 +180,7 @@ describe("server session integration", () => {
     await act(async () => api.publish("project-notes"));
     expect(await screen.findByRole("button", { name: "CLI 新建会话" })).toBeTruthy();
     expect(within(screen.getByRole("region", { name: "从这里，开始构建。" })).getByText("alphacode-web")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "新会话" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
     expect((screen.getByRole("textbox", { name: "消息草稿" })).textContent).toBe("继续当前项目");
   });
 

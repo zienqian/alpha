@@ -132,6 +132,8 @@
     "maxWorkersInherit": "Inherit global default ({{count}})",
     "workersCount_one": "{{count}} Worker",
     "workersCount_other": "{{count}} Workers",
+    "memoryMode": "Persistent memory",
+    "memoryModeHelp": "Allow this Bot's Router to read and update its local memory when global Auto Memory is enabled. Background Workers remain read-only.",
     "modelsSection": "Model configuration",
     "modelsHelp": "Configure Router (chat & orchestration) and Worker (coding & tools) independently, or use the same model for both.",
     "routerRole": "Router model",

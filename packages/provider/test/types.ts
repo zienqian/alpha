@@ -7,6 +7,7 @@ const config = defineProviderConfig({ providers: {
 const provider = createProvider(config);
 provider.use('primary', 'chat');
 provider.use('primary', 'chat').generate({ messages: [{ role: 'developer', content: 'rules' }, { role: 'user', content: 'hi' }], thinkingLevel: 'high', headers: { 'x-request-id': 'trace' } });
+provider.use('primary', 'chat').generate({ messages: [{ role: 'user', content: [{ type: 'text', text: 'inspect' }, { type: 'image', mediaType: 'image/png', data: 'iVBORw0KGgo=' }] }] });
 // @ts-expect-error Thinking levels have a stable logical vocabulary.
 provider.use('primary', 'chat').generate({ messages: [{ role: 'user', content: 'hi' }], thinkingLevel: 'extreme' });
 async function consumeStream() {

@@ -9,6 +9,9 @@ test('document links map from the trusted desktop origin to a browser route with
   expect(documentPath('alphacode-app://app' + path)).toBe(path);
   expect(documentPath('http://127.0.0.1:5173' + path, 'http://127.0.0.1:5173/')).toBe(path);
   expect(documentPath('alphacode-app://app/api/sessions/s/artifacts?reference=context%3A%2F%2Ftest&mode=open')).toContain('/artifacts?');
+  expect(documentPath('alphacode-app://app/api/sessions/s/uploads/12345678-1234-1234-1234-1234567890ab?mode=open')).toContain('/uploads/');
+  expect(documentPath('alphacode-app://app/api/sessions/s/uploads/12345678-1234-1234-1234-1234567890ab?mode=download')).toContain('mode=download');
+  expect(documentPath('alphacode-app://app/api/bots/bot_1/uploads/12345678-1234-1234-1234-1234567890ab?mode=open')).toContain('/bots/bot_1/uploads/');
   for (const value of ['https://evil.test' + path, 'alphacode-app://other' + path,
     'alphacode-app://app/api/info?mode=open', 'alphacode-app://app/api/sessions/s/files?mode=info',
     'alphacode-app://app/api/sessions/s/files?mode=preview', 'file:///C:/doc.html']) {

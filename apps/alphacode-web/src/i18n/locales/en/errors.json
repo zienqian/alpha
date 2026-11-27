@@ -20,5 +20,8 @@
   "permissionSave": "Could not save permissions: {{code}}. Previous permissions remain active.",
   "exit": "Exit failed. Press Ctrl+C to retry.",
   "openBrowser": "Open this URL in your browser: {{url}}",
-  "disconnected": "Disconnected from the local server. Waiting to reconnect."
+  "disconnected": "Disconnected from the local server. Waiting to reconnect.",
+  "uploadTooLarge": "File exceeds size limit (20 MB per file, 200 MB per session).",
+  "tooManyAttachments": "You can upload up to 10 attachments per message.",
+  "uploadFailed": "Could not upload files. Try again."
 }

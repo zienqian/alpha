@@ -278,6 +278,7 @@ export interface CreateBotInput {
   maxConcurrentWorkers?: number | null;
   routerModel?: BotModelOverride | null;
   workerModel?: BotModelOverride | null;
+  memoryMode?: BotMemoryMode;
 }
 
 export interface UpdateBotInput {
@@ -289,6 +290,7 @@ export interface UpdateBotInput {
   maxConcurrentWorkers?: number | null;
   routerModel?: BotModelOverridePatch | null;
   workerModel?: BotModelOverridePatch | null;
+  memoryMode?: BotMemoryMode;
 }
 
 export interface BotDeleteResult {

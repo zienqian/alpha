@@ -62,6 +62,7 @@
         "@alpha/adk": "workspace:*",
         "@alpha/adk-artifact": "workspace:*",
         "@alpha/adk-context": "workspace:*",
+        "@alpha/adk-memory": "workspace:*",
         "@alpha/adk-session": "workspace:*",
         "@alpha/adk-trace": "workspace:*",
         "@alpha/coding-agent": "workspace:*",
@@ -162,6 +163,13 @@
         "@alpha/adk-artifact": "workspace:*",
       },
     },
+    "packages/adk-memory": {
+      "name": "@alpha/adk-memory",
+      "version": "0.0.0",
+      "dependencies": {
+        "@alpha/adk": "workspace:*",
+      },
+    },
     "packages/adk-session": {
       "name": "@alpha/adk-session",
       "version": "0.0.0",
@@ -207,6 +215,8 @@
     "@alpha/adk-artifact": ["@alpha/adk-artifact@workspace:packages/adk-artifact"],
 
     "@alpha/adk-context": ["@alpha/adk-context@workspace:packages/adk-context"],
+
+    "@alpha/adk-memory": ["@alpha/adk-memory@workspace:packages/adk-memory"],
 
     "@alpha/adk-session": ["@alpha/adk-session@workspace:packages/adk-session"],
 

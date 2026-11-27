@@ -17,9 +17,20 @@ export type ContextEvent = {
   tokens?: { system: number; tools: number; summary: number; messages: number; total: number };
   inputBudget?: number; maxOutputTokens?: number; automatic?: boolean;
 };
+export interface ContextBeforeCompactEvent {
+  readonly namespace: string;
+  readonly sessionId: string;
+  readonly messages: readonly Message[];
+  readonly covered: number;
+  readonly cutoff: number;
+  readonly mode: ModelContextRequest['mode'];
+  readonly signal: AbortSignal;
+}
 export interface ContextOptions {
   namespace: string; sessionId: string; contextWindow?: number; maxOutputTokens?: number;
   auto?: boolean; store?: ContextStore; onEvent?: (event: ContextEvent) => void;
+  /** Invoked right before messages [covered, cutoff) are summarized; errors never block compaction. */
+  onBeforeCompact?: (event: ContextBeforeCompactEvent) => Awaitable<void>;
   /** Only reference fields whose exact source is recoverable; failures should return no projections. */
   toolInputReferences?: (history: readonly Message[], signal: AbortSignal) => Awaitable<readonly ModelToolInputReference[]>;
 }
@@ -149,6 +160,20 @@ export function createContextManager(options: ContextOptions) {
     emit({ type: 'start', before });
     try {
       let covered = active?.coverage ?? 0, summary = active?.summary;
+      if (options.onBeforeCompact && cutoff > covered) {
+        try {
+          await options.onBeforeCompact({
+            namespace: options.namespace,
+            sessionId: options.sessionId,
+            messages: history.slice(covered, cutoff),
+            covered,
+            cutoff,
+            mode: request.mode,
+            signal: request.signal,
+          });
+        } catch { /* Pre-compaction hooks must never block or fail context compaction. */ }
+        check();
+      }
       const sources = await Promise.all(history.slice(0, cutoff).map(async (message, index) => ({ message: projectedHistory[index],
         reference: await referenceForMessage(options, message) })));
       let calls = 0;

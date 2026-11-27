@@ -40,7 +40,7 @@ export function externalURL(value: string) {
 export function documentPath(value: string, development?: string) {
   if (!isRendererURL(value, development)) return undefined;
   const url = new URL(value);
-  if (!/^\/api\/sessions\/[^/]+\/(files|artifacts)$/.test(url.pathname)
+  if (!/^\/api\/(?:sessions\/[^/]+\/(?:files|artifacts|uploads\/[^/]+)|bots\/[^/]+\/uploads\/[^/]+)$/.test(url.pathname)
     || !['open', 'download'].includes(url.searchParams.get('mode') ?? '')) return undefined;
   return url.pathname + url.search + url.hash;
 }

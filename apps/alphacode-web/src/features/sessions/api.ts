@@ -64,11 +64,21 @@ export interface ToolRecord {
   outputIncomplete?: boolean;
 }
 
+export interface ChatAttachment {
+  id: string;
+  name: string;
+  mediaType: string;
+  size: number;
+  sha256?: string;
+  url?: string;
+}
+
 export interface HistoryMessage {
   sourceId?: string;
   id: string;
   role: "user" | "assistant" | "tool";
   text: string;
+  attachments?: readonly ChatAttachment[];
   note?: string;
   noteCode?: string;
   localResult?: LocalResult;
@@ -92,7 +102,7 @@ export interface SessionView {
     status: string;
     canSend: boolean;
     canQueue?: boolean;
-    queuedRequests?: readonly { requestId: string; input: string; steering?: boolean }[];
+    queuedRequests?: readonly { requestId: string; input: string; attachments?: readonly ChatAttachment[]; steering?: boolean }[];
     canSteer?: boolean;
     closing: boolean;
     settingsSaving: boolean;
@@ -175,8 +185,31 @@ export const updateQueue = (id: string, action: QueueAction) =>
   requestJson<SessionView>(`${sessionPath(id)}/queue`, AbortSignal.timeout(15_000), action);
 export const createSession = (projectId?: string) =>
   requestJson<SessionView>("/api/sessions", AbortSignal.timeout(15_000), { projectId });
-export const sendRequest = (id: string, requestId: string, input: string) =>
-  requestJson<RequestReceipt>(`${sessionPath(id)}/requests`, AbortSignal.timeout(15_000), { requestId, input });
+export async function uploadSessionFiles(id: string, files: readonly File[], signal: AbortSignal = AbortSignal.timeout(60_000)): Promise<ChatAttachment[]> {
+  const form = new FormData();
+  for (const file of files) form.append("files", file, file.name);
+  const response = await fetch(`${sessionPath(id)}/uploads`, {
+    method: "POST",
+    signal,
+    credentials: "omit",
+    redirect: "error",
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+    body: form,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as { code?: string };
+    throw new SessionApiError(response.status, body.code ?? `HTTP_${response.status}`);
+  }
+  if (!response.headers.get("content-type")?.includes("application/json")) {
+    throw new SessionApiError(response.status, "API_UNAVAILABLE");
+  }
+  const result = await response.json() as { attachments?: ChatAttachment[] };
+  return result.attachments ?? [];
+}
+export const sendRequest = (id: string, requestId: string, input: string, attachmentIds?: readonly string[]) =>
+  requestJson<RequestReceipt>(`${sessionPath(id)}/requests`, AbortSignal.timeout(15_000),
+    attachmentIds?.length ? { requestId, input, attachmentIds } : { requestId, input });
 export const cancelRequest = (id: string, requestId: string, queuedOnly?: boolean) =>
   requestJson(`${sessionPath(id)}/cancel`, AbortSignal.timeout(15_000), { requestId, ...(queuedOnly ? { queuedOnly } : {}) });
 export const answerApproval = (id: string, requestId: string, approvalId: string, allow: boolean) =>
@@ -189,6 +222,9 @@ export function actionErrorMessage(t: Translate, error: unknown) {
     if (error.code === "SESSION_BUSY") return t("errors:busy");
     if (error.code === "QUEUE_CONFLICT") return t("errors:queueConflict");
     if (error.code === "STALE_APPROVAL" || error.code === "STALE_REQUEST") return t("errors:stale");
+    if (error.code === "UPLOAD_TOO_LARGE" || error.code === "UPLOAD_QUOTA_EXCEEDED") return t("errors:uploadTooLarge");
+    if (error.code === "TOO_MANY_ATTACHMENTS") return t("errors:tooManyAttachments");
+    if (error.code === "ATTACHMENT_NOT_FOUND" || error.code === "INVALID_ATTACHMENT" || error.code === "UPLOAD_FILE_REQUIRED") return t("errors:uploadFailed");
     if (error.status === 403) return t("errors:access");
     if (error.status === 413 || error.code === "INVALID_INPUT") return t("errors:input");
     if (error.code === "SESSION_NOT_FOUND" || error.code === "PROJECT_NOT_FOUND") return t("errors:missing");

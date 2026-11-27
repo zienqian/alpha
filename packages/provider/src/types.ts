@@ -2,8 +2,13 @@
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type JsonObject = { [key: string]: Json };
 
+export type UserContentPart =
+  | { readonly type: 'text'; readonly text: string }
+  | { readonly type: 'image'; readonly mediaType: string; readonly data: string };
+
 export type Message =
-  | { role: 'system' | 'developer' | 'user'; content: string }
+  | { role: 'system' | 'developer'; content: string }
+  | { role: 'user'; content: string | readonly UserContentPart[] }
   | { role: 'assistant'; content: string; toolCalls?: ToolCall[]; continuation?: AnthropicContinuation }
   | { role: 'tool'; toolCallId: string; content: string };
 /** Opaque protocol blocks needed to continue an Anthropic tool-use turn. */

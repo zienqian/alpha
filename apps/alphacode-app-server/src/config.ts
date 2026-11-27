@@ -1,9 +1,10 @@
-import type { LanguagePreference, SkillsSettings } from "./global-config";
+import type { LanguagePreference, MemoryGlobalDefaults, SkillsSettings } from "./global-config";
 import type { PermissionMode } from "./chat/contracts";
 
 export interface AppConfig {
   language?: LanguagePreference;
   skills?: SkillsSettings;
+  memory?: MemoryGlobalDefaults;
   workspaceRoot: string;
   projectName?: string;
   databasePath: string;

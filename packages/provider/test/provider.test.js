@@ -608,3 +608,64 @@ test('validates optional model metadata and keeps custom adapter receiver', asyn
   assert.equal((await collect(model.stream({ messages: [{ role: 'user', content: 'hi' }] })))[0].result.text, 'kept');
   assert.equal(Object.hasOwn(customModel, 'metadata'), false);
 });
+
+test('multimodal user content parts encode cleanly across completions, responses, and anthropic protocols', async () => {
+  const parts = [
+    { type: 'text', text: 'describe image' },
+    { type: 'image', mediaType: 'image/png', data: 'iVBORw0KGgo=' },
+  ];
+  const requests = {};
+  const provider = createProvider(config(), {
+    getEnv: () => 'key',
+    fetch: async (url, init) => {
+      const target = String(url);
+      const body = JSON.parse(init.body);
+      if (target.includes('chat/completions')) {
+        requests.completions = body;
+        return reply({ choices: [{ finish_reason: 'stop', message: { content: 'ok' } }] });
+      }
+      if (target.includes('/responses')) {
+        requests.responses = body;
+        return reply({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: 'ok' }] }] });
+      }
+      requests.anthropic = body;
+      return reply({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'ok' }] });
+    },
+  });
+  await provider.use('local', 'chat').generate({ messages: [{ role: 'user', content: parts }] });
+  await provider.use('openai', 'chat').generate({ messages: [{ role: 'user', content: parts }] });
+  await provider.use('anthropic', 'chat').generate({ messages: [{ role: 'user', content: parts }] });
+
+  assert.deepEqual(requests.completions.messages[0], {
+    role: 'user',
+    content: [
+      { type: 'text', text: 'describe image' },
+      { type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw0KGgo=' } },
+    ],
+  });
+  assert.deepEqual(requests.responses.input[0], {
+    role: 'user',
+    content: [
+      { type: 'input_text', text: 'describe image' },
+      { type: 'input_image', image_url: 'data:image/png;base64,iVBORw0KGgo=' },
+    ],
+  });
+  assert.deepEqual(requests.anthropic.messages[0], {
+    role: 'user',
+    content: [
+      { type: 'text', text: 'describe image' },
+      { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'iVBORw0KGgo=' } },
+    ],
+  });
+
+  const model = provider.use('local', 'chat');
+  for (const invalidContent of [
+    [],
+    [{ type: 'text', text: 123 }],
+    [{ type: 'image', mediaType: 'text/plain', data: 'abc' }],
+    [{ type: 'image', mediaType: 'image/png', data: '' }],
+    [{ type: 'unknown' }],
+  ]) {
+    await assert.rejects(() => model.generate({ messages: [{ role: 'user', content: invalidContent }] }), { code: 'INVALID_INPUT' });
+  }
+});

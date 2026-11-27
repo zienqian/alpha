@@ -29,7 +29,7 @@ async function defaultConfig(workspaceRoot: string, databasePath: string): Promi
     baseURL: process.env.ADK_BASE_URL ?? defaults.baseURL ?? "https://api.openai.com/v1",
     apiKeyEnv: process.env.ADK_API_KEY_ENV ?? defaults.apiKeyEnv ?? "OPENAI_API_KEY",
     noAuth: auth ? auth === "none" : process.env.ADK_API_KEY_ENV !== undefined ? false : defaults.noAuth ?? false,
-    permissionMode: "ask", skills: defaults.skills, traceEnabled: process.env.ALPHACODE_TRACE !== "0",
+    permissionMode: "ask", skills: defaults.skills, memory: defaults.memory, traceEnabled: process.env.ALPHACODE_TRACE !== "0",
     globalInstructions: instructions, globalInstructionsPath: instructionsPath };
 }
 

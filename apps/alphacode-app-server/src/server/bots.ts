@@ -11,7 +11,16 @@ import {
   type UpdateBotInput,
 } from "../bots/contracts";
 import type { BotManager } from "../bots/manager";
+import { documentResponse } from "./document-response";
 import { fail, jsonBody, requiredString } from "./security";
+import {
+  botUploadScope,
+  botUploadUrl,
+  parseAttachmentIds,
+  parseUploadRequest,
+  toChatAttachment,
+  type UploadStore,
+} from "../uploads";
 
 function parseRolePatch(raw: unknown): BotRoleModelPatch | null {
   if (raw === null) return null;
@@ -119,6 +128,11 @@ function parsePermissionMode(value: unknown): "ask" | "auto" | "full" | null {
   return fail(400, "INVALID_PERMISSION_MODE");
 }
 
+function parseMemoryMode(value: unknown): "alphacode" | "off" {
+  if (value === "alphacode" || value === "off") return value;
+  return fail(400, "INVALID_CONFIG");
+}
+
 function parseCreateBot(body: Record<string, unknown>): CreateBotInput {
   const name = requiredString(body, "name", 120);
   const projectId = requiredString(body, "projectId", 256);
@@ -137,11 +151,12 @@ function parseCreateBot(body: Record<string, unknown>): CreateBotInput {
   }
   if (body.routerModel !== undefined) input.routerModel = toModelOverride(parseRolePatch(body.routerModel));
   if (body.workerModel !== undefined) input.workerModel = toModelOverride(parseRolePatch(body.workerModel));
+  if (body.memoryMode !== undefined) input.memoryMode = parseMemoryMode(body.memoryMode);
   return input;
 }
 
 function parseUpdateBot(body: Record<string, unknown>): UpdateBotInput {
-  const allowed = new Set(["name", "instructions", "projectId", "appearance", "permissionMode", "maxConcurrentWorkers", "routerModel", "workerModel"]);
+  const allowed = new Set(["name", "instructions", "projectId", "appearance", "permissionMode", "maxConcurrentWorkers", "routerModel", "workerModel", "memoryMode"]);
   for (const key of Object.keys(body)) {
     if (!allowed.has(key)) return fail(400, "INVALID_BOT_UPDATE");
   }
@@ -162,6 +177,7 @@ function parseUpdateBot(body: Record<string, unknown>): UpdateBotInput {
   }
   if (body.routerModel !== undefined) patch.routerModel = parseRolePatch(body.routerModel);
   if (body.workerModel !== undefined) patch.workerModel = parseRolePatch(body.workerModel);
+  if (body.memoryMode !== undefined) patch.memoryMode = parseMemoryMode(body.memoryMode);
   return patch;
 }
 
@@ -247,6 +263,7 @@ function createSnapshotStream<T extends { sequence: number }>(options: {
 export function createBotsRoutes(options: {
   manager: BotManager;
   instanceId: string;
+  uploads?: UploadStore;
   registerStream: (close: () => void) => () => void;
 }) {
   return async (request: Request, url: URL): Promise<Response> => {
@@ -329,6 +346,43 @@ export function createBotsRoutes(options: {
       return fail(405, "METHOD_NOT_ALLOWED");
     }
 
+    // Bot uploads: /api/bots/:botId/uploads[/:uploadId]
+    const uploadMatch = /^\/api\/bots\/([^/]+)\/uploads(?:\/([^/]+))?$/.exec(path);
+    if (uploadMatch?.[1]) {
+      const botId = decodeURIComponent(uploadMatch[1]);
+      const uploadId = uploadMatch[2] ? decodeURIComponent(uploadMatch[2]) : undefined;
+      if (!options.manager.hasBot(botId)) return fail(404, "BOT_NOT_FOUND");
+      if (!options.uploads) return fail(503, "UPLOADS_UNAVAILABLE");
+      if (!uploadId) {
+        if (request.method !== "POST") return fail(405, "METHOD_NOT_ALLOWED");
+        const files = await parseUploadRequest(request);
+        const stored = [];
+        for (const file of files) {
+          stored.push(await options.uploads.save(botUploadScope(botId), file));
+        }
+        return Response.json({
+          attachments: stored.map(item => toChatAttachment(item, botUploadUrl(botId, item.id))),
+        }, { status: 201 });
+      }
+      if (request.method === "GET") {
+        const found = await options.uploads.readBytes(botUploadScope(botId), uploadId);
+        if (!found) return fail(404, "ATTACHMENT_NOT_FOUND");
+        return documentResponse({
+          path: found.upload.name,
+          name: found.upload.name,
+          size: found.upload.size,
+          mediaType: found.upload.mediaType,
+          body: new Blob([found.bytes]),
+          createdAt: found.upload.createdAt,
+        }, url);
+      }
+      if (request.method === "DELETE") {
+        await options.uploads.remove(botUploadScope(botId), uploadId);
+        return Response.json({ ok: true });
+      }
+      return fail(405, "METHOD_NOT_ALLOWED");
+    }
+
     // Single bot sub-actions: /api/bots/:botId/(state|events|messages|cancel|visit|archive)
     const botAction = /^\/api\/bots\/([^/]+)\/(state|events|messages|cancel|visit|archive)$/.exec(path);
     if (botAction?.[1] && botAction[2]) {
@@ -354,8 +408,12 @@ export function createBotsRoutes(options: {
       if (action === "messages") {
         const body = await jsonBody(request);
         const requestId = requiredString(body, "requestId", 100);
-        const input = requiredString(body, "input");
-        const receipt = await options.manager.sendMessage(botId, requestId, input);
+        const attachmentIds = parseAttachmentIds(body.attachmentIds);
+        const rawInput = body.input === undefined ? "" : body.input;
+        if (typeof rawInput !== "string" || rawInput.length > 100000 || (!rawInput.trim() && attachmentIds.length === 0)) {
+          return fail(400, "INVALID_INPUT");
+        }
+        const receipt = await options.manager.sendMessage(botId, requestId, rawInput, attachmentIds.length ? attachmentIds : undefined);
         return Response.json(receipt, { status: 202 });
       }
       if (action === "cancel") {

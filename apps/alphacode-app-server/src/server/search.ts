@@ -22,7 +22,7 @@ export function searchSession(session: SessionInfo, messages: readonly ChatMessa
   const snippets: SessionSearchResult["snippets"] = [];
   let matchCount = 0;
   for (const message of messages) {
-    const text = [message.text, message.tool?.description, message.tool?.command, message.tool?.path,
+    const text = [message.text, ...(message.attachments?.map(item => item.name) ?? []), message.tool?.description, message.tool?.command, message.tool?.path,
       message.tool?.output, message.tool?.error].filter(Boolean).join("\n").replace(/\s+/g, " ");
     const match = pattern.exec(text);
     if (!match) continue;

@@ -309,4 +309,67 @@ describe("live conversation", () => {
       .toBe(JSON.stringify({ requestId: "cli-request", approvalId: "approval-1", allow: true })));
     await waitFor(() => expect(screen.queryByRole("button", { name: "允许一次" })).toBeNull());
   });
+
+  it("uploads attached files, sends attachment-only or text+file messages, and renders them in history", async () => {
+    const app = await open();
+    const fileInput = app.container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).toBeTruthy();
+
+    const doc = new File(["# 规格文档"], "spec.md", { type: "text/markdown" });
+    fireEvent.change(fileInput, { target: { files: [doc] } });
+    expect(await screen.findByText("spec.md")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement).disabled).toBe(false);
+
+    // Send with attachment only (empty text).
+    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+    await waitFor(() => expect(sends()).toHaveLength(1));
+    const uploadCall = api.fetch.mock.calls.find(([url, init]) => url === `${path}/uploads` && init.method === "POST");
+    expect(uploadCall).toBeTruthy();
+    const sentBody = JSON.parse(String(sends()[0]?.[1].body)) as { input: string; attachmentIds?: string[] };
+    expect(sentBody.input).toBe("");
+    expect(sentBody.attachmentIds).toHaveLength(1);
+    expect(await screen.findByRole("link", { name: "打开附件 spec.md" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "移除附件 spec.md" })).toBeNull();
+  });
+
+  it("creates a real session before uploading files from a local welcome draft", async () => {
+    window.history.replaceState(null, "", "/");
+    const app = render(<AppProviders><App /></AppProviders>);
+    await screen.findByRole("button", { name: "搭建前端工作区" });
+    fireEvent.click(screen.getByRole("button", { name: "在 alphacode-web 中新建会话" }));
+
+    const fileInput = app.container.querySelector('input[type="file"]') as HTMLInputElement;
+    const report = new File(["hello world"], "report.txt", { type: "text/plain" });
+    fireEvent.change(fileInput, { target: { files: [report] } });
+    replaceDraft(input(), "请总结这份报告");
+    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+
+    await waitFor(() => expect(sends()).toHaveLength(1));
+    const createdId = new URL(window.location.href).searchParams.get("session");
+    expect(createdId).toBeTruthy();
+    expect(api.fetch.mock.calls.some(([url, init]) => url === `/api/sessions/${createdId}/uploads` && init.method === "POST")).toBe(true);
+    const body = JSON.parse(String(sends()[0]?.[1].body)) as { input: string; attachmentIds?: string[] };
+    expect(body.input).toBe("请总结这份报告");
+    expect(body.attachmentIds).toHaveLength(1);
+    expect(await screen.findByRole("link", { name: "打开附件 report.txt" })).toBeTruthy();
+  });
+
+  it("keeps the draft and allows retrying when file upload fails", async () => {
+    const app = await open();
+    api.overrides.set(`${path}/uploads`, () => Response.json({ code: "UPLOAD_TOO_LARGE" }, { status: 413 }));
+    const fileInput = app.container.querySelector('input[type="file"]') as HTMLInputElement;
+    const big = new File(["payload"], "large.txt", { type: "text/plain" });
+    fireEvent.change(fileInput, { target: { files: [big] } });
+    replaceDraft(input(), "重试上传");
+    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+
+    expect(await screen.findByText(/文件超过大小上限/)).toBeTruthy();
+    expect(sends()).toHaveLength(0);
+    expect(screen.getByRole("button", { name: "移除附件 large.txt" })).toBeTruthy();
+
+    api.overrides.delete(`${path}/uploads`);
+    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+    await waitFor(() => expect(sends()).toHaveLength(1));
+    expect(await screen.findByRole("link", { name: "打开附件 large.txt" })).toBeTruthy();
+  });
 });

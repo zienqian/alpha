@@ -20,5 +20,8 @@
   "permissionSave": "无法保存权限（{{code}}），原权限仍然有效。",
   "exit": "退出失败，请按 Ctrl+C 重试。",
   "openBrowser": "请在浏览器中打开：{{url}}",
-  "disconnected": "已与本地服务断开，请等待重新连接。"
+  "disconnected": "已与本地服务断开，请等待重新连接。",
+  "uploadTooLarge": "文件超过大小上限（单个 20 MB，会话总计 200 MB）。",
+  "tooManyAttachments": "单条消息最多上传 10 个附件。",
+  "uploadFailed": "文件上传失败，请重试。"
 }

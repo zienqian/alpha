@@ -1,0 +1,1356 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Alpha Memory 技术方案设计（v2.0 · 对标 Claude Code × OpenAI Codex）</title>
+<style>
+:root{
+  --shell:#f5f6f8;
+  --paper:#ffffff;
+  --sidebar:#f0f2f5;
+  --ink:#171717;
+  --muted:#62666d;
+  --line:#e4e6eb;
+  --line-strong:#d1d5dc;
+  --primary:#171717;
+  --primary-fg:#fafafa;
+  --accent:#2563eb;
+  --accent-soft:#eff4ff;
+  --accent-ink:#1d4ed8;
+  --ok:#15803d;
+  --ok-soft:#eaf8f0;
+  --warn:#a16207;
+  --warn-soft:#fef6e4;
+  --danger:#b91c1c;
+  --danger-soft:#fef0f0;
+  --purple:#6d28d9;
+  --purple-soft:#f3effe;
+  --teal:#0f766e;
+  --teal-soft:#ecfdf5;
+  --code:#f6f7f9;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  color-scheme:light dark;
+  font:15px/1.75 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI Variable","Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  color:var(--ink);
+  background:var(--shell);
+}
+[data-theme="dark"]{
+  --shell:#141416;
+  --paper:#1b1c1f;
+  --sidebar:#18191c;
+  --ink:#f2f3f5;
+  --muted:#a1a5ae;
+  --line:#2c2e33;
+  --line-strong:#3d4047;
+  --primary:#ebebed;
+  --primary-fg:#171717;
+  --accent:#60a5fa;
+  --accent-soft:#1d283a;
+  --accent-ink:#bfdbfe;
+  --ok:#4ade80;
+  --ok-soft:#162c1f;
+  --warn:#fbbf24;
+  --warn-soft:#302614;
+  --danger:#f87171;
+  --danger-soft:#351c1d;
+  --purple:#c084fc;
+  --purple-soft:#2a1f38;
+  --teal:#2dd4bf;
+  --teal-soft:#122b28;
+  --code:#222428;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.28);
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --shell:#141416;
+    --paper:#1b1c1f;
+    --sidebar:#18191c;
+    --ink:#f2f3f5;
+    --muted:#a1a5ae;
+    --line:#2c2e33;
+    --line-strong:#3d4047;
+    --primary:#ebebed;
+    --primary-fg:#171717;
+    --accent:#60a5fa;
+    --accent-soft:#1d283a;
+    --accent-ink:#bfdbfe;
+    --ok:#4ade80;
+    --ok-soft:#162c1f;
+    --warn:#fbbf24;
+    --warn-soft:#302614;
+    --danger:#f87171;
+    --danger-soft:#351c1d;
+    --purple:#c084fc;
+    --purple-soft:#2a1f38;
+    --teal:#2dd4bf;
+    --teal-soft:#122b28;
+    --code:#222428;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.28);
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--shell);color:var(--ink);-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:4px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.layout{max-width:1420px;margin:0 auto;display:grid;grid-template-columns:256px minmax(0,1fr);gap:26px;padding:24px 28px 72px}
+aside.toc{position:sticky;top:24px;align-self:start;max-height:calc(100vh - 48px);overflow:auto;background:var(--sidebar);border:1px solid var(--line);border-radius:14px;padding:16px 14px;font-size:13px}
+.toc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 12px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.toc-brand{font-weight:600;font-size:14px;letter-spacing:-.015em}
+.toc-sub{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px}
+.toc a{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;color:var(--muted);text-decoration:none;transition:background .15s,color .15s}
+.toc a:hover{background:var(--paper);color:var(--ink)}
+.toc a.active{background:var(--paper);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.toc-num{font-family:"Geist Mono","Cascadia Code",Consolas,monospace;font-size:11px;opacity:.7;min-width:18px;font-variant-numeric:tabular-nums}
+.toc-group{font-size:11px;font-weight:600;color:var(--muted);padding:12px 8px 4px;letter-spacing:.04em}
+
+.theme-btn{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer;line-height:1.4}
+.theme-btn:hover{border-color:var(--ink)}
+
+main{min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:40px 44px;box-shadow:var(--shadow)}
+header.doc-header{padding-bottom:28px;border-bottom:1px solid var(--line)}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent-soft);padding:4px 10px;border-radius:99px}
+h1{font-size:clamp(26px,3.1vw,36px);line-height:1.22;letter-spacing:-.03em;margin:16px 0 12px}
+.lead{font-size:15.5px;color:var(--muted);max-width:880px;margin:0 0 18px}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;color:var(--muted)}
+.meta-row span{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:6px;background:var(--code);border:1px solid var(--line)}
+
+section{padding:32px 0;border-bottom:1px solid var(--line);scroll-margin-top:20px}
+section:last-of-type{border-bottom:0;padding-bottom:8px}
+h2{font-size:22px;line-height:1.35;letter-spacing:-.02em;margin:0 0 16px;display:flex;align-items:center;gap:10px}
+.sec-badge{font-family:"Geist Mono","Cascadia Code",Consolas,monospace;font-size:12px;color:var(--accent-ink);background:var(--accent-soft);padding:2px 8px;border-radius:6px;font-variant-numeric:tabular-nums}
+h3{font-size:16.5px;line-height:1.45;margin:24px 0 10px;letter-spacing:-.01em}
+p{margin:8px 0 14px}
+ul,ol{padding-left:22px;margin:8px 0 16px}
+li{margin:6px 0}
+
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
+.cards-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0}
+.cards-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.card{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--paper)}
+.card-tint{background:var(--shell)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;margin-bottom:8px}
+.tag-blue{background:var(--accent-soft);color:var(--accent-ink)}
+.tag-ok{background:var(--ok-soft);color:var(--ok)}
+.tag-warn{background:var(--warn-soft);color:var(--warn)}
+.tag-purple{background:var(--purple-soft);color:var(--purple)}
+.tag-danger{background:var(--danger-soft);color:var(--danger)}
+.tag-teal{background:var(--teal-soft);color:var(--teal)}
+.tag-neutral{background:var(--code);color:var(--muted);border:1px solid var(--line)}
+.card strong{display:block;font-size:14.5px;margin-bottom:6px}
+.card p{font-size:13px;color:var(--muted);margin:0;line-height:1.65}
+
+.callout{padding:14px 18px;border-radius:10px;border-left:3px solid var(--accent);background:var(--accent-soft);margin:16px 0;font-size:13.8px}
+.callout.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.callout.ok{border-left-color:var(--ok);background:var(--ok-soft)}
+.callout.purple{border-left-color:var(--purple);background:var(--purple-soft)}
+.callout.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+.callout strong{color:var(--ink)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:16px 0}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px;background:var(--paper)}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+th{background:var(--code);font-weight:600;color:var(--ink);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+
+code,pre{font-family:"Geist Mono","Cascadia Code",Consolas,"SFMono-Regular",monospace}
+code{font-size:.84em;background:var(--code);padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}
+pre{margin:14px 0;padding:16px 18px;border-radius:12px;background:var(--code);border:1px solid var(--line);overflow:auto;font-size:12.3px;line-height:1.68}
+pre code{padding:0;background:none}
+
+.diagram-card{border:1px solid var(--line);border-radius:14px;background:var(--shell);padding:16px 18px 14px;margin:18px 0}
+.diagram-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.diagram-title{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.diagram-caption{font-size:12px;color:var(--muted)}
+.diagram-scroll{overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px}
+.diagram-scroll svg{display:block;width:100%;height:auto;min-width:780px}
+.svg-text{font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;fill:var(--ink)}
+.svg-muted{font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;fill:var(--muted)}
+.svg-mono{font-family:"Geist Mono","Cascadia Code",Consolas,monospace;fill:var(--ink)}
+
+/* Interactive Prototype: File-First Memory Workbench */
+.wireframe{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--shell);margin:18px 0;box-shadow:var(--shadow)}
+.wf-titlebar{min-height:40px;background:var(--sidebar);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:6px 12px;font-size:12px;color:var(--muted);gap:10px;flex-wrap:wrap}
+.wf-dots{display:flex;gap:6px;align-items:center}
+.wf-dots i{display:block;width:10px;height:10px;border-radius:50%;background:var(--line-strong)}
+.wf-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.wf-pill-btn{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:8px;padding:4px 10px;font-size:11.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1.4}
+.wf-pill-btn:hover{border-color:var(--ink)}
+.wf-pill-btn[aria-pressed="true"]{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
+.wf-body{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:490px}
+.wf-tree{background:var(--sidebar);border-right:1px solid var(--line);padding:12px 10px;display:flex;flex-direction:column;gap:4px;font-size:12.5px}
+.wf-scope-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:8px}
+.wf-scope-tab{border:1px solid var(--line);background:var(--paper);color:var(--muted);border-radius:7px;padding:5px 4px;font-size:11px;font-weight:600;cursor:pointer;text-align:center}
+.wf-scope-tab.active{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
+.wf-group-label{font-size:10.5px;font-weight:600;color:var(--muted);padding:8px 8px 2px;letter-spacing:.04em;text-transform:uppercase}
+.wf-file-row{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:var(--ink);border-radius:8px;padding:6px 8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;font-family:"Geist Mono","Cascadia Code",Consolas,monospace}
+.wf-file-row:hover{background:var(--paper)}
+.wf-file-row.active{background:var(--paper);border-color:var(--line-strong);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.wf-mini-tag{font-family:"Inter",sans-serif;font-size:10px;padding:1px 5px;border-radius:99px;font-weight:600;flex-shrink:0}
+.wf-mini-tag.blue{background:var(--accent-soft);color:var(--accent-ink)}
+.wf-mini-tag.ok{background:var(--ok-soft);color:var(--ok)}
+.wf-mini-tag.warn{background:var(--warn-soft);color:var(--warn)}
+.wf-mini-tag.purp{background:var(--purple-soft);color:var(--purple)}
+.wf-mini-tag.muted{background:var(--code);color:var(--muted)}
+.wf-meter{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:11px;color:var(--muted);margin-top:auto}
+.wf-bar-track{height:6px;border-radius:99px;background:var(--code);overflow:hidden;margin:5px 0 4px}
+.wf-bar-fill{height:100%;border-radius:99px;background:var(--accent);transition:width .2s}
+
+.wf-editor{background:var(--paper);display:flex;flex-direction:column;min-width:0}
+.wf-editor-head{padding:11px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.wf-path{font-family:"Geist Mono","Cascadia Code",Consolas,monospace;font-size:12px;color:var(--ink);font-weight:600}
+.wf-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.wf-btn-sm{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer;white-space:nowrap}
+.wf-btn-sm:hover{border-color:var(--ink)}
+.wf-btn-sm.primary{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
+.wf-btn-sm.ok{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.wf-btn-sm.warn{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.wf-code-area{flex:1;padding:16px 18px;overflow:auto;max-height:390px}
+.wf-code-area pre{margin:0;border-radius:10px;font-size:12px;line-height:1.68}
+.wf-dream-bar{border-top:1px solid var(--line);background:var(--shell);padding:10px 16px;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.wf-steps{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.wf-step{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);background:var(--paper);color:var(--muted)}
+.wf-step.done{background:var(--ok-soft);color:var(--ok);border-color:var(--ok);font-weight:600}
+.wf-step.running{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+
+.foot{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+@media(max-width:1080px){
+  .layout{grid-template-columns:1fr;padding:16px}
+  aside.toc{position:static;max-height:none}
+  main{padding:24px 20px}
+  .cards,.cards-3,.cards-4{grid-template-columns:1fr}
+  .wf-body{grid-template-columns:1fr}
+  .wf-tree{border-right:0;border-bottom:1px solid var(--line)}
+}
+@media print{
+  aside.toc,.theme-btn,.wf-controls{display:none!important}
+  .layout{display:block;padding:0}
+  main{border:0;box-shadow:none;padding:0}
+  section{break-inside:auto}
+  .diagram-card,.card,pre,tr{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc" aria-label="文档目录">
+    <div class="toc-head">
+      <div>
+        <div class="toc-brand">Alpha Memory</div>
+        <span class="toc-sub">Claude Code × Codex · v2.0</span>
+      </div>
+      <button type="button" class="theme-btn" id="themeToggle" title="切换浅色/深色主题">主题</button>
+    </div>
+    <div class="toc-group">聚焦标杆调研</div>
+    <a href="#s1"><span class="toc-num">01</span>Claude Code vs Codex 拆解</a>
+    <a href="#s2"><span class="toc-num">02</span>Alpha 架构融合与系统边界</a>
+    <div class="toc-group">核心设计</div>
+    <a href="#s3"><span class="toc-num">03</span>Markdown 文件 × 极简 SQLite</a>
+    <a href="#s4"><span class="toc-num">04</span>双阶段流水线与 Auto-Dream</a>
+    <a href="#s5"><span class="toc-num">05</span>注入、检索与安全防火墙</a>
+    <div class="toc-group">交互与落地</div>
+    <a href="#s6"><span class="toc-num">06</span>极简开关与磁盘文件演练</a>
+    <a href="#s7"><span class="toc-num">07</span>包边界、契约与接口接入</a>
+    <a href="#s8"><span class="toc-num">08</span>两阶段实施与待确认点</a>
+  </aside>
+
+  <main>
+    <header class="doc-header">
+      <div class="eyebrow">FOCUSED DESIGN · CLAUDE CODE × OPENAI CODEX · @ALPHA/ADK-MEMORY · V2.0</div>
+      <h1>Alpha Memory 模块技术方案设计</h1>
+      <p class="lead">收敛掉重型向量库、知识图谱等泛化框架，只向两个最成功的实战 Coding Agent —— <strong>Claude Code（Anthropic）</strong>与 <strong>OpenAI Codex CLI</strong> 取经。两家不约而同地选择了<strong>「本地 Markdown 文件作为记忆本体 + 极简常驻索引 + 后台异步抽取与整固 + 零向量库起步」</strong>。本方案融合两家精华，贴合 Alpha 现有的 <code>AGENTS.md</code>、<code>bun:sqlite</code>、<code>@alpha/adk-context</code> 与 Multi-Bot Super-agent 架构，给出极简、高可靠、零外置依赖的落地设计。</p>
+      <div class="meta-row">
+        <span>状态：聚焦评审稿 v2.0（暂不写代码）</span>
+        <span>对标标杆：Claude Code (Auto Memory + Auto-Dream) &amp; OpenAI Codex (Stage 1 / Stage 2 Pipeline)</span>
+        <span>拟新增包：@alpha/adk-memory（layer:memory）</span>
+        <span>100% 离线可读 HTML + 可交互原型</span>
+      </div>
+    </header>
+
+    <!-- ================================================================== -->
+    <!-- 01 -->
+    <!-- ================================================================== -->
+    <section id="s1">
+      <h2><span class="sec-badge">01</span>Claude Code vs OpenAI Codex 记忆实现深度拆解</h2>
+      <p>很有意思的一个工程共识：<strong>Claude Code 和 OpenAI Codex 都没有引入 Qdrant、Neo4j 或复杂多跳图检索</strong>。在真实的软件工程场景里，代码仓本身就是最好的结构化真相源，Memory 要解决的是<strong>「代码里查不到的上下文：用户偏好、历史纠正、项目隐性约束与踩坑经验」</strong>。</p>
+
+      <div class="cards">
+        <div class="card card-tint">
+          <span class="tag tag-purple">标杆 A · Anthropic Claude Code</span>
+          <strong>指针索引 <code>MEMORY.md</code> + 主题文件 + <code>extractMemories</code> + <code>autoDream</code></strong>
+          <p>把记忆组织成一个项目级本地目录 <code>~/.claude/projects/&lt;project-hash&gt;/memory/</code>（同一 Git 仓的多个 Worktree 共享同一份记忆）。<br>
+          • <strong>常驻层</strong>：只加载 <code>MEMORY.md</code> 前 <strong>200 行（约 25KB）</strong>，里面只放“一句话指针链接”，超行静默截断。<br>
+          • <strong>详情层</strong>：独立主题文件 <code>*.md</code>，带 YAML frontmatter（<code>name / description / type</code>），严格分 4 类：<code>user / feedback / project / reference</code>，明令禁止记录可从代码/git 推导的事实。<br>
+          • <strong>按需召回</strong>：靠 <code>MEMORY.md</code> 指针 + <code>findRelevantMemories</code> 扫描 frontmatter 按需读文件；且强调“<strong>行动前以当前代码为准复核旧记忆</strong>”。<br>
+          • <strong>写入与整理</strong>：既允许对话中直接写，也在轮次结束时由轻量后台子 Agent（<code>extractMemories</code>，上限 5 轮，若主 Agent 本轮已写则跳过防冲突）补漏；长期靠 <strong><code>autoDream</code></strong>（满足 24h + 5 会话 + <code>lockfile</code> 三道门控）分 <strong>Orient → Gather → Consolidate → Prune</strong> 四步清理腐烂记忆。</p>
+        </div>
+        <div class="card card-tint">
+          <span class="tag tag-ok">标杆 B · OpenAI Codex CLI</span>
+          <strong>SQLite 调度双阶段流水线（Stage 1 抽取 → Stage 2 整固）+ 生成态手册</strong>
+          <p>把长期记忆视为一套<strong>完全异步的离线编译流水线</strong>（<code>memories = true</code>），把状态放在 <code>~/.codex/memories/</code> + 嵌入式 SQLite（<code>jobs</code> 与 <code>stage1_outputs</code> 表），绝不阻塞用户当前交互热路径。<br>
+          • <strong>静态层 vs 动态层</strong>：<code>AGENTS.md</code>（全局 + 仓根目录向下合并，硬限 <strong>32 KiB</strong>）归人类手工维护；<code>~/.codex/memories/</code> 明确划为机器生成的只读产物。<br>
+          • <strong>Stage 1（按会话抽取）</strong>：老会话闲置后，后台通过 SQLite <code>jobs</code> 表租约认领未处理会话，<strong>先清洗密钥与环境变量</strong>，抽取为单会话 <code>rollout_summaries/&lt;slug&gt;.md</code> 与 <code>stage1_outputs</code> 原始记录。<br>
+          • <strong>Stage 2（全局整固）</strong>：独立冷却与水位线控制，按时效与价值综合排序，把零散 raw 记录提炼成三份层次清晰的文件：<strong><code>memory_summary.md</code></strong>（极简导航，首轮注入 Prompt）、<strong><code>MEMORY.md</code></strong>（完整经验手册）与 <code>raw_memories.md</code>，并用本地 <code>.git</code> 追踪变更。</p>
+        </div>
+      </div>
+
+      <h3>核心机制逐项对照</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>设计维度</th>
+              <th>Claude Code 做法</th>
+              <th>OpenAI Codex 做法</th>
+              <th>对 Alpha 的直接启发</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>静态规则层</strong></td>
+              <td><code>CLAUDE.md</code> / <code>CLAUDE.local.md</code> / <code>.claude/rules/</code></td>
+              <td><code>~/.codex/AGENTS.md</code> + 仓库 <code>AGENTS.md</code>（上限 32 KiB）</td>
+              <td>Alpha 已有全局与项目 <code>AGENTS.md</code>（<code>instructions-plugin.ts</code>），原样保留，绝不与动态记忆混写</td>
+            </tr>
+            <tr>
+              <td><strong>记忆存储格式</strong></td>
+              <td>人类可读可改的 <code>MEMORY.md</code>（≤200 行索引）+ 主题 <code>*.md</code>（YAML frontmatter）</td>
+              <td>机器生成的 <code>memory_summary.md</code> + <code>MEMORY.md</code> + <code>rollout_summaries/*.md</code></td>
+              <td><strong>取 Claude 的主题文件 + 取 Codex 的 <code>rollouts/</code> 原始沉淀</strong>：既方便人直接读改，又能分层隔离单次会话细节</td>
+            </tr>
+            <tr>
+              <td><strong>作用域粒度</strong></td>
+              <td>按 Git 仓库聚合（同仓多个 Worktree 共享同一 <code>memdir</code>）</td>
+              <td>全局用户目录 <code>~/.codex/memories/</code>（汇总多项目与通用偏好）</td>
+              <td>Alpha 既有普通项目会话又有 Multi-Bot，自然拆为 <strong><code>user</code> / <code>projects/&lt;id&gt;</code> / <code>bots/&lt;id&gt;</code></strong> 三目录（Worktree 自动共享所属项目记忆）</td>
+            </tr>
+            <tr>
+              <td><strong>首轮 Prompt 注入</strong></td>
+              <td>注入 <code>MEMORY.md</code> 前 200 行 / 25 KB 指针目录</td>
+              <td>注入精炼的 <code>memory_summary.md</code> 导航摘要</td>
+              <td>统一只注入有界 <code>MEMORY.md</code>（<strong>≤ 200 行 / ≤ 12 KiB</strong>），保持会话头字节稳定，保住 KV Prompt Cache 与 <code>adk-context</code> 指纹</td>
+            </tr>
+            <tr>
+              <td><strong>召回方式</strong></td>
+              <td>无向量库！靠 <code>MEMORY.md</code> 指针 + <code>findRelevantMemories</code> 扫描 frontmatter + 按需读文件</td>
+              <td>无向量库！靠 <code>memory_summary.md</code> 导航 + Agent 按需读取 <code>MEMORY.md</code> / <code>rollout_summaries/</code></td>
+              <td><strong>首期完全不上向量库</strong>！用 <code>MEMORY.md</code> 导航 + 轻量 SQLite FTS5 搜索 frontmatter/正文 + 按需读取即可覆盖 95% 编码场景</td>
+            </tr>
+            <tr>
+              <td><strong>写入时机</strong></td>
+              <td><strong>双通路</strong>：对话中立即写入（用户说记住/强烈纠正）+ 轮次结束异步 <code>extractMemories</code>（跳过主 Agent 已写轮次）</td>
+              <td><strong>纯后台双阶段</strong>：Stage 1 闲置后抽 <code>stage1_outputs</code> → Stage 2 冷却满足后全局合成</td>
+              <td><strong>融合两者</strong>：用户显式“记住”走即时快路径（立即可见、加用户锁）；自动学习走 Codex 式 <strong>Stage 1 异步抽取</strong>（不阻塞回复）</td>
+            </tr>
+            <tr>
+              <td><strong>防记忆腐烂</strong></td>
+              <td><code>autoDream</code> 四步法：Orient → Gather → Consolidate（相对日期转绝对日期）→ Prune（压回 200 行）</td>
+              <td>Stage 2 定期重编译，淘汰临时调试噪声与过期计划，按时效重排</td>
+              <td>采用 <strong>Codex 调度骨架 + Claude 四步整固提示词</strong>，并保留快照历史支持一键回滚</td>
+            </tr>
+            <tr>
+              <td><strong>并发锁与跨平台</strong></td>
+              <td>文件系统 <code>lockfile</code> 互斥</td>
+              <td>嵌入式 <strong>SQLite <code>jobs</code> 表</strong>（租约、水位线、重试、冷却）</td>
+              <td><strong>强烈采用 Codex 的 SQLite <code>jobs</code> 表</strong>！Alpha 已有 <code>bun:sqlite</code> WAL，在 Windows 桌面 + CLI + 多 Bot 并发下远比文件锁可靠</td>
+            </tr>
+            <tr>
+              <td><strong>安全与校验</strong></td>
+              <td><code>autoDream</code> 对业务代码只读；提示词强调“先核实代码再信旧记忆”</td>
+              <td>Stage 1 内置 <strong>密钥与环境变量脱敏</strong>；隔离生成态目录</td>
+              <td><strong>两者叠加 + Alpha Bot 红线</strong>：写入前密钥脱敏 + 复核代码规则 + <code>owner: user</code> 用户锁 + 后台 Worker 严禁直写记忆</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout ok">
+        <strong>一句话总结两家给我们的最大启示：</strong>
+        把 <strong>Claude Code 的“文件系统心智 + 200 行指针索引 + 四类 Frontmatter + 四步 Auto-Dream”</strong> 装进 <strong>OpenAI Codex 的“SQLite 租约调度 + Stage 1 脱敏抽取 / Stage 2 离线整固”</strong> 发动机里——这就是最适合 Alpha 桌面端、CLI 与 Multi-Bot 的长期记忆方案：<strong>极简、透明、零外置依赖、跨平台零竞态</strong>。
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- 02 -->
+    <!-- ================================================================== -->
+    <section id="s2">
+      <h2><span class="sec-badge">02</span>Alpha Memory 总体架构与系统边界</h2>
+      <p>在 Alpha 现有架构里，四层“上下文与记忆”各司其职、互不重叠：</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>层次</th><th>Alpha 模块</th><th>落盘位置</th><th>谁维护 / 生命周期</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>1. 静态规则</strong></td><td><code>coding-agent</code> / <code>global-instructions</code></td><td><code>~/.alphacode/AGENTS.md</code>、仓库 <code>AGENTS.md</code></td><td>人类手工维护；永不被 Memory 改写</td></tr>
+            <tr><td><strong>2. 不可变归档</strong></td><td><code>@alpha/adk-session</code> + <code>@alpha/adk-artifact</code></td><td><code>sessions.db</code> (v1)、<code>.artifacts.db</code></td><td>系统自动提交；单会话审计与重放真相源</td></tr>
+            <tr><td><strong>3. 单会话工作记忆</strong></td><td><code>@alpha/adk-context</code></td><td><code>.context.db</code></td><td>单会话内自动摘要检查点；新会话不继承</td></tr>
+            <tr><td><strong>4. 跨会话长期记忆（新增）</strong></td><td><code>@alpha/adk-memory</code></td><td><code>~/.alphacode/memory/</code> + <code>sessions.db.memory.db</code></td><td>跨会话、跨 Worktree、跨模型持续演化</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="diagram-card">
+        <div class="diagram-head">
+          <div class="diagram-title">架构图 1 · Alpha Memory 全景分层（融合 Claude Code 与 Codex）</div>
+          <div class="diagram-caption">Markdown 管内容可读性 · SQLite 管并发调度与索引 · 严格遵守 Nx 单向依赖边界</div>
+        </div>
+        <div class="diagram-scroll">
+          <svg viewBox="0 0 980 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Alpha Memory 全景架构图">
+            <defs>
+              <marker id="m1-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent)"/>
+              </marker>
+              <marker id="m1-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--ok)"/>
+              </marker>
+              <marker id="m1-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--warn)"/>
+              </marker>
+              <marker id="m1-purp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--purple)"/>
+              </marker>
+            </defs>
+
+            <!-- Band 1: Runtime Consumers -->
+            <rect x="18" y="14" width="944" height="90" rx="12" fill="var(--shell)" stroke="var(--line)"/>
+            <text x="34" y="34" class="svg-muted" font-size="11" font-weight="700">1. 运行时消费者（apps/alphacode-app-server · Web · CLI）</text>
+
+            <rect x="34" y="44" width="212" height="48" rx="8" fill="var(--ok-soft)" stroke="var(--ok)"/>
+            <text x="140" y="64" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">普通项目会话</text>
+            <text x="140" y="80" text-anchor="middle" class="svg-muted" font-size="10">读/写 user + project:&lt;id&gt;</text>
+
+            <rect x="266" y="44" width="214" height="48" rx="8" fill="var(--purple-soft)" stroke="var(--purple)"/>
+            <text x="373" y="64" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Bot Router（永久对话）</text>
+            <text x="373" y="80" text-anchor="middle" class="svg-muted" font-size="10">读/写 user + project + bot:&lt;id&gt;</text>
+
+            <rect x="500" y="44" width="214" height="48" rx="8" fill="var(--warn-soft)" stroke="var(--warn)"/>
+            <text x="607" y="64" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Bot Worker（Worktree 隔离）</text>
+            <text x="607" y="80" text-anchor="middle" class="svg-muted" font-size="10">只读 project+bot · 禁写记忆</text>
+
+            <rect x="734" y="44" width="212" height="48" rx="8" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="840" y="64" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">Settings 开关 &amp; 本地编辑器</text>
+            <text x="840" y="80" text-anchor="middle" class="svg-muted" font-size="10">无独立 UI · 仅全局/Bot 开关</text>
+
+            <!-- Band 2: @alpha/adk-memory -->
+            <rect x="18" y="130" width="944" height="148" rx="12" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="34" y="152" class="svg-text" font-size="12" font-weight="700">2. @alpha/adk-memory（layer:memory · 仅 type-only 依赖 @alpha/adk/core）</text>
+
+            <rect x="34" y="166" width="290" height="98" rx="9" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="179" y="188" text-anchor="middle" class="svg-text" font-size="12" font-weight="700">在线插件（Claude Code 风格）</text>
+            <text x="179" y="207" text-anchor="middle" class="svg-muted" font-size="10">• beforeModel 首轮注入 MEMORY.md（≤200行）</text>
+            <text x="179" y="224" text-anchor="middle" class="svg-muted" font-size="10">• 3 个极简工具：read / search / write</text>
+            <text x="179" y="241" text-anchor="middle" class="svg-muted" font-size="10">• 复核代码提示 + 本轮已写防重标记</text>
+            <text x="179" y="256" text-anchor="middle" class="svg-mono" font-size="9.2">plugin.ts · tools.ts</text>
+
+            <rect x="345" y="166" width="290" height="98" rx="9" fill="var(--paper)" stroke="var(--ok)"/>
+            <text x="490" y="188" text-anchor="middle" class="svg-text" font-size="12" font-weight="700">Stage 1 抽取器（Codex 风格）</text>
+            <text x="490" y="207" text-anchor="middle" class="svg-muted" font-size="10">• 会话闲置 / 压缩前异步认领任务</text>
+            <text x="490" y="224" text-anchor="middle" class="svg-muted" font-size="10">• 前置 Secret / .env 确定性脱敏</text>
+            <text x="490" y="241" text-anchor="middle" class="svg-muted" font-size="10">• 输出 rollouts/&lt;sid&gt;.md + stage1_outputs</text>
+            <text x="490" y="256" text-anchor="middle" class="svg-mono" font-size="9.2">stage1-extract.ts · sanitizer.ts</text>
+
+            <rect x="656" y="166" width="290" height="98" rx="9" fill="var(--paper)" stroke="var(--purple)"/>
+            <text x="801" y="188" text-anchor="middle" class="svg-text" font-size="12" font-weight="700">Stage 2 Auto-Dream 整固器</text>
+            <text x="801" y="207" text-anchor="middle" class="svg-muted" font-size="10">• 时间 + 会话数 + SQLite 租约三门控</text>
+            <text x="801" y="224" text-anchor="middle" class="svg-muted" font-size="10">• Orient → Gather → Consolidate → Prune</text>
+            <text x="801" y="241" text-anchor="middle" class="svg-muted" font-size="10">• 守护 owner:user 锁 · 压回 ≤200 行索引</text>
+            <text x="801" y="256" text-anchor="middle" class="svg-mono" font-size="9.2">stage2-dream.ts · frontmatter.ts</text>
+
+            <!-- Band 3: Storage -->
+            <rect x="18" y="304" width="944" height="142" rx="12" fill="var(--shell)" stroke="var(--line)"/>
+            <text x="34" y="325" class="svg-muted" font-size="11" font-weight="700">3. 本地持久化层（~/.alphacode/ · 零外置服务 · 零修改 sessions.db v1）</text>
+
+            <rect x="34" y="340" width="430" height="90" rx="9" fill="var(--paper)" stroke="var(--ok)"/>
+            <text x="50" y="362" class="svg-mono" font-size="11.5" font-weight="700">~/.alphacode/memory/{user,projects/&lt;id&gt;,bots/&lt;id&gt;}/</text>
+            <text x="50" y="381" class="svg-muted" font-size="10.2">• MEMORY.md — 始终加载的精炼指针索引（≤200 行 / ≤12 KiB）</text>
+            <text x="50" y="398" class="svg-muted" font-size="10.2">• topics/&lt;slug&gt;.md — 带 YAML Frontmatter 的结构化主题记忆（人类可改）</text>
+            <text x="50" y="415" class="svg-muted" font-size="10.2">• rollouts/&lt;sid&gt;.md — Stage 1 单会话提炼沉淀（不进首轮 Prompt）</text>
+
+            <rect x="486" y="340" width="268" height="90" rx="9" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="502" y="362" class="svg-mono" font-size="11.5" font-weight="700">sessions.db.memory.db</text>
+            <text x="502" y="381" class="svg-muted" font-size="10.2">• memory_jobs（SQLite 租约/冷却/水位）</text>
+            <text x="502" y="398" class="svg-muted" font-size="10.2">• stage1_outputs（幂等抽取缓存）</text>
+            <text x="502" y="415" class="svg-muted" font-size="10.2">• memory_index + FTS5（派生搜索索引）</text>
+
+            <rect x="774" y="340" width="172" height="90" rx="9" fill="var(--code)" stroke="var(--line-strong)" stroke-dasharray="4 3"/>
+            <text x="860" y="366" text-anchor="middle" class="svg-mono" font-size="10.5" font-weight="600">sessions.db (v1)</text>
+            <text x="860" y="385" text-anchor="middle" class="svg-mono" font-size="10.5">.context.db / .bots.db</text>
+            <text x="860" y="408" text-anchor="middle" class="svg-muted" font-size="10">只读来源 · 零侵入</text>
+
+            <!-- Connectors -->
+            <line x1="140" y1="92" x2="140" y2="162" stroke="var(--ok)" stroke-width="1.6" marker-end="url(#m1-ok)"/>
+            <line x1="373" y1="92" x2="230" y2="162" stroke="var(--purple)" stroke-width="1.6" marker-end="url(#m1-purp)"/>
+            <line x1="607" y1="92" x2="280" y2="162" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#m1-warn)"/>
+            <line x1="840" y1="92" x2="840" y2="162" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#m1-blue)"/>
+
+            <line x1="179" y1="264" x2="179" y2="336" stroke="var(--ok)" stroke-width="1.6" marker-end="url(#m1-ok)"/>
+            <line x1="490" y1="264" x2="590" y2="336" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#m1-blue)"/>
+            <line x1="490" y1="264" x2="360" y2="336" stroke="var(--ok)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#m1-ok)"/>
+            <line x1="801" y1="264" x2="650" y2="336" stroke="var(--purple)" stroke-width="1.6" marker-end="url(#m1-purp)"/>
+            <line x1="801" y1="264" x2="430" y2="336" stroke="var(--purple)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#m1-purp)"/>
+            <line x1="560" y1="264" x2="840" y2="336" stroke="var(--muted)" stroke-width="1.3" stroke-dasharray="3 3"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <strong>贴合 Alpha 源码的关键约束（<code>packages/adk-context/src/index.ts</code>）：</strong><br>
+        Alpha 现有的 <code>@alpha/adk-context</code> 在计算压缩检查点 <code>fingerprint</code> 时，会对所有 <code>beforeModel</code> 注入的非历史消息整体做 SHA-256 哈希。因此，<strong>会话启动时读取一次 <code>MEMORY.md</code> 后在当前会话期内冻结不变</strong>——这恰好与 Claude Code 和 Codex “仅在会话初始化加载记忆索引”的做法一致，既天然保住 <strong>LLM KV Prompt Cache</strong>，又确保 <strong><code>adk-context</code> 检查点 100% 不失效</strong>！
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- 03 -->
+    <!-- ================================================================== -->
+    <section id="s3">
+      <h2><span class="sec-badge">03</span>存储设计：Markdown 主题文件 × 极简 SQLite 调度库</h2>
+      <p>我们的分工非常克制：<strong>人需要看到和修改的东西（记忆正文）一律用明文 Markdown 文件</strong>（Claude Code 路线）；<strong>机器需要防并发冲突、记断点水位线和做快速过滤的东西一律用 3 张极简 SQLite 表</strong>（Codex 路线）。删掉数据库文件也不会丢失任何一条记忆，重新扫描目录即可自动重建索引。</p>
+
+      <h3>3.1 本地目录结构（<code>~/.alphacode/memory/</code>）</h3>
+<pre><code>~/.alphacode/
+├── AGENTS.md                            # 既有全局静态指令（人工编写，Memory 永不触碰）
+├── sessions.db                          # 既有 Session 主归档（formatVersion=1 零改动）
+├── sessions.db.memory.db                # [新增] 极简 SQLite 调度与派生索引库（仅 3 张表）
+└── memory/                              # [新增] 长期记忆本体（人类可读、可编辑、可备份）
+    ├── user/                            # 作用域 1：全局用户偏好与跨项目纠正
+    │   ├── MEMORY.md                    # 常驻索引（≤ 200 行 / ≤ 12 KiB，只放指针）
+    │   └── topics/
+    │       ├── user-profile.md          # type: user
+    │       └── feedback-workflow.md     # type: feedback (owner: user)
+    ├── projects/
+    │   └── &lt;projectId&gt;/                 # 作用域 2：按 Git 仓/项目聚合（同仓 Worktree 共享！）
+    │       ├── MEMORY.md                # 本项目常驻指针索引（≤ 200 行）
+    │       ├── topics/                  # 结构化主题文件（Claude Code 风格）
+    │       │   ├── bun-migration.md     # type: project
+    │       │   └── windows-pitfalls.md  # type: feedback
+    │       ├── rollouts/                # Stage 1 单会话提炼沉淀（Codex 风格，不进首轮 Prompt）
+    │       │   └── 2026-11-27-bots-refactor.md
+    │       └── .snapshots/              # Auto-Dream 整固前自动快照（保留最近 10 次，支持回滚）
+    └── bots/
+        └── &lt;botId&gt;/                     # 作用域 3：Bot 专属记忆（切换项目/模型零丢失）
+            ├── MEMORY.md
+            ├── topics/
+            ├── rollouts/
+            └── pending/                 # Worker 隔离提议区（需用户/Router 确认才迁入 topics/）</code></pre>
+
+      <h3>3.2 主题文件格式与四类分类法（直接对标 Claude Code）</h3>
+      <p>每条主题记忆就是一个独立的 <code>topics/&lt;slug&gt;.md</code>，头部带极简 YAML Frontmatter，仅保留 4 类高价值记忆类型（并明确排斥易腐烂的代码现状）：</p>
+
+      <div class="cards">
+        <div class="card">
+          <span class="tag tag-purple">示例 · topics/feedback-bun-tests.md</span>
+<pre style="margin:6px 0 0"><code>---
+name: 离线单测与设计先行规范
+description: 复杂架构先出 HTML 方案；单测用 bun:test 离线夹具，不自动请求付费模型
+type: feedback
+owner: user
+updated_at: 2026-11-27
+---
+
+复杂模块改动前先输出 HTML 设计文档评审，确认后再写代码。
+自动化测试默认使用 bun:test + 离线 HTTP/模型夹具；真实端点只在显式 live 脚本中运行。
+
+**Why:** 避免未对齐架构直接返工，且防止 CI/本地单测产生意外模型费用。
+**How to apply:** 每次新增 packages/* 模块或跨层改造时先给方案。</code></pre>
+        </div>
+        <div class="card">
+          <span class="tag tag-blue">示例 · MEMORY.md（常驻指针索引，严限 ≤ 200 行）</span>
+<pre style="margin:6px 0 0"><code># Project Memory Index (alpha)
+
+&lt;!-- 仅保留一句话指针与文件路径；正文全部在 topics/*.md 中按需读取 --&gt;
+
+## Feedback &amp; Constraints
+- [离线单测与设计先行规范](topics/feedback-bun-tests.md) — 先方案后代码，单测用离线 bun:test
+- [Windows 路径与构建踩坑](topics/windows-pitfalls.md) — SHA256SUMS 需 POSIX 斜杠，pwsh 递归避开 node_modules
+
+## Project Decisions
+- [Bun + SQLite 架构基线](topics/bun-migration.md) — 2026-11 迁至 Bun 1.4.4；sessions.db v1 零修改
+- [adk-context 检查点指纹约束](topics/context-fingerprint.md) — 会话内不改写首轮注入，保住缓存与检查点
+
+## Recent Rollouts (On-Demand)
+- [2026-11-27 Multi-Bot Super-agent 重构](rollouts/2026-11-27-bots-refactor.md)</code></pre>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th><code>type</code></th><th>存什么</th><th>明确不存什么（防腐烂红线）</th></tr></thead>
+          <tbody>
+            <tr><td><code>user</code></td><td>用户身份、偏好语言、常用环境（Windows/Bun）、代码风格与习惯</td><td>一次性的闲聊上下文</td></tr>
+            <tr><td><code>feedback</code></td><td>用户明确给出的纠正与确认有效的做法（带 <strong>Why</strong> 和 <strong>How to apply</strong>）</td><td>已经在 <code>AGENTS.md</code> 里明文写死的静态规范</td></tr>
+            <tr><td><code>project</code></td><td>代码/Git 看不出来的架构动机、外部截止期、业务背景与踩坑结论</td><td>某函数在第几行、当前分支名、目录结构、可 <code>read_file</code> 查到的代码现状</td></tr>
+            <tr><td><code>reference</code></td><td>外部文档地址、测试端点、仪表盘、Issue 编号等指针</td><td>大段外部网页原文、API Key / Token / <code>.env</code> 密钥</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>3.3 极简 SQLite 调度库（<code>sessions.db.memory.db</code> · 仅 3 张表）</h3>
+      <p>直接借鉴 OpenAI Codex 的 <code>jobs</code> + <code>stage1_outputs</code> 设计，解决 Windows 跨进程文件锁痛点，同时提供派生 FTS5 索引加速 UI/Agent 搜索：</p>
+<pre><code>-- PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;
+
+-- 1. 后台任务租约与水位线（Codex 风格：取代脆弱的文件系统 lockfile）
+CREATE TABLE IF NOT EXISTS memory_jobs (
+  job_key TEXT PRIMARY KEY,              -- 例如 "stage1:session:&lt;sid&gt;" 或 "stage2:dream:project:&lt;pid&gt;"
+  kind TEXT NOT NULL,                    -- 'stage1_extract' | 'stage2_dream'
+  scope_key TEXT NOT NULL,               -- 'user:default' | 'project:&lt;id&gt;' | 'bot:&lt;id&gt;'
+  status TEXT NOT NULL,                  -- 'idle' | 'running' | 'done' | 'failed'
+  lease_owner TEXT,                      -- 当前持有锁的进程/worker 实例 ID
+  lease_expires_at TEXT,                 -- 租约超时自动释放，防止进程崩溃死锁
+  watermark TEXT,                        -- 已处理到的 session revision / 时间戳
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  last_run_at TEXT,
+  last_error TEXT,
+  updated_at TEXT NOT NULL
+);
+
+-- 2. Stage 1 原始抽取缓存（幂等：同一会话未新增轮次绝不重复抽）
+CREATE TABLE IF NOT EXISTS stage1_outputs (
+  session_key TEXT PRIMARY KEY,          -- "&lt;namespace&gt;:&lt;sessionId&gt;"
+  scope_key TEXT NOT NULL,
+  session_revision INTEGER NOT NULL,     -- 对齐 sessions.db 归档 revision
+  rollout_path TEXT NOT NULL,            -- 相对路径 rollouts/&lt;slug&gt;.md
+  raw_takeaways TEXT NOT NULL,           -- 脱敏后的结构化要点（供 Stage 2 整固消费）
+  skipped_reason TEXT,                   -- 例如 'main_agent_already_wrote' | 'no_durable_signal'
+  consumed_by_dream_at TEXT,             -- NULL = 待 Stage 2 消费
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_stage1_pending ON stage1_outputs(scope_key, consumed_by_dream_at);
+
+-- 3. Markdown 文件派生元数据与 FTS5 索引（纯缓存：删库后扫磁盘 100% 自动重建）
+CREATE TABLE IF NOT EXISTS memory_files (
+  path TEXT PRIMARY KEY,                 -- 相对 ~/.alphacode/memory/ 路径
+  scope_key TEXT NOT NULL,
+  kind TEXT NOT NULL,                    -- 'index' | 'topic' | 'rollout' | 'pending'
+  mem_type TEXT,                         -- 'user' | 'feedback' | 'project' | 'reference'
+  owner TEXT NOT NULL DEFAULT 'agent',   -- 'user' (锁定禁改) | 'agent'
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  content_sha256 TEXT NOT NULL,
+  mtime_ms INTEGER NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS memory_files_fts USING fts5(
+  path UNINDEXED,
+  scope_key UNINDEXED,
+  tokens_lex,                            -- 英文 / 标识符 / 路径
+  tokens_cjk,                            -- 中文 2-gram（零依赖支持中文检索）
+  tokenize = 'unicode61 remove_diacritics 2'
+);</code></pre>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- 04 -->
+    <!-- ================================================================== -->
+    <section id="s4">
+      <h2><span class="sec-badge">04</span>双阶段后台流水线：Stage 1 抽取 × Stage 2 Auto-Dream</h2>
+      <p>将 <strong>Claude Code 的在线即时写 + 四步 Auto-Dream</strong> 与 <strong>OpenAI Codex 的双阶段异步抽取/整固</strong> 拼成一条极度清晰的工作流：用户显式指令秒级响应，隐式学习与整理全部放到后台，零阻塞交互热路径。</p>
+
+      <div class="diagram-card">
+        <div class="diagram-head">
+          <div class="diagram-title">流程图 2 · 在线快路径 + Stage 1 异步抽取 + Stage 2 Auto-Dream 四步整固</div>
+          <div class="diagram-caption">零热路径延迟 · 主 Agent 本轮已写则跳过防竞态 · 密钥先脱敏再落盘 · 整固前自动快照</div>
+        </div>
+        <div class="diagram-scroll">
+          <svg viewBox="0 0 980 390" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="双阶段抽取与 Auto-Dream 整固流程图">
+            <defs>
+              <marker id="p2-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent)"/>
+              </marker>
+              <marker id="p2-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--ok)"/>
+              </marker>
+              <marker id="p2-purp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--purple)"/>
+              </marker>
+            </defs>
+
+            <!-- Track 1: Online Fast Path -->
+            <rect x="18" y="14" width="944" height="82" rx="11" fill="var(--ok-soft)" stroke="var(--ok)" stroke-opacity=".45"/>
+            <text x="34" y="34" class="svg-text" font-size="11.5" font-weight="700">路径 A · 在线即时写入（Claude Code 风格 · 用户显式说“记住…”或 /remember）</text>
+
+            <rect x="34" y="46" width="210" height="38" rx="7" fill="var(--paper)" stroke="var(--ok)"/>
+            <text x="139" y="69" text-anchor="middle" class="svg-text" font-size="11">用户指令 / memory_write 工具</text>
+
+            <rect x="278" y="46" width="212" height="38" rx="7" fill="var(--paper)" stroke="var(--danger)"/>
+            <text x="384" y="69" text-anchor="middle" class="svg-text" font-size="11">Secret 脱敏 + owner:user 锁校验</text>
+
+            <rect x="524" y="46" width="206" height="38" rx="7" fill="var(--paper)" stroke="var(--ok)"/>
+            <text x="627" y="69" text-anchor="middle" class="svg-text" font-size="11">写 topics/*.md + 更新 MEMORY.md</text>
+
+            <rect x="764" y="46" width="182" height="38" rx="7" fill="var(--paper)" stroke="var(--line-strong)"/>
+            <text x="855" y="69" text-anchor="middle" class="svg-muted" font-size="10.5">标记本轮已写（跳过 Stage 1）</text>
+
+            <line x1="244" y1="65" x2="274" y2="65" stroke="var(--ok)" stroke-width="1.6" marker-end="url(#p2-ok)"/>
+            <line x1="490" y1="65" x2="520" y2="65" stroke="var(--ok)" stroke-width="1.6" marker-end="url(#p2-ok)"/>
+            <line x1="730" y1="65" x2="760" y2="65" stroke="var(--ok)" stroke-width="1.6" marker-end="url(#p2-ok)"/>
+
+            <!-- Track 2: Stage 1 Async Extraction -->
+            <rect x="18" y="114" width="944" height="106" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".45"/>
+            <text x="34" y="135" class="svg-text" font-size="11.5" font-weight="700">路径 B · Stage 1 后台会话抽取（Codex stage1 × Claude extractMemories · 全异步不阻塞回复）</text>
+
+            <rect x="34" y="148" width="202" height="58" rx="8" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="135" y="168" text-anchor="middle" class="svg-text" font-size="11" font-weight="600">触发时机（任一）</text>
+            <text x="135" y="184" text-anchor="middle" class="svg-muted" font-size="9.8">• 会话结束 / 闲置 ≥ 5 分钟</text>
+            <text x="135" y="198" text-anchor="middle" class="svg-muted" font-size="9.8">• adk-context 压缩前触发</text>
+
+            <rect x="266" y="148" width="206" height="58" rx="8" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="369" y="168" text-anchor="middle" class="svg-text" font-size="11" font-weight="600">SQLite 租约认领与过滤</text>
+            <text x="369" y="184" text-anchor="middle" class="svg-muted" font-size="9.8">• 检查 revision 水位 &amp; 租约锁</text>
+            <text x="369" y="198" text-anchor="middle" class="svg-muted" font-size="9.8">• 清洗 .env / Key / Token 载荷</text>
+
+            <rect x="502" y="148" width="214" height="58" rx="8" fill="var(--paper)" stroke="var(--accent)"/>
+            <text x="609" y="168" text-anchor="middle" class="svg-text" font-size="11" font-weight="600">无工具轻模型单次提炼</text>
+            <text x="609" y="184" text-anchor="middle" class="svg-muted" font-size="9.8">• 只抽 4 类持久信号（排斥代码现状）</text>
+            <text x="609" y="198" text-anchor="middle" class="svg-muted" font-size="9.8">• 无高价值信号直接标记跳过</text>
+
+            <rect x="746" y="148" width="200" height="58" rx="8" fill="var(--paper)" stroke="var(--ok)"/>
+            <text x="846" y="168" text-anchor="middle" class="svg-text" font-size="11" font-weight="600">幂等落盘</text>
+            <text x="846" y="184" text-anchor="middle" class="svg-mono" font-size="9.5">rollouts/&lt;slug&gt;.md</text>
+            <text x="846" y="198" text-anchor="middle" class="svg-mono" font-size="9.5">+ stage1_outputs 行</text>
+
+            <line x1="236" y1="177" x2="262" y2="177" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p2-blue)"/>
+            <line x1="472" y1="177" x2="498" y2="177" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p2-blue)"/>
+            <line x1="716" y1="177" x2="742" y2="177" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p2-blue)"/>
+
+            <!-- Track 3: Stage 2 Auto-Dream -->
+            <rect x="18" y="238" width="944" height="138" rx="11" fill="var(--purple-soft)" stroke="var(--purple)" stroke-opacity=".45"/>
+            <text x="34" y="259" class="svg-text" font-size="11.5" font-weight="700">路径 C · Stage 2 Auto-Dream 后台整固（门控：距上次 ≥ 24h 且 ≥ 5 条新 Stage 1，或手动 /memory dream）</text>
+
+            <rect x="34" y="274" width="208" height="86" rx="8" fill="var(--paper)" stroke="var(--purple)"/>
+            <text x="138" y="295" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">1. Orient（盘点）</text>
+            <text x="138" y="314" text-anchor="middle" class="svg-muted" font-size="10">抢占 SQLite Dream 租约</text>
+            <text x="138" y="330" text-anchor="middle" class="svg-muted" font-size="10">备份当前目录至 .snapshots/</text>
+            <text x="138" y="346" text-anchor="middle" class="svg-muted" font-size="10">读取 MEMORY.md 与主题清单</text>
+
+            <rect x="268" y="274" width="208" height="86" rx="8" fill="var(--paper)" stroke="var(--purple)"/>
+            <text x="372" y="295" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">2. Gather（归集）</text>
+            <text x="372" y="314" text-anchor="middle" class="svg-muted" font-size="10">批量读取未消费的</text>
+            <text x="372" y="330" text-anchor="middle" class="svg-mono" font-size="9.5">stage1_outputs</text>
+            <text x="372" y="346" text-anchor="middle" class="svg-muted" font-size="10">识别高频纠正与重复模式</text>
+
+            <rect x="502" y="274" width="212" height="86" rx="8" fill="var(--paper)" stroke="var(--purple)"/>
+            <text x="608" y="295" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">3. Consolidate（整固）</text>
+            <text x="608" y="314" text-anchor="middle" class="svg-muted" font-size="10">合并重复、删过期/矛盾条目</text>
+            <text x="608" y="330" text-anchor="middle" class="svg-muted" font-size="10">相对日期转为绝对日期</text>
+            <text x="608" y="346" text-anchor="middle" class="svg-muted" font-size="10">严禁覆写 owner:user 锁定文件</text>
+
+            <rect x="740" y="274" width="206" height="86" rx="8" fill="var(--paper)" stroke="var(--ok)"/>
+            <text x="843" y="295" text-anchor="middle" class="svg-text" font-size="11.5" font-weight="700">4. Prune（重建索引）</text>
+            <text x="843" y="314" text-anchor="middle" class="svg-muted" font-size="10">重写精炼 MEMORY.md</text>
+            <text x="843" y="330" text-anchor="middle" class="svg-muted" font-size="10">严格压回 ≤ 200 行 / 12 KiB</text>
+            <text x="843" y="346" text-anchor="middle" class="svg-muted" font-size="10">刷新 FTS5 派生缓存并释放锁</text>
+
+            <line x1="242" y1="317" x2="264" y2="317" stroke="var(--purple)" stroke-width="1.6" marker-end="url(#p2-purp)"/>
+            <line x1="476" y1="317" x2="498" y2="317" stroke="var(--purple)" stroke-width="1.6" marker-end="url(#p2-purp)"/>
+            <line x1="714" y1="317" x2="736" y2="317" stroke="var(--purple)" stroke-width="1.6" marker-end="url(#p2-purp)"/>
+            <path d="M 846 206 L 846 226 L 372 226 L 372 270" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#p2-blue)"/>
+          </svg>
+        </div>
+      </div>
+
+      <h3>为什么同时吸收两家，而不是二选一？</h3>
+      <ul>
+        <li><strong>只学 Codex 的短板</strong>：Codex 的记忆完全靠离线后台产出，当用户在对话里明确说“以后不要用 pnpm，全用 bun”时，如果立刻新开一个会话，可能还没等到 Stage 2 整固，体验上会觉得“刚让你记住怎么转头就忘”。加入 Claude Code 的<strong>在线快路径</strong>正好补齐即时反馈！</li>
+        <li><strong>只学 Claude Code 的短板</strong>：Claude Code 用文件系统 <code>lockfile</code> 协调并发，在 Windows 桌面端 + 多 Bot 并发场景容易出现脏锁或竞态；且缺少单会话 <code>rollout_summaries</code> 中间层，每次 Dream 要重新扫描长会话记录。引入 Codex 的 <strong>SQLite <code>memory_jobs</code> 租约 + <code>stage1_outputs</code> 中间沉淀</strong>，让整固成本极低且绝对幂等！</li>
+      </ul>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- 05 -->
+    <!-- ================================================================== -->
+    <section id="s5">
+      <h2><span class="sec-badge">05</span>Prompt 注入、零向量库召回与安全防火墙</h2>
+
+      <div class="diagram-card">
+        <div class="diagram-head">
+          <div class="diagram-title">架构图 3 · 会话首轮注入、按需深读与 Multi-Bot 写防火墙</div>
+          <div class="diagram-caption">复用 beforeModel · 首轮注入后会话期内冻结（保住 KV Cache &amp; 检查点）· Worker 严格只读</div>
+        </div>
+        <div class="diagram-scroll">
+          <svg viewBox="0 0 980 310" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Prompt 注入与安全防火墙图">
+            <defs>
+              <marker id="s5-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent)"/>
+              </marker>
+              <marker id="s5-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--ok)"/>
+              </marker>
+              <marker id="s5-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--warn)"/>
+              </marker>
+            </defs>
+
+            <!-- Left: Prompt Injection Order -->
+            <rect x="18" y="14" width="468" height="282" rx="12" fill="var(--shell)" stroke="var(--line)"/>
+            <text x="34" y="37" class="svg-text" font-size="12" font-weight="700">A. 模型请求前缀组装顺序（与既有插件严格对齐）</text>
+
+            <rect x="34" y="52" width="436" height="36" rx="7" fill="var(--paper)" stroke="var(--line-strong)"/>
+            <text x="252" y="74" text-anchor="middle" class="svg-mono" font-size="10.5">1. System Instructions + Global ~/.alphacode/AGENTS.md</text>
+
+            <rect x="34" y="98" width="436" height="36" rx="7" fill="var(--paper)" stroke="var(--line-strong)"/>
+            <text x="252" y="120" text-anchor="middle" class="svg-mono" font-size="10.5">2. Project &lt;repo&gt;/AGENTS.md（静态规则，优先级高于记忆）</text>
+
+            <rect x="34" y="144" width="436" height="66" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="252" y="164" text-anchor="middle" class="svg-mono" font-size="10.5" font-weight="700">3. Auto Memory Index（首轮冻结 · 合计 ≤ 12 KiB）</text>
+            <text x="252" y="182" text-anchor="middle" class="svg-muted" font-size="10">合并加载：user/MEMORY.md + projects/&lt;id&gt;/MEMORY.md (+ bots/&lt;id&gt;)</text>
+            <text x="252" y="198" text-anchor="middle" class="svg-muted" font-size="9.8">附带复核声明：旧记忆可能过时，改动代码前须以当前源码为准</text>
+
+            <rect x="34" y="220" width="436" height="60" rx="8" fill="var(--ok-soft)" stroke="var(--ok)"/>
+            <text x="252" y="242" text-anchor="middle" class="svg-text" font-size="11" font-weight="700">4. 会话历史 &amp; 当前用户输入（按需调用 memory_read / search）</text>
+            <text x="252" y="262" text-anchor="middle" class="svg-muted" font-size="10">1~3 在会话期内字节完全固定 → KV Cache 命中率最大化 + adk-context 零失效</text>
+
+            <!-- Right: Security & Role Matrix -->
+            <rect x="506" y="14" width="456" height="282" rx="12" fill="var(--shell)" stroke="var(--line)"/>
+            <text x="522" y="37" class="svg-text" font-size="12" font-weight="700">B. 工具权限与防投毒边界（复用 Bots 安全红线）</text>
+
+            <rect x="522" y="54" width="424" height="68" rx="8" fill="var(--ok-soft)" stroke="var(--ok)"/>
+            <text x="536" y="75" class="svg-text" font-size="11.5" font-weight="700">普通项目会话 / Bot Router（可信对话面）</text>
+            <text x="536" y="93" class="svg-mono" font-size="9.8">Tools: memory_read · memory_search · memory_write</text>
+            <text x="536" y="109" class="svg-muted" font-size="9.8">可写 agent 记忆；触碰 owner:user 锁定文件自动拒绝并提示用户确认</text>
+
+            <rect x="522" y="134" width="424" height="72" rx="8" fill="var(--warn-soft)" stroke="var(--warn)"/>
+            <text x="536" y="155" class="svg-text" font-size="11.5" font-weight="700">Bot 后台 Worker（接触不可信仓库/日志/网页）</text>
+            <text x="536" y="173" class="svg-mono" font-size="9.8">Tools: memory_read · memory_search（彻底不挂载 memory_write）</text>
+            <text x="536" y="191" class="svg-muted" font-size="9.8">如需提炼项目踩坑，仅写入 pending/ 隔离区，待 Router 或用户一键采纳</text>
+
+            <rect x="522" y="218" width="424" height="62" rx="8" fill="var(--danger-soft)" stroke="var(--danger)"/>
+            <text x="536" y="239" class="svg-text" font-size="11.5" font-weight="700">确定性写入护栏（所有写入必经）</text>
+            <text x="536" y="257" class="svg-muted" font-size="9.8">• Secret 脱敏：拦截 API Key / Bearer / JWT / 私钥 / .env 路径内容</text>
+            <text x="536" y="271" class="svg-muted" font-size="9.8">• 目录沙箱：严禁路径穿越（..），所有写操作严格收敛在 ~/.alphacode/memory/</text>
+          </svg>
+        </div>
+      </div>
+
+      <h3>为什么首期不做 Embedding / 向量库？</h3>
+      <ul>
+        <li><strong>Claude Code 与 Codex 的实战证明</strong>：单项目沉淀的高质量主题记忆通常只有 <strong>15–80 个文件</strong>，总索引不到 200 行。把 200 行高信噪比指针直接给大模型看，模型自己选读哪 1–2 个主题文件的准确率，远高于盲目切块做 Top-K 向量相似匹配！</li>
+        <li><strong>辅助 FTS5 兜底</strong>：当 <code>rollouts/</code> 历史沉淀超过几百条时，<code>memory_search</code> 直接查本地 <code>memory_files_fts</code>（内置英文标识符 + 中文 2-gram），毫秒级零延迟、零 API 费用、桌面端安装包零膨胀。</li>
+        <li><strong>留好扩展口</strong>：如果未来单个用户历史滚到数千条且真的出现语义查不到的问题，只需给 <code>MemoryStore.search()</code> 挂一个可选检索后端即可，上层文件格式与工具契约完全不变。</li>
+      </ul>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- 06 -->
+    <!-- ================================================================== -->
+    <section id="s6">
+      <h2><span class="sec-badge">06</span>极简开关设计（零独立 UI）与磁盘文件演练</h2>
+      <p>与 <strong>Claude Code</strong> 和 <strong>OpenAI Codex CLI</strong> 一致：<strong>我们不需要单独开发一套 Memory 管理界面或内置 Markdown 编辑器</strong>。记忆本身是本地明文文件（<code>~/.alphacode/memory/</code>），需要查看或修改时直接用系统编辑器打开，或者直接在对话里对 Agent 说“记住/忘掉…”即可。</p>
+
+      <div class="callout ok">
+        <strong>已收敛产品形态：零独立 Memory 页面，只做「启用开关」</strong><br>
+        1. <strong>全局总开关</strong>：复用现有 <a href="../apps/alphacode-web/src/features/settings/settings-page.tsx"><code>Settings → 通用设置</code></a>，增加一行简洁开关（默认 <code>关闭 / opt-in</code>，与 Codex <code>memories = true</code> 一致），持久化到 <code>~/.alphacode/config.yaml</code> 的 <code>memory.enabled</code>。<br>
+        2. <strong>单 Bot 独立开关（可选覆盖）</strong>：直接复用 <code>bots.db</code> 已经预留的 <code>bots.memory_mode</code>（<code>'alphacode' | 'off'</code>），在 <a href="../apps/alphacode-web/src/features/bots/bot-settings-page.tsx"><code>Bot 设置页</code></a> 提供一个开关，允许对特定 Bot 单独关闭记忆。<br>
+        3. <strong>CLI 零鼠标控制</strong>：通过 <code>config.yaml</code> 或 <code>/remember</code>、<code>/memory</code>、<code>/memory dream</code> 即可完成全部操作。
+      </div>
+
+      <h3>6.1 Settings 开关极简样式示意（唯一新增前端入口）</h3>
+      <div class="card" style="max-width:660px;margin:14px 0 22px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+          <div>
+            <strong style="margin-bottom:2px">长期记忆（Auto Memory）</strong>
+            <p style="margin:0;font-size:12.5px">跨会话记住你的偏好、项目约定与踩坑经验，明文保存在 <code>~/.alphacode/memory/</code>（关闭后零注入、零后台调用）。</p>
+          </div>
+          <button type="button" id="wfGlobalSwitch" class="wf-pill-btn" aria-pressed="false" style="min-width:92px;justify-content:center;font-weight:600">已关闭 Off</button>
+        </div>
+        <div id="wfSwitchHint" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)">
+          当前状态：<code>memory.enabled: false</code> — 会话与 Bots 均保持原有行为，零额外 Token 与后台开销。
+        </div>
+      </div>
+
+      <h3>6.2 磁盘文件结构与 Stage 2 Auto-Dream 行为模拟器（仅用于文档演示，非产品 UI）</h3>
+      <p>下面仅用于在评审文档中直观演示开启开关后 <code>~/.alphacode/memory/</code> 磁盘目录里实际长什么样，以及点击 <strong>「模拟运行 Stage 2 Auto-Dream」</strong> 后 <code>MEMORY.md</code> 和首轮注入 Prompt 的变化（产品本身不建这个浏览器页面）：</p>
+
+      <div class="wireframe" role="region" aria-label="~/.alphacode/memory 磁盘文件与流水线模拟器">
+        <div class="wf-titlebar">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="wf-dots"><i></i><i></i><i></i></div>
+            <span>~/.alphacode/memory/ · 磁盘结构与流水线演练（文档模拟器）</span>
+          </div>
+          <div class="wf-controls">
+            <button type="button" class="wf-pill-btn" id="btnModeFiles" aria-pressed="true">文件浏览器</button>
+            <button type="button" class="wf-pill-btn" id="btnModePrompt" aria-pressed="false">查看首轮注入 Prompt</button>
+            <button type="button" class="wf-pill-btn" id="btnRunDream">✨ 模拟运行 Stage 2 Auto-Dream</button>
+          </div>
+        </div>
+
+        <div class="wf-body" id="wfMainBody">
+          <div class="wf-tree">
+            <div class="wf-scope-tabs">
+              <button type="button" class="wf-scope-tab" data-scope="user">User</button>
+              <button type="button" class="wf-scope-tab active" data-scope="project">Project</button>
+              <button type="button" class="wf-scope-tab" data-scope="bot">Bot</button>
+            </div>
+            <div id="wfFileTree"></div>
+
+            <div class="wf-meter">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong style="font-size:11.5px;color:var(--ink)">MEMORY.md 预算</strong>
+                <span id="wfLineMeter" style="font-family:Consolas,monospace">14 / 200 行</span>
+              </div>
+              <div class="wf-bar-track"><div class="wf-bar-fill" id="wfLineBar" style="width:7%"></div></div>
+              <div id="wfJobInfo">SQLite Jobs：1 条未消费 Stage 1</div>
+            </div>
+          </div>
+
+          <div class="wf-editor">
+            <div class="wf-editor-head">
+              <span class="wf-path" id="wfCurrentPath">projects/alpha/MEMORY.md</span>
+              <div class="wf-actions" id="wfFileActions"></div>
+            </div>
+            <div class="wf-code-area">
+              <pre><code id="wfCodeContent"></code></pre>
+            </div>
+            <div class="wf-dream-bar">
+              <div class="wf-steps" id="wfDreamSteps">
+                <span class="wf-step" data-step="0">1. Orient</span>
+                <span class="wf-step" data-step="1">2. Gather</span>
+                <span class="wf-step" data-step="2">3. Consolidate</span>
+                <span class="wf-step" data-step="3">4. Prune</span>
+              </div>
+              <span id="wfDreamLog" style="color:var(--muted);font-size:11.5px">点击右上角「模拟运行 Stage 2 Auto-Dream」观察 4 步整固</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- 07 -->
+    <!-- ================================================================== -->
+    <section id="s7">
+      <h2><span class="sec-badge">07</span>模块边界、TypeScript 契约与接口接入</h2>
+
+      <h3>7.1 极简 Monorepo 包结构（<code>packages/adk-memory</code>）</h3>
+<pre><code>packages/adk-memory/
+├── package.json            # exports: ".", "./contracts", "./fs", "./sqlite"
+├── project.json            # tags: ["layer:memory"]
+├── src/
+│   ├── contracts.ts        # 纯类型（MemoryScope, MemoryFrontmatter, MemoryStore 等）
+│   ├── frontmatter.ts      # YAML frontmatter 解析/序列化 &amp; MEMORY.md 200 行硬截断器
+│   ├── sanitizer.ts        # Secret / API Key / .env 脱敏与路径沙箱校验
+│   ├── plugin.ts           # createMemoryPlugin()：首轮注入 + 3 个极简工具 + 本轮已写标记
+│   ├── stage1-extract.ts   # Codex 风格后台抽取（会话闲置 / 压缩前 → rollouts/ + stage1_outputs）
+│   ├── stage2-dream.ts     # Claude 风格四步整固（Orient → Gather → Consolidate → Prune + 快照）
+│   ├── fs/                 # Markdown 文件读写与 .snapshots/ 原子回滚
+│   └── sqlite/             # bun:sqlite 3 表实现（memory_jobs 租约 + stage1_outputs + FTS5 派生缓存）
+└── test/                   # bun:test 离线单测（200行截断、用户锁、脱敏、租约互斥、Dream 回滚）</code></pre>
+
+      <div class="callout">
+        <strong>Nx / ESLint 边界变更（最小改动）：</strong>
+        在 <a href="../eslint.config.js"><code>eslint.config.js</code></a> 新增 <code>{ sourceTag: 'layer:memory', onlyDependOnLibsWithTags: ['layer:memory', 'layer:adk'] }</code>，并在 <code>layer:app-server</code> 的允许列表加入 <code>layer:memory</code>。<code>@alpha/adk</code> 内核与 <code>@alpha/adk-session</code> 保持 <strong>0 改动</strong>。
+      </div>
+
+      <h3>7.2 核心 TypeScript 契约与 3 个极简工具</h3>
+<pre><code>export type MemoryScopeType = "user" | "project" | "bot";
+export type MemoryType = "user" | "feedback" | "project" | "reference";
+export type MemoryOwner = "user" | "agent";
+
+export interface MemoryScope {
+  readonly type: MemoryScopeType;
+  readonly id: string; // "default" | projectId | botId
+}
+
+export interface MemoryTopic {
+  readonly scope: MemoryScope;
+  readonly slug: string;          // 对应 topics/&lt;slug&gt;.md
+  readonly name: string;
+  readonly description: string;   // 一句话摘要，同时用于 MEMORY.md 指针与检索
+  readonly type: MemoryType;
+  readonly owner: MemoryOwner;    // "user" 时禁止 Agent 覆写/删除
+  readonly body: string;
+  readonly updatedAt: string;
+}
+
+export interface MemoryPluginOptions {
+  readonly store: MemoryStore;
+  readonly readScopes: readonly MemoryScope[];      // 普通会话: [user, project]；Bot: [user, project, bot]
+  readonly writeScope?: MemoryScope;                // 缺省或 writeMode="readonly" 不挂写工具
+  readonly writeMode: "direct" | "propose_only" | "readonly";
+  readonly maxIndexLines?: number;                  // 默认 200（对齐 Claude Code）
+  readonly maxIndexBytes?: number;                  // 默认 12 * 1024
+}
+
+// 仅向模型暴露 3 个极简工具（Worker 仅获得前 2 个 + 可选 propose）：
+// 1. memory_read({ scope, path })                  → 按需读 topics/*.md 或 rollouts/*.md
+// 2. memory_search({ query, scopes?, limit? })     → 走 FTS5 派生缓存搜标题/摘要/正文
+// 3. memory_write({ scope, slug, name, description, type, body, action?: "upsert" | "delete" })</code></pre>
+
+      <h3>7.3 配置（<code>~/.alphacode/config.yaml</code>）与极简开关接口</h3>
+<pre><code># 全部字段可选；默认关闭（opt-in），在 Settings 打开开关或手动设为 true 即生效
+memory:
+  enabled: false                 # 全局总开关（对齐 Codex memories = true）
+  autoExtract: true              # Phase 2 · Stage 1：会话闲置后后台异步抽取
+  autoDream: true                # Phase 2 · Stage 2：空闲期自动四步整固
+  maxIndexLines: 200             # MEMORY.md 首轮注入行数硬上限
+  maxIndexBytes: 12288           # 首轮合并记忆字节硬上限（12 KiB）
+  dream:
+    minIntervalHours: 24         # 对齐 Claude Code 默认门控
+    minNewRollouts: 5
+  model:                         # 可选：指定轻量模型跑 Stage 1/2；留空复用会话/Router 默认模型
+    # id: codex/gpt-6.1-mini
+    # maxOutputTokens: 4096</code></pre>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>接入面</th><th>接口 / 命令</th><th>职责（无独立管理 UI，改动面极小）</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Settings 开关 API</strong></td><td><code>GET / PATCH /api/settings/memory</code></td><td>读写 <code>config.yaml</code> 的 <code>memory.enabled</code> 并返回本地目录路径 <code>~/.alphacode/memory/</code>；复用现有 <code>global-config.ts</code> 原子写逻辑</td></tr>
+            <tr><td><strong>Web / Desktop</strong></td><td><code>settings-page.tsx</code> 新增 1 行开关<br><code>bot-settings-page.tsx</code> 复用 <code>memoryMode</code> 开关</td><td><strong>不新增页面、不加侧栏入口、不做编辑器</strong>；开关开启后新会话与 Bot 自动加载记忆</td></tr>
+            <tr><td><strong>CLI</strong></td><td><code>/remember &lt;内容&gt;</code> · <code>/memory</code> · <code>/memory dream</code></td><td>终端内显式写入 <code>owner: user</code> 记忆、打印当前生效路径/开关状态、手动触发 Stage 2 整固</td></tr>
+            <tr><td><strong>Bots 集成</strong></td><td>直接激活 <code>bots.memory_mode</code>（<code>'alphacode' | 'off'</code>）</td><td>仅在全局开关为 <code>true</code> 且 <code>bot.memoryMode !== 'off'</code> 时生效；Router 可读写，Worker 严禁写</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- 08 -->
+    <!-- ================================================================== -->
+    <section id="s8">
+      <h2><span class="sec-badge">08</span>两阶段精简落地路线与待确认点</h2>
+      <p>拿掉独立 Memory UI 后，前端改动收敛到<strong>仅 1 个全局开关（+ Bot 设置页复用开关）</strong>，整个记忆模块只需 <strong>2 个非常紧凑的阶段</strong> 即可交付：</p>
+
+      <div class="cards">
+        <div class="card">
+          <span class="tag tag-blue">Phase 1 · 文件底座 + 在线记忆 + 启用开关（先跑通）</span>
+          <strong>Claude Code 式主题文件 + 首轮注入 + 3 工具 + 极简开关</strong>
+          <p>1. 新增 <code>@alpha/adk-memory</code> 包与 <code>~/.alphacode/memory/{user,projects,bots}</code> 目录约定；<br>
+          2. 实现 <code>MEMORY.md</code> 200 行/12 KiB 硬截断、YAML Frontmatter 解析、Secret 脱敏、<code>owner: user</code> 锁校验；<br>
+          3. 实现 <code>createMemoryPlugin</code> 接入普通项目会话与 Multi-Bot（严格实施 Worker 只读 + <code>pending/</code> 隔离）；<br>
+          4. 在 <code>global-config.ts</code>、<code>/api/settings/memory</code> 与 <code>settings-page.tsx</code> 加上启用开关，补齐 CLI <code>/remember</code> 与 <code>/memory</code>。</p>
+        </div>
+        <div class="card">
+          <span class="tag tag-purple">Phase 2 · Codex 式双阶段后台流水线 + Auto-Dream</span>
+          <strong>SQLite 租约调度 + Stage 1 抽取 + Stage 2 四步整固</strong>
+          <p>1. 落地 <code>sessions.db.memory.db</code>（<code>memory_jobs</code>、<code>stage1_outputs</code>、<code>memory_files_fts</code>）；<br>
+          2. 上线 Stage 1 后台异步抽取（会话闲置 &amp; <code>adk-context</code> 压缩前触发，主 Agent 本轮已写自动跳过，产出 <code>rollouts/*.md</code>）；<br>
+          3. 上线 Stage 2 Auto-Dream（24h + 5 Rollouts 门控，Orient → Gather → Consolidate → Prune，自动 <code>.snapshots/</code> 备份与回滚）；<br>
+          4. 上线 <code>memory_search</code> FTS5 检索与历史对话回查能力。</p>
+        </div>
+      </div>
+
+      <h3>实施前仅剩 2 个细节确认</h3>
+      <div class="cards">
+        <div class="card card-tint">
+          <span class="tag tag-blue">确认 1 · 开关默认值</span>
+          <strong>全局 <code>memory.enabled</code> 默认 <code>false</code>（手动打开启用），还是默认 <code>true</code>？</strong>
+          <p>推荐先默认 <code>false</code>（对齐 OpenAI Codex <code>memories = true</code> opt-in 做法），在 Settings 里打开开关后即刻生效，跑稳后再评估是否改为默认开启。</p>
+        </div>
+        <div class="card card-tint">
+          <span class="tag tag-ok">确认 2 · 落地范围</span>
+          <strong>先直接按 Phase 1（文件底座 + 首轮注入 + 3 工具 + Bot 防火墙 + Settings 开关）开始写代码，还是把 Phase 2 后台抽取也一起做？</strong>
+          <p>建议先交付 Phase 1 跑通端到端与离线单测，验收顺手后再紧接着补 Phase 2 的 Stage 1 抽取与 Auto-Dream。</p>
+        </div>
+      </div>
+
+      <footer class="foot">
+        <span>Alpha Engineering Design · Memory v2.1（Claude Code × OpenAI Codex · 极简开关版）</span>
+        <span>文档路径：docs/memory-technical-design.html</span>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  const root = document.documentElement;
+  const themeBtn = document.getElementById("themeToggle");
+  const saved = localStorage.getItem("alphacode-doc-theme");
+  if (saved === "light" || saved === "dark") root.dataset.theme = saved;
+  themeBtn.addEventListener("click", () => {
+    const isDark = root.dataset.theme === "dark" || (!root.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+    const next = isDark ? "light" : "dark";
+    root.dataset.theme = next;
+    localStorage.setItem("alphacode-doc-theme", next);
+  });
+
+  // =========================================================================
+  // Interactive Claude Code x Codex Memory Workbench
+  // =========================================================================
+  let currentScope = "project";
+  let currentFileKey = "MEMORY.md";
+  let viewMode = "files"; // "files" | "prompt"
+  let dreamDone = false;
+
+  const DATA = {
+    user: {
+      prefix: "user/",
+      files: {
+        "MEMORY.md": {
+          group: "index", tag: "索引", tagCls: "blue",
+          content: `# User Memory Index\n\n## Preferences\n- [交流语言与离线测试偏好](topics/user-preferences.md) — 简洁中文回复；英文代码注释；单测优先 bun:test 离线夹具\n\n## Feedback\n- [复杂改动先评审方案](topics/feedback-design-first.md) — 新模块先给 HTML 设计文档再写代码；禁止未经授权 git push`
+        },
+        "topics/user-preferences.md": {
+          group: "topics", tag: "user", tagCls: "blue", owner: "user",
+          content: `---\nname: 交流语言与离线测试偏好\ndescription: 简洁中文回复，代码英文注释，默认 bun:test 离线夹具\ntype: user\nowner: user\nupdated_at: 2026-11-05\n---\n\n日常开发在 Windows 11 + PowerShell + Bun 1.4.4 环境进行。\n技术方案与对话优先使用简洁中文；代码标识符与注释用英文。\n单测默认使用离线夹具，不自动请求真实模型端点。`
+        },
+        "topics/feedback-design-first.md": {
+          group: "topics", tag: "feedback", tagCls: "ok", owner: "user",
+          content: `---\nname: 复杂改动先评审方案\ndescription: 新模块先给 HTML 设计文档，未确认前不动代码；禁止自动 git push\ntype: feedback\nowner: user\nupdated_at: 2026-11-27\n---\n\n新增模块或跨包架构改造前，先输出离线可读 HTML 设计文档对齐方案。\n\n**Why:** 避免方向偏差导致返工。\n**How to apply:** 用户明确要求先看设计时，只写 docs/*.html 不改源码。`
+        }
+      }
+    },
+    project: {
+      prefix: "projects/alpha/",
+      files: {
+        "MEMORY.md": {
+          group: "index", tag: "索引", tagCls: "blue",
+          content: `# Project Memory Index (alpha)\n\n## Architecture & Constraints\n- [Bun + SQLite 架构基线](topics/bun-sqlite-baseline.md) — 全仓 Bun 1.4.4 + bun:sqlite；严禁修改 sessions.db v1 结构\n- [adk-context 指纹稳定约束](topics/context-fingerprint.md) — 首轮注入冻结不变，避免击穿检查点与 KV Cache\n\n## Feedback & Pitfalls\n- [Windows 路径与构建踩坑](topics/windows-pitfalls.md) — release.ts 需 POSIX 斜杠；pwsh 递归避开 node_modules\n\n## Rollout Summaries (On-Demand)\n- [2026-11-27 Multi-Bot 重构](rollouts/2026-11-27-bots-refactor.md)`
+        },
+        "topics/bun-sqlite-baseline.md": {
+          group: "topics", tag: "project", tagCls: "purp", owner: "user",
+          content: `---\nname: Bun + SQLite 架构基线\ndescription: 全仓 Bun 1.4.4 + bun:sqlite；相对导入省后缀；sessions.db v1 零侵入\ntype: project\nowner: user\nupdated_at: 2026-11-14\n---\n\n1. 全仓运行与测试统一用 Bun 1.4.4，使用内置 bun:sqlite（WAL 模式）。\n2. 相对路径 import/export 必须省略 .ts/.js 扩展名（ESLint 强制校验）。\n3. 所有派生数据（context / artifacts / bots / memory）独立存 sibling DB，绝不改 sessions.db formatVersion=1。`
+        },
+        "topics/context-fingerprint.md": {
+          group: "topics", tag: "project", tagCls: "purp", owner: "agent",
+          content: `---\nname: adk-context 指纹稳定约束\ndescription: beforeModel 注入消息变化会导致压缩检查点 fingerprint 失效\ntype: project\nowner: agent\nupdated_at: 2026-11-27\n---\n\npackages/adk-context/src/index.ts 会对全部 fixed 注入消息计算 SHA-256 指纹。\n因此 MEMORY.md 仅在会话启动时加载并冻结，不在同一会话中途改写首条消息。`
+        },
+        "topics/windows-pitfalls.md": {
+          group: "topics", tag: "feedback", tagCls: "ok", owner: "agent",
+          content: `---\nname: Windows 路径与构建踩坑\ndescription: Windows 校验和需转 POSIX 斜杠，pwsh 递归先剪枝 node_modules\ntype: feedback\nowner: agent\nupdated_at: 2026-11-22\n---\n\n1. scripts/release.ts 在 Windows 下生成 SHA256SUMS 须统一正斜杠。\n2. PowerShell 的 Get-ChildItem -Recurse -Exclude 仍会深入 node_modules，需先过滤顶层目录。`
+        },
+        "rollouts/2026-11-27-bots-refactor.md": {
+          group: "rollouts", tag: "Stage 1", tagCls: "muted", owner: "agent",
+          content: `<!-- Stage 1 自动抽取产物 · 对应 sessions.db revision=42 · 已脱敏 · 未被 Stage 2 整固 -->\n# Rollout Summary: Multi-Bot Super-agent 重构 (2026-11-27)\n\n## Durable Signals Extracted\n- [project] 提交 feadf73 已将 personal 重构为多 Bot Super-agent，bots.db 已预留 memory_mode 字段。\n- [feedback] 后台 Worker 面对不可信仓库与外部输入，严禁挂载 memory_write 工具，仅允许只读或提交 pending/ 提议。\n- [project] 记忆设计决定对标 Claude Code + OpenAI Codex，首期不引入向量库，使用 Markdown 主题文件 + 3 表 SQLite 调度。`
+        }
+      }
+    },
+    bot: {
+      prefix: "bots/bot_alpha_core/",
+      files: {
+        "MEMORY.md": {
+          group: "index", tag: "索引", tagCls: "blue",
+          content: `# Bot Memory Index (Alpha 内核助手)\n\n## Role Habits\n- [Router 零编码工具原则](topics/router-orchestration.md) — Router 只编排与汇报，所有读写代码任务均派发隔离 Worker`
+        },
+        "topics/router-orchestration.md": {
+          group: "topics", tag: "feedback", tagCls: "ok", owner: "user",
+          content: `---\nname: Router 零编码工具原则\ndescription: Router 严禁执行代码编辑，写任务必须经 dispatch_task(write) 进 Worktree\ntype: feedback\nowner: user\nupdated_at: 2026-11-27\n---\n\n作为 Alpha 内核助手的常驻 Router，保持简洁汇报并立即返回，绝不阻塞主对话框。\n写代码任务固定派发至 Git Worktree（alphacode/bot/<shortId>），由用户审阅 Diff 后合并。`
+        },
+        "pending/worker-proposal-fts5.md": {
+          group: "pending", tag: "Worker提议", tagCls: "warn", owner: "agent",
+          content: `---\nname: SQLite FTS5 中文 2-gram 预分词\ndescription: unicode61 不切分连续中文，memory_files_fts 需并列 tokens_cjk 列\ntype: project\nproposed_by: Worker tsk_9f3a (只读调研 · 隔离区待审)\n---\n\n调研 bun:sqlite 内置 FTS5 确认：unicode61 将连续中文视作整词。\n建议在派生 FTS5 表增加 tokens_cjk 重叠 2-gram 列，零依赖解决中文检索召回。\n\n[安全状态：位于 pending/ 隔离区，未经采纳绝不进入任何模型 Prompt]`
+        }
+      }
+    }
+  };
+
+  function renderTree() {
+    const scopeObj = DATA[currentScope];
+    const keys = Object.keys(scopeObj.files);
+    if (!scopeObj.files[currentFileKey]) currentFileKey = keys[0];
+
+    const groups = [
+      { id: "index", label: "常驻索引（首轮注入）" },
+      { id: "topics", label: "topics/（按需读取）" },
+      { id: "rollouts", label: "rollouts/（Stage 1 沉淀）" },
+      { id: "pending", label: "pending/（Worker 隔离区）" }
+    ];
+
+    const html = groups.map(g => {
+      const matched = keys.filter(k => scopeObj.files[k].group === g.id);
+      if (!matched.length) return "";
+      return '<div class="wf-group-label">' + g.label + '</div>' + matched.map(k => {
+        const f = scopeObj.files[k];
+        const shortName = k.includes("/") ? k.split("/").pop() : k;
+        const lockIcon = f.owner === "user" ? "🔒 " : "";
+        return (
+          '<button type="button" class="wf-file-row' + (k === currentFileKey ? ' active' : '') + '" data-key="' + k + '">' +
+            '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + lockIcon + shortName + '</span>' +
+            '<span class="wf-mini-tag ' + f.tagCls + '">' + f.tag + '</span>' +
+          '</button>'
+        );
+      }).join("");
+    }).join("");
+
+    document.getElementById("wfFileTree").innerHTML = html;
+    document.querySelectorAll(".wf-file-row").forEach(btn => {
+      btn.addEventListener("click", () => {
+        currentFileKey = btn.dataset.key;
+        viewMode = "files";
+        syncModeButtons();
+        renderAll();
+      });
+    });
+
+    const idxLines = scopeObj.files["MEMORY.md"].content.split("\n").length;
+    document.getElementById("wfLineMeter").textContent = idxLines + " / 200 行";
+    document.getElementById("wfLineBar").style.width = Math.min(100, Math.max(4, Math.round((idxLines / 200) * 100))) + "%";
+  }
+
+  function renderEditor() {
+    const pathEl = document.getElementById("wfCurrentPath");
+    const codeEl = document.getElementById("wfCodeContent");
+    const actionsEl = document.getElementById("wfFileActions");
+
+    if (viewMode === "prompt") {
+      pathEl.textContent = "beforeModel() 首轮注入预览（冻结不变 · 保护 KV Cache & adk-context 指纹）";
+      actionsEl.innerHTML = '<span class="wf-mini-tag ok">总计约 1.1 KiB / 12 KiB 上限</span>';
+      codeEl.textContent =
+`<!-- Injected ONCE at session start via @alpha/adk-memory beforeModel hook -->
+<auto_memory>
+Below are pointer indexes to your persistent cross-session memory files.
+Memory may be outdated: ALWAYS verify file paths, symbols, and behavior against the current codebase before acting.
+Call memory_read(scope, path) to read a topic file or rollout summary on demand.
+
+${DATA.user.files["MEMORY.md"].content}
+
+${DATA.project.files["MEMORY.md"].content}
+
+${DATA.bot.files["MEMORY.md"].content}
+</auto_memory>`;
+      return;
+    }
+
+    const scopeObj = DATA[currentScope];
+    const file = scopeObj.files[currentFileKey];
+    pathEl.textContent = "~/.alphacode/memory/" + scopeObj.prefix + currentFileKey;
+    codeEl.textContent = file.content;
+
+    if (file.group === "pending") {
+      actionsEl.innerHTML =
+        '<button type="button" class="wf-btn-sm ok" id="btnApprovePending">✓ 采纳并移入 topics/</button>' +
+        '<button type="button" class="wf-btn-sm warn" id="btnDropPending">✕ 拒绝丢弃</button>';
+      document.getElementById("btnApprovePending").addEventListener("click", () => {
+        DATA.project.files["topics/fts5-cjk-bigram.md"] = {
+          group: "topics", tag: "project", tagCls: "purp", owner: "user",
+          content: `---\nname: SQLite FTS5 中文 2-gram 预分词\ndescription: memory_files_fts 并列 tokens_cjk 列，零依赖支持中文检索\ntype: project\nowner: user\nupdated_at: 2026-11-27\n---\n\n经用户审核采纳自 Worker tsk_9f3a：unicode61 不切分连续中文，派生 FTS5 索引并列 tokens_cjk 重叠 2-gram 列即可无词典高召回。`
+        };
+        DATA.project.files["MEMORY.md"].content += "\n- [SQLite FTS5 中文 2-gram 预分词](topics/fts5-cjk-bigram.md) — 零依赖支持中文短语检索";
+        delete DATA.bot.files[currentFileKey];
+        currentScope = "project";
+        currentFileKey = "topics/fts5-cjk-bigram.md";
+        renderAll();
+      });
+      document.getElementById("btnDropPending").addEventListener("click", () => {
+        delete DATA.bot.files[currentFileKey];
+        currentFileKey = "MEMORY.md";
+        renderAll();
+      });
+    } else if (file.group === "topics") {
+      const isUser = file.owner === "user";
+      actionsEl.innerHTML =
+        '<button type="button" class="wf-btn-sm" id="btnToggleOwner">' +
+        (isUser ? '🔒 owner: user（点击解锁）' : '🤖 owner: agent（点击加用户锁）') +
+        '</button>';
+      document.getElementById("btnToggleOwner").addEventListener("click", () => {
+        file.owner = isUser ? "agent" : "user";
+        file.content = file.content.replace(/owner:\s*(user|agent)/, "owner: " + file.owner);
+        renderAll();
+      });
+    } else {
+      actionsEl.innerHTML = '<span class="wf-mini-tag ' + file.tagCls + '">' + file.tag + '</span>';
+    }
+  }
+
+  function syncModeButtons() {
+    document.getElementById("btnModeFiles").setAttribute("aria-pressed", String(viewMode === "files"));
+    document.getElementById("btnModePrompt").setAttribute("aria-pressed", String(viewMode === "prompt"));
+  }
+
+  function renderAll() {
+    document.querySelectorAll(".wf-scope-tab").forEach(t => t.classList.toggle("active", t.dataset.scope === currentScope));
+    renderTree();
+    renderEditor();
+  }
+
+  document.querySelectorAll(".wf-scope-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      currentScope = tab.dataset.scope;
+      currentFileKey = "MEMORY.md";
+      viewMode = "files";
+      syncModeButtons();
+      renderAll();
+    });
+  });
+
+  document.getElementById("btnModeFiles").addEventListener("click", () => {
+    viewMode = "files"; syncModeButtons(); renderEditor();
+  });
+  document.getElementById("btnModePrompt").addEventListener("click", () => {
+    viewMode = "prompt"; syncModeButtons(); renderEditor();
+  });
+
+  document.getElementById("btnRunDream").addEventListener("click", () => {
+    if (dreamDone) return;
+    dreamDone = true;
+    const stepEls = Array.from(document.querySelectorAll("#wfDreamSteps .wf-step"));
+    const logEl = document.getElementById("wfDreamLog");
+    const messages = [
+      "Orient：抢占 SQLite Dream 租约，快照备份至 .snapshots/2026-11-27T1900/",
+      "Gather：读取 1 条未消费的 stage1_outputs（2026-11-27-bots-refactor.md）",
+      "Consolidate：提炼出 topics/memory-architecture.md，跳过 1 份 owner:user 锁定文件",
+      "Prune：重写 projects/alpha/MEMORY.md（保持在 200 行内）并刷新 FTS5 缓存"
+    ];
+    let i = 0;
+    const tick = () => {
+      stepEls.forEach((el, idx) => {
+        el.classList.toggle("done", idx < i);
+        el.classList.toggle("running", idx === i);
+      });
+      logEl.textContent = messages[i];
+      if (i === 2) {
+        DATA.project.files["topics/memory-architecture.md"] = {
+          group: "topics", tag: "project", tagCls: "purp", owner: "agent",
+          content: `---\nname: Alpha Memory 对标路线与 Worker 防火墙\ndescription: 对标 Claude Code + Codex，Markdown+3表SQLite，Worker 禁写只可提议\ntype: project\nowner: agent\nupdated_at: 2026-11-27\n---\n\n[由 Stage 2 Auto-Dream 从 rollout 2026-11-27-bots-refactor 整固生成]\n1. Alpha Memory 首期不上向量库，采用 Markdown 主题文件 + SQLite 租约调度。\n2. 后台 Worker 严格只读，禁止挂载 memory_write，所有提议先入 pending/ 隔离区。`
+        };
+      }
+      if (i === 3) {
+        stepEls[3].classList.remove("running");
+        stepEls[3].classList.add("done");
+        DATA.project.files["MEMORY.md"].content =
+          DATA.project.files["MEMORY.md"].content.replace(
+            "## Rollout Summaries (On-Demand)",
+            "- [Alpha Memory 路线与 Worker 防火墙](topics/memory-architecture.md) — Markdown+3表SQLite；Worker 禁写仅提议\n\n## Rollout Summaries (On-Demand)"
+          );
+        document.getElementById("wfJobInfo").innerHTML = "<strong style='color:var(--ok)'>✓ Stage 2 已完成</strong> · 0 条待消费";
+        currentScope = "project";
+        currentFileKey = "MEMORY.md";
+        viewMode = "files";
+        syncModeButtons();
+        renderAll();
+        return;
+      }
+      i++;
+      setTimeout(tick, 550);
+    };
+    tick();
+  });
+
+  const swBtn = document.getElementById("wfGlobalSwitch");
+  const swHint = document.getElementById("wfSwitchHint");
+  if (swBtn && swHint) {
+    swBtn.addEventListener("click", () => {
+      const next = swBtn.getAttribute("aria-pressed") !== "true";
+      swBtn.setAttribute("aria-pressed", String(next));
+      swBtn.textContent = next ? "已开启 On" : "已关闭 Off";
+      swHint.innerHTML = next
+        ? "当前状态：<code>memory.enabled: true</code> — 新会话与 Bots 启动时自动加载 <code>~/.alphacode/memory/</code> 中的 <code>MEMORY.md</code> 索引，并开放 3 个记忆工具（Worker 严格只读）。"
+        : "当前状态：<code>memory.enabled: false</code> — 会话与 Bots 均保持原有行为，零额外 Token 与后台开销。";
+    });
+  }
+
+  renderAll();
+
+  // Active TOC Highlight
+  const links = Array.from(document.querySelectorAll("aside.toc a[href^='#']"));
+  const sections = links.map(a => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      links.forEach(l => l.classList.toggle("active", l.getAttribute("href") === "#" + entry.target.id));
+    }
+  }, { rootMargin: "-15% 0px -70% 0px" });
+  sections.forEach(sec => observer.observe(sec));
+})();
+</script>
+</body>
+</html>

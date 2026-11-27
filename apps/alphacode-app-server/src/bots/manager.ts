@@ -2,9 +2,12 @@ import { randomBytes } from "node:crypto";
 import type { CreateProviderOptions } from "@alpha/provider";
 import type { AppConfig } from "../config";
 import { updateBotsGlobalSettings, type BotsGlobalSettingsPatch } from "../global-config";
+import type { MemoryService } from "../memory/service";
 import type { RuntimeTrace } from "../runtime/trace-bridge";
+import { encodeAttachmentInput } from "../input";
 import { fail } from "../server/security";
 import type { createRegistry } from "../server/storage";
+import { botUploadScope, botUploadUrl, createUploadStore, defaultUploadsDirectory, toChatAttachment, type UploadStore } from "../uploads";
 import {
   botColorIds,
   botShapeIds,
@@ -51,6 +54,8 @@ export interface BotManagerOptions {
   configDirectory?: string;
   registry: Awaited<ReturnType<typeof createRegistry>>;
   trace?: RuntimeTrace;
+  memory?: MemoryService;
+  uploads?: UploadStore;
   createWorkerChat?: BotWorkerChatFactory;
   providerForRole?: (role: "router" | "worker", config: AppConfig, botId: string) => CreateProviderOptions | undefined;
   watchdogIntervalMs?: number;
@@ -70,7 +75,8 @@ export interface BotManager {
   markVisited(botId: string): Promise<BotSummaryView>;
   setArchived(botId: string, archived: boolean): Promise<BotSummaryView>;
   deleteBot(botId: string, options?: { forceCleanupWorktrees?: boolean }): Promise<BotDeleteResult>;
-  sendMessage(botId: string, requestId: string, input: string): Promise<BotMessageReceipt>;
+  hasBot(botId: string): boolean;
+  sendMessage(botId: string, requestId: string, input: string, attachmentIds?: readonly string[]): Promise<BotMessageReceipt>;
   cancelRouter(botId: string): void;
   answerApproval(botId: string, approvalId: string, taskId: string, allow: boolean): void;
   steerTask(botId: string, taskId: string, input: string): Promise<{ ok: boolean; reason?: string }>;
@@ -83,6 +89,7 @@ export interface BotManager {
   updateDefaults(patch: BotsGlobalSettingsPatch): Promise<BotsGlobalConfigView>;
   publishExternalTrigger(botId: string, input: { threadId: string; kind: string; actor: string; text: string; idempotencyKey?: string }): Promise<{ route: string; routedTaskIds?: readonly string[] }>;
   notifyProjectsChanged(): void;
+  notifyMemorySettingsChanged(): void;
   runWatchdogOnce(): Promise<{ alerts: number; prunedWorktrees: number }>;
   subscribeIndex(listener: () => void): () => void;
   subscribeBot(botId: string, listener: () => void): () => void;
@@ -146,6 +153,7 @@ function isNewerThan(timestamp: string | undefined, reference: string | undefine
 
 export function createBotManager(options: BotManagerOptions): BotManager {
   const store = createBotsStore(`${options.databasePath}.bots.db`);
+  const uploads = options.uploads ?? createUploadStore(defaultUploadsDirectory(options.databasePath));
   // Crash recovery: preserve worktrees and sessions, never silently replay interrupted write tasks.
   store.markRunningTasksInterrupted();
 
@@ -218,6 +226,8 @@ export function createBotManager(options: BotManagerOptions): BotManager {
       resolveBotConfig: resolveBotCfg,
       providerForRole: options.providerForRole,
       trace: options.trace,
+      memory: options.memory,
+      uploads,
       onChanged: () => notifyBot(botId),
     });
     wakeRouter = () => router.schedule();
@@ -237,6 +247,7 @@ export function createBotManager(options: BotManagerOptions): BotManager {
     createWorkerChat: options.createWorkerChat,
     providerForRole: options.providerForRole,
     trace: options.trace,
+    memory: options.memory,
     onTaskEvent(event) {
       if (!store.getBot(event.botId)) return;
       const handle = ensureHandle(event.botId);
@@ -410,7 +421,7 @@ export function createBotManager(options: BotManagerOptions): BotManager {
         ...(input.workerModel ? { workerModel: input.workerModel } : {}),
         routerSessionId: "main",
         sortOrder: store.nextSortOrder(),
-        memoryMode: "alphacode",
+        memoryMode: input.memoryMode === "off" ? "off" : "alphacode",
         lastVisitedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -459,6 +470,9 @@ export function createBotManager(options: BotManagerOptions): BotManager {
       if (nextRouterModel !== undefined) nextPatch.routerModel = nextRouterModel;
       const nextWorkerModel = applyModelOverridePatch(current.workerModel, patch.workerModel);
       if (nextWorkerModel !== undefined) nextPatch.workerModel = nextWorkerModel;
+      if (patch.memoryMode !== undefined) {
+        nextPatch.memoryMode = patch.memoryMode === "off" ? "off" : "alphacode";
+      }
 
       const updated = store.updateBot(botId, nextPatch) ?? current;
       handles.get(botId)?.router.markConfigDirty();
@@ -508,6 +522,7 @@ export function createBotManager(options: BotManagerOptions): BotManager {
         handles.delete(botId);
       }
       store.deleteBot(botId);
+      await uploads.removeScope(botUploadScope(botId));
       botListeners.delete(botId);
       notifyIndex();
       return {
@@ -515,13 +530,21 @@ export function createBotManager(options: BotManagerOptions): BotManager {
         cleanedWorktrees: deleteOptions.forceCleanupWorktrees ? unmerged.length : 0,
       };
     },
-    async sendMessage(botId, requestId, input) {
+    hasBot(botId) {
+      return Boolean(store.getBot(botId));
+    },
+    async sendMessage(botId, requestId, input, attachmentIds) {
       const bot = requireBot(botId);
       if (bot.archivedAt) return fail(409, "BOT_ARCHIVED");
       if (!options.registry.configs.has(bot.projectId)) return fail(409, "BOT_PROJECT_UNAVAILABLE");
       if (!/^[a-zA-Z0-9_-]{1,100}$/.test(requestId)) return fail(400, "INVALID_REQUESTID");
       const trimmed = input.trim();
-      if (!trimmed) return fail(400, "INVALID_INPUT");
+      const ids = attachmentIds ?? [];
+      if (!trimmed && ids.length === 0) return fail(400, "INVALID_INPUT");
+      const stored = ids.length ? await uploads.resolveMany(botUploadScope(botId), ids) : undefined;
+      const payload = stored?.length
+        ? encodeAttachmentInput(trimmed, stored.map(item => toChatAttachment(item, botUploadUrl(botId, item.id))))
+        : trimmed;
 
       const handle = ensureHandle(botId);
       const res = await handle.eventBus.publish({
@@ -531,7 +554,7 @@ export function createBotManager(options: BotManagerOptions): BotManager {
         priority: "normal",
         idempotencyKey: `bot:${botId}:msg:${requestId}`,
         actor: "user",
-        text: trimmed,
+        text: payload,
       });
       return {
         requestId,
@@ -602,6 +625,12 @@ export function createBotManager(options: BotManagerOptions): BotManager {
         for (const listener of listeners) listener();
       }
       for (const listener of indexListeners) listener();
+    },
+    notifyMemorySettingsChanged() {
+      for (const handle of handles.values()) {
+        handle.router.markConfigDirty();
+      }
+      notifyIndex();
     },
     runWatchdogOnce() {
       return watchdog.runOnce();

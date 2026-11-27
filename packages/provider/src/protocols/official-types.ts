@@ -5,16 +5,25 @@ import type { JsonObject } from '../types';
 // https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
 // https://developers.openai.com/api/reference/resources/responses/methods/create
 // https://platform.claude.com/docs/en/api/messages/create
+export type OpenAIChatUserContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
 export type OpenAIChatMessage =
-  | { role: 'system' | 'developer' | 'user'; content: string }
+  | { role: 'system' | 'developer'; content: string }
+  | { role: 'user'; content: string | OpenAIChatUserContentPart[] }
   | { role: 'assistant'; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }> }
   | { role: 'tool'; tool_call_id: string; content: string };
+export type OpenAIResponseUserContentPart =
+  | { type: 'input_text'; text: string }
+  | { type: 'input_image'; image_url: string };
 export type OpenAIResponseInput =
-  | { role: 'system' | 'developer' | 'user' | 'assistant'; content: string }
+  | { role: 'system' | 'developer' | 'assistant'; content: string }
+  | { role: 'user'; content: string | OpenAIResponseUserContentPart[] }
   | { type: 'function_call_output'; call_id: string; output: string }
   | { type: 'function_call'; call_id: string; name: string; arguments: string };
 export type AnthropicMessageBlock =
   | { type: 'text'; text: string }
+  | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } }
   | { type: 'tool_use'; id: string; name: string; input: JsonObject }
   | { type: 'tool_result'; tool_use_id: string; content: string };
 export interface OpenAIChatCompletionRequest {

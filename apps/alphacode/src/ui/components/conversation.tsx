@@ -23,9 +23,9 @@ export function Conversation(props: { messages: readonly ChatMessage[] }) {
       stickyScroll stickyStart="bottom" scrollX={false} contentOptions={{ gap: 1, paddingRight: 1 }}
       scrollbarOptions={{ showArrows: false, trackOptions: { backgroundColor: colors.background, foregroundColor: colors.border } }}>
       <Welcome empty={props.messages.length === 0} />
-      {props.messages.map(message => (message.text || message.completion) ? (
+      {props.messages.map(message => (message.text || message.attachments?.length || message.completion) ? (
         <box key={message.id} flexDirection="column" flexShrink={0} marginBottom={message.tool ? 0 : 1}>
-          {message.text && (message.tool ? <ToolRecordView tool={message.tool} /> : (
+          {(message.text || message.attachments?.length) && (message.tool ? <ToolRecordView tool={message.tool} /> : (
             <box id={`message-${message.id}`} flexDirection="row" flexShrink={0} paddingX={1}
               paddingY={message.role === "user" ? 1 : 0}
               backgroundColor={message.role === "user" ? colors.surface : undefined}>
@@ -33,13 +33,18 @@ export function Conversation(props: { messages: readonly ChatMessage[] }) {
                 {message.role === "user" ? "›" : message.role === "tool" ? "↳" : "•"}
               </text>
               <box flexDirection="column" flexGrow={1} minWidth={0}>
-                {message.role === "assistant" ? syntaxStyle && (
+                {message.attachments?.length ? (
+                  <text fg={colors.muted}>
+                    {message.attachments.map(item => `[${item.name}]`).join(" ")}
+                  </text>
+                ) : null}
+                {message.text ? (message.role === "assistant" ? syntaxStyle && (
                   <markdown content={message.localResult ? presentLocalResult(t, message.localResult) : message.text} syntaxStyle={syntaxStyle} streaming={message.streaming ?? false} />
                 ) : (
                   <text fg={message.role === "tool" ? colors.muted : colors.foreground}>
                     {message.text}{message.role === "tool" && message.note ? ` · ${presentNote(t, message)}` : ""}
                   </text>
-                )}
+                )) : null}
                 {message.note && message.role !== "tool" && <text fg={colors.muted} marginTop={1}>{presentNote(t, message)}</text>}
               </box>
             </box>

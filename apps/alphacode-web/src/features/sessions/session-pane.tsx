@@ -45,7 +45,7 @@ export function SessionPane({ workspace, contentId = "session-content" }: { work
     <SessionQueue key={selectedSessionId} requests={view?.state.queuedRequests} disabled={!workspace.connected || workspace.actions.controlling}
       canSteer={Boolean(view?.state.canSteer)} onRemove={workspace.actions.cancelQueued} onEdit={workspace.actions.editQueued}
       onMove={workspace.actions.moveQueued} onSteer={workspace.actions.steerQueued} />
-    <PromptInput key={`composer-${selectedSessionId}`} draft={draft} onChange={workspace.updateDraft} focusRequest={workspace.focusRequest}
+    <PromptInput key={`composer-${selectedSessionId}`} draft={draft} onChange={workspace.updateDraft} onAddFiles={workspace.addFiles} focusRequest={workspace.focusRequest}
       folder={isWelcome ? selectedFolder : undefined}
       projectPicker={isWelcome && (selectedFolder || (!workspace.projects.isPending && !workspace.index.isPending)) ? <ProjectPicker folders={workspace.folders.filter(folder => folder.path)} selectedId={selectedFolder?.path ? selectedFolder.id : undefined} onSelect={workspace.selectProject}
         onCreate={() => workspace.setProjectDialogOpen(true)} disabled={Boolean(workspace.submitting)} /> : undefined}
@@ -53,7 +53,7 @@ export function SessionPane({ workspace, contentId = "session-content" }: { work
       contextUsage={view?.state.contextUsage ?? (selectedSession?.local ? selectedFolder?.defaultContext : undefined)}
       permissionMode={workspace.permissionMode} onPermissionChange={workspace.changePermission}
       canChangePermission={workspace.canChangePermission} permissionSaving={workspace.actions.permissionSaving || Boolean(view?.state.settingsSaving)}
-      onSend={() => void workspace.send()} canSend={workspace.canSend} busy={workspace.busy} submitting={workspace.submitting}
+      onSend={() => void workspace.send()} canSend={workspace.canSend} busy={workspace.busy} submitting={workspace.submitting} uploading={workspace.uploading}
       onCancel={workspace.actions.cancel} canCancel={workspace.connected && !workspace.actions.controlling && Boolean(view?.requestId) && view?.state.phase !== "stopping"}
       status={isWelcome ? "" : !workspace.connected ? connectionLabel : workspace.busy ? view?.state.phase === "stopping" ? t("sessions:stopping") : "" : view?.state.canSend ? "" : t("sessions:unavailable")} />
   </>;

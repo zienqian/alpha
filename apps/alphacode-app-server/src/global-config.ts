@@ -43,9 +43,37 @@ export interface BotsGlobalSettingsPatch {
   worker?: BotRoleModelPatch | null;
 }
 
+export interface MemoryGlobalDefaults {
+  enabled: boolean;
+  autoExtract: boolean;
+  autoDream: boolean;
+  maxIndexLines?: number;
+  maxIndexBytes?: number;
+  dreamMinIntervalHours?: number;
+  dreamMinNewRollouts?: number;
+  model?: BotRoleModelDefaults;
+}
+
+export interface MemoryGlobalSettingsPatch {
+  enabled?: boolean;
+  autoExtract?: boolean;
+  autoDream?: boolean;
+  maxIndexLines?: number | null;
+  maxIndexBytes?: number | null;
+  dreamMinIntervalHours?: number | null;
+  dreamMinNewRollouts?: number | null;
+}
+
+export const defaultMemorySettings: MemoryGlobalDefaults = Object.freeze({
+  enabled: false,
+  autoExtract: true,
+  autoDream: true,
+});
+
 export interface GlobalDefaults {
   language?: LanguagePreference;
   skills?: SkillsSettings;
+  memory?: MemoryGlobalDefaults;
   modelId?: string;
   contextWindow?: number;
   maxOutputTokens?: number;
@@ -73,6 +101,10 @@ export function defaultWorkspacePath(directory: string, defaults: GlobalDefaults
 
 export function worktreeRootPath(directory: string, defaults: GlobalDefaults): string {
   return resolve(directory, expandHome(defaults.bots?.worktreeRoot ?? "worktrees"));
+}
+
+export function memoryDirectoryPath(directory: string): string {
+  return resolve(directory, "memory");
 }
 
 export interface SkillsSettings {
@@ -199,7 +231,7 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     throw new ConfigurationError(`${file}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`, { code: "INVALID_YAML", params: { file } });
   }
   if (value === null) return {};
-  const root = object(value, file, "root", ["provider", "model", "context", "permissionMode", "databasePath", "defaultWorkspace", "skills", "language", "bots"]);
+  const root = object(value, file, "root", ["provider", "model", "context", "permissionMode", "databasePath", "defaultWorkspace", "skills", "language", "bots", "memory"]);
   const defaults: GlobalDefaults = {};
   if (root.context !== undefined) {
     const context = object(root.context, file, "context", ["autoCompact"]);
@@ -262,6 +294,49 @@ export function parseGlobalConfig(source: string, file: string): GlobalDefaults 
     if (rawBots.router !== undefined) bots.router = parseBotRole(rawBots.router, file, "bots.router");
     if (rawBots.worker !== undefined) bots.worker = parseBotRole(rawBots.worker, file, "bots.worker");
     defaults.bots = bots;
+  }
+  if (root.memory !== undefined) {
+    const rawMemory = object(root.memory, file, "memory", ["enabled", "autoExtract", "autoDream", "maxIndexLines", "maxIndexBytes", "dream", "model", "provider"]);
+    const memory: MemoryGlobalDefaults = { ...defaultMemorySettings };
+    for (const field of ["enabled", "autoExtract", "autoDream"] as const) {
+      if (rawMemory[field] === undefined) continue;
+      if (typeof rawMemory[field] !== "boolean") invalid(file, `memory.${field}`);
+      memory[field] = rawMemory[field];
+    }
+    if (rawMemory.maxIndexLines !== undefined) {
+      if (typeof rawMemory.maxIndexLines !== "number" || !Number.isSafeInteger(rawMemory.maxIndexLines) || rawMemory.maxIndexLines < 20 || rawMemory.maxIndexLines > 2000) {
+        invalid(file, "memory.maxIndexLines (20..2000)");
+      }
+      memory.maxIndexLines = rawMemory.maxIndexLines;
+    }
+    if (rawMemory.maxIndexBytes !== undefined) {
+      if (typeof rawMemory.maxIndexBytes !== "number" || !Number.isSafeInteger(rawMemory.maxIndexBytes) || rawMemory.maxIndexBytes < 1024 || rawMemory.maxIndexBytes > 131072) {
+        invalid(file, "memory.maxIndexBytes (1024..131072)");
+      }
+      memory.maxIndexBytes = rawMemory.maxIndexBytes;
+    }
+    if (rawMemory.dream !== undefined) {
+      const dream = object(rawMemory.dream, file, "memory.dream", ["minIntervalHours", "minNewRollouts"]);
+      if (dream.minIntervalHours !== undefined) {
+        if (typeof dream.minIntervalHours !== "number" || !Number.isSafeInteger(dream.minIntervalHours) || dream.minIntervalHours < 1 || dream.minIntervalHours > 720) {
+          invalid(file, "memory.dream.minIntervalHours (1..720)");
+        }
+        memory.dreamMinIntervalHours = dream.minIntervalHours;
+      }
+      if (dream.minNewRollouts !== undefined) {
+        if (typeof dream.minNewRollouts !== "number" || !Number.isSafeInteger(dream.minNewRollouts) || dream.minNewRollouts < 1 || dream.minNewRollouts > 100) {
+          invalid(file, "memory.dream.minNewRollouts (1..100)");
+        }
+        memory.dreamMinNewRollouts = dream.minNewRollouts;
+      }
+    }
+    if (rawMemory.model !== undefined || rawMemory.provider !== undefined) {
+      const modelCfg: BotRoleModelDefaults = {};
+      if (rawMemory.model !== undefined) Object.assign(modelCfg, parseModelSection(rawMemory.model, file, "memory.model"));
+      if (rawMemory.provider !== undefined) Object.assign(modelCfg, parseProviderSection(rawMemory.provider, file, "memory.provider"));
+      memory.model = modelCfg;
+    }
+    defaults.memory = memory;
   }
   return defaults;
 }
@@ -419,6 +494,45 @@ export async function updateBotsGlobalSettings(directory: string, patch: BotsGlo
   }
   const updated = doc.toString();
   const verified = parseGlobalConfig(updated, configPath).bots ?? {};
+  const temporary = `${configPath}.${randomUUID()}.tmp`;
+  await writeFile(temporary, updated, { mode: 0o600 });
+  await rename(temporary, configPath);
+  return verified;
+}
+
+export async function updateMemorySettings(directory: string, patch: MemoryGlobalSettingsPatch): Promise<MemoryGlobalDefaults> {
+  const configPath = join(directory, "config.yaml");
+  await mkdir(directory, { recursive: true });
+  try { await writeFile(configPath, template, { flag: "wx" }); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
+  const source = await readBounded(configPath, 64 * 1024);
+  const current = parseGlobalConfig(source, configPath).memory ?? defaultMemorySettings;
+  const doc = parseDocument(source || template, { prettyErrors: false, uniqueKeys: true, stringKeys: true, merge: false });
+  if (doc.errors.length || doc.warnings.length) {
+    throw new ConfigurationError(`${configPath}: Invalid YAML. Check indentation, duplicate keys, or unsupported tags and aliases.`, { code: "INVALID_YAML", params: { file: configPath } });
+  }
+  if (!doc.contents) doc.contents = parseDocument("{}").contents;
+  doc.setIn(["memory", "enabled"], patch.enabled ?? current.enabled);
+  if (patch.autoExtract !== undefined) doc.setIn(["memory", "autoExtract"], patch.autoExtract);
+  if (patch.autoDream !== undefined) doc.setIn(["memory", "autoDream"], patch.autoDream);
+  if (patch.maxIndexLines !== undefined) {
+    if (patch.maxIndexLines === null) doc.deleteIn(["memory", "maxIndexLines"]);
+    else doc.setIn(["memory", "maxIndexLines"], patch.maxIndexLines);
+  }
+  if (patch.maxIndexBytes !== undefined) {
+    if (patch.maxIndexBytes === null) doc.deleteIn(["memory", "maxIndexBytes"]);
+    else doc.setIn(["memory", "maxIndexBytes"], patch.maxIndexBytes);
+  }
+  if (patch.dreamMinIntervalHours !== undefined) {
+    if (patch.dreamMinIntervalHours === null) doc.deleteIn(["memory", "dream", "minIntervalHours"]);
+    else doc.setIn(["memory", "dream", "minIntervalHours"], patch.dreamMinIntervalHours);
+  }
+  if (patch.dreamMinNewRollouts !== undefined) {
+    if (patch.dreamMinNewRollouts === null) doc.deleteIn(["memory", "dream", "minNewRollouts"]);
+    else doc.setIn(["memory", "dream", "minNewRollouts"], patch.dreamMinNewRollouts);
+  }
+  const updated = doc.toString();
+  const verified = parseGlobalConfig(updated, configPath).memory ?? defaultMemorySettings;
   const temporary = `${configPath}.${randomUUID()}.tmp`;
   await writeFile(temporary, updated, { mode: 0o600 });
   await rename(temporary, configPath);

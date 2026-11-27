@@ -4,16 +4,22 @@ import { randomUUID } from "node:crypto";
 import { createAgent, type Agent, type JsonObject, type Tool, type ToolInfo } from "@alpha/adk/core";
 import { createContextManager } from "@alpha/adk-context";
 import { createSqliteContextStore } from "@alpha/adk-context/sqlite";
+import { createMemoryPlugin, type MemoryPluginHandle, type MemoryScope } from "@alpha/adk-memory";
 import { createSessionManager, createSessionPlugin, type Session, type SessionManager, type SessionStore } from "@alpha/adk-session";
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
 import { createTracePlugin } from "@alpha/adk-trace";
-import { createProvider, type CreateProviderOptions } from "@alpha/provider";
+import { createProvider, type CreateProviderOptions, type LanguageModel } from "@alpha/provider";
 import type { ChatMessage, ChatPhase, ContextUsage } from "../chat/contracts";
 import type { AppConfig } from "../config";
+import type { MemoryModelConnection, MemoryService } from "../memory/service";
+import { createSessionHistorySearcher } from "../memory/history-search";
 import { modelContext } from "../runtime/context-usage";
 import { subscribeToAgent } from "../runtime/events";
 import { restoreMessages } from "../runtime/history";
+import { wrapModelWithAttachments } from "../runtime/attachments";
 import type { RuntimeTrace } from "../runtime/trace-bridge";
+import { decodeUserInput, parseAttachmentInput } from "../input";
+import { botUploadScope, botUploadUrl, createUploadStore, defaultUploadsDirectory, type UploadStore } from "../uploads";
 import type { createRegistry } from "../server/storage";
 import type {
   BotRecord,
@@ -117,15 +123,23 @@ export function createBotRouter(options: {
   resolveBotConfig: (bot: BotRecord) => Promise<ResolvedBotRuntimeConfig>;
   providerForRole?: (role: "router" | "worker", config: AppConfig, botId: string) => CreateProviderOptions | undefined;
   trace?: RuntimeTrace;
+  memory?: MemoryService;
+  uploads?: UploadStore;
   onChanged: () => void;
 }): BotRouter {
   const namespace = botRouterNamespace(options.botId);
   const mainThread = botMainThreadId(options.botId);
+  const uploads = options.uploads ?? createUploadStore(defaultUploadsDirectory(options.databasePath));
+  const uploadScope = botUploadScope(options.botId);
+  const urlForAttachment = (id: string) => botUploadUrl(options.botId, id);
   let sessionId = options.getBot()?.routerSessionId ?? "main";
   let sessionStore: SessionStore | undefined;
   let manager: SessionManager | undefined;
   let session: Session | undefined;
   let agent: Agent<undefined> | undefined;
+  let activeModel: LanguageModel | undefined;
+  let activeConnection: MemoryModelConnection | undefined;
+  let memoryHandle: MemoryPluginHandle<undefined> | undefined;
   let detachAgent: (() => void) | undefined;
   let detachTrace: (() => void) | undefined;
   let contextStore: ReturnType<typeof createSqliteContextStore> | undefined;
@@ -408,6 +422,7 @@ export function createBotRouter(options: {
       await mkdir(dirname(options.databasePath), { recursive: true });
       sessionStore = await createSqliteSessionStore({ filename: options.databasePath });
     }
+    const activeSessionStore = sessionStore;
     if (!manager) {
       manager = createSessionManager({ store: sessionStore, namespace, agentKey: botRouterAgentKey });
     }
@@ -417,7 +432,7 @@ export function createBotRouter(options: {
         session = await manager.openSession(sessionId);
         if (messages.length === 0) {
           const snap = await session.getSnapshot();
-          messages = restoreMessages(snap.data);
+          messages = restoreMessages(snap.data, urlForAttachment);
         }
       } else {
         session = await manager.createSession({ id: sessionId, title: bot.name });
@@ -427,6 +442,8 @@ export function createBotRouter(options: {
     const projectCfg = options.registry.configs.get(bot.projectId);
     const projectName = projectCfg ? projectSummaryName(projectCfg.workspaceRoot, projectCfg.projectName) : bot.projectId;
     const instructions = buildBotRouterInstructions(bot, projectName, projectCfg?.workspaceRoot);
+    const memorySettings = options.memory ? await options.memory.getSettings() : undefined;
+    const memoryEnabled = Boolean(options.memory && memorySettings?.enabled && bot.memoryMode !== "off");
     const fingerprint = JSON.stringify({
       modelId: routerRole.modelId,
       baseURL: routerRole.baseURL,
@@ -435,6 +452,8 @@ export function createBotRouter(options: {
       contextWindow: routerRole.contextWindow,
       maxOutputTokens: routerRole.maxOutputTokens,
       instructions,
+      projectId: bot.projectId,
+      memoryEnabled,
     });
 
     if (agent && !configDirty && activeFingerprint === fingerprint) {
@@ -462,6 +481,20 @@ export function createBotRouter(options: {
       maxOutputTokens: routerRole.maxOutputTokens,
       auto: config.global.defaults.autoCompact,
       store: contextStore,
+      onBeforeCompact(event) {
+        if (options.memory && memoryHandle && activeModel) {
+          options.memory.scheduleStage1({
+            scope: { type: "bot", id: bot.id },
+            sessionKey: `${namespace}:${sessionId}:compact:${event.cutoff}`,
+            sessionId,
+            sessionRevision: event.cutoff,
+            messages: event.messages,
+            alreadyWroteInRun: false,
+            model: activeModel,
+            connection: activeConnection,
+          });
+        }
+      },
       onEvent(event) {
         if (event.type === "usage" && contextUsage) {
           contextUsage = {
@@ -515,8 +548,32 @@ export function createBotRouter(options: {
       },
     }, providerOptions).use("main", "chat");
 
+    memoryHandle = undefined;
+    if (memoryEnabled && options.memory) {
+      const userScope: MemoryScope = { type: "user", id: "default" };
+      const projectScope: MemoryScope = { type: "project", id: bot.projectId };
+      const botScope: MemoryScope = { type: "bot", id: bot.id };
+      memoryHandle = createMemoryPlugin<undefined>({
+        store: options.memory.store,
+        readScopes: [userScope, projectScope, botScope],
+        writeScope: botScope,
+        writableScopes: [botScope, projectScope, userScope],
+        writeMode: "direct",
+        maxIndexLines: memorySettings?.maxIndexLines,
+        maxIndexBytes: memorySettings?.maxIndexBytes,
+        historySearcher: createSessionHistorySearcher({
+          store: activeSessionStore,
+          namespaces: [namespace, bot.projectId],
+        }),
+      });
+    }
+
     const created = await createAgent<undefined>({
-      model,
+      model: wrapModelWithAttachments(model, {
+        uploads,
+        scopeId: uploadScope,
+        mode: "router",
+      }),
       instructions,
       tools: buildTools(),
       limits: {
@@ -527,6 +584,7 @@ export function createBotRouter(options: {
         maxHistoryBytes: null,
       },
       plugins: [
+        ...(memoryHandle ? [memoryHandle.plugin] : []),
         createSessionPlugin({ session }),
         contextManager.plugin<undefined>(),
         ...(options.trace ? [createTracePlugin<undefined>({ service: options.trace.service, scope: { namespace, sessionId } })] : []),
@@ -568,6 +626,13 @@ export function createBotRouter(options: {
     });
 
     agent = created;
+    activeModel = model;
+    activeConnection = {
+      baseURL: routerRole.baseURL,
+      apiKeyEnv: routerRole.apiKeyEnv,
+      noAuth: routerRole.noAuth,
+      providerOptions,
+    };
     activeModelId = routerRole.modelId;
     activeFingerprint = fingerprint;
     configDirty = false;
@@ -587,7 +652,7 @@ export function createBotRouter(options: {
     return selected;
   }
 
-  function formatBatchPrompt(batch: readonly BotTriggerRecord[]): string {
+  async function formatBatchPrompt(batch: readonly BotTriggerRecord[]): Promise<string> {
     const first = batch[0];
     if (batch.length === 1 && first?.source === "user_chat") {
       const full = first.payloadRef ? options.store.getPayload(options.botId, first.payloadRef) ?? first.summary : first.summary;
@@ -599,8 +664,18 @@ export function createBotRouter(options: {
       const full = item.source === "user_chat" && item.payloadRef
         ? (options.store.getPayload(options.botId, item.payloadRef) ?? item.summary)
         : item.summary;
+      const envelope = item.source === "user_chat" ? parseAttachmentInput(full) : undefined;
+      let summaryText = full;
+      if (envelope) {
+        const attachmentNotes: string[] = [];
+        for (const att of envelope.attachments) {
+          const stored = await uploads.get(uploadScope, att.id);
+          attachmentNotes.push(stored ? `${att.name} (${att.mediaType}, path: ${stored.path})` : `${att.name} (${att.mediaType})`);
+        }
+        summaryText = [envelope.text.trim(), `[Attached Files: ${attachmentNotes.join("; ")}]`].filter(Boolean).join(" ");
+      }
       lines.push(`- id=${item.id} thread=${item.threadId} source=${item.source} kind=${item.kind} actor=${item.actor}${item.payloadRef ? ` payloadRef=${item.payloadRef}` : ""}${links.length ? ` links=[${links.join(",")}]` : ""}`);
-      lines.push(`  summary: ${full}`);
+      lines.push(`  summary: ${summaryText}`);
     }
     return lines.join("\n");
   }
@@ -623,7 +698,8 @@ export function createBotRouter(options: {
         for (const item of batch) {
           if (item.source === "user_chat") {
             const display = item.payloadRef ? (options.store.getPayload(options.botId, item.payloadRef) ?? item.summary) : item.summary;
-            messages = [...messages, { id: item.id, role: "user", text: display }];
+            const decoded = decodeUserInput(display, urlForAttachment);
+            messages = [...messages, { id: item.id, role: "user", text: decoded.text, ...(decoded.attachments?.length ? { attachments: decoded.attachments } : {}) }];
           }
         }
         options.onChanged();
@@ -631,7 +707,7 @@ export function createBotRouter(options: {
         try {
           const config = await options.resolveBotConfig(bot);
           const { agent: activeAgent, session: activeSession } = await ensureSessionAndAgent(bot, config);
-          const prompt = formatBatchPrompt(batch);
+          const prompt = await formatBatchPrompt(batch);
           const firstId = batch[0]?.id ?? "batch";
           const requestId = `bot-router-${options.botId.slice(0, 12)}-${firstId}-${randomUUID().slice(0, 8)}`;
           phase = "running";
@@ -642,7 +718,20 @@ export function createBotRouter(options: {
           }
           if (activeSession.state.persistence?.status === "saved" && contextManager) {
             const snap = await activeSession.getSnapshot();
-            await contextManager.persist(snap.data.turns.flatMap(turn => [...turn.messages])).catch(() => undefined);
+            const allMessages = snap.data.turns.flatMap(turn => [...turn.messages]);
+            await contextManager.persist(allMessages).catch(() => undefined);
+            if (options.memory && memoryHandle && activeModel && result.status === "completed") {
+              options.memory.scheduleStage1({
+                scope: { type: "bot", id: bot.id },
+                sessionKey: `${namespace}:${activeSession.id}`,
+                sessionId: activeSession.id,
+                sessionRevision: snap.revision,
+                messages: allMessages,
+                alreadyWroteInRun: memoryHandle.wroteInLastRun(),
+                model: activeModel,
+                connection: activeConnection,
+              });
+            }
           }
           options.store.markTriggersStatus(batch.map(t => t.id), "processed");
         } catch (error) {
@@ -681,7 +770,7 @@ export function createBotRouter(options: {
       try {
         const saved = await store.read({ namespace, id: sessionId });
         if (saved && !closed && messages.length === 0) {
-          messages = restoreMessages(saved.data);
+          messages = restoreMessages(saved.data, urlForAttachment);
           options.onChanged();
         }
       } finally {

@@ -13,6 +13,7 @@ interface MarkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
+  onPasteFiles?: (files: File[]) => void;
   canSend: boolean;
   label: string;
   placeholder: string;
@@ -72,12 +73,24 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         },
       },
       handlePaste(view, event) {
-        const text = event.clipboardData?.getData("text/plain");
+        const clipboard = event.clipboardData;
+        const pastedFiles = clipboard?.files?.length
+          ? Array.from(clipboard.files)
+          : Array.from(clipboard?.items ?? [])
+              .filter(item => item.kind === "file")
+              .map(item => item.getAsFile())
+              .filter((file): file is File => Boolean(file));
+        if (pastedFiles.length > 0 && current.current.onPasteFiles) {
+          event.preventDefault();
+          current.current.onPasteFiles(pastedFiles);
+          return true;
+        }
+        const text = clipboard?.getData("text/plain");
         const active = editorRef.current;
         if (!text || !active) return false;
         if (!text.trim() || view.state.selection.$from.parent.type.spec.code) {
           view.dispatch(view.state.tr.insertText(text).scrollIntoView());
-        } else if (event.clipboardData?.getData("text/html").includes("data-pm-slice")) {
+        } else if (clipboard?.getData("text/html").includes("data-pm-slice")) {
           // Preserve formatted selections copied from this editor using ProseMirror's slice.
           return false;
         } else {

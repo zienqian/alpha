@@ -263,6 +263,7 @@ export function BotSettingsPage({ mode }: { mode: "create" | "edit" }) {
   const [color, setColor] = useState<BotColorId>("blue");
   const [permissionMode, setPermissionMode] = useState<"inherit" | PermissionMode>("inherit");
   const [maxWorkers, setMaxWorkers] = useState<string>("inherit");
+  const [memoryMode, setMemoryMode] = useState<"alphacode" | "off">("alphacode");
   const [routerRole, setRouterRole] = useState<RoleModelFormState>(() => emptyRoleForm());
   const [workerRole, setWorkerRole] = useState<RoleModelFormState>(() => emptyRoleForm());
   const [initializedFor, setInitializedFor] = useState<string>();
@@ -285,6 +286,7 @@ export function BotSettingsPage({ mode }: { mode: "create" | "edit" }) {
     setColor(bot.appearance.color);
     setPermissionMode(bot.permissionMode ?? "inherit");
     setMaxWorkers(bot.maxConcurrentWorkers ? String(bot.maxConcurrentWorkers) : "inherit");
+    setMemoryMode(bot.memoryMode === "off" ? "off" : "alphacode");
     setRouterRole(emptyRoleForm(bot.routerModel));
     setWorkerRole(emptyRoleForm(bot.workerModel));
     setInitializedFor(bot.id);
@@ -317,6 +319,7 @@ export function BotSettingsPage({ mode }: { mode: "create" | "edit" }) {
           appearance: { shape, color },
           permissionMode: permissionMode === "inherit" ? null : permissionMode,
           maxConcurrentWorkers: maxWorkers === "inherit" ? null : Number(maxWorkers),
+          memoryMode,
           routerModel: toCreateRoleOverride(routerRole),
           workerModel: toCreateRoleOverride(workerRole),
         });
@@ -330,6 +333,7 @@ export function BotSettingsPage({ mode }: { mode: "create" | "edit" }) {
           appearance: { shape, color },
           permissionMode: permissionMode === "inherit" ? null : permissionMode,
           maxConcurrentWorkers: maxWorkers === "inherit" ? null : Number(maxWorkers),
+          memoryMode,
           routerModel: toRolePatch(routerRole),
           workerModel: toRolePatch(workerRole),
         });
@@ -666,6 +670,23 @@ export function BotSettingsPage({ mode }: { mode: "create" | "edit" }) {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <label htmlFor="bot-memory-switch" className="block text-[0.8125rem] font-medium text-foreground">
+                    {t("bots:form.memoryMode")}
+                  </label>
+                  <p className="text-xs leading-[1.5] text-muted-foreground">{t("bots:form.memoryModeHelp")}</p>
+                </div>
+                <Switch
+                  id="bot-memory-switch"
+                  checked={memoryMode === "alphacode"}
+                  onCheckedChange={checked => {
+                    setMemoryMode(checked ? "alphacode" : "off");
+                    setSavedNotice(false);
+                  }}
+                />
               </div>
             </div>
           </section>

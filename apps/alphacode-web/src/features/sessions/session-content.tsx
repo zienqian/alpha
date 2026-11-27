@@ -45,7 +45,7 @@ export const SessionContent = memo(function SessionContent({ session, busy = fal
               <MessageScrollerItem key={item.id} messageId={item.id} role="listitem">
                 <article aria-label={item.type === "tools" ? t("tools:activity") : item.message.role === "user" ? t("sessions:userMessage") : t("sessions:assistantMessage")}>
                   {item.type === "tools" ? <ToolActivity messages={item.messages} active={busy && connected && phase !== "stopping" && item === last} /> : <>
-                    <LocalFileLinks sessionId={session.id} replyId={item.message.role === "assistant" ? item.message.sourceId ?? item.id : undefined}><ChatMessage role={item.message.role} content={item.message.localResult ? presentLocalResult(t, item.message.localResult) : item.message.content} streaming={busy && item.message.streaming}
+                    <LocalFileLinks sessionId={session.id} replyId={item.message.role === "assistant" ? item.message.sourceId ?? item.id : undefined}><ChatMessage role={item.message.role} content={item.message.localResult ? presentLocalResult(t, item.message.localResult) : item.message.content} attachments={item.message.attachments} streaming={busy && item.message.streaming}
                       actions={item.message.role === "assistant" && finalReplyIds.has(item.id) && !item.message.localResult && !session.local ? <TraceLauncher sessionId={session.id} replyId={item.id} /> : undefined}
                       showCopy={item.message.role === "user" || finalReplyIds.has(item.id)} /></LocalFileLinks>
                     {item.message.note && <p className="mt-2 text-xs leading-[1.45] text-muted-foreground">{presentNote(t, item.message)}</p>}

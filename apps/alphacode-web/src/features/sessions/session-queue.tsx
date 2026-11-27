@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type PointerEvent } from "react";
-import { CornerDownRight, GripVertical, ListEnd, LoaderCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { CornerDownRight, GripVertical, ListEnd, LoaderCircle, MoreHorizontal, Paperclip, Pencil, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -74,7 +74,9 @@ export function SessionQueue({ requests = [], disabled, canSteer, onRemove, onEd
   }
 
   async function saveEdit() {
-    if (!editing || disabled || editExpired || !editing.input.trim()) return;
+    const activeRequest = requests.find(item => item.requestId === editing?.requestId);
+    const hasAttachments = Boolean(activeRequest?.attachments?.length);
+    if (!editing || disabled || editExpired || (!editing.input.trim() && !hasAttachments)) return;
     if (await onEdit(editing.requestId, editing.input, editing.original)) finishEditing();
   }
 
@@ -120,10 +122,19 @@ export function SessionQueue({ requests = [], disabled, canSteer, onRemove, onEd
             {editExpired && <p role="alert" className="mt-1 text-xs text-muted-foreground">{t("sessions:queueEditExpired")}</p>}
             <div className="mt-1 flex justify-end gap-1">
               <Button size="sm" variant="ghost" disabled={disabled} onClick={finishEditing}>{t("sessions:cancelEdit")}</Button>
-              <Button size="sm" disabled={disabled || editExpired || !editing.input.trim()} onClick={() => void saveEdit()}>{t("sessions:saveEdit")}</Button>
+              <Button size="sm" disabled={disabled || editExpired || (!editing.input.trim() && !request.attachments?.length)} onClick={() => void saveEdit()}>{t("sessions:saveEdit")}</Button>
             </div>
           </div> : <>
-            <span className="min-w-0 flex-1 truncate py-2.5 leading-5" title={request.input}>{request.input}</span>
+            <div className="flex min-w-0 flex-1 items-center gap-2 py-2.5 leading-5">
+              {request.input ? <span className="min-w-0 truncate" title={request.input}>{request.input}</span> : null}
+              {request.attachments?.length ? (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground"
+                  title={request.attachments.map(item => item.name).join(", ")}>
+                  <Paperclip className="size-3 shrink-0" aria-hidden="true" />
+                  <span className="tabular-nums">{t("sessions:attachmentCount", { count: request.attachments.length })}</span>
+                </span>
+              ) : null}
+            </div>
             <div className="flex h-10 shrink-0 items-center gap-0.5 text-muted-foreground">
               <Button variant="ghost" size="sm" className="gap-1 px-1.5 font-normal" disabled={locked || !canSteer}
                 title={t("sessions:steerHint")} aria-label={t("sessions:steerQueued", { position: index + 1 })}

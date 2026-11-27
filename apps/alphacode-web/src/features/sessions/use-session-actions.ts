@@ -14,7 +14,7 @@ export function useSessionActions(view: SessionView | undefined, selectedId: str
 
   return {
     canRefresh,
-    send: (id: string, input: string) => commands.send(id, input),
+    send: (id: string, input: string, attachmentIds?: readonly string[]) => commands.send(id, input, attachmentIds),
     error: presentActionError(t, state.error),
     pending: state.pending,
     controlling: state.controlling,

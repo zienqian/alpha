@@ -49,7 +49,7 @@ export async function createRegistry(databasePath: string, directory: string) {
         modelId: input.modelId, baseURL: input.baseURL, apiKeyEnv: input.apiKeyEnv, noAuth: input.noAuth,
         contextWindow: input.contextWindow,
         maxOutputTokens: input.maxOutputTokens, autoCompact: input.autoCompact,
-        permissionMode: input.permissionMode, skills: input.skills,
+        permissionMode: input.permissionMode, skills: input.skills, memory: input.memory,
         traceEnabled: input.traceEnabled,
         globalInstructions: input.globalInstructions, globalInstructionsPath: input.globalInstructionsPath,
       };

@@ -1,9 +1,9 @@
 import type { Agent } from "@alpha/adk/core";
 import type { ChatEvent, ToolRecord } from "../chat/contracts";
 import { completeToolRecord, createToolRecord, displayText } from "./tool-records";
-import { skillInputDisplay } from "../input";
+import { decodeUserInput } from "../input";
 
-export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => void): () => void {
+export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => void, urlForAttachment?: (id: string) => string): () => void {
   let currentModel: string | undefined;
   let initialUser = true;
   const records = new Map<string, ToolRecord>();
@@ -36,7 +36,10 @@ export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => v
       case "message.commit": {
         if (event.role === "user") {
           const message = agent.state.messages.find(message => message.id === event.messageId);
-          if (!initialUser && message?.role === "user") listener({ type: "user.message", id: message.id, text: skillInputDisplay(message.content) });
+          if (!initialUser && message?.role === "user") {
+            const decoded = decodeUserInput(message.content, urlForAttachment);
+            listener({ type: "user.message", id: message.id, text: decoded.text, ...(decoded.attachments?.length ? { attachments: decoded.attachments } : {}) });
+          }
           initialUser = false;
           break;
         }

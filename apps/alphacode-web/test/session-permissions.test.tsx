@@ -77,8 +77,9 @@ describe("composer approval modes", () => {
     expect(api.fetch.mock.calls.some(([, init]) => init.method === "POST")).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: "项目说明与约定" }));
     await waitFor(() => expect(trigger()).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "新会话" }));
-    expect(trigger("完全访问")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
+    act(() => window.history.back());
+    await waitFor(() => expect(trigger("完全访问")).toBeTruthy());
     fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
     await waitFor(() => expect(sends()).toHaveLength(1));
     const mutations = api.fetch.mock.calls.filter(([, init]) => init.method === "POST");

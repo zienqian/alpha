@@ -3,14 +3,17 @@ import { createApprovals } from "./chat/approval";
 import { createChat } from "./chat/controller";
 import type { Chat } from "./chat/contracts";
 import type { AppConfig } from "./config";
-import { createRuntime } from "./runtime/create-runtime";
+import { createRuntime, type RuntimeMemoryOptions } from "./runtime/create-runtime";
 import type { SessionHandoff } from "./server/handoff";
 import type { RuntimeTrace } from "./runtime/trace-bridge";
+import type { UploadStore } from "./uploads";
 
 export async function createApplication(config: AppConfig, options: {
   provider?: CreateProviderOptions;
   restore?: SessionHandoff;
   trace?: RuntimeTrace;
+  memory?: RuntimeMemoryOptions;
+  uploads?: UploadStore;
   namespace?: string;
   accessMode?: "readonly" | "write";
   instructions?: string;
@@ -19,6 +22,8 @@ export async function createApplication(config: AppConfig, options: {
   const approvals = createApprovals();
   const runtime = await createRuntime(config, { approve: approvals.request, provider: options.provider,
     trace: options.trace,
+    memory: options.memory,
+    uploads: options.uploads,
     namespace: options.namespace,
     accessMode: options.accessMode,
     instructions: options.instructions,

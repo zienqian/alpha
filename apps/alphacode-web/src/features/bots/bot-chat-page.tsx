@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,13 +9,16 @@ import {
   GitBranch,
   Layers,
   LoaderCircle,
+  Paperclip,
   Settings,
   ShieldAlert,
   Square,
   Terminal,
+  Upload,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/react";
 import { ChatMessage } from "@/components/ai-elements/message";
+import { DraftAttachmentList } from "@/components/ai-elements/attachment-list";
 import { ReplyProgress } from "@/components/ai-elements/chain-of-thought";
 import { MarkdownEditor } from "@/components/ai-elements/markdown-editor";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +37,7 @@ import {
 } from "@/components/ui/message-scroller";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContextUsageIndicator } from "@/features/sessions/context-usage";
+import { maxAttachmentBytes, maxAttachmentCount, type DraftAttachment } from "@/features/sessions/use-session-workspace";
 import { cn } from "@/lib/utils";
 import {
   answerBotApproval,
@@ -42,6 +46,7 @@ import {
   markBotVisited,
   sendBotMessage,
   setBotArchived,
+  uploadBotFiles,
   type BotApprovalView,
 } from "./api";
 import { BotAvatar, BotStatusLabel } from "./bot-avatar";
@@ -103,6 +108,9 @@ export function BotChatPage() {
   const { t } = useTranslation();
   const detail = useBotDetail(botId);
   const [draft, setDraft] = useState("");
+  const [attachments, setAttachments] = useState<DraftAttachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const [focusRequest, setFocusRequest] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [busyAction, setBusyAction] = useState<string>();
@@ -110,6 +118,8 @@ export function BotChatPage() {
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string>();
   const lastVisitedMarker = useRef<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragDepth = useRef(0);
   const statusId = useId();
 
   const data = detail.data;
@@ -131,6 +141,10 @@ export function BotChatPage() {
 
   useEffect(() => {
     setDraft("");
+    setAttachments([]);
+    setUploading(false);
+    setDragActive(false);
+    dragDepth.current = 0;
     setActionError(undefined);
     setSelectedTaskId(undefined);
     setInspectorOpen(false);
@@ -147,27 +161,97 @@ export function BotChatPage() {
     [tasks],
   );
 
+  const hasContent = draft.trim().length > 0 || attachments.length > 0;
+  const composerDisabled = Boolean(!bot || bot.archivedAt || bot.projectMissing || submitting || uploading);
   const canSend = Boolean(
     bot &&
     !bot.archivedAt &&
     !bot.projectMissing &&
     router?.canSend !== false &&
-    draft.trim().length > 0 &&
-    !submitting,
+    hasContent &&
+    !submitting &&
+    !uploading,
   );
+
+  function addFiles(incoming: readonly File[]) {
+    if (!incoming.length || composerDisabled) return;
+    let rejectedError: string | undefined;
+    setAttachments(previous => {
+      const next = [...previous];
+      for (const file of incoming) {
+        if (next.length >= maxAttachmentCount) {
+          rejectedError ??= t("sessions:tooManyAttachments", { limit: maxAttachmentCount });
+          break;
+        }
+        if (file.size > maxAttachmentBytes) {
+          rejectedError ??= t("sessions:attachmentTooLarge", { name: file.name });
+          continue;
+        }
+        next.push({ id: crypto.randomUUID(), file, status: "idle" });
+      }
+      return next;
+    });
+    setActionError(rejectedError);
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (selected.length > 0) addFiles(selected);
+  }
+
+  function hasDraggedFiles(event: DragEvent): boolean {
+    return Array.from(event.dataTransfer?.types ?? []).includes("Files");
+  }
 
   async function handleSend() {
     if (!bot || !canSend) return;
     const text = draft.trim();
+    const currentAttachments = attachments;
     const requestId = `botreq_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
-    setSubmitting(true);
     setActionError(undefined);
+    let attachmentIds: string[] | undefined;
+    if (currentAttachments.length > 0) {
+      const pending = currentAttachments.filter(item => !item.uploaded);
+      if (pending.length > 0) {
+        const pendingIds = new Set(pending.map(item => item.id));
+        setUploading(true);
+        setAttachments(prev => prev.map(item => pendingIds.has(item.id) ? { ...item, status: "uploading", error: undefined } : item));
+        try {
+          const uploaded = await uploadBotFiles(bot.id, pending.map(item => item.file));
+          const map = new Map(pending.map((item, idx) => [item.id, uploaded[idx]] as const));
+          setAttachments(prev => prev.map(item => {
+            const saved = map.get(item.id);
+            return saved ? { ...item, status: "done", uploaded: saved, error: undefined } : item;
+          }));
+          attachmentIds = currentAttachments
+            .map(item => (item.uploaded ?? map.get(item.id))?.id)
+            .filter((itemId): itemId is string => Boolean(itemId));
+        } catch (cause) {
+          const message = botErrorMessage(t, cause);
+          setActionError(message);
+          setAttachments(prev => prev.map(item => pendingIds.has(item.id) ? { ...item, status: "error", error: message } : item));
+          setUploading(false);
+          return;
+        } finally {
+          setUploading(false);
+        }
+      } else {
+        attachmentIds = currentAttachments
+          .map(item => item.uploaded?.id)
+          .filter((itemId): itemId is string => Boolean(itemId));
+      }
+    }
+
+    setSubmitting(true);
     setDraft("");
+    setAttachments([]);
     try {
-      await sendBotMessage(bot.id, requestId, text);
+      await sendBotMessage(bot.id, requestId, text, attachmentIds);
       void detail.refetch();
     } catch (cause) {
       setDraft(text);
+      setAttachments(currentAttachments);
       setActionError(botErrorMessage(t, cause));
     } finally {
       setSubmitting(false);
@@ -410,6 +494,7 @@ export function BotChatPage() {
                         <ChatMessage
                           role={message.role}
                           content={message.text}
+                          attachments={message.attachments}
                           streaming={Boolean(router.busy && message.streaming)}
                           showCopy={!message.streaming}
                         />
@@ -458,10 +543,69 @@ export function BotChatPage() {
             </section>
           )}
 
-          <InputGroup className="composer composer-surface rounded-2xl bg-clip-padding has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-0">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            tabIndex={-1}
+            aria-hidden="true"
+            className="sr-only"
+            onChange={handleFileChange}
+          />
+          <InputGroup
+            onDragEnter={event => {
+              if (composerDisabled || !hasDraggedFiles(event)) return;
+              event.preventDefault();
+              dragDepth.current += 1;
+              setDragActive(true);
+            }}
+            onDragOver={event => {
+              if (composerDisabled || !hasDraggedFiles(event)) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "copy";
+            }}
+            onDragLeave={event => {
+              if (composerDisabled || !hasDraggedFiles(event)) return;
+              dragDepth.current = Math.max(0, dragDepth.current - 1);
+              if (dragDepth.current === 0) setDragActive(false);
+            }}
+            onDrop={event => {
+              if (composerDisabled || !hasDraggedFiles(event)) return;
+              event.preventDefault();
+              dragDepth.current = 0;
+              setDragActive(false);
+              const dropped = Array.from(event.dataTransfer.files ?? []);
+              if (dropped.length > 0) addFiles(dropped);
+            }}
+            className={cn(
+              "composer composer-surface relative rounded-2xl bg-clip-padding has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-0",
+              dragActive && "border-ring bg-muted/35",
+            )}
+          >
+            {dragActive && (
+              <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-background/85 backdrop-blur-[1px]">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-xs">
+                  <Upload className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                  {t("sessions:dropFiles")}
+                </span>
+              </div>
+            )}
+            {attachments.length > 0 && (
+              <InputGroupAddon align="block-start" className="flex-wrap gap-1.5 px-3 pt-3 pb-0">
+                <DraftAttachmentList
+                  attachments={attachments}
+                  disabled={submitting || uploading}
+                  onRemove={id => {
+                    setActionError(undefined);
+                    setAttachments(prev => prev.filter(item => item.id !== id));
+                  }}
+                />
+              </InputGroupAddon>
+            )}
             <MarkdownEditor
               value={draft}
               onChange={setDraft}
+              onPasteFiles={addFiles}
               label={t("bots:chat.draft")}
               placeholder={
                 bot.activeTaskCount > 0
@@ -473,6 +617,17 @@ export function BotChatPage() {
               canSend={canSend}
             />
             <InputGroupAddon align="block-end" className="min-w-0 flex-wrap gap-1.5 px-2.5 pt-1 pb-2.5">
+              <InputGroupButton
+                variant="ghost"
+                size="icon-sm"
+                className="size-8 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
+                disabled={composerDisabled}
+                aria-label={t("sessions:addAttachment")}
+                title={t("sessions:addAttachment")}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="size-icon" aria-hidden="true" />
+              </InputGroupButton>
               {chatMessages.length > 0 && router.contextUsage && (
                 <ContextUsageIndicator usage={router.contextUsage} />
               )}
@@ -483,11 +638,11 @@ export function BotChatPage() {
               )}
               <div className="ms-auto flex min-w-0 items-center gap-1.5">
                 <span id={statusId} role="status" className="min-w-0 truncate px-1 text-xs font-normal text-muted-foreground empty:px-0">
-                  {submitting ? t("sessions:submitting") : ""}
+                  {uploading ? t("sessions:uploading") : submitting ? t("sessions:submitting") : ""}
                 </span>
                 {router.busy && (
                   <InputGroupButton
-                    variant={draft.trim() ? "ghost" : "default"}
+                    variant={hasContent ? "ghost" : "default"}
                     size="icon-sm"
                     className="size-8 shrink-0 rounded-full"
                     aria-label={t("bots:chat.stopRouter")}
@@ -506,7 +661,7 @@ export function BotChatPage() {
                   title={t("bots:chat.send")}
                   onClick={() => void handleSend()}
                 >
-                  {submitting ? (
+                  {submitting || uploading ? (
                     <LoaderCircle className="size-icon motion-safe:animate-spin" aria-hidden="true" />
                   ) : (
                     <ArrowUp className="size-icon" aria-hidden="true" />

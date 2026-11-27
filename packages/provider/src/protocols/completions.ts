@@ -10,6 +10,15 @@ function messagesForChat(messages: Message[]): OpenAIChatMessage[] {
       role: 'assistant', content: message.content || null,
       tool_calls: message.toolCalls.map((call) => ({ id: call.id, type: 'function', function: { name: call.name, arguments: JSON.stringify(call.arguments) } })),
     };
+    if (message.role === 'user') {
+      if (typeof message.content === 'string') return { role: 'user', content: message.content };
+      return {
+        role: 'user',
+        content: message.content.map((part) => part.type === 'text'
+          ? { type: 'text', text: part.text }
+          : { type: 'image_url', image_url: { url: `data:${part.mediaType};base64,${part.data}` } }),
+      };
+    }
     return { role: message.role, content: message.content };
   });
 }

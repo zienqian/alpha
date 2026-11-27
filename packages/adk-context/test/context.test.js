@@ -211,3 +211,33 @@ test('kernel rejects duplicate providers and attempts to drop protected user anc
   const agent = await createAgent({ model: model(), instructions: '', plugins: [{ id: 'bad', apiVersion: 1, setup(api) { api.provideModelContext({ prepare() { return { messageIds: [], maxOutputTokens: 100 }; } }); } }] });
   expect((await agent.prompt('must keep')).error.code).toBe('MODEL_PROTOCOL'); await agent.close();
 });
+
+test('onBeforeCompact receives only the newly compacted slice and hook failures never block compaction', async () => {
+  const calls = [];
+  const f = await fixture({
+    onBeforeCompact(event) {
+      calls.push({ covered: event.covered, cutoff: event.cutoff, mode: event.mode, ids: event.messages.map(m => m.id) });
+      if (calls.length === 1) throw new Error('pre-compact hook failure');
+    },
+  });
+  try {
+    const firstSource = history(4, 1200);
+    f.agent.replaceMessages(firstSource);
+    await f.agent.compact();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].covered).toBe(0);
+    expect(calls[0].cutoff).toBe(f.manager.checkpoint.coverage);
+    expect(calls[0].mode).toBe('manual');
+    expect(calls[0].ids).toEqual(firstSource.slice(0, calls[0].cutoff).map(m => m.id));
+
+    const secondSource = history(6, 1200);
+    f.agent.replaceMessages(secondSource);
+    await f.agent.compact();
+    expect(calls).toHaveLength(2);
+    expect(calls[1].covered).toBe(calls[0].cutoff);
+    expect(calls[1].cutoff).toBe(f.manager.checkpoint.coverage);
+    expect(calls[1].ids).toEqual(secondSource.slice(calls[0].cutoff, calls[1].cutoff).map(m => m.id));
+  } finally {
+    await f.agent.close();
+  }
+});

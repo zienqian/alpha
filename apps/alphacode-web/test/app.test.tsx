@@ -21,7 +21,7 @@ describe("Session workspace", () => {
     expect(screen.queryByRole("list", { name: "会话消息" })).toBeNull();
     expect(screen.getByRole("textbox", { name: "消息草稿" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "添加上下文附件" })).toBeNull();
-    expect(screen.queryByLabelText("添加附件")).toBeNull();
+    expect(screen.getByRole("button", { name: "添加附件" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
   });
 

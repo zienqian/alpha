@@ -42,7 +42,19 @@ export function validateInput(input: GenerateInput): void {
     names.add(tool.name);
   }
   for (const message of input.messages) {
-    if (!message || !['system', 'developer', 'user', 'assistant', 'tool'].includes(message.role) || typeof message.content !== 'string') inputError();
+    if (!message || !['system', 'developer', 'user', 'assistant', 'tool'].includes(message.role)) inputError();
+    if (message.role === 'user' && Array.isArray(message.content)) {
+      if (message.content.length === 0) inputError();
+      for (const part of message.content) {
+        if (!part || typeof part !== 'object') inputError();
+        if (part.type === 'text') {
+          if (typeof part.text !== 'string') inputError();
+        } else if (part.type === 'image') {
+          if (typeof part.mediaType !== 'string' || !/^image\/[a-z0-9.+-]+$/i.test(part.mediaType)
+            || typeof part.data !== 'string' || !part.data) inputError();
+        } else inputError();
+      }
+    } else if (typeof message.content !== 'string') inputError();
     if (message.role === 'tool' && (typeof message.toolCallId !== 'string' || !message.toolCallId)) inputError();
     if (message.role === 'assistant' && message.toolCalls !== undefined) {
       if (!Array.isArray(message.toolCalls)) inputError();

@@ -66,6 +66,7 @@ export function readConfig(
     traceEnabled: env.ALPHACODE_TRACE !== '0',
     permissionMode,
     skills: defaults.skills,
+    memory: defaults.memory,
     configDirectory: directory,
     ...(env.ALPHACODE_SESSION?.trim() ? { sessionId: env.ALPHACODE_SESSION.trim() } : {}),
   };

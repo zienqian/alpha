@@ -1,5 +1,5 @@
 import {
-  answerApproval, cancelRequest, deleteSession, getSession, listSessions, renameSession, searchSessions, sendRequest, sessionPath, setPermissionMode, updateQueue,
+  answerApproval, cancelRequest, deleteSession, getSession, listSessions, renameSession, searchSessions, sendRequest, sessionPath, setPermissionMode, updateQueue, uploadSessionFiles,
 } from "@/features/sessions/api";
 import { subscribeSnapshots } from "@/features/sessions/stream";
 import type { SessionGateway } from "@/features/sessions/application/session-gateway";
@@ -12,6 +12,7 @@ export const httpSessionGateway: SessionGateway = {
   search: searchSessions,
   rename: renameSession,
   delete: deleteSession,
+  upload: uploadSessionFiles,
   send: sendRequest,
   cancel: cancelRequest,
   updateQueue,

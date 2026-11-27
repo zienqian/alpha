@@ -1,16 +1,19 @@
 import type { SessionData } from "@alpha/adk-session";
 import type { ChatMessage } from "../chat/contracts";
 import { completeToolRecord, createToolRecord } from "./tool-records";
-import { skillInputDisplay } from "../input";
+import { decodeUserInput } from "../input";
 
-export function restoreMessages(data: SessionData): ChatMessage[] {
+export function restoreMessages(data: SessionData, urlForAttachment?: (id: string) => string): ChatMessage[] {
   const messages: ChatMessage[] = [];
   const indices = new Map<string, number>();
   for (const turn of data.turns) {
     const latest = turn === data.turns.at(-1);
     const turnStart = messages.length;
     for (const message of turn.messages) {
-      if (message.role === "user") messages.push({ id: message.id, role: "user", text: skillInputDisplay(message.content), rawText: message.content });
+      if (message.role === "user") {
+        const decoded = decodeUserInput(message.content, urlForAttachment);
+        messages.push({ id: message.id, role: "user", text: decoded.text, ...(decoded.attachments?.length ? { attachments: decoded.attachments } : {}), rawText: message.content });
+      }
       else if (message.role === "assistant") {
         messages.push({
           id: message.id, role: "assistant", text: message.text,

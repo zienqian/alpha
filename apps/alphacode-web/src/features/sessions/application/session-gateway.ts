@@ -1,4 +1,4 @@
-import type { PermissionMode, QueueAction, RequestReceipt, SessionInfo, SessionSearchResult, SessionView } from "@/features/sessions/api";
+import type { ChatAttachment, PermissionMode, QueueAction, RequestReceipt, SessionInfo, SessionSearchResult, SessionView } from "@/features/sessions/api";
 
 export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "error";
 export interface SessionIndexEvent { instanceId: string; sequence: number }
@@ -11,7 +11,8 @@ export interface SessionGateway {
   search(query: string, signal: AbortSignal): Promise<SessionSearchResult[]>;
   rename(id: string, title: string): Promise<{ session: SessionInfo }>;
   delete(id: string): Promise<unknown>;
-  send(id: string, requestId: string, input: string): Promise<RequestReceipt>;
+  upload?(id: string, files: readonly File[], signal?: AbortSignal): Promise<ChatAttachment[]>;
+  send(id: string, requestId: string, input: string, attachmentIds?: readonly string[]): Promise<RequestReceipt>;
   cancel(id: string, requestId: string, queuedOnly?: boolean): Promise<unknown>;
   updateQueue(id: string, action: QueueAction): Promise<SessionView>;
   answerApproval(id: string, requestId: string, approvalId: string, allow: boolean): Promise<unknown>;

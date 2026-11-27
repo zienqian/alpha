@@ -20,6 +20,11 @@
   "language": "语言",
   "chinese": "简体中文",
   "english": "English",
+  "memory": {
+    "label": "长期记忆",
+    "description": "跨会话记住偏好、项目决策与踩坑经验，明文保存在本地 Markdown 目录中。",
+    "saveFailed": "记忆开关保存失败，请重试。"
+  },
   "permissions": {
     "label": "审批模式",
     "title": "AlphaCode 应如何请求审批？",

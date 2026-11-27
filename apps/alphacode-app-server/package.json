@@ -73,6 +73,7 @@
     "@alpha/adk-artifact": "workspace:*",
     "@alpha/adk": "workspace:*",
     "@alpha/adk-context": "workspace:*",
+    "@alpha/adk-memory": "workspace:*",
     "@alpha/adk-session": "workspace:*",
     "@alpha/adk-trace": "workspace:*",
     "@alpha/coding-agent": "workspace:*",

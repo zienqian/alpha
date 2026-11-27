@@ -3,6 +3,7 @@ import type { SessionView } from "@/features/sessions/api";
 export interface PendingRequest {
   requestId: string;
   input: string;
+  attachmentIds?: readonly string[];
   sequence: number;
   instanceId?: string;
   status: "sending" | "uncertain" | "accepted";

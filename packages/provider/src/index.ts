@@ -9,7 +9,7 @@ export { ProviderError } from './errors';
 export type { StreamActivity } from './types';
 export type { ProviderErrorCode } from './errors';
 export type { OpenAIChatCompletionRequest, OpenAIChatMessage, OpenAIResponseRequest, OpenAIResponseInput, AnthropicMessageRequest, AnthropicMessageBlock } from './protocols/official-types';
-export type { Fetch, AdapterContext, AnthropicContinuation, AnthropicOptions, CheckedConfig, CommonOptions, OpenAICompletionsOptions, OpenAIResponsesOptions, OpenAICodexResponsesOptions, CreateProviderOptions, Credential, HeaderValue, GenerateInput, GenerateResult, StreamEvent, Json, JsonObject, LanguageModel, Message, ModelConfig, ModelMetadata, ThinkingLevel, Provider, ProviderAdapter, ProviderConfig, ProviderEntry, ToolCall, ToolDefinition } from './types';
+export type { Fetch, AdapterContext, AnthropicContinuation, AnthropicOptions, CheckedConfig, CommonOptions, OpenAICompletionsOptions, OpenAIResponsesOptions, OpenAICodexResponsesOptions, CreateProviderOptions, Credential, HeaderValue, GenerateInput, GenerateResult, StreamEvent, Json, JsonObject, LanguageModel, Message, UserContentPart, ModelConfig, ModelMetadata, ThinkingLevel, Provider, ProviderAdapter, ProviderConfig, ProviderEntry, ToolCall, ToolDefinition } from './types';
 
 export function defineProviderConfig<const T extends ProviderConfig>(config: CheckedConfig<T>): T {
   return config;

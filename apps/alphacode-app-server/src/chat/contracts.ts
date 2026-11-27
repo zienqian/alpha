@@ -58,6 +58,17 @@ export interface ToolRecord {
   finishedAt?: number;
 }
 
+export interface ChatAttachment {
+  id: string;
+  name: string;
+  mediaType: string;
+  size: number;
+  sha256?: string;
+  url?: string;
+  /** Server-only verified local disk path; never sent to external browsers. */
+  path?: string;
+}
+
 export interface ChatMessage {
   /** Canonical archive identity; a streaming preview may have a different id. */
   sourceId?: string;
@@ -65,6 +76,7 @@ export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "tool";
   text: string;
+  attachments?: readonly ChatAttachment[];
   streaming?: boolean;
   note?: string;
   noteCode?: string;
@@ -93,7 +105,7 @@ export interface ChatState {
   canSend: boolean;
   /** The server can accept another message while this turn is running. */
   canQueue?: boolean;
-  queuedRequests?: readonly { requestId: string; input: string; steering?: boolean }[];
+  queuedRequests?: readonly { requestId: string; input: string; attachments?: readonly ChatAttachment[]; steering?: boolean }[];
   canSteer?: boolean;
   status: string;
   phase: ChatPhase;
@@ -110,14 +122,14 @@ export interface ChatState {
 
 export interface Chat {
   readonly canSteer?: boolean;
-  steer?(input: string): Promise<boolean>;
+  steer?(input: string, attachments?: readonly ChatAttachment[]): Promise<boolean>;
   readonly skills?: readonly ChatSkill[];
   readonly state: ChatState;
   readonly modelId: string;
   readonly workspaceRoot: string;
   readonly sessionId: string;
   subscribe(listener: (state: ChatState) => void): () => void;
-  send(input: string, requestId?: string): Promise<void>;
+  send(input: string, requestId?: string, attachments?: readonly ChatAttachment[]): Promise<void>;
   cancel(): void;
   answerApproval(allow: boolean): void;
   setPermissionMode(mode: PermissionMode): Promise<boolean>;
@@ -128,7 +140,7 @@ export interface Chat {
 // The application consumes conversation events, not Agent or Session internals.
 export type ChatEvent =
   | { type: "context.usage"; usage: ContextUsage }
-  | { type: "user.message"; id: string; text: string }
+  | { type: "user.message"; id: string; text: string; attachments?: readonly ChatAttachment[] }
   | { type: "session.title"; title: string; status: "pending" | "ready" }
   | { type: "assistant.start"; id: string }
   | { type: "assistant.delta"; id: string; text: string }
@@ -142,7 +154,7 @@ export type ChatEvent =
 export interface ChatRuntime {
   readonly contextUsage?: ContextUsage;
   readonly canSteer?: boolean;
-  steer?(input: string): Promise<boolean>;
+  steer?(input: string, attachments?: readonly ChatAttachment[]): Promise<boolean>;
   readonly sessionTitle: string;
   readonly skills?: readonly ChatSkill[];
   readonly modelId: string;
@@ -155,7 +167,7 @@ export interface ChatRuntime {
   setPermissionMode(mode: PermissionMode): Promise<void>;
   setTitle?(title: string): Promise<void>;
   subscribe(listener: (event: ChatEvent) => void): () => void;
-  send(input: string, requestId?: string): Promise<{ status: ChatRunStatus; error?: string; localText?: string; localResult?: LocalResult; completion?: ChatMessage["completion"] }>;
+  send(input: string, requestId?: string, attachments?: readonly ChatAttachment[]): Promise<{ status: ChatRunStatus; error?: string; localText?: string; localResult?: LocalResult; completion?: ChatMessage["completion"] }>;
   cancel(): void;
   /** Drain execution and persist before resolving; a failed close may be retried. */
   close(): Promise<void>;

@@ -29,7 +29,7 @@ export class SessionCommands {
   constructor(
     private readonly gateway: Pick<SessionGateway, "get" | "send" | "cancel" | "answerApproval" | "setPermissionMode" | "updateQueue">,
     private readonly cache: SessionCommandCache,
-    private readonly onAccepted: (id: string, input: string) => void,
+    private readonly onAccepted: (id: string, input: string, attachmentIds?: readonly string[]) => void,
   ) {}
 
   getState = (id: string): SessionCommandState => this.states.get(id) ?? emptyState;
@@ -59,23 +59,28 @@ export class SessionCommands {
     this.observe(this.cache.get(id));
   }
 
-  async send(id: string, input: string) {
+  async send(id: string, input: string, attachmentIds?: readonly string[]) {
     if (this.sending.has(id) || this.controlling.has(id)) return;
     const previous = this.getState(id).pending;
     if (previous && previous.status !== "uncertain") return;
     const current = this.cache.get(id);
     const request: PendingRequest = previous ?? {
-      requestId: crypto.randomUUID(), input, sequence: current?.sequence ?? -1,
+      requestId: crypto.randomUUID(), input,
+      ...(attachmentIds?.length ? { attachmentIds: [...attachmentIds] } : {}),
+      sequence: current?.sequence ?? -1,
       instanceId: current?.instanceId, status: "sending",
     };
     this.sending.add(id);
     this.update(id, { pending: { ...request, status: "sending" }, error: undefined });
     try {
-      const receipt = await this.gateway.send(id, request.requestId, request.input);
+      const receipt = request.attachmentIds?.length
+        ? await this.gateway.send(id, request.requestId, request.input, request.attachmentIds)
+        : await this.gateway.send(id, request.requestId, request.input);
       if (receipt.status === "interrupted") {
         this.update(id, { pending: undefined, error: { kind: "interrupted" } });
       } else {
-        this.onAccepted(id, request.input);
+        if (request.attachmentIds?.length) this.onAccepted(id, request.input, request.attachmentIds);
+        else this.onAccepted(id, request.input);
         this.update(id, { pending: hasAdvanced(this.cache.get(id), request)
           ? undefined : { ...request, status: "accepted" } });
       }
@@ -95,7 +100,7 @@ export class SessionCommands {
 
   retry(id: string) {
     const request = this.getState(id).pending;
-    if (request?.status === "uncertain") return this.send(id, request.input);
+    if (request?.status === "uncertain") return this.send(id, request.input, request.attachmentIds);
   }
 
   async cancelQueued(id: string, requestId: string) {

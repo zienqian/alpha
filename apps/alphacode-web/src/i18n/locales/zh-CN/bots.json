@@ -126,6 +126,8 @@
     "maxWorkers": "单 Bot 最大并发 Worker 数",
     "maxWorkersInherit": "继承全局默认（{{count}}）",
     "workersCount_other": "{{count}} 个 Worker",
+    "memoryMode": "专属长期记忆",
+    "memoryModeHelp": "在全局开启长期记忆后，允许本 Bot 的 Router 读写专属记忆文件；后台 Worker 始终保持只读隔离。",
     "modelsSection": "模型配置",
     "modelsHelp": "可为 Router（对话与调度）和 Worker（编码与工具执行）分别指定模型，也可共用同一模型。",
     "routerRole": "Router 模型",

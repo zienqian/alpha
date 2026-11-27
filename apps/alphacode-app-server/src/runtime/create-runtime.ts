@@ -2,10 +2,13 @@ import { mkdir, realpath } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import { dirname } from "node:path";
 import type { Agent } from "@alpha/adk/core";
+import { createMemoryPlugin, type MemoryPluginHandle, type MemoryScope, type MemoryWriteMode } from "@alpha/adk-memory";
 import { createTracePlugin } from "@alpha/adk-trace";
 import { createContextManager, createContextReader } from "@alpha/adk-context";
 import { createSqliteContextStore } from "@alpha/adk-context/sqlite";
 import { createSqliteArtifactStore } from "@alpha/adk-artifact/sqlite";
+import type { MemoryModelConnection, MemoryService } from "../memory/service";
+import { createSessionHistorySearcher } from "../memory/history-search";
 import type { RuntimeTrace } from "./trace-bridge";
 import { createSessionManager, createSessionPlugin, type Session, type SessionManager, type SessionStore } from "@alpha/adk-session";
 import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
@@ -19,17 +22,31 @@ import { restoreMessages } from "./history";
 import { globalInstructionsPlugin } from "./global-instructions";
 import { isPermissionMode, readSessionSettings, sameSettings, settingsError, type SessionSettings } from "./session-settings";
 import { loadRuntimeSkills, prepareSkillInput, skillStatus } from "./skills";
-import { parseInput } from "../input";
+import { parseInput, encodeAttachmentInput } from "../input";
 import { displayText } from "./tool-records";
 import { generateSessionTitle, titleTimeoutMs } from "./session-title";
 import { modelContext, restoreContext } from "./context-usage";
 import { fileInputReferences } from "./artifact-context";
+import { wrapModelWithAttachments } from "./attachments";
+import { createUploadStore, defaultUploadsDirectory, sessionUploadScope, sessionUploadUrl, type UploadStore } from "../uploads";
+
+export interface RuntimeMemoryOptions {
+  readonly service: MemoryService;
+  readonly enabled?: boolean;
+  readonly readScopes?: readonly MemoryScope[];
+  readonly writeScope?: MemoryScope;
+  readonly writableScopes?: readonly MemoryScope[];
+  readonly writeMode?: MemoryWriteMode;
+  readonly proposedBy?: string;
+}
 
 export async function createRuntime(config: AppConfig, options: {
   approve?: RequestApproval;
   provider?: CreateProviderOptions;
   draftSessionId?: string;
   trace?: RuntimeTrace;
+  memory?: RuntimeMemoryOptions;
+  uploads?: UploadStore;
   namespace?: string;
   accessMode?: "readonly" | "write";
   instructions?: string;
@@ -43,7 +60,14 @@ export async function createRuntime(config: AppConfig, options: {
   let contextManager: ReturnType<typeof createContextManager>;
   let contextStore: ReturnType<typeof createSqliteContextStore> | undefined;
   let artifactStore: ReturnType<typeof createSqliteArtifactStore> | undefined;
+  let memoryHandle: MemoryPluginHandle<CodingContext<undefined>> | undefined;
+  let memoryWriteMode: MemoryWriteMode = "readonly";
+  let memoryPrimaryScope: MemoryScope | undefined;
+  let activeModel: ReturnType<ReturnType<typeof createProvider>["use"]> | undefined;
   const sessionId = config.sessionId ?? options.draftSessionId ?? randomUUID();
+  const uploads = options.uploads ?? createUploadStore(defaultUploadsDirectory(config.databasePath));
+  const uploadScope = sessionUploadScope(sessionId);
+  const urlForAttachment = (id: string) => sessionUploadUrl(sessionId, id);
   const subscriptions = new Map<(event: ChatEvent) => void, (() => void) | undefined>();
   let initialize: (input?: string) => Promise<{ agent: Agent; session: Session }>;
   let messages: ChatMessage[] = [];
@@ -62,7 +86,14 @@ export async function createRuntime(config: AppConfig, options: {
   try {
     await mkdir(dirname(config.databasePath), { recursive: true });
     store = await createSqliteSessionStore({ filename: config.databasePath });
+    const sessionStore = store;
     const namespace = options.namespace ?? sessionNamespace(cwd);
+    const memoryConnection: MemoryModelConnection = {
+      baseURL: config.baseURL,
+      apiKeyEnv: config.apiKeyEnv,
+      noAuth: config.noAuth,
+      providerOptions: options.provider,
+    };
     artifactStore = createSqliteArtifactStore(`${config.databasePath}.artifacts.db`);
     const artifacts = artifactStore;
     const readContext = createContextReader({ scope: { namespace, sessionId }, artifacts,
@@ -77,6 +108,20 @@ export async function createRuntime(config: AppConfig, options: {
     contextManager = createContextManager({ namespace, sessionId, contextWindow: contextUsage.contextWindow,
       maxOutputTokens: config.maxOutputTokens, auto: config.autoCompact, store: contextStore,
       toolInputReferences: fileInputReferences(artifacts, { namespace, sessionId }),
+      onBeforeCompact(event) {
+        if (options.memory?.service && memoryHandle && memoryWriteMode === "direct" && memoryPrimaryScope && activeModel) {
+          options.memory.service.scheduleStage1({
+            scope: memoryPrimaryScope,
+            sessionKey: `${namespace}:${sessionId}:compact:${event.cutoff}`,
+            sessionId,
+            sessionRevision: event.cutoff,
+            messages: event.messages,
+            alreadyWroteInRun: false,
+            model: activeModel,
+            connection: memoryConnection,
+          });
+        }
+      },
       onEvent(event) {
         if (event.type === 'usage') contextUsage = { ...contextUsage, tokens: event.tokens, inputBudget: event.inputBudget,
           maxOutputTokens: event.maxOutputTokens, automatic: event.automatic };
@@ -95,7 +140,7 @@ export async function createRuntime(config: AppConfig, options: {
         await manager.updateSession(session.id, { metadata: { ...saved.data.metadata, alphacode: { ...settings } } }, { expectedRevision: saved.revision });
       }
       const snapshot = await session.getSnapshot();
-      messages = restoreMessages(snapshot.data);
+      messages = restoreMessages(snapshot.data, urlForAttachment);
       title = displayText(snapshot.data.title, 200);
     }
     const model = createProvider({ providers: { main: {
@@ -106,6 +151,7 @@ export async function createRuntime(config: AppConfig, options: {
       },
       models: { chat: { id: settings.modelId } },
     } } }, options.provider).use("main", "chat");
+    activeModel = model;
     const activeManager = manager;
     initialize = async (input) => {
       // A new CLI/Web session is only a draft until a valid prompt reaches here.
@@ -123,13 +169,41 @@ export async function createRuntime(config: AppConfig, options: {
       const readonlyTools = options.accessMode === "readonly"
         ? [readFileTool, listFilesTool, searchTool, readSkillTool, readContextTool]
         : undefined;
+      const memoryCfg = options.memory;
+      const memoryActive = Boolean(
+        memoryCfg
+        && memoryCfg.enabled !== false
+        && (memoryCfg.enabled === true || await memoryCfg.service.isEnabled()),
+      );
+      if (memoryActive && memoryCfg) {
+        const memSettings = await memoryCfg.service.getSettings();
+        const projectScope: MemoryScope = { type: "project", id: namespace };
+        const userScope: MemoryScope = { type: "user", id: "default" };
+        memoryWriteMode = memoryCfg.writeMode ?? (options.accessMode === "readonly" ? "readonly" : "direct");
+        memoryPrimaryScope = memoryCfg.writeScope ?? projectScope;
+        memoryHandle = createMemoryPlugin<CodingContext<undefined>>({
+          store: memoryCfg.service.store,
+          readScopes: memoryCfg.readScopes ?? [userScope, projectScope],
+          writeScope: memoryPrimaryScope,
+          writableScopes: memoryCfg.writableScopes ?? [projectScope, userScope],
+          writeMode: memoryWriteMode,
+          maxIndexLines: memSettings.maxIndexLines,
+          maxIndexBytes: memSettings.maxIndexBytes,
+          proposedBy: memoryCfg.proposedBy,
+          ...(memoryWriteMode === "direct"
+            ? { historySearcher: createSessionHistorySearcher({ store: sessionStore, namespaces: [namespace] }) }
+            : {}),
+        });
+      }
       agent = await createCodingAgent({
         // The first model call happens after the Session plugin has persisted
         // admission. Title generation must not run for rejected/local prompts.
-        model: { ...model, stream(input) {
-          startTitle(model);
-          return model.stream(input);
-        } }, cwd,
+        model: wrapModelWithAttachments(model, {
+          uploads,
+          scopeId: uploadScope,
+          mode: "coding",
+          onStreamStart: () => startTitle(model),
+        }), cwd,
         ...(readonlyTools ? { tools: readonlyTools } : {}),
         skills: loadedSkills.skills,
         artifacts: { store: artifacts, scope: { namespace, sessionId } }, readContext,
@@ -162,13 +236,14 @@ export async function createRuntime(config: AppConfig, options: {
         instructions: options.instructions ?? "You are AlphaCode. Respond in the user's language. Use Markdown for explanations and fenced blocks for code. Keep answers concise.",
         plugins: [
           ...(config.globalInstructions ? [globalInstructionsPlugin<CodingContext<undefined>>(config.globalInstructions, config.globalInstructionsPath ?? "~/.alphacode/AGENTS.md")] : []),
+          ...(memoryHandle ? [memoryHandle.plugin] : []),
           createSessionPlugin({ session }),
           contextManager.plugin<CodingContext<undefined>>(),
           ...(options.trace ? [createTracePlugin<CodingContext<undefined>>({ service: options.trace.service, scope: { namespace, sessionId } })] : []),
         ],
       });
       detachTrace = options.trace?.bind({ namespace, sessionId }, agent, session);
-      for (const listener of subscriptions.keys()) subscriptions.set(listener, subscribeToAgent(agent, listener));
+      for (const listener of subscriptions.keys()) subscriptions.set(listener, subscribeToAgent(agent, listener, urlForAttachment));
       return { agent, session };
     };
     if (saved) await initialize();
@@ -263,12 +338,18 @@ export async function createRuntime(config: AppConfig, options: {
     messages,
     get permissionMode() { return settings.permissionMode; },
     get canSteer() { return !closing && !cancelled && Boolean(agent?.state.canSteer); },
-    async steer(input) {
+    async steer(input, attachments) {
       if (closing || cancelled || !agent?.state.canSteer) return false;
-      const command = parseInput(input);
-      if (command.kind === "command" && ["skills", "permission", "compact"].includes(command.name)) return false;
-      const prepared = await prepareSkillInput(input, loadedSkills.skills, preparation?.signal ?? new AbortController().signal);
-      return !closing && !cancelled && agent.state.canSteer ? agent.steer(prepared) : false;
+      const hasAttachments = Boolean(attachments?.length);
+      if (!input.trim() && !hasAttachments) return false;
+      let prepared = "";
+      if (input.trim()) {
+        const command = parseInput(input);
+        if (command.kind === "command" && ["skills", "permission", "compact", "remember", "memory"].includes(command.name)) return false;
+        prepared = await prepareSkillInput(input, loadedSkills.skills, preparation?.signal ?? new AbortController().signal);
+      }
+      const payload = hasAttachments && attachments ? encodeAttachmentInput(prepared, attachments) : prepared;
+      return !closing && !cancelled && agent.state.canSteer ? agent.steer(payload) : false;
     },
     setPermissionMode(mode) {
       if (!isPermissionMode(mode)) return Promise.reject(settingsError("SESSION_SETTINGS_INVALID"));
@@ -303,10 +384,10 @@ export async function createRuntime(config: AppConfig, options: {
     },
     subscribe(listener) {
       const forward = (event: ChatEvent) => listener(event);
-      subscriptions.set(forward, agent ? subscribeToAgent(agent, forward) : undefined);
+      subscriptions.set(forward, agent ? subscribeToAgent(agent, forward, urlForAttachment) : undefined);
       return () => { subscriptions.get(forward)?.(); subscriptions.delete(forward); };
     },
-    async send(input, requestId) {
+    async send(input, requestId, attachments) {
       if (closing || running || changing) throw settingsError("SESSION_BUSY");
       running = true;
       cancelled = false;
@@ -315,8 +396,9 @@ export async function createRuntime(config: AppConfig, options: {
       draining = new Promise<void>(resolve => { finishRun = resolve; });
       try {
         await titleSaving;
+        const hasAttachments = Boolean(attachments?.length);
         const command = parseInput(input);
-        if (command.kind === "command" && command.name === "compact") {
+        if (!hasAttachments && command.kind === "command" && command.name === "compact") {
           if (command.arguments.trim()) throw settingsError('SESSION_INPUT_INVALID');
           if (!session || !agent) throw settingsError('CONTEXT_NOTHING_TO_COMPACT');
           const saved = await session.getSnapshot();
@@ -331,23 +413,89 @@ export async function createRuntime(config: AppConfig, options: {
           } catch { /* Optional display counts must not affect the checkpoint. */ }
           return { status: 'completed', localText: 'Context compacted. Full conversation history is preserved.', localResult: { kind: 'compact' } };
         }
-        if (command.kind === "command" && command.name === "skills" && !command.arguments.trim()) {
+        if (!hasAttachments && command.kind === "command" && command.name === "skills" && !command.arguments.trim()) {
           return { status: "completed", localText: skillStatus(loadedSkills), localResult: { kind: "skills",
             skills: loadedSkills.skills.map(skill => ({ name: skill.name, description: displayText(skill.description, 1024),
               argumentHint: displayText(skill.argumentHint, 256), userInvocable: skill.userInvocable, disableModelInvocation: skill.disableModelInvocation })),
             diagnostics: loadedSkills.diagnostics.map(d => ({ severity: d.severity, code: d.code, path: displayText(d.path, 1024), field: displayText(d.field) })) } };
         }
-        if (command.kind === "command" && command.name === "permission") {
+        if (!hasAttachments && command.kind === "command" && command.name === "permission") {
           return { status: "completed", localText: "Use the /permission picker to change session permissions.", localResult: { kind: "permission" } };
         }
-        const prepared = await prepareSkillInput(input, loadedSkills.skills, preparation.signal);
-        if (!prepared.trim()) throw settingsError("SESSION_INPUT_INVALID");
+        if (!hasAttachments && command.kind === "command" && command.name === "remember") {
+          const memorySvc = options.memory?.service;
+          if (!memorySvc || !(await memorySvc.isEnabled())) {
+            return { status: "completed", localText: "Memory is currently disabled. Enable Auto Memory in Settings or set memory.enabled: true in ~/.alphacode/config.yaml." };
+          }
+          const rawArg = command.arguments.trim();
+          if (!rawArg) {
+            return { status: "completed", localText: "Usage: /remember <note> (prefix with 'global:' to save to user scope)" };
+          }
+          const isUserScope = /^global:\s*/i.test(rawArg);
+          const content = rawArg.replace(/^global:\s*/i, "").trim();
+          if (!content) {
+            return { status: "completed", localText: "Usage: /remember <note>" };
+          }
+          const targetScope: MemoryScope = isUserScope
+            ? { type: "user", id: "default" }
+            : (options.memory?.writeScope ?? { type: "project", id: options.namespace ?? sessionNamespace(cwd) });
+          const savedTopic = await memorySvc.rememberExplicit(targetScope, content, isUserScope ? "user" : "feedback");
+          return { status: "completed", localText: `Remembered (${targetScope.type}): ${savedTopic.path} [user-locked]` };
+        }
+        if (!hasAttachments && command.kind === "command" && command.name === "memory") {
+          const memorySvc = options.memory?.service;
+          if (!memorySvc) {
+            return { status: "completed", localText: "Memory service is not configured for this runtime." };
+          }
+          const memSettings = await memorySvc.getSettings();
+          const sub = command.arguments.trim().toLowerCase();
+          if (sub === "dream") {
+            if (!memSettings.enabled) {
+              return { status: "completed", localText: "Memory is disabled. Enable it in Settings before running /memory dream." };
+            }
+            if (!activeModel) {
+              return { status: "completed", localText: "Model is not initialized yet." };
+            }
+            const dreamScope: MemoryScope = options.memory?.writeScope ?? { type: "project", id: options.namespace ?? sessionNamespace(cwd) };
+            const report = await memorySvc.runDream(dreamScope, activeModel, {
+              force: true,
+              connection: {
+                baseURL: config.baseURL,
+                apiKeyEnv: config.apiKeyEnv,
+                noAuth: config.noAuth,
+                providerOptions: options.provider,
+              },
+            });
+            return {
+              status: "completed",
+              localText: report.status === "completed"
+                ? `Auto-Dream completed (${dreamScope.type}): consumed ${report.consumedRollouts} rollout(s), updated ${report.upsertedTopics.length} topic(s), deleted ${report.deletedTopics.length}.`
+                : `Auto-Dream ${report.status}: ${report.reason ?? "unknown"}.`,
+            };
+          }
+          const projectScope: MemoryScope = options.memory?.writeScope ?? { type: "project", id: options.namespace ?? sessionNamespace(cwd) };
+          const userTopics = await memorySvc.store.listTopics({ type: "user", id: "default" });
+          const projectTopics = await memorySvc.store.listTopics(projectScope);
+          return {
+            status: "completed",
+            localText: [
+              `Memory: ${memSettings.enabled ? "enabled" : "disabled"}`,
+              `Directory: ${memSettings.memoryDir}`,
+              `Topics: ${userTopics.length} user, ${projectTopics.length} project`,
+              "Tip: use /remember <note> to save a user-locked memory, or /memory dream to consolidate.",
+            ].join("\n"),
+          };
+        }
+        const preparedText = input.trim() ? await prepareSkillInput(input, loadedSkills.skills, preparation.signal) : "";
+        if (!preparedText.trim() && !hasAttachments) throw settingsError("SESSION_INPUT_INVALID");
         if (cancelled || closing) return { status: "cancelled" };
-        const { agent: activeAgent, session: activeSession } = await initialize(input);
+        const promptInput = hasAttachments && attachments ? encodeAttachmentInput(preparedText, attachments) : preparedText;
+        const titleSeed = input.trim() || (attachments?.length ? `Uploaded files: ${attachments.map(item => item.name).join(", ")}` : "");
+        const { agent: activeAgent, session: activeSession } = await initialize(titleSeed);
         const snapshot = await activeSession.getSnapshot();
         if (cancelled || closing) return { status: "cancelled" };
         if (!sameSettings(readSessionSettings(snapshot.data), settings)) throw settingsError("SESSION_CONFLICT");
-        const result = await activeAgent.prompt(prepared, { requestId: requestId ?? randomUUID(), signal: preparation.signal });
+        const result = await activeAgent.prompt(promptInput, { requestId: requestId ?? randomUUID(), signal: preparation.signal });
         let completion: ChatMessage["completion"];
         if (activeSession.state.persistence?.status === "saved") {
           try {
@@ -362,6 +510,24 @@ export async function createRuntime(config: AppConfig, options: {
             if (!saved.data.pending && contextUsage.tokens) await activeManager.updateSession(activeSession.id, {
               metadata: { ...saved.data.metadata, alphacodeContext: JSON.parse(JSON.stringify(contextUsage)) },
             }, { expectedRevision: saved.revision });
+            if (options.memory?.service && memoryHandle && memoryWriteMode === "direct" && memoryPrimaryScope && activeModel && result.status === "completed") {
+              const allMessages = saved.data.turns.flatMap(t => [...t.messages]);
+              options.memory.service.scheduleStage1({
+                scope: memoryPrimaryScope,
+                sessionKey: `${options.namespace ?? sessionNamespace(cwd)}:${activeSession.id}`,
+                sessionId: activeSession.id,
+                sessionRevision: saved.revision,
+                messages: allMessages,
+                alreadyWroteInRun: memoryHandle.wroteInLastRun(),
+                model: activeModel,
+                connection: {
+                  baseURL: config.baseURL,
+                  apiKeyEnv: config.apiKeyEnv,
+                  noAuth: config.noAuth,
+                  providerOptions: options.provider,
+                },
+              });
+            }
           } catch { /* Optional display timing must not change a completed run's outcome. */ }
         }
         return { status: result.status, error: result.status === "failed" ? result.error.code : undefined, completion };

@@ -1,6 +1,7 @@
 import type { Translate } from "@/i18n/instance";
 import {
   SessionApiError,
+  type ChatAttachment,
   type ContextUsage,
   type HistoryMessage,
   type PermissionMode,
@@ -263,6 +264,7 @@ export interface CreateBotInput {
   maxConcurrentWorkers?: number | null;
   routerModel?: BotModelOverride | null;
   workerModel?: BotModelOverride | null;
+  memoryMode?: "alphacode" | "off";
 }
 
 export interface UpdateBotInput {
@@ -274,6 +276,7 @@ export interface UpdateBotInput {
   maxConcurrentWorkers?: number | null;
   routerModel?: BotModelOverridePatch | null;
   workerModel?: BotModelOverridePatch | null;
+  memoryMode?: "alphacode" | "off";
 }
 
 async function requestJson<T>(
@@ -380,11 +383,34 @@ export async function deleteBot(botId: string, forceCleanupWorktrees = false): P
   };
 }
 
-export function sendBotMessage(botId: string, requestId: string, input: string): Promise<BotMessageReceipt> {
+export async function uploadBotFiles(botId: string, files: readonly File[], signal: AbortSignal = AbortSignal.timeout(60_000)): Promise<ChatAttachment[]> {
+  const form = new FormData();
+  for (const file of files) form.append("files", file, file.name);
+  const response = await fetch(`/api/bots/${encodeURIComponent(botId)}/uploads`, {
+    method: "POST",
+    signal,
+    credentials: "omit",
+    redirect: "error",
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+    body: form,
+  });
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({})) as { code?: string };
+    throw new SessionApiError(response.status, errorBody.code ?? `HTTP_${response.status}`);
+  }
+  if (!response.headers.get("content-type")?.includes("application/json")) {
+    throw new SessionApiError(response.status, "API_UNAVAILABLE");
+  }
+  const result = await response.json() as { attachments?: ChatAttachment[] };
+  return result.attachments ?? [];
+}
+
+export function sendBotMessage(botId: string, requestId: string, input: string, attachmentIds?: readonly string[]): Promise<BotMessageReceipt> {
   return requestJson<BotMessageReceipt>(
     `/api/bots/${encodeURIComponent(botId)}/messages`,
     AbortSignal.timeout(15_000),
-    { requestId, input },
+    attachmentIds?.length ? { requestId, input, attachmentIds } : { requestId, input },
     "POST",
   );
 }
@@ -512,6 +538,9 @@ export function botErrorMessage(t: Translate, error: unknown): string {
     if (error.code === "INVALID_CONFIG") return t("bots:errors.invalidConfig");
     if (error.code === "MAIN_REPO_DIRTY") return t("bots:errors.mainRepoDirty");
     if (error.code === "MERGE_CONFLICT") return t("bots:errors.mergeConflict");
+    if (error.code === "UPLOAD_TOO_LARGE" || error.code === "UPLOAD_QUOTA_EXCEEDED") return t("errors:uploadTooLarge");
+    if (error.code === "TOO_MANY_ATTACHMENTS") return t("errors:tooManyAttachments");
+    if (error.code === "ATTACHMENT_NOT_FOUND" || error.code === "INVALID_ATTACHMENT" || error.code === "UPLOAD_FILE_REQUIRED") return t("errors:uploadFailed");
     return t("bots:errors.generic", { code: error.code });
   }
   return t("errors:uncertain");

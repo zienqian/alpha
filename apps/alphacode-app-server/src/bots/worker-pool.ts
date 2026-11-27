@@ -5,6 +5,8 @@ import { createSqliteSessionStore } from "@alpha/adk-session/sqlite";
 import { createApplication } from "../application";
 import type { Chat, ChatMessage, PermissionMode } from "../chat/contracts";
 import type { AppConfig } from "../config";
+import type { MemoryService } from "../memory/service";
+import type { RuntimeMemoryOptions } from "../runtime/create-runtime";
 import { restoreMessages } from "../runtime/history";
 import type { RuntimeTrace } from "../runtime/trace-bridge";
 import { fail } from "../server/security";
@@ -38,6 +40,7 @@ export type BotWorkerChatFactory = (
     credential?: string;
     provider?: CreateProviderOptions;
     trace?: RuntimeTrace;
+    memory?: RuntimeMemoryOptions;
   },
 ) => Promise<Chat>;
 
@@ -136,6 +139,7 @@ export function createBotWorkerPool(options: {
   createWorkerChat?: BotWorkerChatFactory;
   providerForRole?: (role: "router" | "worker", config: AppConfig, botId: string) => CreateProviderOptions | undefined;
   trace?: RuntimeTrace;
+  memory?: MemoryService;
   onTaskEvent: (event: {
     botId: string;
     task: BotTaskRecord;
@@ -163,6 +167,7 @@ export function createBotWorkerPool(options: {
       instructions: opts.instructions,
       draftSessionId: opts.draftSessionId,
       trace: opts.trace,
+      memory: opts.memory,
       provider: opts.provider ?? {
         getEnv: name => (name === config.apiKeyEnv && opts.credential !== undefined ? opts.credential : process.env[name]),
       },
@@ -261,6 +266,17 @@ export function createBotWorkerPool(options: {
     let workerEntry: ActiveWorker | undefined;
     try {
       const credential = options.registry.credentials.get(task.projectId);
+      // Security firewall: background Workers are strictly read-only + pending/ propose-only (never direct memory_write).
+      const workerMemory: RuntimeMemoryOptions | undefined = options.memory
+        ? {
+          service: options.memory,
+          enabled: bot.memoryMode !== "off" && await options.memory.isEnabled(),
+          readScopes: [{ type: "project", id: task.projectId }, { type: "bot", id: task.botId }],
+          writeScope: { type: "bot", id: task.botId },
+          writeMode: "propose_only",
+          proposedBy: `Worker ${task.shortId} (${task.title})`,
+        }
+        : undefined;
       chat = await chatFactory(appConfig, {
         botId: task.botId,
         namespace: botWorkerNamespace(task.botId),
@@ -270,6 +286,7 @@ export function createBotWorkerPool(options: {
         credential,
         provider: options.providerForRole?.("worker", appConfig, task.botId),
         trace: appConfig.traceEnabled === false ? undefined : options.trace,
+        memory: workerMemory,
       });
       if (closed) {
         await chat.close().catch(() => undefined);

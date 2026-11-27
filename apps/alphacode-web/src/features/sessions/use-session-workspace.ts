@@ -1,7 +1,7 @@
 import { useTranslation } from "@/i18n/react";
 import { useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { createProject, createSession, deleteProject, SessionApiError, type PermissionMode, type ProjectInfo, type SessionInfo, type SessionView } from "@/features/sessions/api";
+import { actionErrorMessage, createProject, createSession, deleteProject, SessionApiError, uploadSessionFiles, type ChatAttachment, type PermissionMode, type ProjectInfo, type SessionInfo, type SessionView } from "@/features/sessions/api";
 import { useSessionActions } from "@/features/sessions/use-session-actions";
 import { useProjectsQuery, useSessionQuery, useSessionsQuery } from "@/features/sessions/queries";
 import { groupSessions, sessionFromView, type Session } from "@/features/sessions/types";
@@ -11,9 +11,15 @@ import { useSessionGateway } from "./application/session-gateway-provider";
 import { sessionKeys } from "./application/session-cache";
 import { useLocation, useNavigate } from "react-router";
 
+export const maxAttachmentBytes = 20 * 1024 * 1024;
+export const maxAttachmentCount = 10;
+
 export interface DraftAttachment {
   id: string;
   file: File;
+  status?: "idle" | "uploading" | "done" | "error";
+  uploaded?: ChatAttachment;
+  error?: string;
 }
 
 export interface SessionDraft {
@@ -40,7 +46,8 @@ export function useSessionWorkspace(paneId?: string) {
   const projects = useProjectsQuery(Boolean(paneId));
   const shared = useSharedWorkspace();
   const { localSessions, setLocalSessions, setSelectedSessionId, selection, creating, creatingIds, setCreatingIds,
-    creationErrors, setCreationErrors, deletedIds, setDeletedIds, removedProjects, setRemovedProjects, openedProjects, setOpenedProjects,
+    creationErrors, setCreationErrors, uploading, uploadingIds, setUploadingIds, uploadErrors, setUploadErrors,
+    deletedIds, setDeletedIds, removedProjects, setRemovedProjects, openedProjects, setOpenedProjects,
     projectDialogOpen, setProjectDialogOpen, replacements, setReplacements, focusTarget, setFocusTarget } = shared;
   const selectedSessionId = paneId ?? shared.selectedSessionId;
   const isLocal = localSessions.some((session) => session.id === selectedSessionId);
@@ -137,7 +144,34 @@ export function useSessionWorkspace(paneId?: string) {
 
   function updateDraft(patch: Partial<SessionDraft>) {
     const id = selectedSessionId;
+    if (patch.attachments !== undefined) {
+      setUploadErrors(previous => previous[id] ? { ...previous, [id]: undefined } : previous);
+    }
     setDrafts((previous) => ({ ...previous, [id]: { ...(previous[id] ?? emptyDraft), ...patch } }));
+  }
+
+  function addFiles(incoming: readonly File[]) {
+    if (!incoming.length) return;
+    const id = selectedSessionId;
+    let rejectedError: string | undefined;
+    setDrafts(previous => {
+      const current = previous[id] ?? emptyDraft;
+      const next = [...current.attachments];
+      for (const file of incoming) {
+        if (next.length >= maxAttachmentCount) {
+          rejectedError ??= t("sessions:tooManyAttachments", { limit: maxAttachmentCount });
+          break;
+        }
+        if (file.size > maxAttachmentBytes) {
+          rejectedError ??= t("sessions:attachmentTooLarge", { name: file.name });
+          continue;
+        }
+        next.push({ id: crypto.randomUUID(), file, status: "idle" });
+      }
+      if (next.length === current.attachments.length) return previous;
+      return { ...previous, [id]: { ...current, attachments: next } };
+    });
+    setUploadErrors(previous => ({ ...previous, [id]: rejectedError }));
   }
 
   function newSession(requestedFolderId?: string) {
@@ -287,19 +321,98 @@ export function useSessionWorkspace(paneId?: string) {
     if (isLocal) updateDraft({ permissionMode: mode });
     else void actions.setPermissionMode(selectedSessionId, mode);
   }
-  const canSend = !deletedIds.has(selectedSessionId) && Boolean(draft.text.trim()) && !draft.attachments.length && !actions.pending
+  const hasDraftContent = Boolean(draft.text.trim() || draft.attachments.length > 0);
+  const canSend = !deletedIds.has(selectedSessionId) && hasDraftContent && !uploadingIds[selectedSessionId] && !actions.pending
     && !actions.controlling && !creatingIds[selectedSessionId] && (isLocal ? !localSession?.folderId || Boolean(selectedFolder) : connected
       && Boolean(history.data?.state.canQueue || (!busy && history.data?.state.canSend))
       && !history.data?.state.closing && !history.data?.state.settingsSaving);
 
+  async function uploadDraftAttachments(sessionId: string, attachments: readonly DraftAttachment[]): Promise<string[] | undefined> {
+    if (attachments.length === 0) return [];
+    const pending = attachments.filter(item => !item.uploaded);
+    if (pending.length === 0) {
+      return attachments.map(item => item.uploaded?.id).filter((id): id is string => Boolean(id));
+    }
+    if (uploading.current.has(sessionId)) return undefined;
+    const pendingIds = new Set(pending.map(item => item.id));
+    uploading.current.add(sessionId);
+    setUploadingIds(previous => ({ ...previous, [sessionId]: true }));
+    setUploadErrors(previous => ({ ...previous, [sessionId]: undefined }));
+    setDrafts(previous => {
+      const current = previous[sessionId];
+      if (!current) return previous;
+      return {
+        ...previous,
+        [sessionId]: {
+          ...current,
+          attachments: current.attachments.map(item => pendingIds.has(item.id)
+            ? { ...item, status: "uploading", error: undefined } : item),
+        },
+      };
+    });
+    try {
+      const uploader = gateway.upload ?? uploadSessionFiles;
+      const uploaded = await uploader(sessionId, pending.map(item => item.file));
+      if (uploaded.length !== pending.length) throw new SessionApiError(500, "UPLOAD_FAILED");
+      const uploadedByDraftId = new Map<string, ChatAttachment>();
+      pending.forEach((item, index) => {
+        const result = uploaded[index];
+        if (result) uploadedByDraftId.set(item.id, result);
+      });
+      setDrafts(previous => {
+        const current = previous[sessionId];
+        if (!current) return previous;
+        return {
+          ...previous,
+          [sessionId]: {
+            ...current,
+            attachments: current.attachments.map(item => {
+              const saved = uploadedByDraftId.get(item.id);
+              return saved ? { ...item, status: "done", uploaded: saved, error: undefined } : item;
+            }),
+          },
+        };
+      });
+      return attachments
+        .map(item => (item.uploaded ?? uploadedByDraftId.get(item.id))?.id)
+        .filter((id): id is string => Boolean(id));
+    } catch (cause) {
+      const message = actionErrorMessage(t, cause);
+      setUploadErrors(previous => ({ ...previous, [sessionId]: message }));
+      setDrafts(previous => {
+        const current = previous[sessionId];
+        if (!current) return previous;
+        return {
+          ...previous,
+          [sessionId]: {
+            ...current,
+            attachments: current.attachments.map(item => pendingIds.has(item.id)
+              ? { ...item, status: "error", error: message } : item),
+          },
+        };
+      });
+      return undefined;
+    } finally {
+      uploading.current.delete(sessionId);
+      setUploadingIds(previous => ({ ...previous, [sessionId]: false }));
+    }
+  }
+
   async function send() {
-    if (!canSend || creating.current.has(selectedSessionId)) return;
-    if (!isLocal) { await actions.send(selectedSessionId, draft.text); return; }
-    const localId = selectedSessionId;
+    if (!canSend || creating.current.has(selectedSessionId) || uploading.current.has(selectedSessionId)) return;
+    const attachments = draft.attachments;
     const input = draft.text;
+    if (!isLocal) {
+      const attachmentIds = await uploadDraftAttachments(selectedSessionId, attachments);
+      if (!attachmentIds) return;
+      await actions.send(selectedSessionId, input, attachmentIds.length ? attachmentIds : undefined);
+      return;
+    }
+    const localId = selectedSessionId;
     creating.current.add(localId);
     setCreatingIds(previous => ({ ...previous, [localId]: true }));
     setCreationErrors(previous => ({ ...previous, [localId]: undefined }));
+    setUploadErrors(previous => ({ ...previous, [localId]: undefined }));
     try {
       const created = await createSession(localSession?.folderId);
       restoreProject(created.session.projectId);
@@ -320,7 +433,9 @@ export function useSessionWorkspace(paneId?: string) {
       // Apply the draft's displayed choice before admitting its first message.
       // A failed save keeps the draft in the new session and never starts a run.
       if (!await actions.setPermissionMode(id, draft.permissionMode ?? "ask")) return;
-      await actions.send(id, input);
+      const attachmentIds = await uploadDraftAttachments(id, attachments);
+      if (!attachmentIds) return;
+      await actions.send(id, input, attachmentIds.length ? attachmentIds : undefined);
     } catch {
       setCreationErrors(previous => ({ ...previous, [localId]: true }));
       void client.invalidateQueries({ queryKey: ["sessions"] });
@@ -343,12 +458,13 @@ export function useSessionWorkspace(paneId?: string) {
     return () => import.meta.hot?.off("vite:beforeFullReload", preserve);
   }, [selectedSessionId, localSessions, drafts, creatingIds, actions.canRefresh, paneId]);
 
-  return { folders, selectedFolder, selectedSession, selectedSessionId, selectSession, draft, updateDraft, replacements, deletedIds,
+  return { folders, selectedFolder, selectedSession, selectedSessionId, selectSession, draft, updateDraft, addFiles, replacements, deletedIds,
     projects, selectProject, addProject, removeProject, projectDialogOpen, setProjectDialogOpen,
     newSession, renameSession, deleteSession, creatingIds, focusRequest, isLocal, isWelcome, index, history, canSend, send, busy, connected, actions,
     permissionMode, canChangePermission, changePermission,
-    submitting: creatingIds[selectedSessionId] || actions.pending?.status === "sending" || actions.pending?.status === "accepted",
-    actionError: actions.error ?? (creationErrors[selectedSessionId] ? t("errors:create") : undefined) };
+    uploading: Boolean(uploadingIds[selectedSessionId]),
+    submitting: creatingIds[selectedSessionId] || uploadingIds[selectedSessionId] || actions.pending?.status === "sending" || actions.pending?.status === "accepted",
+    actionError: uploadErrors[selectedSessionId] ?? actions.error ?? (creationErrors[selectedSessionId] ? t("errors:create") : undefined) };
 }
 
 export type SessionWorkspace = ReturnType<typeof useSessionWorkspace>;

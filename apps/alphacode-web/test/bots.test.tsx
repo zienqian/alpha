@@ -251,4 +251,42 @@ describe("Bots multi-instance Super-agent UI", () => {
     replaceDraft(composer, "尝试发送消息");
     expect((screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it("toggles global Auto Memory in Settings and per-Bot memoryMode in Bot settings", async () => {
+    window.history.replaceState(null, "", "/settings");
+    const first = render(<AppProviders><App /></AppProviders>);
+
+    const memorySwitch = await screen.findByRole("switch", { name: "长期记忆" });
+    await waitFor(() => expect(memorySwitch.getAttribute("aria-checked")).toBe("false"));
+    fireEvent.click(memorySwitch);
+    await waitFor(() => expect(memorySwitch.getAttribute("aria-checked")).toBe("true"));
+    first.unmount();
+
+    const detail = seedBot();
+    window.history.replaceState(null, "", `/bots/${detail.bot.id}/settings`);
+    render(<AppProviders><App /></AppProviders>);
+    await screen.findByRole("heading", { name: "Bot 设置" });
+    const botMemorySwitch = screen.getByRole("switch", { name: "专属长期记忆" });
+    expect(botMemorySwitch.getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(botMemorySwitch);
+    expect(botMemorySwitch.getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "保存更改" }));
+    await waitFor(() => expect(api.botDetails.get(detail.bot.id)?.bot.memoryMode).toBe("off"));
+  });
+
+  it("uploads and sends attached files in Bot chat", async () => {
+    const detail = seedBot();
+    window.history.replaceState(null, "", `/bots/${detail.bot.id}`);
+    const app = render(<AppProviders><App /></AppProviders>);
+
+    await screen.findByRole("button", { name: "添加附件" });
+    const fileInput = app.container.querySelector('input[type="file"]') as HTMLInputElement;
+    const spec = new File(["# Bot Spec"], "bot-spec.md", { type: "text/markdown" });
+    fireEvent.change(fileInput, { target: { files: [spec] } });
+    expect(await screen.findByText("bot-spec.md")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+    expect(await screen.findByRole("link", { name: "打开附件 bot-spec.md" })).toBeTruthy();
+    expect(api.fetch.mock.calls.some(([url, init]) => url === `/api/bots/${detail.bot.id}/uploads` && init.method === "POST")).toBe(true);
+  });
 });

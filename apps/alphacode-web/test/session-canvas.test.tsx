@@ -176,15 +176,14 @@ describe("experimental session canvas", () => {
     expect(api.views.has("project-notes")).toBe(true);
   });
 
-  it("keeps an unsent draft when the last tab closes and opens a fresh composer", async () => {
+  it("opens a fresh composer when the last tab closes without listing its unsent draft", async () => {
     window.history.replaceState(null, "", "/");
     renderCanvas();
     await screen.findByRole("region", { name: "新会话" });
     replaceDraft(editor("新会话"), "关闭后仍然保留的草稿");
     fireEvent.click(within(screen.getByRole("tab", { name: /新会话/ })).getByTitle("关闭面板"));
     await waitFor(() => expect(editor("新会话").textContent?.trim()).toBe(""));
-    fireEvent.click(screen.getByRole("button", { name: "新会话" }));
-    await waitFor(() => expect(editor("新会话").textContent).toContain("关闭后仍然保留的草稿"));
+    expect(screen.queryByRole("button", { name: "新会话" })).toBeNull();
     expect(screen.getAllByRole("tab")).toHaveLength(1);
     expect(api.fetch.mock.calls.filter(([url, init]) => url === "/api/sessions" && init.method === "POST")).toHaveLength(0);
   });

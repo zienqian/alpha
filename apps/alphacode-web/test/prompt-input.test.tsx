@@ -104,4 +104,40 @@ describe("Markdown rich-text composer", () => {
     await waitFor(() => expect(document.activeElement).toBe(input()));
     expect(input().querySelector("strong")?.textContent).toBe("切换后的草稿");
   });
+
+  it("supports attaching files via file picker, drag-and-drop, and clipboard paste", () => {
+    const added: File[] = [];
+    const { container } = render(
+      <Composer
+        onAddFiles={files => added.push(...files)}
+        draft={{ text: "", attachments: [{ id: "att-1", file: new File(["hello"], "notes.md", { type: "text/markdown" }) }] }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "添加附件" })).toBeTruthy();
+    expect(screen.getByText("notes.md")).toBeTruthy();
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).toBeTruthy();
+    const picked = new File(["const a = 1;"], "app.ts", { type: "text/plain" });
+    fireEvent.change(fileInput, { target: { files: [picked] } });
+    expect(added).toEqual([picked]);
+
+    const dropped = new File(["col1,col2"], "data.csv", { type: "text/csv" });
+    const composerGroup = container.querySelector('[data-slot="input-group"]') as HTMLElement;
+    fireEvent.dragEnter(composerGroup, { dataTransfer: { types: ["Files"] } });
+    expect(screen.getByText("松开以添加文件")).toBeTruthy();
+    fireEvent.drop(composerGroup, { dataTransfer: { types: ["Files"], files: [dropped] } });
+    expect(screen.queryByText("松开以添加文件")).toBeNull();
+    expect(added).toEqual([picked, dropped]);
+
+    const pasted = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "screenshot.png", { type: "image/png" });
+    fireEvent.paste(input(), {
+      clipboardData: {
+        files: [pasted],
+        items: [],
+        getData: () => "",
+      },
+    });
+    expect(added).toEqual([picked, dropped, pasted]);
+  });
 });

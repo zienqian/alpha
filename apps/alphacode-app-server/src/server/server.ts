@@ -14,7 +14,17 @@ import { createSkillRoutes } from "./skills";
 import { createProjectRoutes, ensureDefaultProject } from "./projects";
 import { sessionFile } from "./files";
 import { artifactDocument, artifactForPath, documentWrites } from './artifacts';
-import { skillUploadLimit } from "./skill-archive";
+import { documentResponse } from "./document-response";
+import {
+  createUploadStore,
+  maxRequestUploadBytes,
+  parseAttachmentIds,
+  parseUploadRequest,
+  sessionUploadScope,
+  sessionUploadUrl,
+  toChatAttachment,
+  type StoredUpload,
+} from "../uploads";
 import { createTraceService, createMemoryTraceStore, type TraceService } from "@alpha/adk-trace";
 import { createSqliteTraceStore } from "@alpha/adk-trace/sqlite";
 import { createSqliteContextStore } from "@alpha/adk-context/sqlite";
@@ -22,7 +32,9 @@ import { createSqliteArtifactStore } from "@alpha/adk-artifact/sqlite";
 import { createRuntimeTrace } from "../runtime/trace-bridge";
 import { createTraceRoutes } from "./traces";
 import { createBotsRoutes } from "./bots";
+import { createMemoryRoutes } from "./memory";
 import { createBotManager } from "../bots/manager";
+import { createMemoryService } from "../memory/service";
 import type { CreateProviderOptions } from "@alpha/provider";
 import { displayText } from "../runtime/tool-records";
 import type { ServerHandoff, SessionHandoff, UpdateStatus } from "./handoff";
@@ -42,7 +54,7 @@ interface Entry {
 }
 
 interface Journal extends RequestReceipt { hash: string; instanceId: string }
-interface QueuedRequest { input: string; journal: Journal; file: string; steering?: boolean }
+interface QueuedRequest { input: string; attachments?: readonly StoredUpload[]; journal: Journal; file: string; steering?: boolean }
 
 export interface ServerOptions {
   databasePath: string;
@@ -99,8 +111,16 @@ export async function startServer(options: ServerOptions) {
   });
   const projectRoutes = createProjectRoutes(registry, options.databasePath, onProjectsChanged);
   const security = createSecurity(token, () => origin);
+  const memoryService = createMemoryService({
+    instanceId,
+    databasePath: options.databasePath,
+    configDirectory: options.botsConfigDirectory,
+  });
+  const uploads = createUploadStore(join(options.directory, "uploads"));
   const factory = options.createChat ?? ((config, credential, restore) => createApplication(config, {
     restore, trace: config.traceEnabled === false ? undefined : trace,
+    memory: { service: memoryService },
+    uploads,
     provider: { getEnv: name => name === config.apiKeyEnv && credential !== undefined ? credential : process.env[name] },
   }));
   const detachTrace = traces.subscribe(() => changed());
@@ -110,12 +130,22 @@ export async function startServer(options: ServerOptions) {
     configDirectory: options.botsConfigDirectory,
     registry,
     trace,
+    memory: memoryService,
+    uploads,
     providerForRole: options.botsProvider,
     onChanged: changed,
+  });
+  const memoryRoutes = createMemoryRoutes({
+    service: memoryService,
+    onChanged: () => {
+      bots.notifyMemorySettingsChanged();
+      changed();
+    },
   });
   const botsRoutes = createBotsRoutes({
     manager: bots,
     instanceId,
+    uploads,
     registerStream(finish) {
       connections++;
       streams.add(finish);
@@ -205,7 +235,12 @@ export async function startServer(options: ServerOptions) {
       state: { ...state,
         canQueue: canAccept(entry),
         canSteer: canAccept(entry) && Boolean(chat.canSteer),
-        queuedRequests: entry.queue.map(({ journal, input, steering }) => ({ requestId: journal.requestId, input, ...(steering ? { steering } : {}) })),
+        queuedRequests: entry.queue.map(({ journal, input, attachments, steering }) => ({
+          requestId: journal.requestId,
+          input,
+          ...(attachments?.length ? { attachments: attachments.map(item => toChatAttachment(item, sessionUploadUrl(chat.sessionId, item.id))) } : {}),
+          ...(steering ? { steering } : {}),
+        })),
         messages: state.messages.map(message => !message.tool ? message : { ...message, tool: { ...message.tool,
           startedAt: message.tool.startedAt === undefined ? undefined : performance.timeOrigin + message.tool.startedAt,
           finishedAt: message.tool.finishedAt === undefined ? undefined : performance.timeOrigin + message.tool.finishedAt,
@@ -265,7 +300,8 @@ export async function startServer(options: ServerOptions) {
         changed();
         try {
           // send resolves only after the runtime has finished saving this turn.
-          entry.activeRun = entry.chat.send(next.input, next.journal.requestId);
+          const visibleAttachments = next.attachments?.map(item => toChatAttachment(item, sessionUploadUrl(entry.chat.sessionId, item.id)));
+          entry.activeRun = entry.chat.send(next.input, next.journal.requestId, visibleAttachments);
           await entry.activeRun;
           await writeJson(next.file, { ...next.journal, status: "settled" });
         } finally {
@@ -302,12 +338,15 @@ export async function startServer(options: ServerOptions) {
     if (body.action === "steer" && queued.steering) return Response.json(snapshot(entry));
     if (queued.steering || entry.chat.state.closing || stopping) return fail(409, "SESSION_BUSY");
     if (body.action === "edit") {
-      const input = requiredString(body, "input");
-      const expectedInput = requiredString(body, "expectedInput");
-      if (queued.input !== expectedInput && queued.input !== input) return fail(409, "QUEUE_CONFLICT");
+      const hasAttachments = Boolean(queued.attachments?.length);
+      const rawInput = body.input;
+      if (typeof rawInput !== "string" || rawInput.length > 100000 || (!rawInput.trim() && !hasAttachments)) return fail(400, "INVALID_INPUT");
+      const rawExpected = body.expectedInput;
+      if (typeof rawExpected !== "string" || rawExpected.length > 100000 || (!rawExpected.trim() && !hasAttachments)) return fail(400, "INVALID_EXPECTEDINPUT");
+      if (queued.input !== rawExpected && queued.input !== rawInput) return fail(409, "QUEUE_CONFLICT");
       // Admission hashes keep the original submission identity for retries.
       // Only the still-pending payload changes; executed history is immutable.
-      queued.input = input;
+      queued.input = rawInput;
     } else if (body.action === "move") {
       const before = body.beforeRequestId;
       if (before !== null && typeof before !== "string") return fail(400, "INVALID_REQUESTID");
@@ -319,7 +358,8 @@ export async function startServer(options: ServerOptions) {
       const active = entry.activeRun;
       if (!active || !canAccept(entry) || !entry.chat.canSteer || !entry.chat.steer) return fail(409, "STALE_REQUEST");
       queued.steering = true;
-      const work = entry.chat.steer(queued.input).then(async consumed => {
+      const visibleAttachments = queued.attachments?.map(item => toChatAttachment(item, sessionUploadUrl(entry.chat.sessionId, item.id)));
+      const work = entry.chat.steer(queued.input, visibleAttachments).then(async consumed => {
         if (!consumed) return;
         const index = entry.queue.indexOf(queued);
         if (index >= 0) entry.queue.splice(index, 1);
@@ -341,8 +381,16 @@ export async function startServer(options: ServerOptions) {
 
   async function send(entry: Entry, body: Record<string, unknown>) {
     const requestId = requiredString(body, "requestId", 100);
-    const input = requiredString(body, "input");
+    const attachmentIds = parseAttachmentIds(body.attachmentIds);
+    const rawInput = body.input === undefined ? "" : body.input;
+    if (typeof rawInput !== "string" || rawInput.length > 100000 || (!rawInput.trim() && attachmentIds.length === 0)) {
+      fail(400, "INVALID_INPUT");
+    }
+    const input = rawInput as string;
     if (!/^[a-zA-Z0-9_-]+$/.test(requestId)) fail(400, "INVALID_REQUESTID");
+    const attachments = attachmentIds.length
+      ? await uploads.resolveMany(sessionUploadScope(entry.chat.sessionId), attachmentIds)
+      : undefined;
     // Serialize admissions from all clients, including duplicate retries. Model
     // execution runs separately so admitting a message never waits for a reply.
     const previousAdmission = entry.admission;
@@ -352,7 +400,7 @@ export async function startServer(options: ServerOptions) {
     await previousAdmission;
     try {
       const file = join(receipts, `${digest(`${entry.chat.sessionId}:${requestId}`)}.json`);
-      const hash = digest(input);
+      const hash = attachmentIds.length ? digest(JSON.stringify([input, attachmentIds])) : digest(input);
       const previous = await readJson<Journal>(file);
       if (previous) {
         if (previous.hash !== hash) fail(409, "REQUEST_ID_CONFLICT");
@@ -362,7 +410,7 @@ export async function startServer(options: ServerOptions) {
       if (!canAccept(entry)) fail(409, "SESSION_BUSY");
       const journal: Journal = { requestId, hash, status: "accepted", instanceId };
       await writeJson(file, journal);
-      entry.queue.push({ input, journal, file });
+      entry.queue.push({ input, ...(attachments?.length ? { attachments } : {}), journal, file });
       drain(entry);
       changed();
       return Response.json({ requestId, status: "accepted" }, { status: 202 });
@@ -381,6 +429,46 @@ export async function startServer(options: ServerOptions) {
     if (path.startsWith("/api/")) {
       security.checkAccess(request, path === "/api/connect" || path === "/api/web");
       if (path === "/api/projects") return projectRoutes(request);
+      const uploadMatch = /^\/api\/sessions\/([^/]+)\/uploads(?:\/([^/]+))?$/.exec(path);
+      if (uploadMatch?.[1]) {
+        const id = decodeURIComponent(uploadMatch[1]);
+        const uploadId = uploadMatch[2] ? decodeURIComponent(uploadMatch[2]) : undefined;
+        const entry = entries.get(id), saved = entry ? undefined : await registry.find(id);
+        const projectId = entry?.projectId ?? saved?.projectId;
+        if (!projectId) return fail(404, "SESSION_NOT_FOUND");
+        if (!uploadId) {
+          if (request.method !== "POST") return fail(405, "METHOD_NOT_ALLOWED");
+          if (managing.has(id)) return fail(409, "SESSION_BUSY");
+          if (removingProjects.has(projectId)) return fail(409, "PROJECT_BUSY");
+          const files = await parseUploadRequest(request);
+          const stored = [];
+          for (const file of files) {
+            stored.push(await uploads.save(sessionUploadScope(id), file));
+          }
+          return Response.json({
+            attachments: stored.map(item => toChatAttachment(item, sessionUploadUrl(id, item.id))),
+          }, { status: 201 });
+        }
+        if (request.method === "GET") {
+          const found = await uploads.readBytes(sessionUploadScope(id), uploadId);
+          if (!found) return fail(404, "ATTACHMENT_NOT_FOUND");
+          return documentResponse({
+            path: found.upload.name,
+            name: found.upload.name,
+            size: found.upload.size,
+            mediaType: found.upload.mediaType,
+            body: new Blob([found.bytes]),
+            createdAt: found.upload.createdAt,
+          }, url);
+        }
+        if (request.method === "DELETE") {
+          if (managing.has(id)) return fail(409, "SESSION_BUSY");
+          if (removingProjects.has(projectId)) return fail(409, "PROJECT_BUSY");
+          await uploads.remove(sessionUploadScope(id), uploadId);
+          return Response.json({ ok: true });
+        }
+        return fail(405, "METHOD_NOT_ALLOWED");
+      }
       const fileMatch = /^\/api\/sessions\/([^/]+)\/(files|artifacts)$/.exec(path);
       if (fileMatch?.[1]) {
         if (request.method !== "GET") return fail(405, "METHOD_NOT_ALLOWED");
@@ -429,6 +517,7 @@ export async function startServer(options: ServerOptions) {
         return await traceRoutes(request, url) ?? fail(404, 'NOT_FOUND');
       }
       if (path === "/api/skills" || path.startsWith("/api/skills/")) return skillRoutes(request, url);
+      if (path === "/api/settings/memory") return memoryRoutes(request, url);
       if (path === "/api/bots" || path.startsWith("/api/bots/")) {
         if (path === "/api/bots/events" || /^\/api\/bots\/[^/]+\/events$/.test(path)) server.timeout(request, 0);
         return botsRoutes(request, url);
@@ -560,6 +649,7 @@ export async function startServer(options: ServerOptions) {
       try { for (const scope of scopes) await artifacts.remove({ namespace: scope, sessionId: id }); }
       finally { artifacts.close(); }
     }
+    await uploads.removeScope(sessionUploadScope(id));
   }
 
   async function removeProject(projectId: string) {
@@ -648,12 +738,13 @@ export async function startServer(options: ServerOptions) {
   } catch (error) {
     detachTrace();
     for (const entry of entries.values()) { entry.unsubscribe(); await entry.chat.close(); }
+    await memoryService.close();
     await registry.close();
     if (!options.traces) await traces.close();
     throw error;
   }
   const server = Bun.serve({
-    hostname: "127.0.0.1", port: options.port ?? 0, maxRequestBodySize: skillUploadLimit,
+    hostname: "127.0.0.1", port: options.port ?? 0, maxRequestBodySize: maxRequestUploadBytes,
     async fetch(request, serving) {
       operations++; lastActivity = Date.now();
       try {
@@ -661,7 +752,7 @@ export async function startServer(options: ServerOptions) {
         response.headers.set("Cache-Control", "no-store");
         response.headers.set("X-Content-Type-Options", "nosniff");
         response.headers.set("Referrer-Policy", "no-referrer");
-        if (!response.headers.has("Content-Security-Policy")) response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+        if (!response.headers.has("Content-Security-Policy")) response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
         return response;
       } catch (error) {
         const known = error as { status?: number; code?: string };
@@ -691,6 +782,7 @@ export async function startServer(options: ServerOptions) {
       }
       await Promise.all([...running]);
       await bots.close();
+      await memoryService.close();
       for (const entry of entries.values()) entry.unsubscribe();
       detachTrace();
       if (!options.traces) await traces.close();

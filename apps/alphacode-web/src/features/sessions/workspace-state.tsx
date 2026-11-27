@@ -43,6 +43,9 @@ function useWorkspaceState() {
   const creating = useRef(new Set<string>());
   const [creatingIds, setCreatingIds] = useState<Record<string, boolean>>({});
   const [creationErrors, setCreationErrors] = useState<Record<string, boolean | undefined>>({});
+  const uploading = useRef(new Set<string>());
+  const [uploadingIds, setUploadingIds] = useState<Record<string, boolean>>({});
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string | undefined>>({});
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
   const [removedProjects, setRemovedProjects] = useState<Record<string, string[]>>({});
   const [openedProjects, setOpenedProjects] = useState<Pick<SessionInfo, "projectId" | "workspaceRoot" | "defaultContext">[]>([]);
@@ -53,10 +56,27 @@ function useWorkspaceState() {
     get: id => client.getQueryData<SessionView>(sessionKeys.detail(id)),
     write: view => cacheSession(client, view),
     invalidateList: () => { void client.invalidateQueries({ queryKey: sessionKeys.list }); },
-  }, (id, input) => draftStore.set(previous => previous[id]?.text === input
-    ? { ...previous, [id]: { ...previous[id], text: "" } } : previous)), [client, gateway, draftStore]);
+  }, (id, input, attachmentIds) => draftStore.set(previous => {
+    const current = previous[id];
+    if (!current) return previous;
+    const textMatches = current.text === input;
+    const sentSet = attachmentIds?.length ? new Set(attachmentIds) : undefined;
+    const remainingAttachments = sentSet
+      ? current.attachments.filter(item => !item.uploaded || !sentSet.has(item.uploaded.id))
+      : current.attachments;
+    if (!textMatches && remainingAttachments.length === current.attachments.length) return previous;
+    return {
+      ...previous,
+      [id]: {
+        ...current,
+        text: textMatches ? "" : current.text,
+        attachments: remainingAttachments,
+      },
+    };
+  })), [client, gateway, draftStore]);
   return { localSessions, setLocalSessions, selectedSessionId, setSelectedSessionId, selection, creating,
-    creatingIds, setCreatingIds, creationErrors, setCreationErrors, deletedIds, setDeletedIds, removedProjects, setRemovedProjects,
+    creatingIds, setCreatingIds, creationErrors, setCreationErrors, uploading, uploadingIds, setUploadingIds, uploadErrors, setUploadErrors,
+    deletedIds, setDeletedIds, removedProjects, setRemovedProjects,
     openedProjects, setOpenedProjects, projectDialogOpen, setProjectDialogOpen, replacements, setReplacements,
     focusTarget, setFocusTarget, draftStore, commands };
 }
