@@ -10,6 +10,7 @@ export interface ModelActivity {
   kind: "waiting" | "text" | "tool-input" | "reasoning";
   bytes: number;
   toolName?: string;
+  retry?: { attempt: number; maxAttempts: number; nextAttemptAt: number; errorCode: string; status?: number };
   startedAt: number;
   updatedAt: number;
 }

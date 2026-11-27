@@ -9,6 +9,7 @@ export interface ModelActivity {
   kind: "waiting" | "text" | "tool-input" | "reasoning";
   bytes: number;
   toolName?: string;
+  retry?: { attempt: number; maxAttempts: number; nextAttemptAt: number; errorCode: string; status?: number };
   startedAt: number;
   updatedAt: number;
 }
@@ -142,6 +143,7 @@ export type ChatEvent =
   | { type: "context.usage"; usage: ContextUsage }
   | { type: "user.message"; id: string; text: string; attachments?: readonly ChatAttachment[] }
   | { type: "session.title"; title: string; status: "pending" | "ready" }
+  | { type: "assistant.retry"; id: string; retry: NonNullable<ModelActivity["retry"]> }
   | { type: "assistant.start"; id: string }
   | { type: "assistant.delta"; id: string; text: string }
   | { type: "assistant.activity"; id: string; kind: "tool-input" | "reasoning"; bytes: number; toolName?: string }

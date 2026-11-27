@@ -143,7 +143,7 @@ test("Provider → ADK → coding tools → streaming reply → SQLite; subseque
   } finally { await app.dispose(); }
 });
 
-test("a failed stream keeps an incomplete preview and accepts a later prompt without duplicating text", async () => {
+test("a failed stream exposes retry progress and replaces its preview after automatic recovery", async () => {
   const stream = controlledStream();
   const app = await fixture((_body, index) => index === 1 ? stream.response : textResponse("恢复后的回复"));
   try {
@@ -152,13 +152,18 @@ test("a failed stream keeps an incomplete preview and accepts a later prompt wit
     stream.text("暂存中的半句");
     await waitFor(() => app.chat.state.messages.at(-1)?.text === "暂存中的半句");
     stream.fail();
+    await waitFor(() => Boolean(app.chat.state.modelActivity?.retry));
+    expect(app.chat.state.busy).toBe(true);
+    expect(app.chat.state.modelActivity?.retry?.attempt).toBe(1);
+    expect(app.chat.state.modelActivity?.retry?.maxAttempts).toBe(5);
+    expect(app.chat.state.messages.some(message => message.text === "暂存中的半句")).toBe(false);
     await running;
-    expect(app.chat.state.messages.at(-1)?.note).toBe("Incomplete preview");
-    expect(app.chat.state.messages.at(-1)?.streaming).toBe(false);
-    expect(app.chat.state.error).toBeDefined();
-    expect(JSON.stringify(app.chat.state)).not.toContain("private upstream");
-    await app.chat.send("second");
+    expect(app.requests).toHaveLength(2);
+    expect(app.chat.state.lastRunStatus).toBe("completed");
+    expect(app.chat.state.modelActivity).toBeUndefined();
     expect(app.chat.state.messages.filter(message => message.text === "恢复后的回复")).toHaveLength(1);
+    expect(app.chat.state.messages.some(message => message.note === "Incomplete preview")).toBe(false);
+    expect(JSON.stringify(app.chat.state)).not.toContain("private upstream");
     expect(app.chat.state.error).toBeUndefined();
   } finally { await app.dispose(); }
 });

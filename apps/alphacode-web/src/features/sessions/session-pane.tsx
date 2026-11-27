@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { sessionErrorMessage } from "./api";
 import { SessionApproval } from "./session-approval";
 import { SessionQueue } from "./session-queue";
+import { SessionRetry } from "./session-retry";
 import type { SessionWorkspace } from "./use-session-workspace";
 import { presentNotice } from "@/i18n/presentation";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,9 @@ export function SessionPane({ workspace, contentId = "session-content" }: { work
   const view = workspace.history.data;
   const connectionLabel = workspace.connected ? t("sessions:connected") : workspace.history.connection === "error" ? t("sessions:connectionFailed") : workspace.history.connection === "reconnecting" ? t("sessions:reconnecting") : t("sessions:connecting");
   const composer = <>
+    {workspace.busy && view?.state.modelActivity?.retry && <SessionRetry retry={view.state.modelActivity.retry}
+      disabled={!workspace.connected || workspace.actions.controlling || !view.requestId || view.state.phase === "stopping"}
+      onCancel={workspace.actions.cancel} />}
     {workspace.actionError && <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-status-danger-border bg-status-danger-bg px-3.5 py-2.5 text-xs leading-[1.5] text-status-danger">
       <p className="min-w-0 flex-1">{workspace.actionError}</p>
       {workspace.actions.pending?.status === "uncertain" && <Button size="sm" variant="outline" disabled={!workspace.connected} onClick={workspace.actions.retry}>{t("sessions:retrySend")}</Button>}

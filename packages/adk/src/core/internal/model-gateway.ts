@@ -7,6 +7,7 @@ import { bytes, createId, record, textBytes } from './json';
 import { createAssistant } from './messages';
 import { prepareContext } from './prepare-context';
 import { estimateContextTokens } from '../model-context';
+import { maxModelRetries, retryableModelError, waitForRetry } from './model-retry';
 
 export function callModel<C>(run: Run<C>, model: LanguageModel, instructions: string, tools: readonly Tool<C>[], hooks: Hooks<C>, steeringSignal: AbortSignal, provider?: ModelContextProvider): Promise<AssistantMessage | undefined> {
   return run.operate(async () => {
@@ -34,12 +35,13 @@ export function callModel<C>(run: Run<C>, model: LanguageModel, instructions: st
       const prepare = (mode: 'auto' | 'emergency') => prepareContext({ history: run.history.messages, instructions, tools, hooks, model, provider,
         context, limits: run.limits, mode, protectedIds: run.userIds, reserve: () => run.reserveModel(), usage: run.recordUsage });
       let input = await prepare('auto');
-      let retried = false;
+      let retried = false, transientRetries = 0;
       while (true) {
         let observed = false;
         try {
           run.reserveModel();
           modelCallId = createId('model');
+          ended = false;
           run.emit({ type: 'model.start', modelCallId }, { provider: model.provider, modelId: model.modelId });
           check();
           for await (const event of model.stream(input)) {
@@ -82,7 +84,21 @@ export function callModel<C>(run: Run<C>, model: LanguageModel, instructions: st
           if (candidate.usage) { try { provider?.usage?.(candidate.usage, estimateContextTokens(input)); } catch { /* Observation only. */ } }
           return commit(candidate);
         } catch (cause) {
-          // Only normalized pre-stream context failures can be retried. No run/tool replay.
+          check();
+          // Retry only this uncommitted model request; completed tools remain in history.
+          if (!candidate && retryableModelError(cause) && transientRetries < maxModelRetries && modelCallId) {
+            const delayMs = 1000 * 2 ** transientRetries++;
+            ended = true;
+            run.emit({ type: 'model.end', modelCallId, outcome: 'failed' }, { errorCode: cause.code });
+            run.emit({ type: 'model.retry', modelCallId, attempt: transientRetries, maxAttempts: maxModelRetries,
+              delayMs, errorCode: cause.code, ...(cause.status === undefined ? {} : { status: cause.status }) });
+            chunks.length = 0;
+            deltaBytes = 0;
+            activityBytes.reasoning = activityBytes['tool-input'] = 0;
+            activityKey = ''; activityAt = -Infinity;
+            await waitForRetry(delayMs, context.signal);
+            continue;
+          }
           if (!provider || retried || observed || (cause as { code?: string })?.code !== 'CONTEXT_LENGTH_EXCEEDED') throw cause;
           retried = true;
           if (modelCallId) run.emit({ type: 'model.end', modelCallId, outcome: 'failed' }, { errorCode: 'CONTEXT_LENGTH_EXCEEDED' });

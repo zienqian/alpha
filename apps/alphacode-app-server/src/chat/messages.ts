@@ -52,19 +52,23 @@ export function applyChatEvent(state: ChatState, event: ChatEvent): ChatState {
       return { ...state, messages: [...state.messages, { id: event.id, role: "user", text: event.text, ...(event.attachments?.length ? { attachments: event.attachments } : {}) }] };
     case "session.title":
       return { ...state, sessionTitle: event.title, titleStatus: event.status };
+    case "assistant.retry":
+      return { ...state, phase: "thinking", status: "Retrying model request…",
+        modelActivity: { id: event.id, kind: "waiting", bytes: 0, startedAt: Date.now(), updatedAt: Date.now(), retry: event.retry },
+        messages: state.messages.filter(message => message.id !== event.id) };
     case "assistant.start":
       return { ...state, phase: "thinking", status: "Generating…",
-        modelActivity: { id: event.id, kind: "waiting", bytes: 0, startedAt: Date.now(), updatedAt: Date.now() },
+        modelActivity: { id: event.id, kind: "waiting", bytes: 0, startedAt: Date.now(), updatedAt: Date.now(), retry: state.modelActivity?.retry },
         messages: state.messages.some(message => message.id === event.id)
         ? state.messages : append({ id: event.id, role: "assistant", text: "", streaming: true }) };
     case "assistant.delta":
       return { ...state, ...(state.modelActivity?.id === event.id && event.text ? {
-        modelActivity: { ...state.modelActivity, kind: "text" as const, toolName: undefined, bytes: 0, updatedAt: Date.now() },
+        modelActivity: { ...state.modelActivity, retry: undefined, kind: "text" as const, toolName: undefined, bytes: 0, updatedAt: Date.now() },
         status: "Generating…",
       } : {}), messages: change(event.id, message => ({ text: message.text + event.text })) };
     case "assistant.activity":
       if (state.modelActivity?.id !== event.id) return state;
-      return { ...state, modelActivity: { ...state.modelActivity, kind: event.kind, bytes: event.bytes,
+      return { ...state, modelActivity: { ...state.modelActivity, retry: undefined, kind: event.kind, bytes: event.bytes,
         toolName: event.toolName, updatedAt: Date.now() },
         status: event.kind === "reasoning" ? "Thinking…" : event.toolName ? `Preparing ${event.toolName}…` : "Preparing tool input…" };
     case "assistant.commit":

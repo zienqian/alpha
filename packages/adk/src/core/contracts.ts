@@ -198,6 +198,7 @@ export type AgentEvent = EventMeta & (
   | { type: 'run.start' }
   | { type: 'run.stop_requested'; status: 'cancelled' | 'failed' | 'limited' }
   | { type: 'model.start'; modelCallId: string }
+  | { type: 'model.retry'; modelCallId: string; attempt: number; maxAttempts: number; delayMs: number; errorCode: string; status?: number }
   | { type: 'model.delta'; modelCallId: string; text: string }
   /** Provisional metadata; bytes are cumulative for this kind in the current model call. */
   | { type: 'model.activity'; modelCallId: string; kind: 'tool-input' | 'reasoning'; bytes: number; toolName?: string }

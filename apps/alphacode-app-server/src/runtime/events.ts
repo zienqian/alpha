@@ -26,6 +26,12 @@ export function subscribeToAgent(agent: Agent, listener: (event: ChatEvent) => v
         currentModel = event.modelCallId;
         listener({ type: "assistant.start", id: event.modelCallId });
         break;
+      case "model.retry":
+        listener({ type: "assistant.retry", id: event.modelCallId, retry: {
+          attempt: event.attempt, maxAttempts: event.maxAttempts, nextAttemptAt: Date.now() + event.delayMs,
+          errorCode: event.errorCode, ...(event.status === undefined ? {} : { status: event.status }),
+        } });
+        break;
       case "model.delta":
         listener({ type: "assistant.delta", id: event.modelCallId, text: event.text });
         break;
