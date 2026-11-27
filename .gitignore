@@ -2,6 +2,8 @@ node_modules/
 dist/
 .nx/
 .impeccable/review/
+.agents/
+skills-lock.json
 .env
 .env.*
 !.env.example
